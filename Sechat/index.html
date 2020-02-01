@@ -15,9 +15,11 @@
 
     <script src="js/sdk/all.js"></script>
 
+    <script src="js/protocol/search.js"></script>
     <script src="js/cache.js"></script>
     <script src="js/ans.js"></script>
     <script src="js/facebook.js"></script>
+    <script src="js/messenger.js"></script>
 </head>
 <body>
     <script>
@@ -37,6 +39,7 @@
             var Envelope = ns.Envelope;
             var InstantMessage = ns.InstantMessage;
             var QueryCommand = ns.protocol.group.QueryCommand;
+            var SearchCommand = ns.protocol.SearchCommand;
 
             var Immortals = ns.Immortals;
 
@@ -56,13 +59,16 @@
             Log('group: ', group);
 
             var env = Envelope.newEnvelope(sender, receiver);
-            Log('Envelope: ', env);
+            Log('envelope: ', env);
 
-            var cmd = new QueryCommand(group);
-            Log('cmd: ', cmd);
+            var query = new QueryCommand(group);
+            Log('query group info: ', query);
 
-            var msg = InstantMessage.newMessage(cmd, env);
-            Log('msg: ', msg);
+            var search = new SearchCommand('moky');
+            Log('search command: ', search);
+
+            var msg = InstantMessage.newMessage(search, env);
+            Log('instant msg: ', msg);
 
         }(DIMP);
     </script>

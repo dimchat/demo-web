@@ -1,21 +1,27 @@
 
 //! require <sdk/all.js>
 
-var AddressNameService = function () {
-    DIMP.AddressNameService.call(this);
-};
-AddressNameService.inherits(DIMP.AddressNameService);
+var AddressNameService;
 
-//
-//  Overrides
-//
+!function (ns) {
 
-AddressNameService.prototype.getIdentifier = function () {
-    // TODO: load ANS records from database
-    return DIMP.AddressNameService.prototype.getIdentifier.call();
-};
+    AddressNameService = function () {
+        ns.AddressNameService.call(this);
+    };
+    AddressNameService.inherits(ns.AddressNameService);
 
-AddressNameService.prototype.save = function(name, identifier) {
-    // TODO: save ANS record into database
-    return true;
-};
+    //
+    //  Overrides
+    //
+
+    AddressNameService.prototype.getIdentifier = function () {
+        // TODO: load ANS records from database
+        return ns.AddressNameService.prototype.getIdentifier.call();
+    };
+
+    AddressNameService.prototype.save = function(name, identifier) {
+        // TODO: save ANS record into database
+        return true;
+    };
+
+}(DIMP);
