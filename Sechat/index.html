@@ -14,6 +14,10 @@
     <script src="js/3rd/jsencrypt.js"></script>
 
     <script src="js/sdk/all.js"></script>
+
+    <script src="js/cache.js"></script>
+    <script src="js/ans.js"></script>
+    <script src="js/facebook.js"></script>
 </head>
 <body>
     <script>
@@ -34,15 +38,24 @@
             var InstantMessage = ns.InstantMessage;
             var QueryCommand = ns.protocol.group.QueryCommand;
 
-            var hulk = new ID('hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj');
-            var moki = new ID('moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk');
-            Log('hulk: ', hulk);
-            Log('moki: ', moki);
+            var Immortals = ns.Immortals;
+
+            var sender = Immortals.HULK;
+            var receiver = Immortals.MOKI;
+            var name1 = Facebook.getInstance().getNickname(sender);
+            var name2 = Facebook.getInstance().getNickname(receiver);
+
+            Log('sender: ', sender, ', nickname: ', name1);
+            Log('receiver: ', receiver, ', nickname: ', name2);
+
+            //
+            //  Message
+            //
 
             var group = new ID('Group-Naruto@7ThVZeDuQAdG3eSDF6NeFjMDPjKN5SbrnM');
             Log('group: ', group);
 
-            var env = Envelope.newEnvelope(hulk, moki);
+            var env = Envelope.newEnvelope(sender, receiver);
             Log('Envelope: ', env);
 
             var cmd = new QueryCommand(group);
