@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DIM Demo</title>
+
+    <script src="js/3rd/crypto-js/core.js"></script>
+    <script src="js/3rd/crypto-js/cipher-core.js"></script>
+    <script src="js/3rd/crypto-js/aes.js"></script>
+    <script src="js/3rd/crypto-js/md5.js"></script>
+    <script src="js/3rd/crypto-js/sha256.js"></script>
+    <script src="js/3rd/crypto-js/ripemd160.js"></script>
+
+    <script src="js/3rd/jsencrypt.js"></script>
+
+    <script src="js/sdk/all.js"></script>
+</head>
+<body>
+    <script>
+        function Log() {
+            var str = '';
+            for (var i = 0; i < arguments.length; ++i) {
+                str += arguments[i] + '';
+            }
+            str = str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            document.writeln('<p>' + str + '</p>');
+        }
+
+        !function (ns) {
+            'use strict';
+
+            var ID = ns.ID;
+            var Envelope = ns.Envelope;
+            var InstantMessage = ns.InstantMessage;
+            var QueryCommand = ns.protocol.group.QueryCommand;
+
+            var hulk = new ID('hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj');
+            var moki = new ID('moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk');
+            Log('hulk: ', hulk);
+            Log('moki: ', moki);
+
+            var group = new ID('Group-Naruto@7ThVZeDuQAdG3eSDF6NeFjMDPjKN5SbrnM');
+            Log('group: ', group);
+
+            var env = Envelope.newEnvelope(hulk, moki);
+            Log('Envelope: ', env);
+
+            var cmd = new QueryCommand(group);
+            Log('cmd: ', cmd);
+
+            var msg = InstantMessage.newMessage(cmd, env);
+            Log('msg: ', msg);
+
+        }(DIMP);
+    </script>
+</body>
+</html>
