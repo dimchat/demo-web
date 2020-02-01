@@ -584,7 +584,7 @@ if (typeof DIMP !== "object") {
         return this.value[key]
     };
     map.prototype.setValue = function(key, value) {
-        if (value !== null) {
+        if (value) {
             this.value[key] = value
         } else {
             if (this.value.hasOwnProperty(key)) {
@@ -762,7 +762,7 @@ if (typeof DIMP !== "object") {
     var PublicKey = function() {};
     PublicKey.inherits(AsymmetricKey, VerifyKey);
     PublicKey.prototype.matches = function(privateKey) {
-        if (privateKey === null) {
+        if (!privateKey) {
             return false
         }
         var publicKey = privateKey.getPublicKey();
@@ -777,7 +777,7 @@ if (typeof DIMP !== "object") {
         public_key_classes[algorithm] = clazz
     };
     PublicKey.getInstance = function(key) {
-        if (key === null) {
+        if (!key) {
             return null
         } else {
             if (key.isinstanceof(PublicKey)) {
@@ -801,7 +801,7 @@ if (typeof DIMP !== "object") {
     PrivateKey.inherits(AsymmetricKey, SignKey);
     PrivateKey.prototype.equals = function(other) {
         var publicKey = this.getPublicKey();
-        if (publicKey === null) {
+        if (!publicKey) {
             return false
         }
         return publicKey.matches(other)
@@ -820,7 +820,7 @@ if (typeof DIMP !== "object") {
         private_key_classes[algorithm] = clazz
     };
     PrivateKey.getInstance = function(key) {
-        if (key === null) {
+        if (!key) {
             return null
         } else {
             if (key.isinstanceof(PrivateKey)) {
@@ -1249,8 +1249,18 @@ if (typeof DIMP !== "object") {
     var Base64 = ns.format.Base64;
     var JSON = ns.format.JSON;
     var PublicKey = ns.crypto.PublicKey;
-    var Profile = function(dict) {
-        Dictionary.call(this, dict);
+    var ID = ns.ID;
+    var Profile = function(info) {
+        if (!info) {
+            info = {}
+        } else {
+            if (typeof info === "string" || info instanceof ID) {
+                info = {
+                    "ID": info
+                }
+            }
+        }
+        Dictionary.call(this, info);
         this.identifier = null;
         this.key = null;
         this.data = null;
@@ -3071,7 +3081,7 @@ if (typeof DIMP !== "object") {
     };
     var set_key = function(sender, receiver, key) {
         var table = this.keyMap[sender];
-        if (table === null) {
+        if (!table) {
             table = {};
             this.keyMap[sender] = table
         }
@@ -3143,14 +3153,14 @@ if (typeof DIMP !== "object") {
         return true
     };
     Barrack.prototype.cacheUser = function(user) {
-        if (user.delegate === null) {
+        if (!user.delegate) {
             user.delegate = this
         }
         this.userMap[user.identifier] = user;
         return true
     };
     Barrack.prototype.cacheGroup = function(group) {
-        if (group.delegate === null) {
+        if (!group.delegate) {
             group.delegate = this
         }
         this.groupMap[group.identifier] = group;
@@ -3306,7 +3316,7 @@ if (typeof DIMP !== "object") {
         } else {
             password = get_key.call(this, sender, receiver)
         }
-        if (msg.delegate === null) {
+        if (!msg.delegate) {
             msg.delegate = this
         }
         var sMsg;
@@ -3319,19 +3329,19 @@ if (typeof DIMP !== "object") {
         return sMsg
     };
     Transceiver.prototype.signMessage = function(msg) {
-        if (msg.delegate === null) {
+        if (!msg.delegate) {
             msg.delegate = this
         }
         return msg.sign()
     };
     Transceiver.prototype.verifyMessage = function(msg) {
-        if (msg.delegate == null) {
+        if (!msg.delegate) {
             msg.delegate = this
         }
         return msg.verify()
     };
     Transceiver.prototype.decryptMessage = function(msg) {
-        if (msg.delegate == null) {
+        if (!msg.delegate) {
             msg.delegate = this
         }
         return msg.decrypt()
@@ -3990,7 +4000,7 @@ if (typeof DIMP !== "object") {
             throw Error("address check code error: " + string)
         }
         this.network = new NetworkType(data[0]);
-        this.code = user_number(cc)
+        this.code = search_number(cc)
     };
     DefaultAddress.inherits(Address);
     DefaultAddress.prototype.getNetwork = function() {
@@ -4026,8 +4036,8 @@ if (typeof DIMP !== "object") {
         }
         return cc
     };
-    var user_number = function(cc) {
-        return (cc[3] & 255) << 24 | (cc[2] & 255) << 16 | (cc[1] & 255) << 8 | (cc[0] & 255)
+    var search_number = function(cc) {
+        return (cc[0] | cc[1] << 8 | cc[2] << 16) + cc[3] * 16777216
     };
     Address.register(DefaultAddress);
     if (typeof ns.plugins !== "object") {
@@ -4817,7 +4827,7 @@ if (typeof DIMP !== "object") {
             var now = new Date();
             var timestamp = now.getTime() / 1000 + this.EXPIRES;
             var expires = profile.getValue(EXPIRES_KEY);
-            if (expires === null) {
+            if (!expires) {
                 profile.setValue(EXPIRES_KEY, timestamp);
                 return profile
             } else {
@@ -4976,7 +4986,7 @@ if (typeof DIMP !== "object") {
             return true
         }
         var owner = facebook.getOwner(group);
-        return owner === null
+        return !owner
     };
     var check_group = function(content, sender) {
         var facebook = this.getFacebook();
@@ -5848,6 +5858,8 @@ if (typeof DIMP !== "object") {
     var Meta = ns.Meta;
     var Profile = ns.Profile;
     var User = ns.User;
+    var HULK = ID.getInstance("hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj");
+    var MOKI = ID.getInstance("moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk");
     var accounts = {
         "hulk": {
             meta: {
@@ -5900,8 +5912,6 @@ if (typeof DIMP !== "object") {
             }
         }
     };
-    var HULK = ID.getInstance("hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj");
-    var MOKI = ID.getInstance("moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk");
     var UserDataSource = ns.UserDataSource;
     var Immortals = function() {
         this.idMap = {};

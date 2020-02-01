@@ -102,7 +102,7 @@ var Facebook;
 
     // Override
     Facebook.prototype.savePrivateKey = function (key, identifier) {
-        if (!this.verifyPrivateKey(key, identifier)) {
+        if (!this.cachePrivateKey(key, identifier)) {
             // private key not match meta.key
             return false;
         }
@@ -127,7 +127,7 @@ var Facebook;
 
     // Override
     Facebook.prototype.saveMeta = function(meta, identifier) {
-        if (!this.verifyMeta(meta, identifier)) {
+        if (!this.cacheMeta(meta, identifier)) {
             // meta not match ID
             return false;
         }
@@ -159,7 +159,7 @@ var Facebook;
 
     // Override
     Facebook.prototype.saveProfile = function(profile, identifier) {
-        if (!this.verifyProfile(profile, identifier)) {
+        if (!this.cacheProfile(profile, identifier)) {
             // profile's signature not match
             return false;
         }

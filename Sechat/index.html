@@ -14,6 +14,8 @@
     <script src="js/3rd/jsencrypt.js"></script>
 
     <script src="js/sdk/all.js"></script>
+    <script src="js/sdk/register.js"></script>
+    <script src="js/sdk/password.js"></script>
 
     <script src="js/protocol/search.js"></script>
     <script src="js/cache.js"></script>
@@ -32,6 +34,8 @@
             document.writeln('<p>' + str + '</p>');
         }
 
+        var facebook = Facebook.getInstance();
+
         !function (ns) {
             'use strict';
 
@@ -49,7 +53,12 @@
             var name2 = Facebook.getInstance().getNickname(receiver);
 
             Log('sender: ', sender, ', nickname: ', name1);
+            Log('user: ', facebook.getUser(sender));
             Log('receiver: ', receiver, ', nickname: ', name2);
+            Log('user: ', facebook.getUser(receiver));
+
+            var gsp = facebook.getGroup(facebook.getIdentifier('gsp@pjKLrGZdnfnoZEQycbSjAUCkVG4ATzK9hs'));
+            Log('gsp: ', gsp);
 
             //
             //  Message
@@ -71,6 +80,74 @@
             Log('instant msg: ', msg);
 
         }(DIMP);
+
+        !function (ns) {
+
+            Log('-------- Register --------');
+
+            var NetworkType = ns.protocol.NetworkType;
+
+            var Register = ns.extension.Register;
+
+            // 1. create user
+            var userRegister = new Register();
+            var user = userRegister.createUser('moky', 'https://');
+            Log('user:', user.toString());
+            Log('meta: ', user.getMeta());
+            Log('profile: ', user.getProfile());
+
+            // 2. create group
+            var groupRegister = new Register(NetworkType.Polylogue);
+            var group = groupRegister.createGroup('DIM Group', user.identifier);
+            Log('group:', group);
+            Log('meta: ', group.getMeta());
+            Log('profile: ', group.getProfile());
+
+        }(DIMP);
+
+        !function (ns) {
+
+            Log('-------- Password --------');
+
+            var Base64 = ns.format.Base64;
+
+            var Password = ns.extension.Password;
+
+            //
+            //  Password
+            //
+
+            var text = 'Hello world!';
+            var password = '12345';
+            var expect = 'Ty9C/v1XVW8IWbNxgpdg8Q==';
+
+            var key1 = Password.generate(password);
+            var key2 = Password.generate(password);
+            Log('key1: ' + key1);
+            Log('key2: ' + key2);
+
+            if (key1.equals(key2)) {
+                Log('keys equal!');
+            } else {
+                Log('keys not equal!');
+            }
+
+            var data = (new ns.type.String(text)).getBytes();
+            var ciphertext = key1.encrypt(data);
+            var plaintext = key2.decrypt(ciphertext);
+
+            var base64 = Base64.encode(ciphertext);
+            var res = new ns.type.String(plaintext);
+            Log(text, ' -> ', base64, ' -> ', res);
+
+            if (base64 === expect) {
+                Log('AES ok!');
+            } else {
+                Log('AES error!');
+            }
+
+        }(DIMP);
+
     </script>
 </body>
 </html>
