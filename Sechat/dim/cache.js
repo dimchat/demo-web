@@ -1,5 +1,5 @@
 ;
-//! require <sdk/all.js>
+//! require <dimsdk.js>
 
 !function (ns) {
 

@@ -26,6 +26,8 @@ var facebook;
     text += '        broadcast <text>  - send broadcast message\n';
     text += '        exit              - terminate';
 
+    text = text.replace(/</g, '&lt;');
+    text = text.replace(/>/g, '&gt;');
     text = text.replace(/\n/g, '<br/>');
     text = text.replace(/\s/g, '&nbsp;');
 
