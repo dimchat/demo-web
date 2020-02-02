@@ -45,6 +45,8 @@
     var MetaCommand = ns.protocol.MetaCommand;
     var ProfileCommand = ns.protocol.ProfileCommand;
 
+    var Facebook = ns.Facebook;
+
     var Register = function (type) {
         if (type) {
             this.network = type;
@@ -62,7 +64,6 @@
      * @returns {User}
      */
     Register.prototype.createUser = function (name, avatar) {
-        var facebook = Facebook.getInstance();
         // 1. generate private key
         var key = this.generatePrivateKey();
         // 2. generate meta
@@ -73,6 +74,7 @@
         var profile = this.createProfile(identifier, {name: name, avatar: avatar});
         // 5. save private key, meta & profile in local storage
         //    don't forget to upload them onto the DIM station
+        var facebook = Facebook.getInstance();
         facebook.saveMeta(meta, identifier);
         facebook.savePrivateKey(key, identifier);
         facebook.saveProfile(profile);

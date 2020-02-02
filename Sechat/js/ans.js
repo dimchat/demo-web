@@ -1,27 +1,31 @@
 
 //! require <sdk/all.js>
 
-var AddressNameService;
-
 !function (ns) {
 
-    AddressNameService = function () {
-        ns.AddressNameService.call(this);
+    var AddressNameService = ns.AddressNameService;
+
+    var s_ans = null;
+    AddressNameService.getInstance = function () {
+        if (!s_ans) {
+            s_ans = new AddressNameService();
+        }
+        return s_ans;
     };
-    AddressNameService.inherits(ns.AddressNameService);
 
-    //
-    //  Overrides
-    //
-
+    // Overrides
     AddressNameService.prototype.getIdentifier = function () {
         // TODO: load ANS records from database
-        return ns.AddressNameService.prototype.getIdentifier.call();
+        return this.caches[name];
     };
 
+    // Overrides
     AddressNameService.prototype.save = function(name, identifier) {
         // TODO: save ANS record into database
         return true;
     };
+
+    //-------- namespace --------
+    ns.AddressNameService = AddressNameService;
 
 }(DIMP);

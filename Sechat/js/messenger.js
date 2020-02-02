@@ -3,8 +3,6 @@
 //! require 'cache.js'
 //! require 'facebook.js'
 
-var Messenger;
-
 !function (ns) {
 
     var SymmetricKey = ns.crypto.SymmetricKey;
@@ -16,27 +14,24 @@ var Messenger;
     var MuteCommand = ns.protocol.MuteCommand;
     var BlockCommand = ns.protocol.BlockCommand;
 
-    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
 
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
 
-    Messenger = function () {
-        ns.Messenger.call(this);
-        this.entityDelegate = Facebook.getInstance();
-        this.cipherKeyDelegate = KeyStore.getInstance();
+    var Facebook = ns.Facebook;
+    var KeyStore = ns.KeyStore;
 
-        this.server = null; // current station connected
-    };
-    Messenger.inherits(ns.Messenger);
+    var Messenger = ns.Messenger;
 
     var s_messenger = null;
-
     Messenger.getInstance = function () {
         if (!s_messenger) {
             s_messenger = new Messenger();
+            s_messenger.entityDelegate = Facebook.getInstance();
+            s_messenger.cipherKeyDelegate = KeyStore.getInstance();
+            s_messenger.server = null; // current station connected
         }
         return s_messenger;
     };
@@ -90,8 +85,9 @@ var Messenger;
     };
 
     // Override
+    var process = Messenger.prototype.process;
     Messenger.prototype.process = function (msg) {
-        var res = ns.Messenger.prototype.process.call(this, msg);
+        var res = process.call(this, msg);
         if (!res) {
             // respond nothing
             return null;
@@ -257,5 +253,8 @@ var Messenger;
         this.server.handshake(null);
         return true;
     };
+
+    //-------- namespace --------
+    ns.Messenger = Messenger;
 
 }(DIMP);

@@ -34,7 +34,8 @@
             document.writeln('<p>' + str + '</p>');
         }
 
-        var facebook = Facebook.getInstance();
+        var facebook = DIMP.Facebook.getInstance();
+        var messenger = DIMP.Messenger.getInstance();
 
         !function (ns) {
             'use strict';
@@ -49,8 +50,8 @@
 
             var sender = Immortals.HULK;
             var receiver = Immortals.MOKI;
-            var name1 = Facebook.getInstance().getNickname(sender);
-            var name2 = Facebook.getInstance().getNickname(receiver);
+            var name1 = facebook.getNickname(sender);
+            var name2 = facebook.getNickname(receiver);
 
             Log('sender: ', sender, ', nickname: ', name1);
             Log('user: ', facebook.getUser(sender));
@@ -64,8 +65,15 @@
             //  Message
             //
 
-            var group = new ID('Group-Naruto@7ThVZeDuQAdG3eSDF6NeFjMDPjKN5SbrnM');
+            var group = ID.EVERYONE;
             Log('group: ', group);
+            Log('founder: ', facebook.getFounder(group));
+            Log('owner: ', facebook.getOwner(group));
+
+            group = new ID('Group-Naruto@7ThVZeDuQAdG3eSDF6NeFjMDPjKN5SbrnM');
+            Log('group: ', group);
+            Log('founder: ', facebook.getFounder(group));
+            Log('owner: ', facebook.getOwner(group));
 
             var env = Envelope.newEnvelope(sender, receiver);
             Log('envelope: ', env);

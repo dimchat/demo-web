@@ -2,24 +2,21 @@
 //! require <sdk/all.js>
 //! require 'ans.js'
 
-var Facebook;
-
 !function (ns) {
 
-    Facebook = function () {
-        ns.Facebook.call(this);
-        // ANS
-        this.ans = new AddressNameService();
-        // built-in accounts
-        this.immortals = new ns.Immortals();
-    };
-    Facebook.inherits(ns.Facebook);
+    var AddressNameService = ns.AddressNameService;
+    var Immortals = ns.Immortals;
+
+    var Facebook = ns.Facebook;
 
     var s_facebook = null;
-
     Facebook.getInstance = function () {
         if (!s_facebook) {
             s_facebook = new Facebook();
+            // ANS
+            s_facebook.ans = AddressNameService.getInstance();
+            // built-in accounts
+            s_facebook.immortals = new Immortals();
         }
         return s_facebook;
     };
@@ -35,10 +32,6 @@ var Facebook;
     };
 
     // Override
-    Facebook.prototype.getCurrentUser = function() {
-        return ns.Facebook.prototype.getCurrentUser.call(this);
-    };
-
     Facebook.prototype.setCurrentUser = function(user) {
         // TODO: update local users into database
     };
@@ -228,15 +221,20 @@ var Facebook;
     //
 
     // Override
+    var getFounder = Facebook.prototype.getFounder;
     Facebook.prototype.getFounder = function (group) {
         // TODO: get from database
-        return ns.Facebook.prototype.getFounder.call(this, group);
+        return getFounder.call(this, group);
     };
 
     // Override
+    var getOwner = Facebook.prototype.getOwner;
     Facebook.prototype.getOwner = function (group) {
         // TODO: get from database
-        return ns.Facebook.prototype.getOwner.call(this, group);
+        return getOwner.call(this, group);
     };
+
+    //-------- namespace --------
+    ns.Facebook = Facebook;
 
 }(DIMP);
