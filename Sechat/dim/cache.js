@@ -1,4 +1,4 @@
-
+;
 //! require <sdk/all.js>
 
 !function (ns) {

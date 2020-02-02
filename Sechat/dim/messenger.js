@@ -1,4 +1,4 @@
-
+;
 //! require <sdk/all.js>
 //! require 'cache.js'
 //! require 'facebook.js'

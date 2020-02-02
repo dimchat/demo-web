@@ -1,4 +1,4 @@
-
+;
 //! require <sdk/all.js>
 
 !function (ns) {
@@ -14,13 +14,21 @@
     };
 
     // Overrides
-    AddressNameService.prototype.getIdentifier = function () {
+    var getIdentifier = AddressNameService.prototype.getIdentifier;
+    AddressNameService.prototype.getIdentifier = function (name) {
+        var identifier = getIdentifier.call(this, name);
+        if (identifier) {
+            return identifier;
+        }
         // TODO: load ANS records from database
-        return this.caches[name];
+        return null;
     };
 
     // Overrides
     AddressNameService.prototype.save = function(name, identifier) {
+        if (!this.cache(name, identifier)) {
+            return false;
+        }
         // TODO: save ANS record into database
         return true;
     };

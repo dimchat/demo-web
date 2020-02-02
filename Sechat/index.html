@@ -1,161 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DIMP Client" />
+    <meta name="author" content="Albert Moky" />
     <title>DIM Demo</title>
 
-    <script src="js/3rd/crypto-js/core.js"></script>
-    <script src="js/3rd/crypto-js/cipher-core.js"></script>
-    <script src="js/3rd/crypto-js/aes.js"></script>
-    <script src="js/3rd/crypto-js/md5.js"></script>
-    <script src="js/3rd/crypto-js/sha256.js"></script>
-    <script src="js/3rd/crypto-js/ripemd160.js"></script>
+    <!--  third party cryptography libs  -->
+    <script src="dim/sdk/3rd/crypto-js/core.js"></script>
+    <script src="dim/sdk/3rd/crypto-js/cipher-core.js"></script>
+    <script src="dim/sdk/3rd/crypto-js/aes.js"></script>
+    <script src="dim/sdk/3rd/crypto-js/md5.js"></script>
+    <script src="dim/sdk/3rd/crypto-js/sha256.js"></script>
+    <script src="dim/sdk/3rd/crypto-js/ripemd160.js"></script>
+    <script src="dim/sdk/3rd/jsencrypt.js"></script>
 
-    <script src="js/3rd/jsencrypt.js"></script>
+    <!--  DIM SDK  -->
+    <script src="dim/sdk/dimsdk.js"></script>
+    <script src="dim/extension/register.js"></script>
+    <script src="dim/extension/password.js"></script>
+    <script src="dim/protocol/search.js"></script>
 
-    <script src="js/sdk/all.js"></script>
-    <script src="js/sdk/register.js"></script>
-    <script src="js/sdk/password.js"></script>
+    <!--  DIM Client  -->
+    <script src="dim/cache.js"></script>
+    <script src="dim/ans.js"></script>
+    <script src="dim/facebook.js"></script>
+    <script src="dim/messenger.js"></script>
 
-    <script src="js/protocol/search.js"></script>
-    <script src="js/cache.js"></script>
-    <script src="js/ans.js"></script>
-    <script src="js/facebook.js"></script>
-    <script src="js/messenger.js"></script>
+    <!--  UI: Console  -->
+    <script type="text/javascript" src="console/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="console/underscore-1.8.2.min.js"></script>
+    <link href="css/index.css" rel="stylesheet" type="text/css" />
+<!--    <script src="console/jquery-3.2.1.min.js"></script>-->
+<!--    <script src="console/jquery.terminal.min.js"></script>-->
+<!--    <link href="console/jquery.terminal.min.css" rel="stylesheet" type="text/css" />-->
 </head>
 <body>
-    <script>
-        function Log() {
-            var str = '';
-            for (var i = 0; i < arguments.length; ++i) {
-                str += arguments[i] + '';
-            }
-            str = str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            document.writeln('<p>' + str + '</p>');
-        }
-
-        var facebook = DIMP.Facebook.getInstance();
-        var messenger = DIMP.Messenger.getInstance();
-
-        !function (ns) {
-            'use strict';
-
-            var ID = ns.ID;
-            var Envelope = ns.Envelope;
-            var InstantMessage = ns.InstantMessage;
-            var QueryCommand = ns.protocol.group.QueryCommand;
-            var SearchCommand = ns.protocol.SearchCommand;
-
-            var Immortals = ns.Immortals;
-
-            var sender = Immortals.HULK;
-            var receiver = Immortals.MOKI;
-            var name1 = facebook.getNickname(sender);
-            var name2 = facebook.getNickname(receiver);
-
-            Log('sender: ', sender, ', nickname: ', name1);
-            Log('user: ', facebook.getUser(sender));
-            Log('receiver: ', receiver, ', nickname: ', name2);
-            Log('user: ', facebook.getUser(receiver));
-
-            var gsp = facebook.getGroup(facebook.getIdentifier('gsp@pjKLrGZdnfnoZEQycbSjAUCkVG4ATzK9hs'));
-            Log('gsp: ', gsp);
-
-            //
-            //  Message
-            //
-
-            var group = ID.EVERYONE;
-            Log('group: ', group);
-            Log('founder: ', facebook.getFounder(group));
-            Log('owner: ', facebook.getOwner(group));
-
-            group = new ID('Group-Naruto@7ThVZeDuQAdG3eSDF6NeFjMDPjKN5SbrnM');
-            Log('group: ', group);
-            Log('founder: ', facebook.getFounder(group));
-            Log('owner: ', facebook.getOwner(group));
-
-            var env = Envelope.newEnvelope(sender, receiver);
-            Log('envelope: ', env);
-
-            var query = new QueryCommand(group);
-            Log('query group info: ', query);
-
-            var search = new SearchCommand('moky');
-            Log('search command: ', search);
-
-            var msg = InstantMessage.newMessage(search, env);
-            Log('instant msg: ', msg);
-
-        }(DIMP);
-
-        !function (ns) {
-
-            Log('-------- Register --------');
-
-            var NetworkType = ns.protocol.NetworkType;
-
-            var Register = ns.extension.Register;
-
-            // 1. create user
-            var userRegister = new Register();
-            var user = userRegister.createUser('moky', 'https://');
-            Log('user:', user.toString());
-            Log('meta: ', user.getMeta());
-            Log('profile: ', user.getProfile());
-
-            // 2. create group
-            var groupRegister = new Register(NetworkType.Polylogue);
-            var group = groupRegister.createGroup('DIM Group', user.identifier);
-            Log('group:', group);
-            Log('meta: ', group.getMeta());
-            Log('profile: ', group.getProfile());
-
-        }(DIMP);
-
-        !function (ns) {
-
-            Log('-------- Password --------');
-
-            var Base64 = ns.format.Base64;
-
-            var Password = ns.extension.Password;
-
-            //
-            //  Password
-            //
-
-            var text = 'Hello world!';
-            var password = '12345';
-            var expect = 'Ty9C/v1XVW8IWbNxgpdg8Q==';
-
-            var key1 = Password.generate(password);
-            var key2 = Password.generate(password);
-            Log('key1: ' + key1);
-            Log('key2: ' + key2);
-
-            if (key1.equals(key2)) {
-                Log('keys equal!');
-            } else {
-                Log('keys not equal!');
-            }
-
-            var data = (new ns.type.String(text)).getBytes();
-            var ciphertext = key1.encrypt(data);
-            var plaintext = key2.decrypt(ciphertext);
-
-            var base64 = Base64.encode(ciphertext);
-            var res = new ns.type.String(plaintext);
-            Log(text, ' -> ', base64, ' -> ', res);
-
-            if (base64 === expect) {
-                Log('AES ok!');
-            } else {
-                Log('AES error!');
-            }
-
-        }(DIMP);
-
-    </script>
+<div id="panel-shell">
+    <div class="output-view">
+        Welcome to DIM network! Type "help" for more information.
+    </div><br />
+    <div class="shell-view">
+        <span class="prompt">$</span>&nbsp;<span class="input"><span class="left"></span><span class="cursor blink">&nbsp;</span><span class="right"></span></span>
+    </div>
+    <script src="console/console.js"></script>
+    <script src="console/app.js"></script>
+    <script src="js/index.js"></script>
+</div>
 </body>
 </html>

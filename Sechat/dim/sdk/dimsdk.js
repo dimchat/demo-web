@@ -4462,9 +4462,11 @@ if (typeof DIMP !== "object") {
             return false
         }
         if (identifier) {
-            this.caches[name] = identifier
+            this.caches[name] = identifier;
+            return true;
         } else {
-            delete this.caches[name]
+            delete this.caches[name];
+            return false
         }
     };
     AddressNameService.prototype.save = function(name, identifier) {
