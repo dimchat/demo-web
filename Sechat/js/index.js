@@ -1,6 +1,7 @@
 ;
 
 var facebook;
+var messenger;
 
 !function (ns) {
 
@@ -10,6 +11,8 @@ var facebook;
 
     facebook.ans.save('moki', Immortals.MOKI);
     facebook.ans.save('hulk', Immortals.HULK);
+
+    messenger = DIMP.Messenger.getInstance();
 
 }(DIMP);
 
