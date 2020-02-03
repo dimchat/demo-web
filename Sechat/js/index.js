@@ -1,20 +1,3 @@
-;
-
-var facebook;
-var messenger;
-
-!function (ns) {
-
-    var Immortals = ns.Immortals;
-
-    facebook = DIMP.Facebook.getInstance();
-
-    facebook.ans.save('moki', Immortals.MOKI);
-    facebook.ans.save('hulk', Immortals.HULK);
-
-    messenger = DIMP.Messenger.getInstance();
-
-}(DIMP);
 
 !function () {
 
@@ -40,11 +23,29 @@ var messenger;
 
 }();
 
-!function () {
+!function (ns) {
+
+    var Envelope = ns.Envelope;
+    var HandshakeCommand = ns.protocol.HandshakeCommand;
+
+    var InstantMessage = ns.InstantMessage;
+
+    var Immortals = ns.Immortals;
+
+    var cmd = HandshakeCommand.start();
+    var env = Envelope.newEnvelope(Immortals.MOKI, station.identifier);
+    var msg = InstantMessage.newMessage(cmd, env);
+
+    msg = messenger.encryptMessage(msg);
+    msg = messenger.signMessage(msg);
+    var json = msg.toJSON();
+    webSocket.send(json);
 
     app.doLogin = function (name) {
         var identifier = facebook.getIdentifier(name);
         return 'login ' + identifier;
     }
 
-}();
+
+
+}(DIMP);
