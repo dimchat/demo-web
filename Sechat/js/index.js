@@ -39,7 +39,21 @@
     msg = messenger.encryptMessage(msg);
     msg = messenger.signMessage(msg);
     var json = msg.toJSON();
-    webSocket.send(json);
+
+    var StarDelegate = ns.stargate.StarDelegate;
+    var SocketClient = ns.plugins.SocketClient;
+
+    var delegate = new StarDelegate();
+    delegate.onReceived = function (data, star) {
+        console.log('received data: ' + data);
+    };
+    delegate.onStatusChanged = function (status, star) {
+        console.log('status: ' + status);
+    };
+    var socket = new SocketClient(delegate);
+    socket.launch({host: station.host, port: station.port});
+    socket.send(json, delegate);
+
 
     app.doLogin = function (name) {
         var identifier = facebook.getIdentifier(name);

@@ -35,7 +35,11 @@ var station;
     meta = Meta.getInstance(meta);
     facebook.saveMeta(meta, sid);
 
-    station = new Station(sid, '127.0.0.1', 9394);
+    var host = '127.0.0.1';
+    // var host = '134.175.87.98'; // gz
+    var port = 9394;
+
+    station = new Station(sid, host, port);
     facebook.cacheUser(station);
 
     messenger = DIMP.Messenger.getInstance();
