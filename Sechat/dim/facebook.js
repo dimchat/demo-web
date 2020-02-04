@@ -3,9 +3,13 @@
 //! require 'ans.js'
 
 !function (ns) {
+    'use strict';
 
     var AddressNameService = ns.AddressNameService;
     var Immortals = ns.Immortals;
+
+    var Table = ns.db.Table;
+    var UserTable = ns.db.UserTable;
 
     var Facebook = ns.Facebook;
 
@@ -17,6 +21,8 @@
             s_facebook.ans = AddressNameService.getInstance();
             // built-in accounts
             s_facebook.immortals = new Immortals();
+            // local users
+            s_facebook.users = [];
         }
         return s_facebook;
     };
@@ -27,20 +33,35 @@
 
     // Override
     Facebook.prototype.getLocalUsers = function() {
-        // TODO: get local users from database
-        return null;
+        if (!this.users) {
+            var db = Table.create(UserTable);
+            var list = db.allUsers();
+            var users = [];
+            for (var i = 0; i < list.length; ++i) {
+                users.push(this.getUser(list[i]));
+            }
+            this.users = users;
+        }
+        return this.users;
     };
 
     // Override
     Facebook.prototype.setCurrentUser = function(user) {
-        // TODO: update local users into database
+        var db = Table.create(UserTable);
+        db.setCurrentUser(user.identifier);
+        this.users = null;
     };
 
     Facebook.prototype.addUser = function(user) {
-        // TODO: update local users into database
+        var db = Table.create(UserTable);
+        db.addUser(user.identifier);
+        this.users = null;
     };
     Facebook.prototype.removeUser = function(user) {
-        // TODO: update local users into database
+        var db = Table.create(UserTable);
+        db.removeUser(user.identifier);
+        this.users = null;
+
     };
 
     Facebook.prototype.getUsername = function (identifier) {

@@ -33,6 +33,7 @@
 //! require <dimp.js>
 
 !function (ns) {
+    'use strict';
 
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var PrivateKey = ns.crypto.PrivateKey;
@@ -46,6 +47,7 @@
     var ProfileCommand = ns.protocol.ProfileCommand;
 
     var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
 
     var Register = function (type) {
         if (type) {

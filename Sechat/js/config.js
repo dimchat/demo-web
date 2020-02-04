@@ -3,12 +3,14 @@
 var facebook;
 var messenger;
 
-var station;
+var server;
 
 !function (ns) {
+    'use strict';
 
     var Meta = ns.Meta;
-    var Station = ns.Station;
+
+    var Server = ns.network.Server;
 
     var Immortals = ns.Immortals;
 
@@ -39,9 +41,14 @@ var station;
     // var host = '134.175.87.98'; // gz
     var port = 9394;
 
-    station = new Station(sid, host, port);
-    facebook.cacheUser(station);
+    server = new Server(sid, host, port);
+    facebook.cacheUser(server);
 
     messenger = DIMP.Messenger.getInstance();
+    messenger.delegate = server;
+    messenger.setContext('server', server);
+    server.messenger = messenger;
+
+    server.start();
 
 }(DIMP);

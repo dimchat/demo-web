@@ -30,61 +30,44 @@
 // =============================================================================
 //
 
-//! require <dimp.js>
+//! require <dimsdk.js>
 
 !function (ns) {
     'use strict';
 
-    var Base64 = ns.format.Base64;
-    var SHA256 = ns.digest.SHA256;
+    var StationDelegate = function () {
+    };
 
-    var SymmetricKey = ns.crypto.SymmetricKey;
+    /**
+     *  Send data package to station success
+     *
+     * @param data
+     * @param server
+     */
+    StationDelegate.prototype.didSendPackage = function (data, server) {
+        console.assert(data !== null, 'data empty');
+        console.assert(server !== null, 'server empty');
+        console.assert(false, 'implement me!');
+    };
 
-    var Password = {
-
-        KEY_SIZE: 32,
-        BLOCK_SIZE: 16,
-
-        generate: function (string) {
-            var str = new ns.type.String(string);
-            var data = str.getBytes('UTF-8');
-            var digest = SHA256.digest(data);
-            var i;
-            // AES key data
-            var len = Password.KEY_SIZE - data.length;
-            if (len > 0) {
-                // format: {digest_prefix}+{pwd_data}
-                var merged = [];
-                for (i = 0; i < len; ++i) {
-                    merged.push(digest[i]);
-                }
-                for (i = 0; i < data.length; ++i) {
-                    merged.push(data[i]);
-                }
-                data = merged;
-            } else if (len < 0) {
-                data = digest;
-            }
-            // AES iv
-            var iv = [];
-            i = 256 / 8 - Password.BLOCK_SIZE;
-            for (; i < Password.KEY_SIZE; ++i) {
-                iv.push(digest[i]);
-            }
-            // generate AES key
-            var key = {
-                'algorithm': SymmetricKey.AES,
-                'data': Base64.encode(data),
-                'iv': Base64.encode(iv)
-            };
-            return SymmetricKey.getInstance(key);
-        }
+    /**
+     *  Failed to send data package to station
+     *
+     * @param error
+     * @param data
+     * @param server
+     */
+    StationDelegate.prototype.didFailToSendPackage = function (error, data, server) {
+        console.assert(error !== null, 'error empty');
+        console.assert(data !== null, 'data empty');
+        console.assert(server !== null, 'server empty');
+        console.assert(false, 'implement me!');
     };
 
     //-------- namespace --------
-    if (typeof ns.extension !== 'object') {
-        ns.extension = {}
+    if (typeof ns.network !== 'object') {
+        ns.network = {};
     }
-    ns.extension.Password = Password;
+    ns.network.StationDelegate = StationDelegate;
 
 }(DIMP);

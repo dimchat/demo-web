@@ -1,5 +1,7 @@
+;
 
 !function () {
+    'use strict';
 
     var text = 'Usage:\n';
     text += '        login <ID>        - switch user (must say "hello" twice after login)\n';
@@ -24,42 +26,14 @@
 }();
 
 !function (ns) {
-
-    var Envelope = ns.Envelope;
-    var HandshakeCommand = ns.protocol.HandshakeCommand;
-
-    var InstantMessage = ns.InstantMessage;
-
-    var Immortals = ns.Immortals;
-
-    var cmd = HandshakeCommand.start();
-    var env = Envelope.newEnvelope(Immortals.MOKI, station.identifier);
-    var msg = InstantMessage.newMessage(cmd, env);
-
-    msg = messenger.encryptMessage(msg);
-    msg = messenger.signMessage(msg);
-    var json = msg.toJSON();
-
-    var StarDelegate = ns.stargate.StarDelegate;
-    var SocketClient = ns.plugins.SocketClient;
-
-    var delegate = new StarDelegate();
-    delegate.onReceived = function (data, star) {
-        console.log('received data: ' + data);
-    };
-    delegate.onStatusChanged = function (status, star) {
-        console.log('status: ' + status);
-    };
-    var socket = new SocketClient(delegate);
-    socket.launch({host: station.host, port: station.port});
-    socket.send(json, delegate);
-
+    'use strict';
 
     app.doLogin = function (name) {
         var identifier = facebook.getIdentifier(name);
+        var user = facebook.getUser(identifier);
+        facebook.setCurrentUser(user);
+        server.currentUser = user;
         return 'login ' + identifier;
     }
 
-
-
-}(DIMP);
+}();

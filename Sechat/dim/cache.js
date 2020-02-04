@@ -2,6 +2,7 @@
 //! require <dimsdk.js>
 
 !function (ns) {
+    'use strict';
 
     var KeyStore = ns.KeyStore;
 

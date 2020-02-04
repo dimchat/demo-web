@@ -4,6 +4,7 @@
 //! require 'facebook.js'
 
 !function (ns) {
+    'use strict';
 
     var SymmetricKey = ns.crypto.SymmetricKey;
     var ID = ns.ID;
