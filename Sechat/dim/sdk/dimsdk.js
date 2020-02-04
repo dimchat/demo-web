@@ -650,7 +650,11 @@ if (typeof DIMP !== "object") {
                 }
             }
             obj.call(this);
-            this.value = value;
+            if (value instanceof enumeration) {
+                this.value = value.value;
+            } else {
+                this.value = value;
+            }
             this.alias = alias
         };
         enumeration.inherits(obj);
@@ -3761,8 +3765,16 @@ if (typeof DIMP !== "object") {
         return encode_key(key, "-----BEGIN RSA PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----")
     };
     var decode_public = function(pem) {
+        var cipher = new JSEncrypt();
+        cipher.setPublicKey(pem);
+        var e = cipher.key.e;
         var data = decode_key(pem, "-----BEGIN PUBLIC KEY-----", "-----END PUBLIC KEY-----");
         if (data) {
+            if (e === 0) {
+                // FIXME: PKCS#1 -> X.509
+                var header = [48, -127, -97, 48, 13, 6, 9, 42, -122, 72, -122, -9, 13, 1, 1, 1, 5, 0, 3, -127, -115, 0];
+                data = header.concat(data);
+            }
             return data
         }
         if (pem.indexOf("PRIVATE KEY") > 0) {
@@ -6166,12 +6178,12 @@ if (typeof StarGate.plugins !== "object") {
 }(StarGate);
 ! function(ns) {
     var Storage = {
-        ROOT: "/dim/file",
+        ROOT: "storage",
         exists: function(path) {
             return !!this.loadText(path)
         },
         loadText: function(path) {
-            return this.storage.getItem(this.ROOT + "/" + path)
+            return this.storage.getItem(this.ROOT + "." + path)
         },
         loadData: function(path) {
             var base64 = this.loadText(path);

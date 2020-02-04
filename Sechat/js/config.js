@@ -3,6 +3,8 @@
 var facebook;
 var messenger;
 
+var notificationCenter;
+
 var server;
 
 !function (ns) {
@@ -50,5 +52,16 @@ var server;
     server.messenger = messenger;
 
     server.start();
+
+}(DIMP);
+
+var kNotificationHandshakeAccepted = 'HandshakeAccepted';
+
+!function (ns) {
+    'use strict';
+
+    var NotificationCenter = ns.stargate.NotificationCenter;
+
+    notificationCenter = NotificationCenter.getInstance();
 
 }(DIMP);

@@ -1,6 +1,6 @@
 ;
 
-!function () {
+!function (ns) {
     'use strict';
 
     var text = 'Usage:\n';
@@ -23,17 +23,90 @@
         return text;
     };
 
-}();
+}(DIMP);
 
 !function (ns) {
     'use strict';
 
+    app.onReceiveNotification = function (notification) {
+        var name = notification.name;
+        if (name === kNotificationHandshakeAccepted) {
+            app.write('Handshake accepted!');
+        }
+    };
+
+    notificationCenter.addObserver(app, kNotificationHandshakeAccepted);
+
+}(DIMP);
+
+!function (ns) {
+    'use strict';
+
+    var TextContent = ns.protocol.TextContent;
+
+    var StarStatus = ns.stargate.StarStatus;
+
+    var check_connection = function () {
+        var status = server.getStatus();
+        if (status.equals(StarStatus.Connected)) {
+            // connected
+            return null;
+        } else if (status.equals(StarStatus.Error)) {
+            return 'Connecting ...';
+        } else if (status.equals(StarStatus.Error)) {
+            return 'Connection error!';
+        }
+        return 'Connect to a DIM station first.';
+    };
+
     app.doLogin = function (name) {
+        var res = check_connection();
+        if (res) {
+            return res;
+        }
         var identifier = facebook.getIdentifier(name);
+        if (!identifier) {
+            return 'user error: ' + name;
+        }
         var user = facebook.getUser(identifier);
         facebook.setCurrentUser(user);
         server.currentUser = user;
-        return 'login ' + identifier;
-    }
+        return 'trying to login: ' + identifier + ' ...';
+    };
 
-}();
+    app.doCall = function (name) {
+        var identifier = facebook.getIdentifier(name);
+        if (!identifier) {
+            return 'user error: ' + name;
+        }
+        var meta = facebook.getMeta(identifier);
+        if (!meta) {
+            return 'meta not found: ' + identifier;
+        }
+        app.receiver = identifier;
+        var nickname = facebook.getNickname(identifier);
+        return 'talking with ' + nickname + ' now!';
+    };
+
+    app.doSend = function (text) {
+        var res = check_connection();
+        if (res) {
+            return res;
+        }
+        var user = server.currentUser;
+        if (!user) {
+            return 'login first';
+        }
+        var receiver = app.receiver;
+        if (!receiver) {
+            return 'please set a recipient';
+        }
+        var content = new TextContent(text);
+        if (messenger.sendContent(content, receiver)) {
+            return 'message sent!';
+        } else {
+            return 'failed to send message.';
+        }
+    };
+
+}(DIMP);

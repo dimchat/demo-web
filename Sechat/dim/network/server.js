@@ -153,6 +153,8 @@
             console.log('handshake accepted for user: ' + this.getCurrentUser());
             this.session = session;
             // TODO: broadcast profile to DIM network
+            notificationCenter.postNotification(kNotificationHandshakeAccepted,
+                this, {session: session});
         } else {
             console.log('handshake again with session: ' + session);
         }
