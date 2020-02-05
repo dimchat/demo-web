@@ -69,7 +69,7 @@
         // 1. generate private key
         var key = this.generatePrivateKey();
         // 2. generate meta
-        var meta = this.generateMeta("user");
+        var meta = this.generateMeta("web-demo");
         // 3. generate ID
         var identifier = this.generateIdentifier(meta, NetworkType.Main);
         // 4. generate profile

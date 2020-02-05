@@ -181,8 +181,14 @@
             };
         }
 
-        this.star = new SocketClient(this);
-        this.star.launch(options);
+        var socket = new SocketClient(this);
+        var onConnected = socket.onConnected;
+        socket.onConnected = function () {
+            onConnected.call(this);
+            notificationCenter.postNotification(kNotificationStationConnected, this, options);
+        };
+        socket.launch(options);
+        this.star = socket;
 
         this.fsm.start();
 

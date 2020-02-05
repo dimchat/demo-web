@@ -9,6 +9,9 @@
     var Immortals = ns.Immortals;
 
     var Table = ns.db.Table;
+    var PrivateTable = ns.db.PrivateTable;
+    var MetaTable = ns.db.MetaTable;
+    var ProfileTable = ns.db.ProfileTable;
     var UserTable = ns.db.UserTable;
 
     var Facebook = ns.Facebook;
@@ -22,7 +25,7 @@
             // built-in accounts
             s_facebook.immortals = new Immortals();
             // local users
-            s_facebook.users = [];
+            s_facebook.users = null;
         }
         return s_facebook;
     };
@@ -94,7 +97,7 @@
     Facebook.prototype.getNumberString = function (identifier) {
         var number = identifier.getNumber();
         var string = '0000000000' + number;
-        string = string.substring(str.length - 10);
+        string = string.substring(string.length - 10);
         string = string.substring(0, 3) + "-" + string.substring(3, 6) + "-" + string.substring(6);
         return string;
     };
@@ -120,14 +123,14 @@
             // private key not match meta.key
             return false;
         }
-        // TODO: save private key for user
+        var db = Table.create(PrivateTable);
+        db.savePrivateKey(key, identifier);
         return true;
     };
     // Override
     Facebook.prototype.loadPrivateKey = function (identifier) {
-        var key = null;
-        // TODO: load private key for user
-
+        var db = Table.create(PrivateTable);
+        var key = db.loadPrivateKey(identifier);
         if (!key && identifier.getType().isPerson()) {
             // try immortals
             key = this.immortals.getPrivateKeyForSignature(identifier);
@@ -145,7 +148,8 @@
             // meta not match ID
             return false;
         }
-        // TODO: save meta into database
+        var db = Table.create(MetaTable);
+        db.saveMeta(meta, identifier);
         return true;
     };
     // Override
@@ -154,9 +158,8 @@
             // broadcast ID has not meta
             return null;
         }
-        var meta = null;
-        // TODO: load meta from database
-
+        var db = Table.create(MetaTable);
+        var meta = db.loadMeta(identifier);
         if (!meta && identifier.getType().isPerson()) {
             meta = this.immortals.getMeta(identifier);
             if (meta) {
@@ -173,17 +176,25 @@
 
     // Override
     Facebook.prototype.saveProfile = function(profile, identifier) {
+        if (!identifier) {
+            identifier = profile.getIdentifier();
+            identifier = this.getIdentifier(identifier);
+            if (!identifier) {
+                throw Error('profile ID error: ' + identifier);
+            }
+        }
         if (!this.cacheProfile(profile, identifier)) {
             // profile's signature not match
             return false;
         }
-        // TODO: save profile into database
+        var db = Table.create(ProfileTable);
+        db.saveProfile(profile, identifier);
         return true;
     };
     // Override
     Facebook.prototype.loadProfile = function(identifier) {
-        var profile = null;
-        // TODO: load profile from database
+        var db = Table.create(ProfileTable);
+        var profile = db.loadProfile(identifier);
         if (!profile && identifier.getType().isPerson()) {
             var tai = this.immortals.getProfile(identifier);
             if (tai) {

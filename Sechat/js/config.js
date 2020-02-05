@@ -51,10 +51,9 @@ var server;
     messenger.setContext('server', server);
     server.messenger = messenger;
 
-    server.start();
-
 }(DIMP);
 
+var kNotificationStationConnected = 'StationConnected';
 var kNotificationHandshakeAccepted = 'HandshakeAccepted';
 
 !function (ns) {

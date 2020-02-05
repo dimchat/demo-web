@@ -7,8 +7,9 @@
 
     var User = ns.User;
 
-    var Table = ns.db.Table;
     var Facebook = ns.Facebook;
+
+    var Table = ns.db.Table;
 
     var save_users = function (list) {
         return Table.save(list, UserTable);

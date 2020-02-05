@@ -3,6 +3,49 @@
 !function (ns) {
     'use strict';
 
+    var Register = ns.extension.Register;
+
+    var login = function () {
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            var reg = new Register();
+            user = reg.createUser('Anonymous');
+            if (user) {
+                facebook.setCurrentUser(user);
+            }
+        }
+        if (!user) {
+            return false;
+        }
+        console.log('current user: ' + user);
+        var nickname = facebook.getNickname(user.identifier);
+        var number = facebook.getNumberString(user.identifier);
+        app.write('Current user: ' + nickname + ' (' + number + ') ' + user.identifier);
+        app.doLogin(user.identifier);
+        return true;
+    };
+
+    app.onReceiveNotification = function (notification) {
+        var name = notification.name;
+        if (name === kNotificationHandshakeAccepted) {
+            app.write('Handshake accepted!');
+        } else if (name === kNotificationStationConnected) {
+            app.write('Station connected.');
+            login();
+        }
+    };
+
+    notificationCenter.addObserver(app, kNotificationHandshakeAccepted);
+    notificationCenter.addObserver(app, kNotificationStationConnected);
+
+    app.write('Connecting to ' + server.host + ':' + server.port + " ...");
+    server.start();
+
+}(DIMP);
+
+!function (ns) {
+    'use strict';
+
     var text = 'Usage:\n';
     text += '        login <ID>        - switch user (must say "hello" twice after login)\n';
     text += '        logout            - clear session\n';
@@ -22,20 +65,6 @@
     app.help = function (cmd) {
         return text;
     };
-
-}(DIMP);
-
-!function (ns) {
-    'use strict';
-
-    app.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        if (name === kNotificationHandshakeAccepted) {
-            app.write('Handshake accepted!');
-        }
-    };
-
-    notificationCenter.addObserver(app, kNotificationHandshakeAccepted);
 
 }(DIMP);
 

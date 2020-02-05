@@ -4785,7 +4785,8 @@ if (typeof DIMP !== "object") {
                 throw Error("profile ID error: " + profile)
             }
         }
-        this.profileMap[identifier] = profile
+        this.profileMap[identifier] = profile;
+        return true
     };
     Facebook.prototype.saveProfile = function(profile, identifier) {
         console.assert(profile !== null, "profile empty");
@@ -6210,13 +6211,16 @@ if (typeof StarGate.plugins !== "object") {
             return DIMP.format.JSON.decode(json)
         },
         remove: function(path) {
-            this.saveText(null, path)
+            this.saveText(null, path);
+            return true
         },
         saveText: function(text, path) {
             if (text) {
-                this.storage.setItem(this.ROOT + "." + path, text)
+                this.storage.setItem(this.ROOT + "." + path, text);
+                return true
             } else {
-                this.storage.removeItem(this.ROOT + "." + path)
+                this.storage.removeItem(this.ROOT + "." + path);
+                return false
             }
         },
         saveData: function(data, path) {
@@ -6224,14 +6228,14 @@ if (typeof StarGate.plugins !== "object") {
             if (data) {
                 base64 = DIMP.format.Base64.encode(data)
             }
-            this.saveText(base64, path)
+            return this.saveText(base64, path)
         },
         saveJSON: function(container, path) {
             var json = null;
             if (container) {
                 json = DIMP.format.JSON.encode(container)
             }
-            this.saveText(json, path)
+            return this.saveText(json, path)
         }
     };
     Storage.storage = window.localStorage;
