@@ -65,6 +65,7 @@
         var fsm = new StateMachine();
         fsm.server = this;
         fsm.delegate = this;
+        fsm.start();
 
         this.fsm = fsm;
         this.star = null; // Star
@@ -180,17 +181,18 @@
                 'port': this.port
             };
         }
+        app.write('Connecting to ' + this.host + ':' + this.port + ' ...');
 
-        var socket = new SocketClient(this);
-        var onConnected = socket.onConnected;
-        socket.onConnected = function () {
-            onConnected.call(this);
-            notificationCenter.postNotification(kNotificationStationConnected, this, options);
-        };
-        socket.launch(options);
-        this.star = socket;
-
-        this.fsm.start();
+        if (!this.star) {
+            var socket = new SocketClient(this);
+            var onConnected = socket.onConnected;
+            socket.onConnected = function () {
+                onConnected.call(this);
+                notificationCenter.postNotification(kNotificationStationConnected, this, options);
+            };
+            this.star = socket;
+        }
+        this.star.launch(options);
 
         // TODO: let the subclass to create StarGate
     };

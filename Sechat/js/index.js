@@ -45,7 +45,6 @@
     notificationCenter.addObserver(app, kNotificationStationConnected);
     notificationCenter.addObserver(app, kNotificationMessageReceived);
 
-    app.write('Connecting to ' + server.host + ':' + server.port + " ...");
     server.start();
 
 }(DIMP);
@@ -54,22 +53,23 @@
     'use strict';
 
     var text = 'Usage:\n';
-    text += '        call <ID>         - change receiver to another user (or "station")\n';
-    text += '        send <text>       - send message\n';
-    text += '        name <niciname>   - reset nickname\n';
-    text += '        show users        - list online users\n';
-    text += '        search <number>   - search users by number\n';
-    text += '        profile <ID>      - query profile with ID\n';
-    text += '        broadcast <text>  - send broadcast message\n';
-    text += '        login <ID>        - switch user\n';
-    text += '        logout            - clear session\n';
+    text += '        telnet <host>:<port> - connect to a DIM station\n';
+    text += '        login <ID>           - switch user\n';
+    text += '        logout               - clear session\n';
+    text += '        call <ID>            - change receiver to another user (or "station")\n';
+    text += '        send <text>          - send message\n';
+    text += '        name <niciname>      - reset nickname\n';
+    text += '        show users           - list online users\n';
+    text += '        search <number>      - search users by number\n';
+    text += '        profile <ID>         - query profile with ID\n';
+    text += '        broadcast <text>     - send broadcast message\n';
 
     text = text.replace(/</g, '&lt;');
     text = text.replace(/>/g, '&gt;');
     text = text.replace(/\n/g, '<br/>');
     text = text.replace(/\s/g, '&nbsp;');
 
-    app.help = function (cmd) {
+    app.doHelp = function () {
         return text;
     };
 
@@ -94,6 +94,18 @@
             return 'Connection error!';
         }
         return 'Connect to a DIM station first.';
+    };
+
+    app.doTelnet = function (address) {
+        var options = {};
+        var pair = address.split(/[: ]+/);
+        if (pair.length === 1) {
+            options['host'] = pair[0];
+        } else if (pair.length === 2) {
+            options['host'] = pair[0];
+            options['port'] = pair[1];
+        }
+        server.start(options);
     };
 
     app.doLogin = function (name) {

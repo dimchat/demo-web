@@ -1,9 +1,10 @@
 ;
-$(function(){
+! function(ns) {
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
     var cmd_cache = [];
     var cmd_pos = 0;
 
+    var $panel = $('#panel-shell');
     var $left = $('.left');
     var $right = $('.right');
     var $cursor = $('.cursor');
@@ -15,6 +16,32 @@ $(function(){
     var str_right = '';
     var str_tmp_cursor = '';
     var flag_end = false;
+
+    var scroll_to_bottom = function () {
+        $panel.scrollTop($panel.get(0).scrollHeight);
+    };
+
+    ns.shell_output = function () {
+        var str = '';
+        for (var i = 0; i < arguments.length; ++i) {
+            str += arguments[i] + '';
+        }
+        str = str
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br/>')
+            .replace(/\s/g, '&nbsp;');
+
+        var err_class = '';
+
+        $left.text('');
+        $cursor.html('&nbsp;');
+        $right.text('');
+
+        $shell.before(template_output({separate:'&gt;', value:str, error: err_class}));
+
+        scroll_to_bottom();
+    };
 
     // 光标闪烁效果
     setInterval(function(){
@@ -70,31 +97,29 @@ $(function(){
                 cmd_pos = cmd_cache.length - 1;
             }
 
-            if (app.getCommand(cmd) === 'help') {
-                // val_ouput = 'Type JavaScript syntax for interactive console, or type "clear" to clear terminal.';
-                val_ouput = app.help(cmd);
-            } else if (cmd === 'clear') {
-                $shell.siblings().remove();
-                is_print = false;
-            } else {
-                try {
-                    // val_ouput = eval(cmd);
-                    val_ouput = app.exec(cmd);
-                } catch (e) {
-                    val_ouput = '\'' + cmd + '\': command not found';
-                    err_class = ' error';
-                }
-            }
-
-
             $left.text('');
             $cursor.html('&nbsp;');
             $right.text('');
 
-            if (is_print) {
-                $shell.before(template_output({separate:'$', value:cmd, error: ''}));
+            if (cmd === 'clear') {
+                $shell.siblings().remove();
+                return;
+            }
+
+            $shell.before(template_output({separate:'$', value:cmd, error: ''}));
+
+            try {
+                val_ouput = app.exec(cmd);
+            } catch (e) {
+                val_ouput = '\'' + cmd + '\': command not found';
+                err_class = ' error';
+            }
+
+            if (val_ouput) {
                 $shell.before(template_output({separate:'&gt;', value:val_ouput, error: err_class}) + '<br />');
             }
+
+            scroll_to_bottom();
 
         } else if (e.which === 8) {     // backspace
             e.preventDefault();
@@ -219,4 +244,4 @@ $(function(){
 
     });
 
-});
+}(window);
