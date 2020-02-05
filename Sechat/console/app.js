@@ -51,7 +51,11 @@
         for (var i = 0; i < arguments.length; ++i) {
             str += arguments[i] + '';
         }
-        str = str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        str = str
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br/>')
+            .replace(/\s/g, '&nbsp;');
 
         var cmd = '';
         var err_class = '';

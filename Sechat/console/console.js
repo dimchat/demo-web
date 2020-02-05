@@ -21,6 +21,20 @@ $(function(){
         $cursor.toggleClass('blink');
     }, 1000);
 
+    $(document).bind('paste', function (e) {
+        var pastedText;
+        if (window.clipboardData && window.clipboardData.getData) {
+            // IE
+            pastedText = window.clipboardData.getData('Text');
+        } else {
+            pastedText = e.originalEvent.clipboardData.getData('Text');
+            //e.clipboardData.getData('text/plain');
+        }
+        if (pastedText) {
+            $left.append(pastedText.replace(/\s/g, '&nbsp;'))
+        }
+    });
+
     // keypress 按下字符键时触发
     // keydown 按下任意键触发
 

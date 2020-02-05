@@ -47,6 +47,7 @@
     PrivateTable.prototype.savePrivateKey = function (key, identifier) {
         this.loadPrivateKey(identifier);
         this.privateKeys[identifier] = key;
+        console.log('saving private key for ' + identifier);
         return save_keys(this.privateKeys);
     };
 

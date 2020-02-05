@@ -47,6 +47,7 @@
     MetaTable.prototype.saveMeta = function (meta, identifier) {
         this.loadMeta(identifier);
         this.metas[identifier] = meta;
+        console.log('saving meta for ' + identifier);
         return save_metas(this.metas);
     };
 

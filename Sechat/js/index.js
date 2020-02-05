@@ -173,11 +173,14 @@
 
     app.doShow = function (what) {
         if (what === 'users') {
-            // TODO: list online users
+            messenger.queryOnlineUsers();
+            return 'querying online users ...';
         }
+        return 'command error: show ' + what;
     };
     app.doSearch = function (number) {
-        // TODO: search users by number
+        messenger.searchUsers(number);
+        return 'searching users: ' + number;
     };
 
     app.doProfile = function (identifier) {

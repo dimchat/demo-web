@@ -47,6 +47,7 @@
     ProfileTable.prototype.saveProfile = function (profile, identifier) {
         this.loadProfile(identifier);
         this.profiles[identifier] = profile;
+        console.log('saving profile for ' + identifier);
         return save_profiles(this.profiles);
     };
 

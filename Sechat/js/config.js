@@ -46,8 +46,8 @@ var server;
     meta = Meta.getInstance(meta);
     facebook.saveMeta(meta, sid);
 
-    var host = '127.0.0.1';
-    // var host = '134.175.87.98'; // gz
+    // var host = '127.0.0.1';
+    var host = '134.175.87.98'; // gz
     var port = 9394;
 
     server = new Server(sid, host, port);

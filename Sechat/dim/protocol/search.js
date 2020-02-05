@@ -82,7 +82,7 @@
      * @returns {*} - meta dictionary
      */
     SearchCommand.prototype.getResults = function () {
-        return this.getValue('users');
+        return this.getValue('results');
     };
 
     //-------- register --------
