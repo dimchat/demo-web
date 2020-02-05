@@ -84,6 +84,8 @@
             return process.call(this, content, sender, msg);
         }
 
+        notificationCenter.postNotification(kNotificationMessageReceived, this, msg);
+
         // check group message
         var group = content.getGroup();
         if (group) {

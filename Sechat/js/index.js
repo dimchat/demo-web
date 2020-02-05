@@ -32,11 +32,18 @@
         } else if (name === kNotificationStationConnected) {
             app.write('Station connected.');
             login();
+        } else if (name === kNotificationMessageReceived) {
+            var msg = notification.userInfo;
+            var sender = msg.envelope.sender;
+            var nickname = facebook.getUsername(sender);
+            var text = msg.content.getValue('text');
+            app.write('Message received (' + nickname + '): ' + text);
         }
     };
 
     notificationCenter.addObserver(app, kNotificationHandshakeAccepted);
     notificationCenter.addObserver(app, kNotificationStationConnected);
+    notificationCenter.addObserver(app, kNotificationMessageReceived);
 
     app.write('Connecting to ' + server.host + ':' + server.port + " ...");
     server.start();
@@ -47,15 +54,15 @@
     'use strict';
 
     var text = 'Usage:\n';
-    text += '        login <ID>        - switch user (must say "hello" twice after login)\n';
-    text += '        logout            - clear session\n';
+    text += '        call <ID>         - change receiver to another user (or "station")\n';
+    text += '        send <text>       - send message\n';
+    text += '        name <niciname>   - reset nickname\n';
     text += '        show users        - list online users\n';
     text += '        search <number>   - search users by number\n';
     text += '        profile <ID>      - query profile with ID\n';
-    text += '        call <ID>         - change receiver to another user (or "station")\n';
-    text += '        send <text>       - send message\n';
     text += '        broadcast <text>  - send broadcast message\n';
-    text += '        exit              - terminate';
+    text += '        login <ID>        - switch user\n';
+    text += '        logout            - clear session\n';
 
     text = text.replace(/</g, '&lt;');
     text = text.replace(/>/g, '&gt;');
@@ -71,6 +78,7 @@
 !function (ns) {
     'use strict';
 
+    var Profile = ns.Profile;
     var TextContent = ns.protocol.TextContent;
 
     var StarStatus = ns.stargate.StarStatus;
@@ -103,6 +111,10 @@
         return 'trying to login: ' + identifier + ' ...';
     };
 
+    app.doLogout = function () {
+        // TODO: clear session
+    };
+
     app.doCall = function (name) {
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
@@ -113,7 +125,7 @@
             return 'meta not found: ' + identifier;
         }
         app.receiver = identifier;
-        var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getUsername(identifier);
         return 'talking with ' + nickname + ' now!';
     };
 
@@ -135,6 +147,50 @@
             return 'message sent!';
         } else {
             return 'failed to send message.';
+        }
+    };
+
+    app.doName = function (nickname) {
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            return 'current user not found';
+        }
+        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        if (!privateKey) {
+            return 'failed to get private key for current user: ' + user;
+        }
+        var profile = user.getProfile();
+        if (!profile) {
+            profile = new Profile(user.identifier);
+        }
+        profile.setName(nickname);
+        profile.sign(privateKey);
+        facebook.saveProfile(profile);
+        var info = ns.format.JSON.encode(profile.properties);
+        messenger.postProfile(profile);
+        return 'nickname updated, profile: ' + info;
+    };
+
+    app.doShow = function (what) {
+        if (what === 'users') {
+            // TODO: list online users
+        }
+    };
+    app.doSearch = function (number) {
+        // TODO: search users by number
+    };
+
+    app.doProfile = function (identifier) {
+        identifier = facebook.getIdentifier(identifier);
+        if (!identifier) {
+            return 'user error: ' + name;
+        }
+        messenger.queryMeta(identifier);
+        // messenger.queryProfile(identifier);
+        if (identifier.getType().isGroup()) {
+            return 'Querying profile for group: ' + identifier;
+        } else {
+            return 'Querying profile for user: ' + identifier;
         }
     };
 

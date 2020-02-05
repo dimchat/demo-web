@@ -50,7 +50,7 @@
 
     var success = function () {
         var session = this.getContext('session_key');
-        var server = this.getContext('server');
+        var server = this.messenger.server;
         server.handshakeAccepted(session, true);
         return null;
     };

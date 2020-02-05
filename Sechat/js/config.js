@@ -18,8 +18,15 @@ var server;
 
     facebook = DIMP.Facebook.getInstance();
 
-    facebook.ans.save('moki', Immortals.MOKI);
-    facebook.ans.save('hulk', Immortals.HULK);
+    var test_names = [
+        'moki', Immortals.MOKI,
+        'hulk', Immortals.HULK,
+        'long', 'long@4LJnk9AhRnvQF5SXDeDUzWGvi5whzToGJK',
+        null
+    ];
+    for (var i = 0; i < test_names.length; i += 2) {
+        facebook.ans.save(test_names[i], facebook.getIdentifier(test_names[i+1]));
+    }
 
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
     sid = facebook.getIdentifier(sid);
@@ -48,13 +55,14 @@ var server;
 
     messenger = DIMP.Messenger.getInstance();
     messenger.delegate = server;
-    messenger.setContext('server', server);
+    messenger.server = server;
     server.messenger = messenger;
 
 }(DIMP);
 
 var kNotificationStationConnected = 'StationConnected';
 var kNotificationHandshakeAccepted = 'HandshakeAccepted';
+var kNotificationMessageReceived = 'MessageReceived';
 
 !function (ns) {
     'use strict';

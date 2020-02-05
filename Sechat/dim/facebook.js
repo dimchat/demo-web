@@ -145,7 +145,7 @@
     // Override
     Facebook.prototype.saveMeta = function(meta, identifier) {
         if (!this.cacheMeta(meta, identifier)) {
-            // meta not match ID
+            console.log('meta not match ID: ' + identifier);
             return false;
         }
         var db = Table.create(MetaTable);
@@ -167,7 +167,7 @@
             }
         }
         // check for duplicated querying
-        return null
+        return meta;
     };
 
     //

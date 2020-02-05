@@ -2228,7 +2228,7 @@ if (typeof DIMP !== "object") {
         }
         Content.call(this, content);
         if (text) {
-            this.setText(content)
+            this.setText(text)
         }
     };
     TextContent.inherits(Content);
@@ -2533,7 +2533,7 @@ if (typeof DIMP !== "object") {
         }
         Command.call(this, info);
         if (identifier) {
-            this.setIdentifier(info)
+            this.setIdentifier(identifier)
         }
         this.meta = null
     };
@@ -2583,7 +2583,7 @@ if (typeof DIMP !== "object") {
         }
         MetaCommand.call(this, info);
         if (identifier) {
-            this.setIdentifier(info)
+            this.setIdentifier(identifier)
         }
         this.profile = null
     };
@@ -2798,7 +2798,7 @@ if (typeof DIMP !== "object") {
         }
         HistoryCommand.call(this, info);
         if (group) {
-            this.setGroup(info)
+            this.setGroup(group)
         }
     };
     GroupCommand.inherits(HistoryCommand);
@@ -5498,6 +5498,7 @@ if (typeof DIMP !== "object") {
     var TextContent = ns.protocol.TextContent;
     var Command = ns.protocol.Command;
     var MetaCommand = ns.protocol.MetaCommand;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var CommandProcessor = ns.cpu.CommandProcessor;
     var MetaCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
@@ -5540,6 +5541,7 @@ if (typeof DIMP !== "object") {
     var TextContent = ns.protocol.TextContent;
     var Command = ns.protocol.Command;
     var ProfileCommand = ns.protocol.ProfileCommand;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var CommandProcessor = ns.cpu.CommandProcessor;
     var MetaCommandProcessor = ns.cpu.MetaCommandProcessor;
     var ProfileCommandProcessor = function(messenger) {
@@ -6189,7 +6191,7 @@ if (typeof StarGate.plugins !== "object") {
 }(StarGate);
 ! function(ns) {
     var Storage = {
-        ROOT: "storage",
+        ROOT: "dim.fs",
         exists: function(path) {
             return !!this.loadText(path)
         },
