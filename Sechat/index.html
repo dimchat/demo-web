@@ -9,46 +9,50 @@
     <title>DIM Demo</title>
 
     <!--  third party cryptography libs  -->
-    <script src="dim/sdk/3rd/crypto-js/core.js"></script>
-    <script src="dim/sdk/3rd/crypto-js/cipher-core.js"></script>
-    <script src="dim/sdk/3rd/crypto-js/aes.js"></script>
-    <script src="dim/sdk/3rd/crypto-js/md5.js"></script>
-    <script src="dim/sdk/3rd/crypto-js/sha256.js"></script>
-    <script src="dim/sdk/3rd/crypto-js/ripemd160.js"></script>
-    <script src="dim/sdk/3rd/jsencrypt.js"></script>
+    <script src="js/sdk/3rd/crypto-js/core.js"></script>
+    <script src="js/sdk/3rd/crypto-js/cipher-core.js"></script>
+    <script src="js/sdk/3rd/crypto-js/aes.js"></script>
+    <script src="js/sdk/3rd/crypto-js/md5.js"></script>
+    <script src="js/sdk/3rd/crypto-js/sha256.js"></script>
+    <script src="js/sdk/3rd/crypto-js/ripemd160.js"></script>
+    <script src="js/sdk/3rd/jsencrypt.js"></script>
 
     <!--  DIM SDK  -->
-    <script src="dim/sdk/dimsdk.js"></script>
-    <script src="dim/protocol/search.js"></script>
-    <script src="dim/cpu/default.js"></script>
-    <script src="dim/cpu/handshake.js"></script>
-    <script src="dim/cpu/receipt.js"></script>
-    <script src="dim/cpu/search.js"></script>
-    <script src="dim/extension/register.js"></script>
-    <script src="dim/extension/password.js"></script>
-    <script src="dim/network/fsm.js"></script>
-    <script src="dim/network/delegate.js"></script>
-    <script src="dim/network/request.js"></script>
-    <script src="dim/network/server.js"></script>
-
-    <script src="dim/database/table.js"></script>
-    <script src="dim/database/meta.js"></script>
-    <script src="dim/database/private.js"></script>
-    <script src="dim/database/profile.js"></script>
-    <script src="dim/database/user.js"></script>
+    <script src="js/sdk/dimsdk.js"></script>
 
     <!--  DIM Client  -->
-    <script src="dim/cache.js"></script>
-    <script src="dim/ans.js"></script>
-    <script src="dim/facebook.js"></script>
-    <script src="dim/messenger.js"></script>
+    <script src="js/dimc/protocol/search.js"></script>
+    <script src="js/dimc/cpu/default.js"></script>
+    <script src="js/dimc/cpu/handshake.js"></script>
+    <script src="js/dimc/cpu/receipt.js"></script>
+    <script src="js/dimc/cpu/search.js"></script>
+    <script src="js/dimc/extensions/register.js"></script>
+    <script src="js/dimc/extensions/password.js"></script>
+    <script src="js/dimc/network/fsm.js"></script>
+    <script src="js/dimc/network/delegate.js"></script>
+    <script src="js/dimc/network/request.js"></script>
+    <script src="js/dimc/network/server.js"></script>
 
-    <script src="js/config.js"></script>
+    <script src="js/dimc/database/table.js"></script>
+    <script src="js/dimc/database/meta.js"></script>
+    <script src="js/dimc/database/private.js"></script>
+    <script src="js/dimc/database/profile.js"></script>
+    <script src="js/dimc/database/user.js"></script>
+
+    <script src="js/dimc/cache.js"></script>
+    <script src="js/dimc/ans.js"></script>
+    <script src="js/dimc/facebook.js"></script>
+    <script src="js/dimc/messenger.js"></script>
 
     <!--  UI: Console  -->
-    <script type="text/javascript" src="console/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="console/underscore-1.8.2.min.js"></script>
+    <script type="text/javascript" src="js/3rd/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="js/3rd/underscore-1.8.2.min.js"></script>
     <link href="css/index.css" rel="stylesheet" type="text/css" />
+
+    <script src="js/console.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/index.js"></script>
 </head>
 <body>
     <div id="panel-shell">
@@ -61,7 +65,4 @@
         </div>
     </div>
 </body>
-<script src="console/console.js"></script>
-<script src="console/app.js"></script>
-<script src="js/index.js"></script>
 </html>

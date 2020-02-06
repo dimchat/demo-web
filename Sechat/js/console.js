@@ -1,5 +1,5 @@
 ;
-! function(ns) {
+$(function() {
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
     var cmd_cache = [];
     var cmd_pos = 0;
@@ -21,7 +21,7 @@
         $panel.scrollTop($panel.get(0).scrollHeight);
     };
 
-    ns.shell_output = function () {
+    window.shell_output = function () {
         var str = '';
         for (var i = 0; i < arguments.length; ++i) {
             str += arguments[i] + '';
@@ -244,4 +244,4 @@
 
     });
 
-}(window);
+});

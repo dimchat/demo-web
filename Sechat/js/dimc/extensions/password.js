@@ -82,9 +82,9 @@
     };
 
     //-------- namespace --------
-    if (typeof ns.extension !== 'object') {
-        ns.extension = {}
+    if (typeof ns.extensions !== 'object') {
+        ns.extensions = {}
     }
-    ns.extension.Password = Password;
+    ns.extensions.Password = Password;
 
 }(DIMP);

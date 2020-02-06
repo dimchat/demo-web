@@ -52,7 +52,7 @@
 
     var StarStatus = ns.stargate.StarStatus;
     var StarDelegate = ns.stargate.StarDelegate;
-    var SocketClient = ns.plugins.SocketClient;
+    var SocketClient = ns.stargate.extensions.SocketClient;
 
     var RequestWrapper = ns.network.RequestWrapper;
 

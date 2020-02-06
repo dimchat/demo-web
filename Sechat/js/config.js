@@ -3,18 +3,21 @@
 var facebook;
 var messenger;
 
+var server;
+var app;
+
 var notificationCenter;
 
-var server;
+var kNotificationStationConnected = 'StationConnected';
+var kNotificationHandshakeAccepted = 'HandshakeAccepted';
+var kNotificationMessageReceived = 'MessageReceived';
 
 !function (ns) {
     'use strict';
 
-    var Meta = ns.Meta;
-
-    var Server = ns.network.Server;
-
     var Immortals = ns.Immortals;
+
+    var NotificationCenter = ns.stargate.NotificationCenter;
 
     facebook = DIMP.Facebook.getInstance();
 
@@ -47,6 +50,19 @@ var server;
         force_ans(test_names[i], test_names[i+1]);
     }
 
+    notificationCenter = NotificationCenter.getInstance();
+
+    app = new Application();
+
+}(DIMP);
+
+!function (ns) {
+    'use strict';
+
+    var Meta = ns.Meta;
+
+    var Server = ns.network.Server;
+
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
     sid = facebook.getIdentifier(sid);
 
@@ -76,18 +92,5 @@ var server;
     messenger.delegate = server;
     messenger.server = server;
     server.messenger = messenger;
-
-}(DIMP);
-
-var kNotificationStationConnected = 'StationConnected';
-var kNotificationHandshakeAccepted = 'HandshakeAccepted';
-var kNotificationMessageReceived = 'MessageReceived';
-
-!function (ns) {
-    'use strict';
-
-    var NotificationCenter = ns.stargate.NotificationCenter;
-
-    notificationCenter = NotificationCenter.getInstance();
 
 }(DIMP);

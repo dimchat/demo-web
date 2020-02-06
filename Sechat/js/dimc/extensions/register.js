@@ -175,9 +175,9 @@
     };
 
     //-------- namespace --------
-    if (typeof ns.extension !== 'object') {
-        ns.extension = {}
+    if (typeof ns.extensions !== 'object') {
+        ns.extensions = {}
     }
-    ns.extension.Register = Register;
+    ns.extensions.Register = Register;
 
 }(DIMP);
