@@ -30,7 +30,7 @@ $(function() {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/\n/g, '<br/>')
-            .replace(/\s/g, '&nbsp;');
+            .replace(/  /g, ' &nbsp;');
 
         var err_class = '';
 
@@ -58,7 +58,7 @@ $(function() {
             //e.clipboardData.getData('text/plain');
         }
         if (pastedText) {
-            $left.append(pastedText.replace(/\s/g, '&nbsp;'))
+            $left.append(pastedText.replace(/  /g, ' &nbsp;'))
         }
     });
 
@@ -109,7 +109,11 @@ $(function() {
             $shell.before(template_output({separate:'$', value:cmd, error: ''}));
 
             try {
-                val_ouput = app.exec(cmd);
+                if (cmd) {
+                    val_ouput = app.exec(cmd);
+                } else {
+                    val_ouput = app.doWho();
+                }
             } catch (e) {
                 val_ouput = '\'' + cmd + '\': command not found';
                 err_class = ' error';

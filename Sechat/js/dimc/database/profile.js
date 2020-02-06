@@ -48,6 +48,7 @@
         this.loadProfile(identifier);
         this.profiles[identifier] = profile;
         console.log('saving profile for ' + identifier);
+        notificationCenter.postNotification(kNotificationProfileUpdated, this, profile);
         return save_profiles(this.profiles);
     };
 

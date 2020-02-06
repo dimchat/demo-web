@@ -2,49 +2,55 @@
 
 !function (ns) {
 
+    var Register = ns.extensions.Register;
+
     var Application = function () {
         // notifications
         notificationCenter.addObserver(this, kNotificationHandshakeAccepted);
         notificationCenter.addObserver(this, kNotificationStationConnected);
         notificationCenter.addObserver(this, kNotificationMessageReceived);
+        notificationCenter.addObserver(this, kNotificationProfileUpdated);
     };
 
-    var Register = ns.extensions.Register;
-
-    var login = function () {
+    Application.prototype.getCurrentUser = function () {
         var user = facebook.getCurrentUser();
         if (!user) {
+            // create new user
             var reg = new Register();
             user = reg.createUser('Anonymous');
             if (user) {
                 facebook.setCurrentUser(user);
+            } else {
+                this.write('Failed to create user');
             }
         }
-        if (!user) {
-            return false;
-        }
-        console.log('current user: ' + user);
-        var nickname = facebook.getNickname(user.identifier);
-        var number = facebook.getNumberString(user.identifier);
-        this.write('Current user: ' + nickname + ' (' + number + ') ' + user.identifier);
-        this.doLogin(user.identifier);
-        return true;
+        return user;
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
+        var res = null;
         var name = notification.name;
         if (name === kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
+            res = this.doCall('station');
         } else if (name === kNotificationStationConnected) {
             this.write('Station connected.');
-            login.call(this);
+            var user = this.getCurrentUser();
+            if (user) {
+                res = this.doLogin(user.identifier);
+            }
         } else if (name === kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
             var nickname = facebook.getUsername(sender);
             var text = msg.content.getValue('text');
-            this.write('Message received (' + nickname + '): ' + text);
+            res = '[Message received] ' + nickname + ': ' + text;
+        } else if (name === kNotificationProfileUpdated) {
+            var profile = notification.userInfo;
+            res = '[Profile updated] ID: ' + profile.getIdentifier()
+                + ' -> ' + profile.getValue('data');
         }
+        this.write(res);
     };
 
     window.Application = Application;
@@ -83,24 +89,51 @@
     };
 
     var text = 'Usage:\n';
-    text += '        telnet <host>:<port> - connect to a DIM station\n';
-    text += '        login <ID>           - switch user\n';
-    text += '        logout               - clear session\n';
-    text += '        call <ID>            - change receiver to another user (or "station")\n';
-    text += '        send <text>          - send message\n';
-    text += '        name <niciname>      - reset nickname\n';
-    text += '        show users           - list online users\n';
-    text += '        search <number>      - search users by number\n';
-    text += '        profile <ID>         - query profile with ID\n';
-    text += '        broadcast <text>     - send broadcast message\n';
+    text += '        telnet <host>[:<port>] - connect to a DIM station\n';
+    text += '        login <ID>             - switch user\n';
+    text += '        logout                 - clear session\n';
+    text += '        call <ID>              - change receiver to another user (or "station")\n';
+    text += '        send <text>            - send message\n';
+    text += '        name <niciname>        - reset nickname\n';
+    text += '        who [am I]             - show current user info\n';
+    text += '        show users             - list online users\n';
+    text += '        search <ID|number>     - search users by ID or number\n';
+    text += '        profile <ID>           - query profile with ID\n';
 
     text = text.replace(/</g, '&lt;');
     text = text.replace(/>/g, '&gt;');
     text = text.replace(/\n/g, '<br/>');
-    text = text.replace(/\s/g, '&nbsp;');
+    text = text.replace(/  /g, ' &nbsp;');
 
     Application.prototype.doHelp = function () {
         return text;
+    };
+
+    Application.prototype.doWhoami = function () {
+        var user = this.getCurrentUser();
+        var name = facebook.getUsername(user.identifier);
+        var number = facebook.getNumberString(user.identifier);
+        return name + ' ' + number + ' : ' + user.identifier;
+    };
+
+    Application.prototype.doWho = function (ami) {
+        var user = this.getCurrentUser();
+        if (ami) {
+            return user.toString()
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+        if (this.receiver) {
+            var contact = facebook.getUser(this.receiver);
+            if (contact) {
+                contact = contact.getName();
+            } else {
+                contact = this.receiver;
+            }
+            return 'You (' + user.getName() + ') are talking with ' + contact;
+        } else {
+            return facebook.getUsername(user.identifier);
+        }
     };
 
 }(DIMP);
@@ -145,12 +178,16 @@
         }
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
-            return 'user error: ' + name;
+            return 'User error: ' + name;
         }
+        var nickname = facebook.getNickname(identifier);
+        var number = facebook.getNumberString(identifier);
+        this.write('Current user: ' + nickname + ' (' + number + ')');
+
         var user = facebook.getUser(identifier);
         facebook.setCurrentUser(user);
         server.currentUser = user;
-        return 'trying to login: ' + identifier + ' ...';
+        return 'Trying to login: ' + identifier + ' ...';
     };
 
     Application.prototype.doLogout = function () {
@@ -160,15 +197,15 @@
     Application.prototype.doCall = function (name) {
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
-            return 'user error: ' + name;
+            return 'User error: ' + name;
         }
         var meta = facebook.getMeta(identifier);
         if (!meta) {
-            return 'meta not found: ' + identifier;
+            return 'Meta not found: ' + identifier;
         }
-        app.receiver = identifier;
+        this.receiver = identifier;
         var nickname = facebook.getUsername(identifier);
-        return 'talking with ' + nickname + ' now!';
+        return 'You are talking with ' + nickname + ' now!';
     };
 
     Application.prototype.doSend = function (text) {
@@ -178,28 +215,28 @@
         }
         var user = server.currentUser;
         if (!user) {
-            return 'login first';
+            return 'Login first';
         }
-        var receiver = app.receiver;
+        var receiver = this.receiver;
         if (!receiver) {
-            return 'please set a recipient';
+            return 'Please set a recipient';
         }
         var content = new TextContent(text);
         if (messenger.sendContent(content, receiver)) {
-            return 'message sent!';
+            return 'Message sent!';
         } else {
-            return 'failed to send message.';
+            return 'Failed to send message.';
         }
     };
 
     Application.prototype.doName = function (nickname) {
-        var user = facebook.getCurrentUser();
+        var user = this.getCurrentUser();
         if (!user) {
-            return 'current user not found';
+            return 'Current user not found';
         }
         var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
         if (!privateKey) {
-            return 'failed to get private key for current user: ' + user;
+            return 'Failed to get private key for current user: ' + user;
         }
         var profile = user.getProfile();
         if (!profile) {
@@ -210,28 +247,27 @@
         facebook.saveProfile(profile);
         var info = ns.format.JSON.encode(profile.properties);
         messenger.postProfile(profile);
-        return 'nickname updated, profile: ' + info;
+        return 'Nickname updated, profile: ' + info;
     };
 
     Application.prototype.doShow = function (what) {
         if (what === 'users') {
             messenger.queryOnlineUsers();
-            return 'querying online users ...';
+            return 'Querying online users ...';
         }
-        return 'command error: show ' + what;
+        return 'Command error: show ' + what;
     };
     Application.prototype.doSearch = function (number) {
         messenger.searchUsers(number);
-        return 'searching users: ' + number;
+        return 'Searching users: ' + number;
     };
 
     Application.prototype.doProfile = function (identifier) {
         identifier = facebook.getIdentifier(identifier);
         if (!identifier) {
-            return 'user error: ' + name;
+            return 'User error: ' + name;
         }
-        messenger.queryMeta(identifier);
-        // messenger.queryProfile(identifier);
+        messenger.queryProfile(identifier);
         if (identifier.getType().isGroup()) {
             return 'Querying profile for group: ' + identifier;
         } else {
