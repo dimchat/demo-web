@@ -1,6 +1,6 @@
 ;
 
-//!require <dimsdk.js>
+//! require <dimsdk.js>
 
 !function (ns) {
     'use strict';
@@ -34,13 +34,14 @@
     };
 
     Application.prototype.getCurrentUser = function () {
-        var user = Facebook.getInstance().getCurrentUser();
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
         if (!user) {
             // create new user
             var reg = new Register();
             user = reg.createUser('Anonymous');
             if (user) {
-                Facebook.getInstance().setCurrentUser(user);
+                facebook.setCurrentUser(user);
             } else {
                 this.write('Failed to create user');
             }
@@ -49,9 +50,10 @@
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
+        var facebook = Facebook.getInstance();
         var name = notification.name;
         var userInfo = notification.userInfo;
-        var user = this.getCurrentUser();
+        var user = facebook.getCurrentUser();
         var res;
         if (name === kNotificationStationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
@@ -75,7 +77,7 @@
         } else if (name === kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
-            var nickname = Facebook.getInstance().getUsername(sender);
+            var nickname = facebook.getUsername(sender);
             var text = msg.content.getValue('text');
             res = '[Message received] ' + nickname + ': ' + text;
         } else {
@@ -157,20 +159,21 @@
     };
 
     Application.prototype.doWhoami = function () {
-        var user = this.getCurrentUser();
-        var name = Facebook.getInstance().getUsername(user.identifier);
-        var number = Facebook.getInstance().getNumberString(user.identifier);
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        var name = facebook.getUsername(user.identifier);
+        var number = facebook.getNumberString(user.identifier);
         return name + ' ' + number + ' : ' + user.identifier;
     };
 
     Application.prototype.doWho = function (ami) {
-        var user = this.getCurrentUser();
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
         if (ami) {
             return user.toString()
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
         }
-        var facebook = Facebook.getInstance();
         if (this.receiver) {
             var contact = facebook.getUser(this.receiver);
             if (contact) {
@@ -285,11 +288,12 @@
     };
 
     Application.prototype.doName = function (nickname) {
-        var user = this.getCurrentUser();
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
         if (!user) {
             return 'Current user not found';
         }
-        var privateKey = Facebook.getInstance().getPrivateKeyForSignature(user.identifier);
+        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
         if (!privateKey) {
             return 'Failed to get private key for current user: ' + user;
         }
@@ -299,7 +303,7 @@
         }
         profile.setName(nickname);
         profile.sign(privateKey);
-        Facebook.getInstance().saveProfile(profile);
+        facebook.saveProfile(profile);
         Messenger.getInstance().postProfile(profile);
         return 'Nickname updated, profile: ' + profile.getValue('data');
     };
