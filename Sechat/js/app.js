@@ -170,16 +170,18 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
         }
+        var facebook = Facebook.getInstance();
         if (this.receiver) {
-            var contact = Facebook.getInstance().getUser(this.receiver);
+            var contact = facebook.getUser(this.receiver);
             if (contact) {
-                contact = contact.getName() + '(' + this.receiver + ')';
+                contact = contact.getName() + ' ('
+                    + facebook.getNumberString(this.receiver) + ') ' + this.receiver;
             } else {
                 contact = this.receiver;
             }
             return 'You (' + user.getName() + ') are talking with ' + contact;
         } else {
-            return Facebook.getInstance().getUsername(user.identifier);
+            return facebook.getUsername(user.identifier);
         }
     };
 
@@ -298,9 +300,8 @@
         profile.setName(nickname);
         profile.sign(privateKey);
         Facebook.getInstance().saveProfile(profile);
-        var info = ns.format.JSON.encode(profile.properties);
         Messenger.getInstance().postProfile(profile);
-        return 'Nickname updated, profile: ' + info;
+        return 'Nickname updated, profile: ' + profile.getValue('data');
     };
 
     Application.prototype.doShow = function (what) {

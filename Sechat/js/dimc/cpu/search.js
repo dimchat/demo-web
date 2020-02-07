@@ -51,6 +51,18 @@
     };
     SearchCommandProcessor.inherits(CommandProcessor);
 
+    var user_info = function (string) {
+        var facebook = Facebook.getInstance();
+        var identifier = facebook.getIdentifier(string);
+        if (!identifier) {
+            return string;
+        }
+        // var nickname = facebook.getNickname(identifier);
+        var number = facebook.getNumberString(identifier);
+        return '(' + number + ') ' + identifier;
+        // return identifier + ' (' + number + ') "' + nickname + '"';
+    };
+
     //
     //  Main
     //
@@ -62,11 +74,11 @@
         if (cnt === 0) {
             text = 'user not found';
         } else if (cnt === 1) {
-            text = 'got one user - ' + users[0];
+            text = 'got one user - ' + user_info(users[0]);
         } else {
             text = 'got ' + cnt + ' users - ';
             for (var i = 0; i < cnt; ++i) {
-                text += '\n' + users[i];
+                text += '\n' + user_info(users[i]);
             }
         }
 

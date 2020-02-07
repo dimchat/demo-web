@@ -120,7 +120,7 @@ $(function() {
             }
 
             if (val_ouput) {
-                $shell.before(template_output({separate:'&gt;', value:val_ouput, error: err_class}) + '<br />');
+                $shell.before(template_output({separate:'&gt;', value:val_ouput, error: err_class}));
             }
 
             scroll_to_bottom();
