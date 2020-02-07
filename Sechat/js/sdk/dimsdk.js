@@ -6328,59 +6328,83 @@ if (typeof StarGate !== "object") {
     ns.register("NotificationCenter")
 }(StarGate);
 ! function(ns) {
-    var Storage = {
-        ROOT: "dim.fs",
-        exists: function(path) {
-            return !!this.loadText(path)
-        },
-        loadText: function(path) {
-            return this.storage.getItem(this.ROOT + "." + path)
-        },
-        loadData: function(path) {
-            var base64 = this.loadText(path);
-            if (!base64) {
-                return null
-            }
-            return DIMP.format.Base64.decode(base64)
-        },
-        loadJSON: function(path) {
-            var json = this.loadText(path);
-            if (!json) {
-                return null
-            }
-            return DIMP.format.JSON.decode(json)
-        },
-        remove: function(path) {
-            this.saveText(null, path);
-            return true
-        },
-        saveText: function(text, path) {
-            if (text) {
-                this.storage.setItem(this.ROOT + "." + path, text);
-                return true
-            } else {
-                this.storage.removeItem(this.ROOT + "." + path);
-                return false
-            }
-        },
-        saveData: function(data, path) {
-            var base64 = null;
-            if (data) {
-                base64 = DIMP.format.Base64.encode(data)
-            }
-            return this.saveText(base64, path)
-        },
-        saveJSON: function(container, path) {
-            var json = null;
-            if (container) {
-                json = DIMP.format.JSON.encode(container)
-            }
-            return this.saveText(json, path)
+    var Storage = function(storage, prefix) {
+        this.storage = storage;
+        if (prefix) {
+            this.ROOT = prefix
+        } else {
+            this.ROOT = "dim"
         }
     };
-    Storage.storage = window.localStorage;
-    ns.LocalStorage = Storage;
-    ns.register("LocalStorage")
+    Storage.prototype.getItem = function(key) {
+        return this.storage.getItem(key)
+    };
+    Storage.prototype.setItem = function(key, value) {
+        this.storage.setItem(key, value)
+    };
+    Storage.prototype.removeItem = function(key) {
+        this.storage.removeItem(key)
+    };
+    Storage.prototype.clear = function() {
+        this.storage.clear()
+    };
+    Storage.prototype.getLength = function() {
+        return this.storage.length
+    };
+    Storage.prototype.key = function(index) {
+        return this.storage.key(index)
+    };
+    Storage.prototype.exists = function(path) {
+        return !!this.getItem(this.ROOT + "." + path)
+    };
+    Storage.prototype.loadText = function(path) {
+        return this.getItem(this.ROOT + "." + path)
+    };
+    Storage.prototype.loadData = function(path) {
+        var base64 = this.loadText(path);
+        if (!base64) {
+            return null
+        }
+        return DIMP.format.Base64.decode(base64)
+    };
+    Storage.prototype.loadJSON = function(path) {
+        var json = this.loadText(path);
+        if (!json) {
+            return null
+        }
+        return DIMP.format.JSON.decode(json)
+    };
+    Storage.prototype.remove = function(path) {
+        this.removeItem(this.ROOT + "." + path);
+        return true
+    };
+    Storage.prototype.saveText = function(text, path) {
+        if (text) {
+            this.setItem(this.ROOT + "." + path, text);
+            return true
+        } else {
+            this.removeItem(this.ROOT + "." + path);
+            return false
+        }
+    };
+    Storage.prototype.saveData = function(data, path) {
+        var base64 = null;
+        if (data) {
+            base64 = DIMP.format.Base64.encode(data)
+        }
+        return this.saveText(base64, path)
+    };
+    Storage.prototype.saveJSON = function(container, path) {
+        var json = null;
+        if (container) {
+            json = DIMP.format.JSON.encode(container)
+        }
+        return this.saveText(json, path)
+    };
+    ns.LocalStorage = new Storage(window.localStorage, "dim.fs");
+    ns.SessionStorage = new Storage(window.sessionStorage, "dim.mem");
+    ns.register("LocalStorage");
+    ns.register("SessionStorage")
 }(StarGate);
 ! function(ns) {
     var Delegate = function() {};
