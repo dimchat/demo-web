@@ -170,8 +170,7 @@
         } else if (meta) {
             cmd = MetaCommand.response(identifier, meta);
         }
-        var messenger = Messenger.getInstance();
-        return messenger.sendCommand(cmd);
+        return Messenger.getInstance().sendCommand(cmd);
     };
 
     //-------- namespace --------

@@ -98,9 +98,8 @@
             return res;
         }
         // normal response
-        var facebook = this.getFacebook();
         var receiver = msg.envelope.sender;
-        receiver = facebook.getIdentifier(receiver);
+        receiver = Facebook.getInstance().getIdentifier(receiver);
         this.sendContent(res, receiver);
         // DON'T respond to station directly
         return null;
@@ -141,7 +140,6 @@
      * @returns {boolean}
      */
     Messenger.prototype.broadcastProfile = function (profile) {
-        var facebook = this.getFacebook();
         var user = this.server.getCurrentUser();
         if (!user) {
             throw Error('login first');
@@ -151,6 +149,7 @@
             // throw Error('contacts not found');
             return false;
         }
+        var facebook = Facebook.getInstance();
         var identifier = profile.getIdentifier();
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);

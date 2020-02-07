@@ -50,6 +50,8 @@
     var StateDelegate = ns.fsm.StateDelegate;
     var StateMachine = ns.network.StateMachine;
 
+    var NotificationCenter = ns.stargate.NotificationCenter;
+
     var StarStatus = ns.stargate.StarStatus;
     var StarDelegate = ns.stargate.StarDelegate;
     var SocketClient = ns.stargate.extensions.SocketClient;
@@ -69,7 +71,7 @@
 
         this.fsm = fsm;
         this.star = null; // Star
-        this.delegate = null; // StationDelegate
+        this.stationDelegate = null; // StationDelegate
         this.messenger = null; // ConnectionDelegate
 
         this.session = null; // session key
@@ -101,6 +103,9 @@
     };
 
     Server.prototype.send = function (data, delegate) {
+        if (!delegate) {
+            delegate = this;
+        }
         var str = new ns.type.String(data, 'UTF-8');
         this.star.send(str.toString(), delegate);
     };
@@ -154,7 +159,8 @@
             console.log('handshake accepted for user: ' + this.getCurrentUser());
             this.session = session;
             // TODO: broadcast profile to DIM network
-            notificationCenter.postNotification(kNotificationHandshakeAccepted,
+            var nc = NotificationCenter.getInstance();
+            nc.postNotification(kNotificationHandshakeAccepted,
                 this, {session: session});
         } else {
             console.log('handshake again with session: ' + session);
@@ -181,14 +187,16 @@
                 'port': this.port
             };
         }
-        app.write('Connecting to ' + this.host + ':' + this.port + ' ...');
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(kNotificationStationConnecting, this, options);
 
         if (!this.star) {
             var socket = new SocketClient(this);
             var onConnected = socket.onConnected;
             socket.onConnected = function () {
                 onConnected.call(this);
-                notificationCenter.postNotification(kNotificationStationConnected, this, options);
+                var nc = NotificationCenter.getInstance();
+                nc.postNotification(kNotificationStationConnected, this, options);
             };
             this.star = socket;
         }
@@ -233,10 +241,10 @@
 
         if (error) {
             // failed
-            this.delegate.didFailToSendPackage(error, data, this);
+            this.stationDelegate.didFailToSendPackage(error, data, this);
         } else {
             // success
-            this.delegate.didSendPackage(data, this);
+            this.stationDelegate.didSendPackage(data, this);
         }
 
         // TODO: tell the handler to do the resending if failed

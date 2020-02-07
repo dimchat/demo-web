@@ -1,25 +1,36 @@
 ;
 
+//!require <dimsdk.js>
+
 !function (ns) {
+
+    var Facebook = ns.Facebook;
+
+    var StationDelegate = ns.network.StationDelegate;
 
     var Register = ns.extensions.Register;
 
+    var NotificationCenter = ns.stargate.NotificationCenter;
+
     var Application = function () {
         // notifications
-        notificationCenter.addObserver(this, kNotificationHandshakeAccepted);
-        notificationCenter.addObserver(this, kNotificationStationConnected);
-        notificationCenter.addObserver(this, kNotificationMessageReceived);
-        notificationCenter.addObserver(this, kNotificationProfileUpdated);
+        var nc = NotificationCenter.getInstance();
+        nc.addObserver(this, kNotificationStationConnecting);
+        nc.addObserver(this, kNotificationStationConnected);
+        nc.addObserver(this, kNotificationHandshakeAccepted);
+        nc.addObserver(this, kNotificationMessageReceived);
+        nc.addObserver(this, kNotificationProfileUpdated);
     };
+    Application.inherits(StationDelegate);
 
     Application.prototype.getCurrentUser = function () {
-        var user = facebook.getCurrentUser();
+        var user = Facebook.getInstance().getCurrentUser();
         if (!user) {
             // create new user
             var reg = new Register();
             user = reg.createUser('Anonymous');
             if (user) {
-                facebook.setCurrentUser(user);
+                Facebook.getInstance().setCurrentUser(user);
             } else {
                 this.write('Failed to create user');
             }
@@ -28,21 +39,24 @@
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
+        var user = this.getCurrentUser();
         var res = null;
         var name = notification.name;
-        if (name === kNotificationHandshakeAccepted) {
-            this.write('Handshake accepted!');
-            res = this.doCall('station');
+        var userInfo = notification.userInfo;
+        if (name === kNotificationStationConnecting) {
+            res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
         } else if (name === kNotificationStationConnected) {
             this.write('Station connected.');
-            var user = this.getCurrentUser();
             if (user) {
                 res = this.doLogin(user.identifier);
             }
+        } else if (name === kNotificationHandshakeAccepted) {
+            this.write('Handshake accepted!');
+            res = this.doCall('station');
         } else if (name === kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
-            var nickname = facebook.getUsername(sender);
+            var nickname = Facebook.getInstance().getUsername(sender);
             var text = msg.content.getValue('text');
             res = '[Message received] ' + nickname + ': ' + text;
         } else if (name === kNotificationProfileUpdated) {
@@ -53,12 +67,24 @@
         this.write(res);
     };
 
+    //
+    //  StationDelegate
+    //
+    Application.prototype.didSendPackage = function (data, server) {
+        this.write('Message sent!');
+    };
+    Application.prototype.didFailToSendPackage = function (error, data, server) {
+        this.write('Failed to send message, please check connection.');
+    };
+
     window.Application = Application;
 
 }(DIMP);
 
 !function (ns) {
     'use strict';
+
+    var Facebook = ns.Facebook;
 
     var getCommand = function (cmd) {
         if (cmd) {
@@ -111,8 +137,8 @@
 
     Application.prototype.doWhoami = function () {
         var user = this.getCurrentUser();
-        var name = facebook.getUsername(user.identifier);
-        var number = facebook.getNumberString(user.identifier);
+        var name = Facebook.getInstance().getUsername(user.identifier);
+        var number = Facebook.getInstance().getNumberString(user.identifier);
         return name + ' ' + number + ' : ' + user.identifier;
     };
 
@@ -124,7 +150,7 @@
                 .replace(/>/g, '&gt;');
         }
         if (this.receiver) {
-            var contact = facebook.getUser(this.receiver);
+            var contact = Facebook.getInstance().getUser(this.receiver);
             if (contact) {
                 contact = contact.getName();
             } else {
@@ -132,7 +158,7 @@
             }
             return 'You (' + user.getName() + ') are talking with ' + contact;
         } else {
-            return facebook.getUsername(user.identifier);
+            return Facebook.getInstance().getUsername(user.identifier);
         }
     };
 
@@ -140,6 +166,9 @@
 
 !function (ns) {
     'use strict';
+
+    var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
 
     var Profile = ns.Profile;
     var TextContent = ns.protocol.TextContent;
@@ -176,6 +205,7 @@
         if (res) {
             return res;
         }
+        var facebook = Facebook.getInstance();
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
             return 'User error: ' + name;
@@ -195,6 +225,7 @@
     };
 
     Application.prototype.doCall = function (name) {
+        var facebook = Facebook.getInstance();
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
             return 'User error: ' + name;
@@ -222,10 +253,11 @@
             return 'Please set a recipient';
         }
         var content = new TextContent(text);
-        if (messenger.sendContent(content, receiver)) {
-            return 'Message sent!';
+        if (Messenger.getInstance().sendContent(content, receiver)) {
+            // return 'Sending message ...';
+            return null;
         } else {
-            return 'Failed to send message.';
+            return 'Cannot send message now.';
         }
     };
 
@@ -234,7 +266,7 @@
         if (!user) {
             return 'Current user not found';
         }
-        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        var privateKey = Facebook.getInstance().getPrivateKeyForSignature(user.identifier);
         if (!privateKey) {
             return 'Failed to get private key for current user: ' + user;
         }
@@ -244,30 +276,30 @@
         }
         profile.setName(nickname);
         profile.sign(privateKey);
-        facebook.saveProfile(profile);
+        Facebook.getInstance().saveProfile(profile);
         var info = ns.format.JSON.encode(profile.properties);
-        messenger.postProfile(profile);
+        Messenger.getInstance().postProfile(profile);
         return 'Nickname updated, profile: ' + info;
     };
 
     Application.prototype.doShow = function (what) {
         if (what === 'users') {
-            messenger.queryOnlineUsers();
+            Messenger.getInstance().queryOnlineUsers();
             return 'Querying online users ...';
         }
         return 'Command error: show ' + what;
     };
     Application.prototype.doSearch = function (number) {
-        messenger.searchUsers(number);
+        Messenger.getInstance().searchUsers(number);
         return 'Searching users: ' + number;
     };
 
     Application.prototype.doProfile = function (identifier) {
-        identifier = facebook.getIdentifier(identifier);
+        identifier = Facebook.getInstance().getIdentifier(identifier);
         if (!identifier) {
             return 'User error: ' + name;
         }
-        messenger.queryProfile(identifier);
+        Messenger.getInstance().queryProfile(identifier);
         if (identifier.getType().isGroup()) {
             return 'Querying profile for group: ' + identifier;
         } else {

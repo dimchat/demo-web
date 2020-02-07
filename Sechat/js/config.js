@@ -8,10 +8,11 @@ var app;
 
 var notificationCenter;
 
-var kNotificationStationConnected = 'StationConnected';
+var kNotificationStationConnecting = 'StationConnecting';
+var kNotificationStationConnected  = 'StationConnected';
 var kNotificationHandshakeAccepted = 'HandshakeAccepted';
-var kNotificationMessageReceived = 'MessageReceived';
-var kNotificationProfileUpdated = 'ProfileUpdated';
+var kNotificationMessageReceived   = 'MessageReceived';
+var kNotificationProfileUpdated    = 'ProfileUpdated';
 
 !function (ns) {
     'use strict';
@@ -88,6 +89,7 @@ var kNotificationProfileUpdated = 'ProfileUpdated';
 
     server = new Server(sid, host, port);
     facebook.cacheUser(server);
+    server.stationDelegate = app;
 
     messenger = DIMP.Messenger.getInstance();
     messenger.delegate = server;

@@ -15,6 +15,7 @@
     var UserTable = ns.db.UserTable;
 
     var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
 
     var s_facebook = null;
     Facebook.getInstance = function () {
@@ -26,6 +27,9 @@
             s_facebook.immortals = new Immortals();
             // local users
             s_facebook.users = null;
+            // for duplicated querying
+            s_facebook.metaQueryTime = {}; // ID -> Date
+            s_facebook.profileQueryTime = {}; // ID -> Date
         }
         return s_facebook;
     };
@@ -158,15 +162,27 @@
             // broadcast ID has not meta
             return null;
         }
+        // try from database
         var db = Table.create(MetaTable);
         var meta = db.loadMeta(identifier);
-        if (!meta && identifier.getType().isPerson()) {
+        if (meta) {
+            return meta;
+        }
+        // try from immortals
+        if (identifier.getType().isPerson()) {
             meta = this.immortals.getMeta(identifier);
             if (meta) {
                 return meta;
             }
         }
         // check for duplicated querying
+        var now = new Date();
+        var last = this.metaQueryTime[identifier];
+        if (!last || (now.getTime() - last.getTime()) > 30000) {
+            this.metaQueryTime[identifier] = now;
+            // query from DIM network
+            Messenger.getInstance().queryMeta(identifier);
+        }
         return meta;
     };
 
@@ -193,15 +209,31 @@
     };
     // Override
     Facebook.prototype.loadProfile = function(identifier) {
+        // try from database
         var db = Table.create(ProfileTable);
         var profile = db.loadProfile(identifier);
-        if (!profile && identifier.getType().isPerson()) {
+        if (profile) {
+            // is empty?
+            var names = profile.allPropertyNames();
+            if (names && names.length > 0) {
+                return profile;
+            }
+        }
+        // try from immortals
+        if (identifier.getType().isPerson()) {
             var tai = this.immortals.getProfile(identifier);
             if (tai) {
                 return tai;
             }
         }
         // check for duplicated querying
+        var now = new Date();
+        var last = this.profileQueryTime[identifier];
+        if (!last || (now.getTime() - last.getTime()) > 30000) {
+            this.profileQueryTime[identifier] = now;
+            // query from DIM network
+            Messenger.getInstance().queryProfile(identifier);
+        }
         return profile;
     };
 

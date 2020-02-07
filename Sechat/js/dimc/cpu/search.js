@@ -40,6 +40,9 @@
 
     var CommandProcessor = ns.cpu.CommandProcessor;
 
+    var Facebook = ns.Facebook;
+    var NotificationCenter = ns.stargate.NotificationCenter;
+
     /**
      *  Search Command Processor
      */
@@ -52,7 +55,6 @@
     //  Main
     //
     SearchCommandProcessor.prototype.process = function (cmd, sender, msg) {
-        // no need to response receipt command
         var users = cmd.getUsers();
 
         var cnt = users ? users.length : 0;
@@ -70,6 +72,7 @@
 
         var results = cmd.getResults();
         if (results) {
+            var facebook = Facebook.getInstance();
             var id, meta;
             var keys = Object.keys(results);
             for (var j = 0; j < keys.length; ++j) {
@@ -89,7 +92,8 @@
 
         cmd.setValue('text', text);
 
-        notificationCenter.postNotification(kNotificationMessageReceived, this, msg);
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(kNotificationMessageReceived, this, msg);
         return null;
     };
 
