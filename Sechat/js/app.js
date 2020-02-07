@@ -33,37 +33,36 @@
         console.log(str);
     };
 
-    Application.prototype.getCurrentUser = function () {
+    var auto_login = function () {
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (!user) {
+            this.write('Creating new user ...');
             // create new user
             var reg = new Register();
             user = reg.createUser('Anonymous');
             if (user) {
                 facebook.setCurrentUser(user);
-            } else {
-                this.write('Failed to create user');
             }
         }
-        return user;
+        if (user) {
+            return this.doLogin(user.identifier);
+        } else {
+            return 'Failed to get current user';
+        }
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
         var facebook = Facebook.getInstance();
         var name = notification.name;
         var userInfo = notification.userInfo;
-        var user = facebook.getCurrentUser();
         var res;
         if (name === kNotificationStationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
         } else if (name === kNotificationStationConnected) {
             this.write('Station connected.');
-            if (user) {
-                res = this.doLogin(user.identifier);
-            } else {
-                res = 'Current user not found.';
-            }
+            // auto login after connected
+            res = auto_login.call(this);
         } else if (name === kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
             res = this.doCall('station');
