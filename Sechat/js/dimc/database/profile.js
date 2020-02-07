@@ -50,8 +50,14 @@
         this.profiles[identifier] = profile;
         console.log('saving profile for ' + identifier);
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationProfileUpdated, this, profile);
-        return save_profiles(this.profiles);
+        if (save_profiles(this.profiles)) {
+            nc.postNotification(kNotificationProfileUpdated, this, profile);
+        } else {
+            var text = 'failed to save profile: '
+                + profile.getIdentifier() + ' -> '
+                + profile.getValue('data');
+            console.log(text);
+        }
     };
 
     //-------- namespace --------

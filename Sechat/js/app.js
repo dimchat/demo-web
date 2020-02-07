@@ -3,6 +3,7 @@
 //!require <dimsdk.js>
 
 !function (ns) {
+    'use strict';
 
     var Facebook = ns.Facebook;
 
@@ -18,10 +19,19 @@
         nc.addObserver(this, kNotificationStationConnecting);
         nc.addObserver(this, kNotificationStationConnected);
         nc.addObserver(this, kNotificationHandshakeAccepted);
-        nc.addObserver(this, kNotificationMessageReceived);
+        nc.addObserver(this, kNotificationMetaAccepted);
         nc.addObserver(this, kNotificationProfileUpdated);
+        nc.addObserver(this, kNotificationMessageReceived);
     };
     Application.inherits(StationDelegate);
+
+    Application.prototype.write = function () {
+        var str = '';
+        for (var i = 0; i < arguments.length; ++i) {
+            str += arguments[i] + '';
+        }
+        console.log(str);
+    };
 
     Application.prototype.getCurrentUser = function () {
         var user = Facebook.getInstance().getCurrentUser();
@@ -39,30 +49,37 @@
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
-        var user = this.getCurrentUser();
-        var res = null;
         var name = notification.name;
         var userInfo = notification.userInfo;
+        var user = this.getCurrentUser();
+        var res;
         if (name === kNotificationStationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
         } else if (name === kNotificationStationConnected) {
             this.write('Station connected.');
             if (user) {
                 res = this.doLogin(user.identifier);
+            } else {
+                res = 'Current user not found.';
             }
         } else if (name === kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
             res = this.doCall('station');
+        } else if (name === kNotificationMetaAccepted) {
+            var identifier = notification.userInfo['ID'];
+            res = '[Meta saved] ID: ' + identifier;
+        } else if (name === kNotificationProfileUpdated) {
+            var profile = notification.userInfo;
+            res = '[Profile updated] ID: ' + profile.getIdentifier()
+                + ' -> ' + profile.getValue('data');
         } else if (name === kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
             var nickname = Facebook.getInstance().getUsername(sender);
             var text = msg.content.getValue('text');
             res = '[Message received] ' + nickname + ': ' + text;
-        } else if (name === kNotificationProfileUpdated) {
-            var profile = notification.userInfo;
-            res = '[Profile updated] ID: ' + profile.getIdentifier()
-                + ' -> ' + profile.getValue('data');
+        } else {
+            res = 'Unknown notification: ' + name;
         }
         this.write(res);
     };
@@ -71,10 +88,14 @@
     //  StationDelegate
     //
     Application.prototype.didSendPackage = function (data, server) {
+        console.assert(data !== null, 'data empty');
+        console.assert(server !== null, 'server empty');
         this.write('Message sent!');
     };
     Application.prototype.didFailToSendPackage = function (error, data, server) {
-        this.write('Failed to send message, please check connection.');
+        console.assert(data !== null, 'data empty');
+        console.assert(server !== null, 'server empty');
+        this.write('Failed to send message, please check connection. error: ' + error);
     };
 
     window.Application = Application;
@@ -129,7 +150,7 @@
     text = text.replace(/</g, '&lt;');
     text = text.replace(/>/g, '&gt;');
     text = text.replace(/\n/g, '<br/>');
-    text = text.replace(/  /g, ' &nbsp;');
+    text = text.replace(/ {2}/g, ' &nbsp;');
 
     Application.prototype.doHelp = function () {
         return text;
@@ -152,7 +173,7 @@
         if (this.receiver) {
             var contact = Facebook.getInstance().getUser(this.receiver);
             if (contact) {
-                contact = contact.getName();
+                contact = contact.getName() + '(' + this.receiver + ')';
             } else {
                 contact = this.receiver;
             }

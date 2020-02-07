@@ -11,8 +11,9 @@ var notificationCenter;
 var kNotificationStationConnecting = 'StationConnecting';
 var kNotificationStationConnected  = 'StationConnected';
 var kNotificationHandshakeAccepted = 'HandshakeAccepted';
-var kNotificationMessageReceived   = 'MessageReceived';
+var kNotificationMetaAccepted      = 'MetaAccepted';
 var kNotificationProfileUpdated    = 'ProfileUpdated';
+var kNotificationMessageReceived   = 'MessageReceived';
 
 !function (ns) {
     'use strict';
