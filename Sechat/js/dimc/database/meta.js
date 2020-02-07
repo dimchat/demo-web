@@ -47,6 +47,10 @@
     };
     MetaTable.prototype.saveMeta = function (meta, identifier) {
         this.loadMeta(identifier);
+        if (this.metas[identifier]) {
+            console.log('meta already exists: ' + identifier);
+            return true;
+        }
         this.metas[identifier] = meta;
         console.log('saving meta for ' + identifier);
         var nc = NotificationCenter.getInstance();
