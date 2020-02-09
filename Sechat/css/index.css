@@ -28,3 +28,16 @@ body {
 .output.error {
     color: rgb(253, 161, 18);
 }
+
+#tarsier-status {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    padding: 2px 8px;
+    z-index: 3333;
+    background-color: #8e0000;
+    color: yellow;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    white-space: nowrap;"
+}

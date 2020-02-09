@@ -1,6 +1,100 @@
 ;
 
-!function () {
+if (typeof dimsdk !== "object") {
+    dimsdk = {}
+}
+
+!function (ns) {
+    'use strict';
+
+    var Loader = function (base) {
+        this.base = base;
+        this.status = document.getElementById('tarsier-status');
+        this.alpha = 0;
+        this.timer = null;
+    };
+
+    Loader.prototype.startAnimate = function (action) {
+        this.stopAnimate();
+        this.timer = window.setInterval(action, 100);
+    };
+    Loader.prototype.stopAnimate = function () {
+        if (this.timer) {
+            window.clearInterval(this.timer);
+            this.timer = null;
+        }
+    };
+
+    Loader.prototype.showStatus = function (string) {
+        if (!this.status) {
+            return;
+        }
+        this.stopAnimate();
+        this.status.innerText = string;
+        this.setAlpha(100);
+    };
+
+    Loader.prototype.fadeOut = function () {
+        var loader = this;
+        this.startAnimate(function () {
+            var alpha = loader.getAlpha();
+            if (alpha < 10) {
+                loader.setAlpha(0);
+                loader.stopAnimate();
+            } else {
+                loader.setAlpha(alpha - 10);
+            }
+        });
+    };
+
+    Loader.prototype.getAlpha = function () {
+        return this.alpha;
+    };
+    Loader.prototype.setAlpha = function (alpha) {
+        if (!this.status) {
+            return;
+        }
+        var ua = window.navigator.userAgent.toLowerCase();
+        if (ua.indexOf("msie") !== -1 && ua.indexOf("opera") === -1) {
+            this.status.style.filter = "Alpha(Opacity=" + alpha + ")";
+        } else {
+            this.status.style.opacity = String(alpha / 100.0);
+        }
+        if (alpha < 1) {
+            this.status.style.display = 'none';
+        } else {
+            this.status.style.display = '';
+        }
+        this.alpha = alpha;
+    };
+
+    Loader.prototype.importCSS = function (href) {
+        tarsier.importCSS(href);
+    };
+
+    Loader.prototype.importJS = function (src, callback) {
+        var loader = this;
+        tarsier.importJS(src, function () {
+            var tasks = tarsier.base.importings;
+            if (tasks.length > 1) {
+                var next = tasks[1];
+                loader.showStatus('Loading ' + loader.base + next.url + ' ...');
+            } else {
+                setTimeout(function () {
+                    loader.fadeOut();
+                }, 2000);
+            }
+            if (callback) {
+                callback();
+            }
+        });
+    };
+
+    ns.Loader = Loader;
+
+}(dimsdk);
+
+!function (ns) {
     'use strict';
 
     var html =
@@ -13,16 +107,22 @@
         '            <span class="prompt">$</span>&nbsp;<span class="input"><span class="left"></span><span class="cursor blink">&nbsp;</span><span class="right"></span></span>\n' +
         '        </div>\n' +
         '    </div>\n';
+
+    html += '<div id="tarsier-status">Loading tarsier ...</div>';
+
     document.body.innerHTML = html;
 
-}();
+}(dimsdk);
 
-!function () {
+!function (ns) {
     'use strict';
 
     var base = 'http://dimchat.github.io/demo/';
     // var base = window.location.href.replace('index.html', '');
 
+    var stylesheets = [
+        'css/index.css'
+    ];
     var scripts = [
         /* third party cryptography libs */
         'js/sdk/3rd/crypto-js/core.js',
@@ -67,9 +167,6 @@
         'js/console.js',
         'js/app.js'
     ];
-    var stylesheets = [
-        'css/index.css'
-    ];
 
     var main = function () {
         $(function () {
@@ -78,13 +175,15 @@
         });
     };
 
+    var loader = new ns.Loader(base);
+
     for (var i = 0; i < stylesheets.length; ++i) {
-        tarsier.importCSS(base + stylesheets[i]);
+        loader.importCSS(stylesheets[i]);
     }
 
     for (var j = 0; j < scripts.length; ++j) {
-        tarsier.importJS(base + scripts[j]);
+        loader.importJS(scripts[j]);
     }
-    tarsier.importJS(base + 'js/config.js', main);
+    loader.importJS('js/config.js', main);
 
-}();
+}(dimsdk);
