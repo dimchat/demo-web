@@ -161,7 +161,7 @@ if (typeof dimsdk !== "object") {
         'js/dimc/messenger.js',
 
         /* UI: Console */
-        'js/3rd/jquery-1.8.3.min.js',
+        'js/3rd/jquery-3.4.1.slim.min.js',
         'js/3rd/underscore-1.8.2.min.js',
 
         'js/console.js',

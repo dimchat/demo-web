@@ -24,6 +24,16 @@ var kNotificationMessageReceived   = 'MessageReceived';
 
     facebook = DIMP.Facebook.getInstance();
 
+    // patch for search number
+    var getIdentifier = facebook.getIdentifier;
+    facebook.getIdentifier = function (string) {
+        var identifier = getIdentifier.call(this, string);
+        if (identifier && this.ans && !this.ans.getIdentifier(string)) {
+            this.ans.cache(String(identifier.getNumber()), identifier);
+        }
+        return identifier;
+    };
+
     var force_ans = function (name, identifier) {
         identifier = facebook.getIdentifier(identifier);
         // cheat the reserved names checking
