@@ -80,7 +80,7 @@
         this.waitingList = []; // RequestWrapper
         this.sendingTable = {}; // String -> RequestWrapper
     };
-    Server.inherits(Station, MessengerDelegate, StarDelegate, StateDelegate);
+    ns.type.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
 
     Server.prototype.getCurrentUser = function () {
         return this.currentUser;

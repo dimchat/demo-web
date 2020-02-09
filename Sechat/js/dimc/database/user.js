@@ -61,7 +61,7 @@
         if (!list.contains(user)) {
             throw Error('user not exists: ' + user);
         }
-        list.remove(user);
+        ns.type.Arrays.remove(list, user);
         return save_users(list);
     };
 
@@ -84,7 +84,7 @@
             return;
         } else if (index > 0) {
             // already exists, but not the first user
-            list.remove(user);
+            ns.type.Arrays.remove(list, user);
         }
         list.unshift(user);
         save_users(list);

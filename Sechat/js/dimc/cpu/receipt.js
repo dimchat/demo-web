@@ -45,7 +45,7 @@
     var ReceiptCommandProcessor = function (messenger) {
         CommandProcessor.call(this, messenger);
     };
-    ReceiptCommandProcessor.inherits(CommandProcessor);
+    ns.type.Class(ReceiptCommandProcessor, CommandProcessor);
 
     //
     //  Main

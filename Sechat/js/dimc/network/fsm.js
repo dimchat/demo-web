@@ -44,7 +44,7 @@
         State.call(this);
         this.name = name;
     };
-    ServerState.inherits(State);
+    ns.type.Class(ServerState, State);
 
     ServerState.prototype.equals = function (state) {
         if (state instanceof ServerState) {
@@ -210,7 +210,7 @@
 
         this.server = null;
     };
-    StateMachine.inherits(Machine);
+    ns.type.Class(StateMachine, Machine);
 
     StateMachine.prototype.addState = function (state) {
         Machine.prototype.addState.call(this, state, state.name);

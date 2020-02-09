@@ -56,7 +56,7 @@
             this.setKeywords(keywords);
         }
     };
-    SearchCommand.inherits(Command);
+    ns.type.Class(SearchCommand, Command);
 
     SearchCommand.SEARCH = 'search';
     SearchCommand.ONLINE_USERS = 'users'; // search online users

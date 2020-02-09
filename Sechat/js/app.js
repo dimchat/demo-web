@@ -23,7 +23,7 @@
         nc.addObserver(this, kNotificationProfileUpdated);
         nc.addObserver(this, kNotificationMessageReceived);
     };
-    Application.inherits(StationDelegate);
+    ns.type.Class(Application, null, StationDelegate);
 
     Application.prototype.write = function () {
         var str = '';

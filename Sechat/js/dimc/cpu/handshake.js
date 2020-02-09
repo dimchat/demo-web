@@ -46,7 +46,7 @@
     var HandshakeCommandProcessor = function (messenger) {
         CommandProcessor.call(this, messenger);
     };
-    HandshakeCommandProcessor.inherits(CommandProcessor);
+    ns.type.Class(HandshakeCommandProcessor, CommandProcessor);
 
     var success = function () {
         var session = this.getContext('session_key');
