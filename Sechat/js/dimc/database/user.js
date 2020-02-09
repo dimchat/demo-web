@@ -47,7 +47,7 @@
             user = user.identifier;
         }
         var list = this.allUsers();
-        if (list.contains(user)) {
+        if (list.indexOf(user) >= 0) {
             throw Error('user already exists: ' + user);
         }
         list.push(user);
@@ -58,7 +58,7 @@
             user = user.identifier;
         }
         var list = this.allUsers();
-        if (!list.contains(user)) {
+        if (list.indexOf(user) < 0) {
             throw Error('user not exists: ' + user);
         }
         ns.type.Arrays.remove(list, user);
