@@ -72,7 +72,7 @@ $(function() {
         // console.log(String.fromCharCode(e.which));
 
         if (e.which === 32) {       // space
-            $left.append('&nbsp;');
+            // already process in keydown()
         } else if(e.which !== 13) { // enter
             $left.append(String.fromCharCode(e.which));
         }
@@ -83,7 +83,9 @@ $(function() {
     $(document).keydown(function(e) {
         // console.log(e.which);
 
-        if (e.which === 13) {           // enter
+        if (e.which === 32) {       // space
+            $left.append('&nbsp;');
+        } else if (e.which === 13) {           // enter
             var cmd = $.trim($input.text());
             var val_ouput = '';
             var err_class = '';
