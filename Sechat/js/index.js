@@ -14,9 +14,9 @@ if (typeof dimsdk !== "object") {
         this.timer = null;
     };
 
-    Loader.prototype.startAnimate = function (action) {
+    Loader.prototype.startAnimate = function (action, timeout) {
         this.stopAnimate();
-        this.timer = window.setInterval(action, 100);
+        this.timer = window.setInterval(action, timeout);
     };
     Loader.prototype.stopAnimate = function () {
         if (this.timer) {
@@ -31,20 +31,20 @@ if (typeof dimsdk !== "object") {
         }
         this.stopAnimate();
         this.status.innerText = string;
-        this.setAlpha(100);
+        this.setAlpha(55);
     };
 
     Loader.prototype.fadeOut = function () {
         var loader = this;
         this.startAnimate(function () {
             var alpha = loader.getAlpha();
-            if (alpha < 10) {
+            if (alpha < 5) {
                 loader.setAlpha(0);
                 loader.stopAnimate();
             } else {
-                loader.setAlpha(alpha - 10);
+                loader.setAlpha(alpha - 5);
             }
-        });
+        }, 50);
     };
 
     Loader.prototype.getAlpha = function () {
@@ -117,9 +117,6 @@ if (typeof dimsdk !== "object") {
 !function (ns) {
     'use strict';
 
-    // var base = 'http://dimchat.github.io/demo/';
-    var base = window.location.href.replace('index.html', '');
-
     var stylesheets = [
         'css/index.css'
     ];
@@ -175,7 +172,14 @@ if (typeof dimsdk !== "object") {
         });
     };
 
+    // create loader with base URL
+    var tasks = tarsier.base.importings;
+    var current = tasks[0];
+    var url = current.url;
+    var base = url.substring(0, url.indexOf('js/index.js'));
+
     var loader = new ns.Loader(base);
+    loader.showStatus('Loading DIM client from ' + base + ' ...');
 
     for (var i = 0; i < stylesheets.length; ++i) {
         loader.importCSS(stylesheets[i]);
