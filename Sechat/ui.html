@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DIMP Client" />
+    <meta name="author" content="Albert Moky" />
+
+    <link rel="stylesheet" type="text/css" href="css/index.css"/>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+
+    /* third party cryptography libs */
+    <script src='js/sdk/3rd/crypto-js/core.js'></script>
+    <script src='js/sdk/3rd/crypto-js/cipher-core.js'></script>
+    <script src='js/sdk/3rd/crypto-js/aes.js'></script>
+    <script src='js/sdk/3rd/crypto-js/md5.js'></script>
+    <script src='js/sdk/3rd/crypto-js/sha256.js'></script>
+    <script src='js/sdk/3rd/crypto-js/ripemd160.js'></script>
+    <script src='js/sdk/3rd/jsencrypt.js'></script>
+    /* DIM SDK *
+    <script src='js/sdk/dimsdk.js'></script>
+    /* DIM Client */
+    <script src='js/dimc/protocol/search.js'></script>
+    <script src='js/dimc/cpu/default.js'></script>
+    <script src='js/dimc/cpu/handshake.js'></script>
+    <script src='js/dimc/cpu/receipt.js'></script>
+    <script src='js/dimc/cpu/search.js'></script>
+    <script src='js/dimc/extensions/register.js'></script>
+    <script src='js/dimc/extensions/password.js'></script>
+    <script src='js/dimc/network/fsm.js'></script>
+    <script src='js/dimc/network/delegate.js'></script>
+    <script src='js/dimc/network/request.js'></script>
+    <script src='js/dimc/network/server.js'></script>
+    <script src='js/dimc/database/table.js'></script>
+    <script src='js/dimc/database/meta.js'></script>
+    <script src='js/dimc/database/private.js'></script>
+    <script src='js/dimc/database/profile.js'></script>
+    <script src='js/dimc/database/user.js'></script>
+    <script src='js/dimc/cache.js'></script>
+    <script src='js/dimc/ans.js'></script>
+    <script src='js/dimc/facebook.js'></script>
+    <script src='js/dimc/messenger.js'></script>
+    /* UI: Console */
+    <script src='js/3rd/jquery-3.4.1.js'></script>
+    <script src='js/3rd/underscore-1.8.2.min.js'></script>
+    <script src='js/3rd/popper.min.js'></script>
+    <script src='js/3rd/bootstrap.min.js'></script>
+    <script src='js/3rd/vue.js'></script>
+    <script src='js/console.js'></script>
+    <script src='js/appui.js'></script>
+    <script src='js/config.js'></script>
+
+    <script src=""></script>
+    <title>DIM Demo</title>
+</head>
+<body>
+<div id="vue1" class="container-fluid" style="">
+    <div class="row">
+        {{user.getName()}} {{user.getProfile().dictionary.ID}} server: {{server.host}}:{{server.port}}
+    </div>
+    <div class="row">
+    <div class="col-4 bg-light col-xl-2">
+        <div>
+            <span>在线用户</span>
+            <input type="button" value="refresh" class="float-right" v-on:click="refreshOnlineUsers()"/>
+        </div>
+        <select class="form-control" v-if="onlineUsers" size="20" v-model="selectedIdentifier">
+            <option v-for="onlineUser in onlineUsers">{{onlineUser.string}}</option>
+        </select>
+    </div>
+    <div class="col-8" v-if="target">
+        <div>
+            {{target.string}}
+        </div>
+        <div class="row">
+            <div id="messages_div" class="col" style="max-height: 500px;overflow: scroll;">
+                <div v-for="message in messages[target.string]">
+                    <div class="from_user_row">{{message.sender}} <span class="text-muted">{{message.time | formatDate}}</span></div>
+                    <div>{{message.content.text}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xl-8 col-12">
+                <textarea rows="3" v-model="textInput" class="form-control"></textarea>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <button class="btn btn-primary" v-on:click="send()">send</button>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+<div id="console1"></div>
+<script src='js/ui.js'></script>
+</body>
+</html>
