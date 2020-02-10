@@ -287,12 +287,32 @@
     //  StateDelegate
     //
 
+    var carry_on = function () {
+        var state;
+        var wrapper;
+        while (this.waitingList.length > 0) {
+            wrapper = this.waitingList.shift();
+            state = this.getCurrentState();
+            if (state.equals(StateMachine.runningState)) {
+                this.sendPackage(wrapper.data, wrapper.handler);
+            } else {
+                console.log('connection lost, waiting task(s) interrupted');
+                this.waitingList.unshift(wrapper);
+                break;
+            }
+        }
+    };
+
     Server.prototype.enterState = function (state, machine) {
         if (state.equals(StateMachine.handshakingState)) {
             // start handshake
             this.handshake();
         } else if (state.equals(StateMachine.runningState)) {
             // TODO: send all packages waiting
+            var srv = this;
+            setTimeout(function () {
+                carry_on.call(srv);
+            }, 1000);
         }
     };
     Server.prototype.exitState = function (state, machine) {
