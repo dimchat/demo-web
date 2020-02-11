@@ -1424,7 +1424,6 @@ if (typeof MingKeMing !== "object") {
             }
         }
         Dictionary.call(this, info);
-        this.identifier = null;
         this.key = null;
         this.data = null;
         this.signature = null;
@@ -1436,10 +1435,7 @@ if (typeof MingKeMing !== "object") {
         return this.status >= 0
     };
     Profile.prototype.getIdentifier = function() {
-        if (!this.identifier) {
-            this.identifier = this.getValue("ID")
-        }
-        return this.identifier
+        return this.getValue("ID")
     };
     Profile.prototype.getData = function() {
         if (!this.data) {

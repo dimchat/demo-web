@@ -175,7 +175,6 @@
             console.log('already connected to ' + host + ':' + port);
             return;
         }
-        this.fsm.changeState(this.fsm.defaultStateName);
 
         var nc = NotificationCenter.getInstance();
         nc.postNotification(kNotificationStationConnecting, this, {
