@@ -56,6 +56,13 @@
         }
     };
 
+    ServerState.prototype.toString = function () {
+        return '<ServerState:' + this.name + '>';
+    };
+    ServerState.prototype.toLocaleString = function () {
+        return '<ServerState:' + this.name.toLocaleString() + '>';
+    };
+
     ServerState.prototype.onEnter = function(machine) {
         console.assert(machine !== null, "machine empty");
         console.log('onEnter: ' + this.name + ' state');

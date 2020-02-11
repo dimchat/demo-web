@@ -18,6 +18,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, kNotificationStationConnecting);
         nc.addObserver(this, kNotificationStationConnected);
+        nc.addObserver(this, kNotificationStationError);
         nc.addObserver(this, kNotificationHandshakeAccepted);
         nc.addObserver(this, kNotificationMetaAccepted);
         nc.addObserver(this, kNotificationProfileUpdated);
@@ -63,6 +64,8 @@
             this.write('Station connected.');
             // auto login after connected
             res = auto_login.call(this);
+        } else if (name === kNotificationStationError) {
+            this.write('Connection error.');
         } else if (name === kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
             res = this.doCall('station');
@@ -214,15 +217,18 @@
     };
 
     Application.prototype.doTelnet = function (address) {
-        var options = {};
-        var pair = address.split(/[: ]+/);
-        if (pair.length === 1) {
-            options['host'] = pair[0];
-        } else if (pair.length === 2) {
-            options['host'] = pair[0];
-            options['port'] = pair[1];
+        var host = server.host;
+        var port = server.port;
+        if (address) {
+            var pair = address.split(/[: ]+/);
+            if (pair.length === 1) {
+                host = pair[0];
+            } else if (pair.length === 2) {
+                host = pair[0];
+                port = Number(pair[1]);
+            }
         }
-        server.start(options);
+        server.connect(host, port);
     };
 
     Application.prototype.doLogin = function (name) {

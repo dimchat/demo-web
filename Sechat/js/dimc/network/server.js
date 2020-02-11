@@ -118,15 +118,14 @@
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
             // FIXME: sometimes the connection state will be reset
+            console.log('server state error: ' + state);
             return;
         }
         // check connection status == 'Connected'
         if (!this.getStatus().equals(StarStatus.Connected)) {
             // FIXME: sometimes the connection will be lost while handshaking
+            console.log('server state error: ' + state);
             return;
-        }
-        if (session) {
-            this.session = session;
         }
         var user = this.getCurrentUser();
         // create handshake command
@@ -153,7 +152,8 @@
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
             // FIXME: sometimes the connection state will be reset
-            return;
+            console.log('server state error: ' + state);
+            // return;
         }
         if (success) {
             console.log('handshake accepted for user: ' + this.getCurrentUser());
@@ -165,6 +165,28 @@
         } else {
             console.log('handshake again with session: ' + session);
         }
+    };
+
+    Server.prototype.connect = function (host, port) {
+        this.fsm.changeState(this.fsm.defaultStateName);
+        if (this.getStatus().equals(StarStatus.Connected) &&
+            host === this.host &&
+            port === this.port) {
+            console.log('already connected to ' + host + ':' + port);
+            return;
+        }
+        this.fsm.changeState(this.fsm.defaultStateName);
+
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(kNotificationStationConnecting, this, {
+            'host': host,
+            'port': port
+        });
+
+        this.star.connect(host, port);
+
+        this.host = host;
+        this.port = port;
     };
 
     Server.prototype.start = function (options) {
@@ -304,15 +326,29 @@
     };
 
     Server.prototype.enterState = function (state, machine) {
-        if (state.equals(StateMachine.handshakingState)) {
+        if (state.equals(StateMachine.defaultState)) {
+            //
+        } else if (state.equals(StateMachine.connectingState)) {
+            //
+        } else if (state.equals(StateMachine.connectedState)) {
+            //
+        } else if (state.equals(StateMachine.handshakingState)) {
             // start handshake
-            this.handshake();
+            var session = this.session;
+            this.session = null;
+            this.handshake(session);
         } else if (state.equals(StateMachine.runningState)) {
             // TODO: send all packages waiting
             var srv = this;
             setTimeout(function () {
                 carry_on.call(srv);
             }, 1000);
+        } else if (state.equals(StateMachine.errorState)) {
+            console.log('Station connection error!');
+            var nc = NotificationCenter.getInstance();
+            nc.postNotification(kNotificationStationError, this, null);
+        } else if (state.equals(StateMachine.stoppedState)) {
+            console.log('Station stop.');
         }
     };
     Server.prototype.exitState = function (state, machine) {
