@@ -1,9 +1,5 @@
 ;
 
-if (typeof dimsdk !== "object") {
-    dimsdk = {}
-}
-
 !function (ns) {
     'use strict';
 
@@ -69,12 +65,20 @@ if (typeof dimsdk !== "object") {
     };
 
     Loader.prototype.importCSS = function (href) {
-        tarsier.importCSS(this.base + href);
+        var url = href;
+        if (href.indexOf('://') < 0) {
+            url = this.base + href;
+        }
+        tarsier.importCSS(url);
     };
 
     Loader.prototype.importJS = function (src, callback) {
+        var url = src;
+        if (src.indexOf('://') < 0) {
+            url = this.base + src;
+        }
         var loader = this;
-        tarsier.importJS(this.base + src, function () {
+        tarsier.importJS(url, function () {
             var tasks = tarsier.base.importings;
             if (tasks.length > 1) {
                 var next = tasks[1];
@@ -92,7 +96,7 @@ if (typeof dimsdk !== "object") {
 
     ns.Loader = Loader;
 
-}(dimsdk);
+}(window);
 
 !function (ns) {
     'use strict';
@@ -112,7 +116,7 @@ if (typeof dimsdk !== "object") {
 
     document.body.innerHTML = html;
 
-}(dimsdk);
+}(window);
 
 !function (ns) {
     'use strict';
@@ -167,7 +171,8 @@ if (typeof dimsdk !== "object") {
 
     var main = function () {
         $(function () {
-            app.write = window.shell_output;
+            dimsdk.Application.prototype.write = window.shell_output;
+            var server = dimsdk.Messenger.getInstance().server;
             server.start();
         });
     };
@@ -190,4 +195,4 @@ if (typeof dimsdk !== "object") {
     }
     loader.importJS('js/config.js', main);
 
-}(dimsdk);
+}(window);

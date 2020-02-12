@@ -160,7 +160,7 @@
             this.session = session;
             // TODO: broadcast profile to DIM network
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationHandshakeAccepted,
+            nc.postNotification(nc.kNotificationHandshakeAccepted,
                 this, {session: session});
         } else {
             console.log('handshake again with session: ' + session);
@@ -177,7 +177,7 @@
         }
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationStationConnecting, this, {
+        nc.postNotification(nc.kNotificationStationConnecting, this, {
             'host': host,
             'port': port
         });
@@ -209,7 +209,7 @@
             };
         }
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationStationConnecting, this, options);
+        nc.postNotification(nc.kNotificationStationConnecting, this, options);
 
         if (!this.star) {
             var socket = new SocketClient(this);
@@ -217,7 +217,7 @@
             socket.onConnected = function () {
                 onConnected.call(this);
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(kNotificationStationConnected, this, options);
+                nc.postNotification(nc.kNotificationStationConnected, this, options);
             };
             this.star = socket;
         }
@@ -345,7 +345,7 @@
         } else if (state.equals(StateMachine.errorState)) {
             console.log('Station connection error!');
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationStationError, this, null);
+            nc.postNotification(nc.kNotificationStationError, this, null);
         } else if (state.equals(StateMachine.stoppedState)) {
             console.log('Station stop.');
         }

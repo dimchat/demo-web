@@ -16,15 +16,23 @@
     var Application = function () {
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, kNotificationStationConnecting);
-        nc.addObserver(this, kNotificationStationConnected);
-        nc.addObserver(this, kNotificationStationError);
-        nc.addObserver(this, kNotificationHandshakeAccepted);
-        nc.addObserver(this, kNotificationMetaAccepted);
-        nc.addObserver(this, kNotificationProfileUpdated);
-        nc.addObserver(this, kNotificationMessageReceived);
+        nc.addObserver(this, nc.kNotificationStationConnecting);
+        nc.addObserver(this, nc.kNotificationStationConnected);
+        nc.addObserver(this, nc.kNotificationStationError);
+        nc.addObserver(this, nc.kNotificationHandshakeAccepted);
+        nc.addObserver(this, nc.kNotificationMetaAccepted);
+        nc.addObserver(this, nc.kNotificationProfileUpdated);
+        nc.addObserver(this, nc.kNotificationMessageReceived);
     };
     ns.type.Class(Application, null, StationDelegate);
+
+    var s_application = null;
+    Application.getInstance = function () {
+        if (!s_application) {
+            s_application = new Application();
+        }
+        return s_application;
+    };
 
     Application.prototype.write = function () {
         var str = '';
@@ -58,25 +66,26 @@
         var name = notification.name;
         var userInfo = notification.userInfo;
         var res;
-        if (name === kNotificationStationConnecting) {
+        var nc = NotificationCenter.getInstance();
+        if (name === nc.kNotificationStationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
-        } else if (name === kNotificationStationConnected) {
+        } else if (name === nc.kNotificationStationConnected) {
             this.write('Station connected.');
             // auto login after connected
             res = auto_login.call(this);
-        } else if (name === kNotificationStationError) {
+        } else if (name === nc.kNotificationStationError) {
             this.write('Connection error.');
-        } else if (name === kNotificationHandshakeAccepted) {
+        } else if (name === nc.kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
             res = this.doCall('station');
-        } else if (name === kNotificationMetaAccepted) {
+        } else if (name === nc.kNotificationMetaAccepted) {
             var identifier = notification.userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
-        } else if (name === kNotificationProfileUpdated) {
+        } else if (name === nc.kNotificationProfileUpdated) {
             var profile = notification.userInfo;
             res = '[Profile updated] ID: ' + profile.getIdentifier()
                 + ' -> ' + profile.getValue('data');
-        } else if (name === kNotificationMessageReceived) {
+        } else if (name === nc.kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
             var nickname = facebook.getUsername(sender);
@@ -102,7 +111,7 @@
         this.write('Failed to send message, please check connection. error: ' + error);
     };
 
-    window.Application = Application;
+    ns.Application = Application;
 
 }(DIMP);
 
@@ -110,6 +119,7 @@
     'use strict';
 
     var Facebook = ns.Facebook;
+    var Application = ns.Application;
 
     var getCommand = function (cmd) {
         if (cmd) {
@@ -197,6 +207,7 @@
 
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
+    var Application = ns.Application;
 
     var Profile = ns.Profile;
     var TextContent = ns.protocol.TextContent;
@@ -204,6 +215,7 @@
     var StarStatus = ns.stargate.StarStatus;
 
     var check_connection = function () {
+        var server = Messenger.getInstance().server;
         var status = server.getStatus();
         if (status.equals(StarStatus.Connected)) {
             // connected
@@ -217,6 +229,7 @@
     };
 
     Application.prototype.doTelnet = function (address) {
+        var server = Messenger.getInstance().server;
         var host = server.host;
         var port = server.port;
         if (address) {
@@ -247,6 +260,7 @@
 
         var user = facebook.getUser(identifier);
         facebook.setCurrentUser(user);
+        var server = Messenger.getInstance().server;
         server.currentUser = user;
         return 'Trying to login: ' + identifier + ' ...';
     };
@@ -275,6 +289,8 @@
         if (res) {
             return res;
         }
+        var messenger = Messenger.getInstance();
+        var server = messenger.server;
         var user = server.currentUser;
         if (!user) {
             return 'Login first';
@@ -284,7 +300,7 @@
             return 'Please set a recipient';
         }
         var content = new TextContent(text);
-        if (Messenger.getInstance().sendContent(content, receiver)) {
+        if (messenger.sendContent(content, receiver)) {
             // return 'Sending message ...';
             return null;
         } else {

@@ -1,29 +1,31 @@
 ;
 
-var facebook;
-var messenger;
+//! require <dimsdk.js>
+//! require 'app.js'
 
-var server;
-var app;
+!function (ns) {
+    'use strict';
 
-var notificationCenter;
+    var NotificationCenter = ns.stargate.NotificationCenter;
 
-var kNotificationStationConnecting = 'StationConnecting';
-var kNotificationStationConnected  = 'StationConnected';
-var kNotificationStationError      = 'StationError';
-var kNotificationHandshakeAccepted = 'HandshakeAccepted';
-var kNotificationMetaAccepted      = 'MetaAccepted';
-var kNotificationProfileUpdated    = 'ProfileUpdated';
-var kNotificationMessageReceived   = 'MessageReceived';
+    var nc = NotificationCenter.getInstance();
+
+    nc.kNotificationStationConnecting = 'StationConnecting';
+    nc.kNotificationStationConnected  = 'StationConnected';
+    nc.kNotificationStationError      = 'StationError';
+    nc.kNotificationHandshakeAccepted = 'HandshakeAccepted';
+    nc.kNotificationMetaAccepted      = 'MetaAccepted';
+    nc.kNotificationProfileUpdated    = 'ProfileUpdated';
+    nc.kNotificationMessageReceived   = 'MessageReceived';
+
+}(DIMP);
 
 !function (ns) {
     'use strict';
 
     var Immortals = ns.Immortals;
 
-    var NotificationCenter = ns.stargate.NotificationCenter;
-
-    facebook = DIMP.Facebook.getInstance();
+    var facebook = ns.Facebook.getInstance();
 
     // patch for search number
     var getIdentifier = facebook.getIdentifier;
@@ -64,10 +66,6 @@ var kNotificationMessageReceived   = 'MessageReceived';
         force_ans(test_names[i], test_names[i+1]);
     }
 
-    notificationCenter = NotificationCenter.getInstance();
-
-    app = new Application();
-
 }(DIMP);
 
 !function (ns) {
@@ -76,6 +74,10 @@ var kNotificationMessageReceived   = 'MessageReceived';
     var Meta = ns.Meta;
 
     var Server = ns.network.Server;
+
+    var facebook = ns.Facebook.getInstance();
+    var messenger = ns.Messenger.getInstance();
+    var app = ns.Application.getInstance();
 
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
     sid = facebook.getIdentifier(sid);
@@ -99,11 +101,10 @@ var kNotificationMessageReceived   = 'MessageReceived';
     var host = '134.175.87.98'; // gz
     var port = 9394;
 
-    server = new Server(sid, host, port);
+    var server = new Server(sid, host, port);
     facebook.cacheUser(server);
     server.stationDelegate = app;
 
-    messenger = DIMP.Messenger.getInstance();
     messenger.delegate = server;
     messenger.server = server;
     server.messenger = messenger;

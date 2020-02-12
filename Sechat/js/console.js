@@ -1,4 +1,8 @@
 ;
+
+// namespaces
+dimsdk = dimp = DIMP;
+
 $(function() {
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
     var cmd_cache = [];
@@ -111,6 +115,7 @@ $(function() {
             $shell.before(template_output({separate:'$', value:cmd, error: ''}));
 
             try {
+                var app = dimsdk.Application.getInstance();
                 if (cmd) {
                     val_ouput = app.exec(cmd);
                 } else {
