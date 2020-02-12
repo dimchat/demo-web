@@ -165,6 +165,7 @@
         'js/3rd/jquery-3.4.1.slim.min.js',
         'js/3rd/underscore-1.8.2.min.js',
 
+        'js/bubble.js',
         'js/console.js',
         'js/app.js'
     ];

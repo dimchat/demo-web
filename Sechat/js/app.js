@@ -1,6 +1,7 @@
 ;
 
 //! require <dimsdk.js>
+//! require 'bubble.js'
 
 !function (ns) {
     'use strict';
@@ -14,6 +15,7 @@
     var NotificationCenter = ns.stargate.NotificationCenter;
 
     var Application = function () {
+        this.bubble = new Bubble();
         // notifications
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, nc.kNotificationStationConnecting);
@@ -34,12 +36,16 @@
         return s_application;
     };
 
-    Application.prototype.write = function () {
+    Application.prototype.tips = function () {
         var str = '';
         for (var i = 0; i < arguments.length; ++i) {
             str += arguments[i] + '';
         }
-        console.log(str);
+        this.bubble.showText(str);
+    };
+
+    Application.prototype.write = function () {
+        this.tips.apply(this, arguments);
     };
 
     var auto_login = function () {
@@ -80,11 +86,11 @@
             res = this.doCall('station');
         } else if (name === nc.kNotificationMetaAccepted) {
             var identifier = notification.userInfo['ID'];
-            res = '[Meta saved] ID: ' + identifier;
+            this.tips('[Meta saved] ID: ' + identifier);
         } else if (name === nc.kNotificationProfileUpdated) {
             var profile = notification.userInfo;
-            res = '[Profile updated] ID: ' + profile.getIdentifier()
-                + ' -> ' + profile.getValue('data');
+            this.tips('[Profile updated] ID: ' + profile.getIdentifier()
+                + ' -> ' + profile.getValue('data'))
         } else if (name === nc.kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
@@ -94,7 +100,9 @@
         } else {
             res = 'Unknown notification: ' + name;
         }
-        this.write(res);
+        if (res) {
+            this.write(res);
+        }
     };
 
     //
@@ -103,7 +111,7 @@
     Application.prototype.didSendPackage = function (data, server) {
         console.assert(data !== null, 'data empty');
         console.assert(server !== null, 'server empty');
-        this.write('Message sent!');
+        this.tips('Message sent!');
     };
     Application.prototype.didFailToSendPackage = function (error, data, server) {
         console.assert(data !== null, 'data empty');
