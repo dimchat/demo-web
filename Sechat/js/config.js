@@ -10,6 +10,7 @@ var notificationCenter;
 
 var kNotificationStationConnecting = 'StationConnecting';
 var kNotificationStationConnected  = 'StationConnected';
+var kNotificationStationError      = 'StationError';
 var kNotificationHandshakeAccepted = 'HandshakeAccepted';
 var kNotificationMetaAccepted      = 'MetaAccepted';
 var kNotificationProfileUpdated    = 'ProfileUpdated';
