@@ -128,9 +128,11 @@
         } else if (name === nc.kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
-            var username = facebook.getUsername(sender);
+            sender = facebook.getIdentifier(sender);
+            var nickname = facebook.getNickname(sender);
+            var number = facebook.getNumberString(sender);
             var text = msg.content.getValue('text');
-            res = username + ': ' + text;
+            res = nickname + ' (' + number + '): ' + text;
         } else {
             res = 'Unknown notification: ' + name;
         }

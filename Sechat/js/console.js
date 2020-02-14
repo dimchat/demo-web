@@ -34,10 +34,6 @@ $(function() {
 
         var err_class = '';
 
-        $left.text('');
-        $cursor.html('&nbsp;');
-        $right.text('');
-
         $shell.before(template_output({separate:'&gt;', value:str, error: err_class}));
 
         scroll_to_bottom();
