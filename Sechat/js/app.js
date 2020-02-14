@@ -303,10 +303,13 @@
         this.write('Current user: ' + nickname + ' (' + number + ')');
 
         var user = facebook.getUser(identifier);
-        facebook.setCurrentUser(user);
-        var server = Messenger.getInstance().server;
-        server.currentUser = user;
-        return 'Trying to login: ' + identifier + ' ...';
+        if (user) {
+            facebook.setCurrentUser(user);
+            Messenger.getInstance().login(user);
+            return 'Trying to login: ' + identifier + ' ...';
+        } else {
+            return 'Failed to get user: ' + identifier + ' ...';
+        }
     };
 
     Application.prototype.doLogout = function () {
