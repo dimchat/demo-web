@@ -30,6 +30,19 @@
 // =============================================================================
 //
 
+/**
+ *  Command message: {
+ *      type : 0x88,
+ *      sn   : 123,
+ *
+ *      command  : "search",        // or "users"
+ *
+ *      keywords : "keywords",      // keyword string
+ *      users    : ["ID"],          // user ID list
+ *      results  : {"ID": {meta}, } // user's meta map
+ *  }
+ */
+
 //! require <dimp.js>
 
 !function (ns) {

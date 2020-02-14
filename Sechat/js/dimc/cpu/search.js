@@ -57,10 +57,9 @@
         if (!identifier) {
             return string;
         }
-        // var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getNickname(identifier);
         var number = facebook.getNumberString(identifier);
-        return '(' + number + ') ' + identifier;
-        // return identifier + ' (' + number + ') "' + nickname + '"';
+        return identifier + ' (' + number + ') "' + nickname + '"';
     };
 
     //
@@ -69,14 +68,28 @@
     SearchCommandProcessor.prototype.process = function (cmd, sender, msg) {
         var users = cmd.getUsers();
 
+        var online = cmd.getCommand() === SearchCommand.ONLINE_USERS;
+
         var cnt = users ? users.length : 0;
         var text;
         if (cnt === 0) {
-            text = 'user not found';
+            if (online) {
+                text = 'No user online now.';
+            } else {
+                text = 'User not found.';
+            }
         } else if (cnt === 1) {
-            text = 'got one user - ' + user_info(users[0]);
+            if (online) {
+                text = 'One user online now,\n' + user_info(users[0]);
+            } else {
+                text = 'Got one user,\n' + user_info(users[0]);
+            }
         } else {
-            text = 'got ' + cnt + ' users - ';
+            if (online) {
+                text = cnt + ' users online now,';
+            } else {
+                text = 'Got ' + cnt + ' users,';
+            }
             for (var i = 0; i < cnt; ++i) {
                 text += '\n' + user_info(users[i]);
             }
