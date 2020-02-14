@@ -161,6 +161,15 @@
         return true;
     };
 
+    Messenger.prototype.sendProfile = function (profile, receiver) {
+        var facebook = this.getFacebook();
+        var identifier = profile.getIdentifier();
+        identifier = facebook.getIdentifier(identifier);
+        var meta = facebook.getMeta(identifier);
+        var cmd = ProfileCommand.response(identifier, profile, meta);
+        return this.sendContent(cmd, receiver);
+    };
+
     /**
      *  Post profile onto current station
      *
@@ -168,12 +177,10 @@
      * @returns {boolean}
      */
     Messenger.prototype.postProfile = function (profile) {
-        var facebook = this.getFacebook();
-        var identifier = profile.getIdentifier();
-        identifier = facebook.getIdentifier(identifier);
-        var meta = facebook.getMeta(identifier);
-        var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendCommand(cmd);
+        if (!this.server) {
+            throw Error('server not connect');
+        }
+        return this.sendProfile(profile, this.server.identifier);
     };
 
     Messenger.prototype.postContacts = function (contacts) {

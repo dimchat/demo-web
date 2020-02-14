@@ -3631,7 +3631,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.encodeData = function(data, msg) {
         if (is_broadcast_msg.call(this, msg)) {
             var str = new ns.type.String(data, "UTF-8");
-            return str.toString
+            return str.toString()
         }
         return ns.format.Base64.encode(data)
     };
@@ -5944,7 +5944,7 @@ if (typeof DaoKeDao !== "object") {
     Messenger.prototype.encryptMessage = function(msg) {
         var sMsg = Transceiver.prototype.encryptMessage.call(this, msg);
         var group = msg.content.getGroup();
-        if (!group) {
+        if (group) {
             sMsg.envelope.setGroup(group)
         }
         sMsg.envelope.setType(msg.content.type);

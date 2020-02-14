@@ -30,11 +30,7 @@ $(function() {
         for (var i = 0; i < arguments.length; ++i) {
             str += arguments[i] + '';
         }
-        str = str
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\n/g, '<br/>')
-            .replace(/  /g, ' &nbsp;');
+        str = Bubble.convertToString(str);
 
         var err_class = '';
 
@@ -62,7 +58,7 @@ $(function() {
             //e.clipboardData.getData('text/plain');
         }
         if (pastedText) {
-            $left.append(pastedText.replace(/  /g, ' &nbsp;'))
+            $left.append(pastedText.replace(/ {2}/g, ' &nbsp;'))
         }
     });
 

@@ -75,18 +75,24 @@
         identifier = this.getIdentifier(identifier);
         var username = identifier.name;
         var nickname = this.getNickname(identifier);
+        var number = this.getNumberString(identifier);
         if (nickname != null && nickname.length > 0) {
             if (identifier.getType().isUser()) {
                 if (username != null && username.length > 0) {
-                    return nickname + " (" + username + ")";
+                    return nickname + ' (' + username + ')';
+                } else {
+                    return nickname + ' (' + number + ')';
                 }
             }
             return nickname;
         } else if (username != null && username.length > 0) {
+            if (identifier.getType().isUser()) {
+                return username + ' (' + number + ')';
+            }
             return username;
         }
         // ID only contains address: BTC, ETH, ...
-        return identifier.address.toString();
+        return identifier.address.toString() + ' (' + number + ')';
     };
 
     Facebook.prototype.getNickname = function (identifier) {

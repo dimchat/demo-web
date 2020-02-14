@@ -30,18 +30,22 @@
     var join = function () {
         var str = '';
         for (var i = 0; i < arguments.length; ++i) {
-            str += arguments[i] + '';
+            str += arguments[i].toString();
         }
         return str;
     };
 
-    // var escape = function (html) {
-    //     return html
-    //         .replace(/</g, '&lt;')
-    //         .replace(/>/g, '&gt;')
-    //         .replace(/\n/g, '<br/>')
-    //         .replace(/ {2}/g, ' &nbsp;');
-    // };
+    var escape = function (html) {
+        return html
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br/>')
+            .replace(/ {2}/g, ' &nbsp;');
+    };
+
+    var convert = function () {
+        return escape(join.apply(this, arguments));
+    };
 
     var fadeout = function (div) {
         var alpha = div.alpha;
@@ -91,7 +95,7 @@
     };
 
     Bubble.prototype.showText = function () {
-        this.show(join.apply(this, arguments));
+        this.show(convert.apply(this, arguments));
     };
 
     Bubble.prototype.show = function () {
@@ -103,13 +107,15 @@
             'background-color: #8e0000;' +
             'color: yellow;';
         div.alpha = 55;
-        div.innerText = join.apply(this, arguments);
+        div.innerText = convert.apply(this, arguments);
         this.getTray().appendChild(div);
         // delay for fade out
         setTimeout(function () {
             fadeout(div);
         }, 2000);
     };
+
+    Bubble.convertToString = convert;
 
     //-------- namespace --------
     ns.Bubble = Bubble;

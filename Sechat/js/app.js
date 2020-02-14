@@ -7,6 +7,7 @@
     'use strict';
 
     var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
 
     var StationDelegate = ns.network.StationDelegate;
 
@@ -69,6 +70,9 @@
 
     Application.prototype.onReceiveNotification = function (notification) {
         var facebook = Facebook.getInstance();
+        var messenger = Messenger.getInstance();
+        var identifier;
+        var profile;
         var name = notification.name;
         var userInfo = notification.userInfo;
         var res;
@@ -83,14 +87,44 @@
             this.write('Connection error.');
         } else if (name === nc.kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
-            res = this.doCall('station');
+            identifier = facebook.getIdentifier('chatroom');
+            if (identifier) {
+                profile = facebook.getProfile(identifier);
+                if (profile) {
+                    var user = facebook.getCurrentUser();
+                    if (user && user.getProfile()) {
+                        messenger.sendProfile(user.getProfile(), identifier);
+                    }
+                    res = this.doCall(identifier);
+                    if (res.indexOf('You are talking') === 0) {
+                        res = this.doShow('users')
+                    }
+                } else {
+                    res = this.doProfile('chatroom');
+                }
+            } else {
+                res = this.doCall('station');
+            }
         } else if (name === nc.kNotificationMetaAccepted) {
-            var identifier = notification.userInfo['ID'];
+            identifier = notification.userInfo['ID'];
             this.tips('[Meta saved] ID: ' + identifier);
         } else if (name === nc.kNotificationProfileUpdated) {
-            var profile = notification.userInfo;
+            profile = notification.userInfo;
             this.tips('[Profile updated] ID: ' + profile.getIdentifier()
-                + ' -> ' + profile.getValue('data'))
+                + ' -> ' + profile.getValue('data'));
+            // chatroom
+            identifier = facebook.getIdentifier('chatroom');
+            if (identifier && identifier.equals(profile.getIdentifier())) {
+                // send current user's profile to chatroom
+                profile = facebook.getCurrentUser().getProfile();
+                if (profile) {
+                    messenger.sendProfile(profile, identifier);
+                }
+                res = this.doCall('chatroom');
+                if (res.indexOf('You are talking') === 0) {
+                    res = this.doShow('users')
+                }
+            }
         } else if (name === nc.kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
@@ -141,15 +175,19 @@
 
     Application.prototype.exec = function (cmd) {
         var command = getCommand(cmd);
+        var args;
         var fn = 'do';
         if (command.length > 0) {
             fn += command.replace(command[0], command[0].toUpperCase());
         }
-        if (typeof this[fn] !== 'function') {
-            return ns.format.JSON.encode(cmd) + ' command error';
+        if (typeof this[fn] === 'function') {
+            args = cmd.replace(command, '').trim();
+        } else {
+            //return ns.format.JSON.encode(cmd) + ' command error';
+            fn = 'doForward';
+            args = cmd;
         }
         try {
-            var args = cmd.replace(command, '').trim();
             return this[fn](args);
         } catch (e) {
             return 'failed to execute command: '
@@ -168,11 +206,7 @@
     text += '        show users             - list online users\n';
     text += '        search <ID|number>     - search users by ID or number\n';
     text += '        profile <ID>           - query profile with ID\n';
-
-    text = text.replace(/</g, '&lt;');
-    text = text.replace(/>/g, '&gt;');
-    text = text.replace(/\n/g, '<br/>');
-    text = text.replace(/ {2}/g, ' &nbsp;');
+    text = Bubble.convertToString(text);
 
     Application.prototype.doHelp = function () {
         return text;
@@ -190,9 +224,7 @@
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (ami) {
-            return user.toString()
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            return Bubble.convertToString(user);
         }
         if (this.receiver) {
             var contact = facebook.getUser(this.receiver);
@@ -213,14 +245,18 @@
 !function (ns) {
     'use strict';
 
+    var ID = ns.ID;
+    var Profile = ns.Profile;
+    var Envelope = ns.Envelope;
+    var InstantMessage = ns.InstantMessage;
+    var TextContent = ns.protocol.TextContent;
+    var ForwardContent = ns.protocol.ForwardContent;
+
+    var StarStatus = ns.stargate.StarStatus;
+
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
     var Application = ns.Application;
-
-    var Profile = ns.Profile;
-    var TextContent = ns.protocol.TextContent;
-
-    var StarStatus = ns.stargate.StarStatus;
 
     var check_connection = function () {
         var server = Messenger.getInstance().server;
@@ -292,7 +328,7 @@
         return 'You are talking with ' + nickname + ' now!';
     };
 
-    Application.prototype.doSend = function (text) {
+    var send_content = function (content, receiver) {
         var res = check_connection();
         if (res) {
             return res;
@@ -303,11 +339,9 @@
         if (!user) {
             return 'Login first';
         }
-        var receiver = this.receiver;
         if (!receiver) {
             return 'Please set a recipient';
         }
-        var content = new TextContent(text);
         if (messenger.sendContent(content, receiver)) {
             // return 'Sending message ...';
             return null;
@@ -316,7 +350,25 @@
         }
     };
 
+    Application.prototype.doSend = function (text) {
+        var content = new TextContent(text);
+        return send_content.call(this, content, this.receiver);
+    };
+
+    Application.prototype.doForward = function (text) {
+        var messenger = Messenger.getInstance();
+        var server = messenger.server;
+        var user = server.currentUser;
+        var content = new TextContent(text);
+        var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE);
+        var msg = InstantMessage.newMessage(content, env);
+        msg = messenger.signMessage(messenger.encryptMessage(msg));
+        var forward = new ForwardContent(msg);
+        return send_content.call(this, forward, this.receiver);
+    };
+
     Application.prototype.doName = function (nickname) {
+        var messenger = Messenger.getInstance();
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (!user) {
@@ -333,13 +385,18 @@
         profile.setName(nickname);
         profile.sign(privateKey);
         facebook.saveProfile(profile);
-        Messenger.getInstance().postProfile(profile);
+        messenger.postProfile(profile);
+        var admin = facebook.getIdentifier('chatroom');
+        if (admin) {
+            messenger.sendProfile(profile, admin);
+        }
         return 'Nickname updated, profile: ' + profile.getValue('data');
     };
 
     Application.prototype.doShow = function (what) {
         if (what === 'users') {
-            Messenger.getInstance().queryOnlineUsers();
+            // Messenger.getInstance().queryOnlineUsers();
+            this.doSend('show users');
             return 'Querying online users ...';
         }
         return 'Command error: show ' + what;
