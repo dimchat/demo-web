@@ -198,16 +198,16 @@
     };
 
     var text = 'Usage:\n';
-    text += '        telnet <host>[:<port>] - connect to a DIM station\n';
-    text += '        login <ID>             - switch user\n';
-    text += '        logout                 - clear session\n';
-    text += '        call <ID>              - change receiver to another user (or "station")\n';
-    text += '        send <text>            - send message\n';
-    text += '        name <niciname>        - reset nickname\n';
-    text += '        who [am I]             - show current user info\n';
-    text += '        show users             - list online users\n';
-    text += '        search <ID|number>     - search users by ID or number\n';
-    text += '        profile <ID>           - query profile with ID\n';
+    text += '        telnet [<host>[:<port>]] - re/connect (to a DIM station)\n';
+    text += '        login <ID>               - switch user\n';
+    text += '        name <nickname>          - reset nickname\n';
+    text += '        call <ID>                - change recipient (or "chatroom")\n';
+    text += '        send <text>              - send message to the recipient\n';
+    text += '        who [am I]               - show current user info\n';
+    text += '        show users               - list online users\n';
+    text += '        search <ID|number>       - search users by ID or number\n';
+    text += '        profile <ID>             - query profile with ID\n';
+    text += '        <anytext>                - send to current chatroom\n';
     text = Bubble.convertToString(text);
 
     Application.prototype.doHelp = function () {
@@ -312,10 +312,6 @@
         } else {
             return 'Failed to get user: ' + identifier + ' ...';
         }
-    };
-
-    Application.prototype.doLogout = function () {
-        // TODO: clear session
     };
 
     Application.prototype.doCall = function (name) {

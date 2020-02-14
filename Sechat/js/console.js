@@ -110,8 +110,8 @@ $(function() {
                 var app = dimsdk.Application.getInstance();
                 if (cmd) {
                     val_ouput = app.exec(cmd);
-                } else {
-                    val_ouput = app.doWho();
+                // } else {
+                //     val_ouput = app.doWho();
                 }
             } catch (e) {
                 val_ouput = '\'' + cmd + '\': command not found';
