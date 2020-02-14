@@ -1,4 +1,29 @@
 ;
+// license: https://mit-license.org
+// =============================================================================
+// The MIT License (MIT)
+//
+// Copyright (c) 2020 Albert Moky
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// =============================================================================
+//
 
 !function (ns) {
 
@@ -43,7 +68,7 @@
 
     var Bubble = function (tray) {
         if (!tray) {
-            tray = 'tarsier-bubble';
+            tray = 'tarsier-bubble-tray';
         }
         this.tray = tray;
     };
@@ -54,12 +79,12 @@
             div = document.createElement('DIV');
             div.id = this.tray;
             div.style.cssText = 'position: absolute;' +
-                'bottom: 24px;' +
+                'bottom: 4px;' +
                 'right: 4px;' +
                 'z-index: 3333;' +
+                'width: 60%;' +
                 'font-family: Arial, sans-serif;' +
-                'font-size: 10pt;' +
-                'white-space: nowrap;';
+                'font-size: 10pt;';
             document.body.appendChild(div);
         }
         return div;
@@ -76,8 +101,7 @@
             'width: fit-content; width: -webkit-fit-content; width: -moz-fit-content;' +
             'opacity: 0.55;' +
             'background-color: #8e0000;' +
-            'color: yellow;' +
-            'white-space: nowrap;';
+            'color: yellow;';
         div.alpha = 55;
         div.innerText = join.apply(this, arguments);
         this.getTray().appendChild(div);
