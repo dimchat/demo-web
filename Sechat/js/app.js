@@ -400,6 +400,10 @@
             this.doSend('show users');
             return 'Querying online users ...';
         }
+        if (what === 'stat') {
+            this.doSend('show stat');
+            return 'Querying statistics ...';
+        }
         return 'Command error: show ' + what;
     };
     Application.prototype.doSearch = function (number) {
