@@ -27,9 +27,6 @@
             s_facebook.immortals = new Immortals();
             // local users
             s_facebook.users = null;
-            // for duplicated querying
-            s_facebook.metaQueryTime = {}; // ID -> Date
-            s_facebook.profileQueryTime = {}; // ID -> Date
         }
         return s_facebook;
     };
@@ -181,14 +178,8 @@
                 return meta;
             }
         }
-        // check for duplicated querying
-        var now = new Date();
-        var last = this.metaQueryTime[identifier];
-        if (!last || (now.getTime() - last.getTime()) > 30000) {
-            this.metaQueryTime[identifier] = now;
-            // query from DIM network
-            Messenger.getInstance().queryMeta(identifier);
-        }
+        // query from DIM network
+        Messenger.getInstance().queryMeta(identifier);
         return meta;
     };
 
@@ -232,14 +223,8 @@
                 return tai;
             }
         }
-        // check for duplicated querying
-        var now = new Date();
-        var last = this.profileQueryTime[identifier];
-        if (!last || (now.getTime() - last.getTime()) > 30000) {
-            this.profileQueryTime[identifier] = now;
-            // query from DIM network
-            Messenger.getInstance().queryProfile(identifier);
-        }
+        // query from DIM network
+        Messenger.getInstance().queryProfile(identifier);
         return profile;
     };
 

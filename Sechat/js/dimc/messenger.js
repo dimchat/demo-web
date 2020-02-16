@@ -37,6 +37,10 @@
             s_messenger.entityDelegate = Facebook.getInstance();
             s_messenger.cipherKeyDelegate = KeyStore.getInstance();
             s_messenger.server = null; // current station connected
+            // for duplicated querying
+            s_messenger.metaQueryTime = {};    // ID -> Date
+            s_messenger.profileQueryTime = {}; // ID -> Date
+            s_messenger.groupQueryTime = {};   // ID -> Date
         }
         return s_messenger;
     };
@@ -84,7 +88,7 @@
                 //       it should contain the group owner(owner)
                 return false;
             } else {
-                this.sendContent(GroupCommand.query(group), sender);
+                return this.queryGroupInfo(group, sender);
             }
         } else if (facebook.existsMember(sender, group)
             || facebook.existsAssistant(sender, group)
@@ -92,23 +96,20 @@
             // normal membership
             return false;
         } else {
-            var cmd = GroupCommand.query(group);
-            var checking = false;
+            var admins = [];
             // if assistants exists, query them
             var assistants = facebook.getAssistants(group);
             if (assistants) {
                 for (var i = 0; i < assistants.length; ++i) {
-                    if (this.sendContent(cmd, assistants[i])) {
-                        checking = true;
-                    }
+                    admins.push(assistants[i]);
                 }
             }
             // if owner found, query it too
             var owner = facebook.getOwner(group);
-            if (owner && this.sendContent(cmd, owner)) {
-                checking = true;
+            if (owner && admins.indexOf(owner) < 0) {
+                admins.push(owner);
             }
-            return checking;
+            return this.queryGroupInfo(group, admins);
         }
     };
 
@@ -304,16 +305,54 @@
         if (identifier.isBroadcast()) {
             return false;
         }
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.metaQueryTime[identifier];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
+            return false;
+        }
+        this.metaQueryTime[identifier] = now;
+        // query from DIM network
         var cmd = new MetaCommand(identifier);
         return this.sendCommand(cmd);
     };
 
     Messenger.prototype.queryProfile = function (identifier) {
-        if (identifier.isBroadcast()) {
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.profileQueryTime[identifier];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
             return false;
         }
+        this.profileQueryTime[identifier] = now;
+        // query from DIM network
         var cmd = new ProfileCommand(identifier);
         return this.sendCommand(cmd);
+    };
+
+    Messenger.prototype.queryGroupInfo = function (group, member) {
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.groupQueryTime[group];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
+            return false;
+        }
+        this.groupQueryTime[group] = now;
+        // query from any members
+        var members;
+        if (member instanceof Array) {
+            members = member;
+        } else {
+            members = [member];
+        }
+        var cmd = GroupCommand.query(group);
+        var checking = false;
+        for (var i = 0; i < members.length; ++i) {
+            if (this.sendContent(cmd, members[i])) {
+                checking = true;
+            }
+        }
+        return checking;
     };
 
     Messenger.prototype.queryOnlineUsers = function () {
