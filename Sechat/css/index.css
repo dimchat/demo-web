@@ -41,3 +41,56 @@ body {
     font-size: 10pt;
     white-space: nowrap;"
 }
+#messages_div{
+    height: 620px;
+    overflow: auto;
+}
+.hideScroll::-webkit-scrollbar {
+    display: none;
+}
+.mainHeight
+{
+    height: 800px;
+}
+.messagesCol
+{
+    position: relative;
+}
+
+.sendButton
+{
+    position: absolute;
+    bottom: 18px;
+    right: 32px;
+}
+#targetTitleRow
+{
+    border-bottom: 1px solid #f1f1f1;
+}
+#targetTitle
+{
+
+}
+
+#messages_div .from_user_row{
+    line-height: 200%;
+    clear: both;
+    overflow: auto;
+    margin-bottom: 12px;
+}
+#messages_div .text-row{
+    line-height: 200%;
+}
+#messages_div .text-row .text-content{
+    font-size: 16px;
+}
+#messages_div .fromMe{
+    text-align: right;
+}
+#messages_div .myText .text-content{
+    text-align: right;
+    float: right;
+}
+#messages_div .otherText .text-content{
+    float: left;
+}

@@ -1,5 +1,6 @@
 ;
 $(function() {
+    console.log(1);
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
     var cmd_cache = [];
     var cmd_pos = 0;
@@ -18,7 +19,7 @@ $(function() {
     var flag_end = false;
 
     var scroll_to_bottom = function () {
-        $panel.scrollTop($panel.get(0).scrollHeight);
+        // $panel.scrollTop($panel.get(0).scrollHeight);
     };
 
     window.shell_output = function () {

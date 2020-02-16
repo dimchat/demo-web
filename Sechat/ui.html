@@ -10,7 +10,6 @@
     <link rel="stylesheet" type="text/css" href="css/index.css"/>
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
 
-    /* third party cryptography libs */
     <script src='js/sdk/3rd/crypto-js/core.js'></script>
     <script src='js/sdk/3rd/crypto-js/cipher-core.js'></script>
     <script src='js/sdk/3rd/crypto-js/aes.js'></script>
@@ -18,9 +17,9 @@
     <script src='js/sdk/3rd/crypto-js/sha256.js'></script>
     <script src='js/sdk/3rd/crypto-js/ripemd160.js'></script>
     <script src='js/sdk/3rd/jsencrypt.js'></script>
-    /* DIM SDK *
+    <script src="js/3rd/idb-3.0.2.min.js"></script>
+
     <script src='js/sdk/dimsdk.js'></script>
-    /* DIM Client */
     <script src='js/dimc/protocol/search.js'></script>
     <script src='js/dimc/cpu/default.js'></script>
     <script src='js/dimc/cpu/handshake.js'></script>
@@ -37,64 +36,128 @@
     <script src='js/dimc/database/private.js'></script>
     <script src='js/dimc/database/profile.js'></script>
     <script src='js/dimc/database/user.js'></script>
+    <script src='js/dimc/database/message.js'></script>
+    <script src='js/dimc/database/contact.js'></script>
     <script src='js/dimc/cache.js'></script>
     <script src='js/dimc/ans.js'></script>
     <script src='js/dimc/facebook.js'></script>
     <script src='js/dimc/messenger.js'></script>
-    /* UI: Console */
     <script src='js/3rd/jquery-3.4.1.js'></script>
     <script src='js/3rd/underscore-1.8.2.min.js'></script>
     <script src='js/3rd/popper.min.js'></script>
     <script src='js/3rd/bootstrap.min.js'></script>
     <script src='js/3rd/vue.js'></script>
-    <script src='js/console.js'></script>
     <script src='js/appui.js'></script>
     <script src='js/config.js'></script>
+    <script src='js/ui.js'></script>
 
-    <script src=""></script>
     <title>DIM Demo</title>
+    <style>
+        html, body {
+        height: 100%;
+    }
+    </style>
 </head>
-<body>
-<div id="vue1" class="container-fluid" style="">
-    <div class="row">
-        {{user.getName()}} {{user.getProfile().dictionary.ID}} server: {{server.host}}:{{server.port}}
-    </div>
-    <div class="row">
-    <div class="col-4 bg-light col-xl-2">
-        <div>
-            <span>在线用户</span>
-            <input type="button" value="refresh" class="float-right" v-on:click="refreshOnlineUsers()"/>
+<body class="fullpage">
+
+<div id="vue1" class="container" style="min-height: 100%;">
+    <div class="row border-bottom">
+        <div class="col bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">DIM</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link disabled text-muted" href="#">{{user.identifier }}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled text-muted" href="#">server: {{server.host}}:{{server.port}}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#" v-bind:class="{ 'text-success': serverStatus=='logged in', 'text-info':serverStatus=='connected'}">{{serverStatus}}</a>
+                </li>
+            </ul>
         </div>
-        <select class="form-control" v-if="onlineUsers" size="20" v-model="selectedIdentifier">
-            <option v-for="onlineUser in onlineUsers">{{onlineUser.string}}</option>
-        </select>
+    </nav>
+        </div>
     </div>
-    <div class="col-8" v-if="target">
+    <div class="row">
+    <div class="col-4 col-xl-4 bg-light">
+        <div class=" mainHeight">
         <div>
-            {{target.string}}
+            <input type="radio" id="display_local_radio" value="local" v-model="display_list">
+            <label for="display_local_radio">local</label>
+            <input type="radio" id="display_online_radio" value="online" v-model="display_list">
+            <label for="display_online_radio">online</label>
+        </div>
+        <div v-show="display_list=='local'">
+            <div class="row mb-2">
+                <div class="col-10">
+                    <input type="text" placeholder="xxxx@addressxxxxxxxxxxxxxxxx" class="form-control" v-model="searchInput">
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-block btn-outline-success" v-on:click="searchContact()">+</button>
+                </div>
+            </div>
+            <div class="list-group">
+                <a href="#" class="list-group-item list-group-item-action" v-for="user in localContracts" v-on:click="changeTarget(user.identifier)"
+                   v-bind:class="[target && target.toString() == user.identifier ? 'list-group-item-secondary' :'']"
+                >
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{user.identifier | getUserName}}</h5>
+                    </div>
+                    <p class="mb-1"></p>
+                </a>
+            </div>
+        </div>
+        <div v-show="display_list=='online'">
+            <div>
+                <span>在线用户</span>
+                <input type="button" value="refresh" class="float-right" v-on:click="refreshOnlineUsers()"/>
+            </div>
+            <select class="form-control" v-if="onlineUsers" size="20" v-model="selectedIdentifier">
+                <option v-for="onlineUser in onlineUsers">{{onlineUser.string}}</option>
+            </select>
+        </div>
+        </div>
+    </div>
+    <div class="col-8 mainHeight messagesCol" v-if="target">
+        <div id="targetTitleRow" class="row bg-light">
+            <div class="col">
+            <h5 id="targetTitle" class="pt-3 pb-2">
+                {{target.string}}
+            </h5>
+            </div>
         </div>
         <div class="row">
-            <div id="messages_div" class="col" style="max-height: 500px;overflow: scroll;">
-                <div v-for="message in messages[target.string]">
-                    <div class="from_user_row">{{message.sender}} <span class="text-muted">{{message.time | formatDate}}</span></div>
-                    <div>{{message.content.text}}</div>
+            <div id="messages_div" class="col hideScroll mb-3" style="border-bottom: 1px solid #f1f1f1;">
+                <div v-for="message in messages.filter(m => m.sender == target.string || m.receiver == target.string )">
+                    <div class="from_user_row" v-bind:class="{'fromMe': message.sender == user.identifier.toString()}">{{message.sender|getUserName}} <span class="text-muted">{{message.time | formatDate}}</span></div>
+                    <div class="text-row" v-bind:class="[message.sender == user.identifier.toString() ? 'myText':'otherText']">
+                        <span class="text-content badge text-wrap p-2" v-bind:class="[message.sender == user.identifier.toString() ? 'badge-success':'badge-light']">{{message.content.text}}</span></div>
                 </div>
             </div>
         </div>
         <div class="row">
-            <div class="col-xl-8 col-12">
-                <textarea rows="3" v-model="textInput" class="form-control"></textarea>
+            <div class="col-12" style="position: relative;">
+                <textarea id="message_textarea" rows="5" v-model="textInput" class="form-control border-0" style="resize: none;"  onkeydown="if(event.keyCode==13){vue.send();return false;}"></textarea>
+                <button class="btn btn-primary sendButton" v-on:click="send()">send</button>
             </div>
         </div>
         <div class="row">
             <div class="col">
-                <button class="btn btn-primary" v-on:click="send()">send</button>
+
             </div>
         </div>
     </div>
     </div>
 </div>
-<div id="console1"></div>
-<script src='js/ui.js'></script>
+<script>
+    $(function () {
+    });
+</script>
 </body>
 </html>

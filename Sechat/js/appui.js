@@ -52,7 +52,7 @@
         }
     };
 
-    Application.prototype.onReceiveNotification = function (notification) {
+    Application.prototype.onReceiveNotification = async function (notification) {
         var facebook = Facebook.getInstance();
         var name = notification.name;
         var userInfo = notification.userInfo;
@@ -63,9 +63,15 @@
             this.write('Station connected.');
             // auto login after connected
             res = auto_login.call(this);
+            vue.setServerStatus('connected');
         } else if (name === kNotificationHandshakeAccepted) {
             this.write('Handshake accepted!');
-            res = this.doCall('station');
+            vue.setServerStatus('logged in');
+            // res = this.doCall('station');
+            var thisApp = this;
+            setTimeout(function () {
+                thisApp.doName();
+            }, 3000);
         } else if (name === kNotificationMetaAccepted) {
             var identifier = notification.userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
@@ -83,7 +89,7 @@
             switch (msgType) {
                 case 136:
                     // command
-                    if(msg.envelope.getMap().content.getCommand().toUpperCase() == 'USERS')
+                    if(msg.envelope.getMap().content.getCommand().toUpperCase() == 'SEARCH')
                     {
                         // update vue online users when "show users"
                         vue.updateOnlineUsers(msg.content.getUsers());
@@ -92,6 +98,7 @@
                 case 1:
                     //text
                     vue.addMessage(sender, msg);
+                    await vue.addContactFromIdentifier(sender);
             }
 
             res = '[Message received] ' + nickname + ': ' + text;
@@ -316,7 +323,9 @@
         if (!profile) {
             profile = new Profile(user.identifier);
         }
-        profile.setName(nickname);
+        if (nickname != undefined) {
+            profile.setName(nickname);
+        }
         profile.sign(privateKey);
         facebook.saveProfile(profile);
         Messenger.getInstance().postProfile(profile);

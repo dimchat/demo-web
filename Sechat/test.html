@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DIMP Client" />
+    <meta name="author" content="Albert Moky" />
+
+    <link rel="stylesheet" type="text/css" href="css/index.css"/>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+
+    <title>DIM Demo</title>
+    <style>
+
+
+        body, wrapper {
+            min-height:100vh;
+        }
+        #canvas {
+            min-height: 100%;
+        }
+
+        #mainstage {
+            overflow: auto;
+        }
+
+        #footer {
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            clear: both;
+            height: 250px;
+            margin-top: -151px;
+            font-size: 16;
+            text-rendering: auto;
+            position: fixed;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        .tableft {
+            float: left;
+            background-color: #00001A;
+            width: 40%;
+            height: 250px;
+            color: white;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+
+
+        }
+        .tabrigth {
+            float: right;
+            background-color: #00001A;
+            width: 35%;
+            height: 250px;
+            color: white;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+        }
+        .tabcenter {
+            float: right;
+            background-color: #00001A;
+            width: 25%;
+            height: 250px;
+            color: white;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+        }
+        div {
+            background-color: #00001A;
+            font-size: 16;
+            text-rendering: auto;
+            position: fixed;
+        }
+        p{
+            margin-left: 40px;
+            margin-right: 80px;
+        }
+
+
+    </style>
+</head>
+<body class="fullpage">
+<wrapper class="d-flex flex-column">
+    <nav class="navbar navbar-light navbar-expand-sm bg-light">
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#collapsingNavbar2">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="navbar-collapse collapse" id="collapsingNavbar2" background-color: #00001A;>
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{%url 'home'%}">Home </a></li>
+                <li class="nav-item"><a a class="nav-link" href="{%url 'contato'%}">Contacto </a></li>
+                <li class="nav-item"><a a class="nav-link" href="{%url 'detalhes'%}">Novidade e Detalhes </a></li>
+                <li class="nav-item"><a a class="nav-link" href="{%url 'add'%}">Cadastrar </a></li>
+            </ul>
+        </div>
+    </nav>
+
+
+    <main class="container-fluid py-3 flex-fill">
+        <h2>Content</h2>
+        <p>
+            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas
+            sit aspernatur aut odit aut fugit, sed qui
+            ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?
+        </p>
+    </main>
+
+
+    <footer class="container-fluid w-100 bg-dark text-light py-3">
+        <div id="footer">
+            <div class="tableft">
+                <p>PART OF US.JOBS UNIVERSE</p>
+                <p>
+                    The Porrent company of jobs and find jobs.<br>
+                    Emplay Media, LLC is the licensed operator<br>
+                    of the .jobsTLD on the internet<br><br><br><br> </p>
+                <p>© 2018 Copyright  <a href="/accounts/signup/">US.Jobs</a> . All rights reserver
+
+            </div>
+
+
+
+            <div class="tabcenter">
+                <p>SOCIAL MEDIA</p>
+
+                <p>
+                <table>
+                    <tr>
+                        <th><img src="faceb.png" class="center" width="25" height="25">
+                            <br></th>
+
+                        <th><img src="twit.png" class="center" width="25" height="25">
+                            <br></th>
+                        <th><img src="linkdin.png" class="center" width="25" height="25">
+                            <br></th>
+                        <th><img src="yout.png" class="center" width="25" height="25">
+                            <br></th>
+
+
+                    </tr>
+
+                </table>
+                </p>
+
+            </div>
+            <div class="tabrigth">
+                <p>LINK</p>
+                <p>About <br>Post a Job<br>FAQ<br></p>
+            </div>
+
+        </div>
+
+    </footer>
+</wrapper>
+</body>
+</html>
