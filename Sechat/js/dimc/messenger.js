@@ -18,6 +18,10 @@
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
 
+    var GroupCommand = ns.protocol.GroupCommand;
+    var InviteCommand = ns.protocol.group.InviteCommand;
+    var ResetCommand = ns.protocol.group.ResetCommand;
+
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
 
@@ -35,6 +39,77 @@
             s_messenger.server = null; // current station connected
         }
         return s_messenger;
+    };
+
+    // check whether group info empty
+    var is_empty = function (group) {
+        var facebook = this.getFacebook();
+        var members = facebook.getMembers(group);
+        if (!members || members.length === 0) {
+            return true;
+        }
+        var owner = facebook.getOwner(group);
+        return !owner;
+    };
+
+    // check whether need to update group
+    var check_group = function (content, sender) {
+        // Check if it is a group message,
+        // and whether the group members info needs update
+        var facebook = this.getFacebook();
+        var group = facebook.getIdentifier(content.getGroup());
+        if (!group || group.isBroadcast()) {
+            // 1. personal message
+            // 2. broadcast message
+            return false;
+        }
+        // check meta for new group ID
+        var meta = facebook.getMeta(group);
+        if (!meta) {
+            // NOTICE: if meta for group not found,
+            //         facebook should query it from DIM network automatically
+            // TODO: insert the message to a temporary queue to wait meta
+            //throw new NullPointerException("group meta not found: " + group);
+            return true;
+        }
+        // query group info
+        if (is_empty.call(this, group)) {
+            // NOTICE: if the group info not found, and this is not an 'invite' command
+            //         query group info from the sender
+            if ((content instanceof InviteCommand) || (content instanceof ResetCommand)) {
+                // FIXME: can we trust this stranger?
+                //        may be we should keep this members list temporary,
+                //        and send 'query' to the owner immediately.
+                // TODO: check whether the members list is a full list,
+                //       it should contain the group owner(owner)
+                return false;
+            } else {
+                this.sendContent(GroupCommand.query(group), sender);
+            }
+        } else if (facebook.existsMember(sender, group)
+            || facebook.existsAssistant(sender, group)
+            || facebook.isOwner(sender, group)) {
+            // normal membership
+            return false;
+        } else {
+            var cmd = GroupCommand.query(group);
+            var checking = false;
+            // if assistants exists, query them
+            var assistants = facebook.getAssistants(group);
+            if (assistants) {
+                for (var i = 0; i < assistants.length; ++i) {
+                    if (this.sendContent(cmd, assistants[i])) {
+                        checking = true;
+                    }
+                }
+            }
+            // if owner found, query it too
+            var owner = facebook.getOwner(group);
+            if (owner && this.sendContent(cmd, owner)) {
+                checking = true;
+            }
+            return checking;
+        }
     };
 
     //
@@ -86,8 +161,17 @@
     };
 
     // Override
-    var process = Messenger.prototype.process;
-    Messenger.prototype.process = function (msg) {
+    var process = Messenger.prototype.processInstantMessage;
+    Messenger.prototype.processInstantMessage = function (msg) {
+        var content = msg.content;
+        var sender = msg.envelope.sender;
+        sender = this.getFacebook().getIdentifier(sender);
+        if (check_group.call(this, content, sender)) {
+            // save this message in a queue to wait group meta response
+            this.suspendMessage(msg);
+            return null;
+        }
+
         var res = process.call(this, msg);
         if (!res) {
             // respond nothing

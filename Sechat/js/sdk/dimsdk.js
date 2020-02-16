@@ -4722,11 +4722,7 @@ if (typeof DaoKeDao !== "object") {
     ns.type.Class(ForwardContentProcessor, ContentProcessor);
     ForwardContentProcessor.prototype.process = function(content, sender, msg) {
         var rMsg = content.getMessage();
-        var sMsg = this.messenger.verifyMessage(rMsg);
-        if (!sMsg) {
-            return null
-        }
-        return this.messenger.process(sMsg)
+        return this.messenger.processReliableMessage(rMsg)
     };
     ContentProcessor.register(ContentType.FORWARD, ForwardContentProcessor);
     ns.cpu.ForwardContentProcessor = ForwardContentProcessor
@@ -5799,12 +5795,7 @@ if (typeof DaoKeDao !== "object") {
     var Meta = ns.Meta;
     var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
-    var SecureMessage = ns.SecureMessage;
-    var ReliableMessage = ns.ReliableMessage;
     var FileContent = ns.protocol.FileContent;
-    var GroupCommand = ns.protocol.GroupCommand;
-    var InviteCommand = ns.protocol.group.InviteCommand;
-    var ResetCommand = ns.protocol.group.ResetCommand;
     var ContentProcessor = ns.cpu.ContentProcessor;
     var ConnectionDelegate = ns.ConnectionDelegate;
     var Transceiver = ns.core.Transceiver;
@@ -5875,53 +5866,6 @@ if (typeof DaoKeDao !== "object") {
             }
         }
         return msg
-    };
-    var is_empty = function(group) {
-        var facebook = this.getFacebook();
-        var members = facebook.getMembers(group);
-        if (!members || members.length === 0) {
-            return true
-        }
-        var owner = facebook.getOwner(group);
-        return !owner
-    };
-    var check_group = function(content, sender) {
-        var facebook = this.getFacebook();
-        var group = facebook.getIdentifier(content.getGroup());
-        if (!group || group.isBroadcast()) {
-            return false
-        }
-        var meta = facebook.getMeta(group);
-        if (!meta) {
-            return true
-        }
-        if (is_empty.call(this, group)) {
-            if ((content instanceof InviteCommand) || (content instanceof ResetCommand)) {
-                return false
-            } else {
-                this.sendContent(GroupCommand.query(group), sender)
-            }
-        } else {
-            if (facebook.existsMember(sender, group) || facebook.existsAssistant(sender, group) || facebook.isOwner(sender, group)) {
-                return false
-            } else {
-                var cmd = GroupCommand.query(group);
-                var checking = false;
-                var assistants = facebook.getAssistants(group);
-                if (assistants) {
-                    for (var i = 0; i < assistants.length; ++i) {
-                        if (this.sendContent(cmd, assistants[i])) {
-                            checking = true
-                        }
-                    }
-                }
-                var owner = facebook.getOwner(group);
-                if (owner && this.sendContent(cmd, owner)) {
-                    checking = true
-                }
-                return checking
-            }
-        }
     };
     Messenger.prototype.verifyMessage = function(msg) {
         var facebook = this.getFacebook();
@@ -6038,6 +5982,9 @@ if (typeof DaoKeDao !== "object") {
         } else {
             ok = send_message.call(this, rMsg, callback)
         }
+        if (!this.saveMessage(msg)) {
+            return false
+        }
         return ok
     };
     var send_message = function(msg, callback) {
@@ -6067,7 +6014,7 @@ if (typeof DaoKeDao !== "object") {
         if (!rMsg) {
             return null
         }
-        var response = this.process(rMsg);
+        var response = this.processReliableMessage(rMsg);
         if (!response) {
             return null
         }
@@ -6086,34 +6033,26 @@ if (typeof DaoKeDao !== "object") {
         var nMsg = this.signMessage(this.encryptMessage(iMsg));
         return this.serializeMessage(nMsg)
     };
-    Messenger.prototype.process = function(msg) {
-        if (msg instanceof ReliableMessage) {
-            var sMsg = this.verifyMessage(msg);
-            if (!sMsg) {
-                return null
-            }
-            return this.process(sMsg)
-        } else {
-            if (msg instanceof SecureMessage) {
-                var iMsg = this.decryptMessage(msg);
-                return this.process(iMsg)
-            } else {
-                if (msg instanceof InstantMessage) {
-                    var content = msg.content;
-                    var sender = msg.envelope.sender;
-                    sender = this.getFacebook().getIdentifier(sender);
-                    if (check_group.call(this, content, sender)) {
-                        this.suspendMessage(msg);
-                        return null
-                    }
-                    var res = this.cpu.process(content, sender, msg);
-                    if (!this.saveMessage(msg)) {
-                        return null
-                    }
-                    return res
-                }
-            }
+    Messenger.prototype.processReliableMessage = function(msg) {
+        var sMsg = this.verifyMessage(msg);
+        if (!sMsg) {
+            return null
         }
+        return this.processSecureMessage(sMsg)
+    };
+    Messenger.prototype.processSecureMessage = function(msg) {
+        var iMsg = this.decryptMessage(msg);
+        return this.processInstantMessage(iMsg)
+    };
+    Messenger.prototype.processInstantMessage = function(msg) {
+        var content = msg.content;
+        var sender = msg.envelope.sender;
+        sender = this.getFacebook().getIdentifier(sender);
+        var res = this.cpu.process(content, sender, msg);
+        if (!this.saveMessage(msg)) {
+            return null
+        }
+        return res
     };
     ns.Messenger = Messenger
 }(DIMP);
