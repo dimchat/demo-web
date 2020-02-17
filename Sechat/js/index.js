@@ -3,11 +3,26 @@
 !function (ns) {
     'use strict';
 
-    var Loader = function (base) {
-        this.base = base;
-        this.status = document.getElementById('tarsier-status');
+    var Loader = function (tarsier, home) {
+        this.tarsier = tarsier;
+        var url = this.currentTask().url;
+        this.base = url.substring(0, url.indexOf(home));
+        this.count = 0; // total scripts
         this.alpha = 0;
         this.timer = null;
+        this.status = document.getElementById('tarsier-status');
+        this.showStatus('Loading DIM client from ' + this.base + ' ...');
+    };
+
+    Loader.prototype.getTasks = function () {
+        return this.tarsier.base.importings;
+    };
+    Loader.prototype.getTask = function (index) {
+        var tasks = this.getTasks();
+        return index < tasks.length ? tasks[index] : null;
+    };
+    Loader.prototype.currentTask = function () {
+        return this.getTask(0);
     };
 
     Loader.prototype.startAnimate = function (action, timeout) {
@@ -69,7 +84,7 @@
         if (href.indexOf('://') < 0) {
             url = this.base + href;
         }
-        tarsier.importCSS(url);
+        this.tarsier.importCSS(url);
     };
 
     Loader.prototype.importJS = function (src, callback) {
@@ -77,12 +92,14 @@
         if (src.indexOf('://') < 0) {
             url = this.base + src;
         }
+        this.count += 1;
         var loader = this;
-        tarsier.importJS(url, function () {
-            var tasks = tarsier.base.importings;
+        this.tarsier.importJS(url, function () {
+            var tasks = loader.getTasks();
             if (tasks.length > 1) {
                 var next = tasks[1];
-                loader.showStatus('Loading ' + next.url + ' ...');
+                var index = loader.count - tasks.length + 2;
+                loader.showStatus('Loading (' + index + '/' + loader.count + ') ' + next.url + ' ...');
             } else {
                 setTimeout(function () {
                     loader.fadeOut();
@@ -98,7 +115,7 @@
 
 }(window);
 
-!function (ns) {
+!function (node) {
     'use strict';
 
     var html =
@@ -114,9 +131,9 @@
 
     html += '<div id="tarsier-status">Loading tarsier ...</div>';
 
-    document.body.innerHTML = html;
+    node.innerHTML = html;
 
-}(window);
+}(window.document.body);
 
 !function (ns) {
     'use strict';
@@ -199,23 +216,7 @@
     ];
     scripts = [].concat(sdk, dim_client, ui, scripts);
 
-    var main = function () {
-        $(function () {
-            dimsdk.Application.prototype.write = window.shell_output;
-            var server = dimsdk.Messenger.getInstance().server;
-            server.start();
-        });
-    };
-
-    // create loader with base URL
-    var tasks = tarsier.base.importings;
-    var current = tasks[0];
-    var url = current.url;
-    var base = url.substring(0, url.indexOf('js/index.js'));
-
-    var loader = new ns.Loader(base);
-    loader.showStatus('Loading DIM client from ' + base + ' ...');
-
+    var loader = new ns.Loader(tarsier, 'js/index.js');
     for (var i = 0; i < stylesheets.length; ++i) {
         loader.importCSS(stylesheets[i]);
     }
@@ -223,7 +224,14 @@
     for (var j = 0; j < scripts.length; ++j) {
         loader.importJS(scripts[j]);
     }
-    loader.importJS('js/config.js', main);
+    loader.importJS('js/config.js', function () {
+        // start after last script loaded
+        $(function () {
+            dimsdk.Application.prototype.write = window.shell_output;
+            var server = dimsdk.Messenger.getInstance().server;
+            server.start();
+        });
+    });
 
     //
     //  Makefile
