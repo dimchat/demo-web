@@ -121,10 +121,12 @@
 !function (ns) {
     'use strict';
 
-    var stylesheets = [
-        'css/index.css'
-    ];
-    var scripts = [
+    var release = true;
+    if (ns['DEBUG']) {
+        release = false;
+    }
+
+    var sdk = [
         /* third party cryptography libs */
         'js/sdk/3rd/crypto-js/core.js',
         'js/sdk/3rd/crypto-js/cipher-core.js',
@@ -135,9 +137,20 @@
         'js/sdk/3rd/jsencrypt.js',
 
         /* DIM SDK */
-        'js/sdk/dimsdk.js',
-        'js/sdk/bubble.js',
+        'js/sdk/dimsdk.js'
+    ];
+    if (release) {
+        sdk = [
+            /* third party cryptography libs */
+            'js/sdk/3rd/crypto.min.js',
+            'js/sdk/3rd/jsencrypt.min.js',
 
+            /* DIM SDK */
+            'js/sdk/dimsdk.min.js'
+        ]
+    }
+
+    var dim_client = [
         /* DIM Client */
         'js/dimc/protocol/search.js',
         'js/dimc/cpu/default.js',
@@ -160,15 +173,31 @@
         'js/dimc/cache.js',
         'js/dimc/ans.js',
         'js/dimc/facebook.js',
-        'js/dimc/messenger.js',
+        'js/dimc/messenger.js'
+    ];
+    if (release) {
+        dim_client = [
+            // 'js/dim.js'
+            'js/dim.min.js'
+        ]
+    }
 
+    var ui = [
         /* UI: Console */
         'js/3rd/jquery-3.4.1.slim.min.js',
         'js/3rd/underscore-1.8.2.min.js',
 
+        'js/sdk/bubble.js'
+    ];
+
+    var stylesheets = [
+        'css/index.css'
+    ];
+    var scripts = [
         'js/console.js',
         'js/app.js'
     ];
+    scripts = [].concat(sdk, dim_client, ui, scripts);
 
     var main = function () {
         $(function () {
@@ -195,5 +224,28 @@
         loader.importJS(scripts[j]);
     }
     loader.importJS('js/config.js', main);
+
+    //
+    //  Makefile
+    //
+    var building = false;
+    if (!release && building) {
+        var text = 'cat';
+        for (var k = 0; k < dim_client.length; ++k) {
+            text += ' ' + dim_client[k];
+        }
+        text += ' > js/dimclient.js';
+        var div = document.createElement('DIV');
+        div.style.cssText = 'position: absolute;' +
+            'bottom: 4px;' +
+            'margin: 4px;' +
+            'padding: 4px;' +
+            'background-color: gray;' +
+            'z-index: 3333;' +
+            'font-family: Arial, sans-serif;' +
+            'font-size: 10pt;';
+        div.innerText = text;
+        document.body.appendChild(div);
+    }
 
 }(window);

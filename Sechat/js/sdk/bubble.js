@@ -99,6 +99,9 @@
     };
 
     Bubble.prototype.show = function () {
+        var text = convert.apply(this, arguments);
+        console.log('[Bubble] ' + text);
+        // append DIV
         var div = document.createElement('DIV');
         div.style.cssText = 'margin-bottom: 2px; margin-left: auto;' +
             'padding: 2px 8px;' +
@@ -107,7 +110,7 @@
             'background-color: #8e0000;' +
             'color: yellow;';
         div.alpha = 55;
-        div.innerText = convert.apply(this, arguments);
+        div.innerText = text;
         this.getTray().appendChild(div);
         // delay for fade out
         setTimeout(function () {
