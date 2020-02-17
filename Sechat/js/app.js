@@ -424,4 +424,17 @@
         }
     };
 
+    Application.prototype.doDecrypt = function (json) {
+        var messenger = Messenger.getInstance();
+        var rMsg = messenger.deserializeMessage(json);
+        var sMsg = messenger.verifyMessage(rMsg);
+        if (sMsg) {
+            console.log('failed to verify message: ' + json);
+        }
+        var iMsg = messenger.decryptMessage(rMsg);
+        var text = ns.format.JSON.encode(iMsg);
+        console.log('decrypted message: ' + text);
+        return text;
+    };
+
 }(DIMP);
