@@ -437,17 +437,13 @@
         return text;
     };
 
-    Application.prototype.doHost58 = function (host) {
-        var pair = host.split(/\s+/);
-        var cmd = pair[0];
-        host = pair[1];
-        var h58;
-        if (cmd === 'encode') {
-            h58 = new Host58(host);
-            return h58.encode();
-        } else if (cmd === 'decode') {
-            h58 = new Host58(host);
-            return h58.toString();
+    Application.prototype.doHost58 = function (cmd) {
+        var pair = cmd.split(/\s+/);
+        var host = new DIMP.network.Host58(pair[1], 9394);
+        if (pair[0] === 'encode') {
+            return host.encode();
+        } else if (pair[0] === 'decode') {
+            return host.toString();
         } else {
             throw Error('unknown command "' + cmd + '"');
         }
