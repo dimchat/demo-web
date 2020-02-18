@@ -323,7 +323,7 @@
                     port = (array[16] << 8) + array[17];
                 }
                 // compress it
-                ip = ip.replace(/:(0:){2,}/, '::');
+                ip = ip.replace(/:(0:){3,}/, '::');
                 ip = ip.replace(/^(0::)/, '::');
                 ip = ip.replace(/(::0)$/, '::');
                 ipv = new IPv6({ip: ip, port: port, default_port: default_port})

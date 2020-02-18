@@ -260,6 +260,8 @@
     var Messenger = ns.Messenger;
     var Application = ns.Application;
 
+    var Host58 = ns.network.Host58;
+
     var check_connection = function () {
         var server = Messenger.getInstance().server;
         var status = server.getStatus();
@@ -279,12 +281,20 @@
         var host = server.host;
         var port = server.port;
         if (address) {
-            var pair = address.split(/[: ]+/);
-            if (pair.length === 1) {
-                host = pair[0];
-            } else if (pair.length === 2) {
-                host = pair[0];
-                port = Number(pair[1]);
+            try {
+                // try Host58
+                var h58 = new Host58(address, port);
+                host = h58.ip;
+                port = h58.port;
+            } catch (e) {
+                // not a Host58 address
+                var pair = address.split(/[: ]+/);
+                if (pair.length === 1) {
+                    host = pair[0];
+                } else if (pair.length === 2) {
+                    host = pair[0];
+                    port = Number(pair[1]);
+                }
             }
         }
         server.connect(host, port);
@@ -439,7 +449,7 @@
 
     Application.prototype.doHost58 = function (cmd) {
         var pair = cmd.split(/\s+/);
-        var host = new DIMP.network.Host58(pair[1], 9394);
+        var host = new Host58(pair[1], 9394);
         if (pair[0] === 'encode') {
             return host.encode();
         } else if (pair[0] === 'decode') {
