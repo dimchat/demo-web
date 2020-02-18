@@ -437,4 +437,20 @@
         return text;
     };
 
+    Application.prototype.doHost58 = function (host) {
+        var pair = host.split(/\s+/);
+        var cmd = pair[0];
+        host = pair[1];
+        var h58;
+        if (cmd === 'encode') {
+            h58 = new Host58(host);
+            return h58.encode();
+        } else if (cmd === 'decode') {
+            h58 = new Host58(host);
+            return h58.toString();
+        } else {
+            throw Error('unknown command "' + cmd + '"');
+        }
+    };
+
 }(DIMP);

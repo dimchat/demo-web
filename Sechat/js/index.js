@@ -154,7 +154,10 @@
         'js/sdk/3rd/jsencrypt.js',
 
         /* DIM SDK */
-        'js/sdk/dimsdk.js'
+        'js/sdk/dimsdk.js',
+
+        'js/sdk/host58.js',
+        'js/sdk/bubble.js'
     ];
     if (release) {
         sdk = [
@@ -163,7 +166,10 @@
             'js/sdk/3rd/jsencrypt.min.js',
 
             /* DIM SDK */
-            'js/sdk/dimsdk.min.js'
+            'js/sdk/dimsdk.min.js',
+
+            'js/sdk/host58.js',
+            'js/sdk/bubble.js'
         ]
     }
 
@@ -202,9 +208,7 @@
     var ui = [
         /* UI: Console */
         'js/3rd/jquery-3.4.1.slim.min.js',
-        'js/3rd/underscore-1.8.2.min.js',
-
-        'js/sdk/bubble.js'
+        'js/3rd/underscore-1.8.2.min.js'
     ];
 
     var stylesheets = [
