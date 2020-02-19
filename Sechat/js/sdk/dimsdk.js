@@ -3071,7 +3071,7 @@ if (typeof DaoKeDao !== "object") {
             }
         }
         if (cmd.hasOwnProperty("group")) {
-            return ns.GroupCommand.getInstance(cmd)
+            return ns.protocol.GroupCommand.getInstance(cmd)
         }
         return new HistoryCommand(cmd)
     };
