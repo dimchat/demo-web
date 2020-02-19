@@ -358,6 +358,9 @@
     };
 
     //-------- namespace --------
+    if (typeof ns.network !== 'object') {
+        ns.network = {};
+    }
     ns.network.Server = Server;
 
 }(DIMP);

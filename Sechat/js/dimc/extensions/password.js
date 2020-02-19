@@ -35,6 +35,8 @@
 !function (ns) {
     'use strict';
 
+    var Data = ns.type.Data;
+
     var Base64 = ns.format.Base64;
     var SHA256 = ns.digest.SHA256;
 
@@ -54,23 +56,24 @@
             var len = Password.KEY_SIZE - data.length;
             if (len > 0) {
                 // format: {digest_prefix}+{pwd_data}
-                var merged = [];
+                var merged = new Data(Password.KEY_SIZE);
                 for (i = 0; i < len; ++i) {
                     merged.push(digest[i]);
                 }
                 for (i = 0; i < data.length; ++i) {
                     merged.push(data[i]);
                 }
-                data = merged;
+                data = merged.getBytes();
             } else if (len < 0) {
                 data = digest;
             }
             // AES iv
-            var iv = [];
+            var iv = new Data(Password.BLOCK_SIZE);
             i = 256 / 8 - Password.BLOCK_SIZE;
             for (; i < Password.KEY_SIZE; ++i) {
                 iv.push(digest[i]);
             }
+            iv = iv.getBytes();
             // generate AES key
             var key = {
                 'algorithm': SymmetricKey.AES,

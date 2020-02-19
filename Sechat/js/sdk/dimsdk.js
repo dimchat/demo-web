@@ -251,10 +251,129 @@ if (typeof DIMP !== "object") {
     ns.type.register("Enum")
 }(DIMP);
 ! function(ns) {
+    var bytes = function(length) {
+        ns.type.Object.call(this);
+        var value = length ? arguments[0] : 0;
+        if (typeof value === "number") {
+            if (value < 1) {
+                value = 1
+            }
+            this.array = new Uint8Array(value);
+            this.length = 0
+        } else {
+            if (value instanceof bytes) {
+                this.array = value.getBytes();
+                this.length = value.length
+            } else {
+                if (value instanceof Uint8Array) {
+                    this.array = value;
+                    this.length = value.length
+                } else {
+                    if (value instanceof Array) {
+                        value = new Uint8Array(value);
+                        this.array = value;
+                        this.length = value.length
+                    } else {
+                        throw Error("bytes length error: " + value)
+                    }
+                }
+            }
+        }
+    };
+    ns.type.Class(bytes, ns.type.Object);
+    bytes.prototype.getBytes = function(copy) {
+        if (this.length < 1) {
+            return null
+        }
+        var view;
+        if (this.length === this.array.length) {
+            view = this.array
+        } else {
+            view = this.array.subarray(0, this.length)
+        }
+        if (copy) {
+            var array = new Uint8Array(this.length);
+            array.set(view);
+            return array
+        } else {
+            return view
+        }
+    };
+    bytes.prototype.getByte = function(index) {
+        if (index < this.length) {
+            return this.array[index]
+        } else {
+            return 0
+        }
+    };
+    bytes.prototype.setByte = function(index, value) {
+        if (index >= this.array.length) {
+            expand.call(this, index + 1)
+        }
+        this.array[index] = value;
+        if (index >= this.length) {
+            this.length = index + 1
+        }
+    };
+    var expand = function(size) {
+        var bigger = new Uint8Array(size);
+        bigger.set(this.array);
+        this.array = bigger
+    };
+    var add_one = function(value) {
+        if (this.length >= this.array.length) {
+            expand.call(this, this.length * 2)
+        }
+        this.array[this.length] = value;
+        ++this.length
+    };
+    bytes.prototype.push = function(value) {
+        if (typeof value === "number") {
+            add_one.call(this, value);
+            return
+        }
+        var array;
+        if (value instanceof Uint8Array) {
+            array = value
+        } else {
+            if (value instanceof bytes) {
+                array = value.getBytes()
+            } else {
+                throw TypeError("bytes value error: " + value)
+            }
+        }
+        for (var i = 0; i < array.length; ++i) {
+            add_one.call(this, array[i])
+        }
+    };
+    bytes.prototype.pop = function() {
+        if (this.length === 0) {
+            throw RangeError("bytes empty")
+        }
+        this.length -= 1;
+        var last = this.array[this.length];
+        this.array[this.length] = 0;
+        return last
+    };
+    bytes.prototype.toArray = function() {
+        if (typeof Array.from === "function") {
+            return Array.from(this.array)
+        } else {
+            return [].slice.call(this.array)
+        }
+    };
+    bytes.from = function(array) {
+        return new bytes(array)
+    };
+    ns.type.Data = bytes;
+    ns.type.register("Data")
+}(DIMP);
+! function(ns) {
+    var Data = ns.type.Data;
     var UTF8 = {
         encode: function(str) {
-            var array = [];
             var len = str.length;
+            var array = new Data(len);
             var c;
             for (var i = 0; i < len; ++i) {
                 c = str.charCodeAt(i);
@@ -275,7 +394,7 @@ if (typeof DIMP !== "object") {
                     }
                 }
             }
-            return array
+            return array.getBytes()
         },
         decode: function(array) {
             var string = "";
@@ -304,7 +423,7 @@ if (typeof DIMP !== "object") {
         if (!value) {
             value = ""
         } else {
-            if (value instanceof Array) {
+            if (value instanceof Uint8Array) {
                 if (!charset || charset === "UTF-8") {
                     value = UTF8.decode(value)
                 } else {
@@ -374,6 +493,12 @@ if (typeof DIMP !== "object") {
     };
     str.prototype.getLength = function() {
         return this.string.length
+    };
+    str.from = function(string) {
+        if (string instanceof Array) {
+            string = new Uint8Array(string)
+        }
+        return new str(string)
     };
     ns.type.String = str;
     ns.type.register("String")
@@ -468,12 +593,16 @@ if (typeof DIMP !== "object") {
             }
         }
     };
+    map.from = function(dict) {
+        return new map(dict)
+    };
     ns.type.Dictionary = map;
     ns.type.Arrays = arrays;
     ns.type.register("Dictionary");
     ns.type.register("Arrays")
 }(DIMP);
 ! function(ns) {
+    var Data = ns.type.Data;
     var hex_encode = function(data) {
         var i = 0;
         var len = data.length;
@@ -502,13 +631,13 @@ if (typeof DIMP !== "object") {
             }
         }
         var ch;
-        var data = [];
+        var data = new Data(len / 2);
         for (;
             (i + 1) < len; i += 2) {
             ch = str.substring(i, i + 2);
             data.push(parseInt(ch, 16))
         }
-        return data
+        return data.getBytes()
     };
     var base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     var base64_values = [];
@@ -568,7 +697,7 @@ if (typeof DIMP !== "object") {
         if ((length % 4) !== 0 || !/^[A-Za-z0-9+\/]+={0,2}$/.test(str)) {
             throw Error("base64 string error: " + string)
         }
-        var array = [];
+        var array = new Data(length * 3 / 4);
         var ch1, ch2, ch3, ch4;
         var i;
         for (i = 0; i < length; i += 4) {
@@ -583,7 +712,7 @@ if (typeof DIMP !== "object") {
         while (str[--i] === "=") {
             array.pop()
         }
-        return array
+        return array.getBytes()
     };
     var coder = function() {};
     ns.type.Interface(coder);
@@ -1263,7 +1392,7 @@ if (typeof MingKeMing !== "object") {
                     if (!this.seed || !this.fingerprint) {
                         this.status = -1
                     } else {
-                        var data = (new ns.type.String(this.seed)).getBytes();
+                        var data = ns.type.String.from(this.seed).getBytes();
                         var signature = this.fingerprint;
                         if (this.key.verify(data, signature)) {
                             this.status = 1
@@ -1283,7 +1412,7 @@ if (typeof MingKeMing !== "object") {
             return true
         }
         if (this.version.hasSeed()) {
-            var data = (new ns.type.String(this.seed)).getBytes();
+            var data = ns.type.String.from(this.seed).getBytes();
             var signature = this.fingerprint;
             return publicKey.verify(data, signature)
         } else {
@@ -1331,7 +1460,7 @@ if (typeof MingKeMing !== "object") {
             version = new MetaType(version)
         }
         if (version.hasSeed()) {
-            var data = (new ns.type.String(seed)).getBytes();
+            var data = ns.type.String.from(seed).getBytes();
             var fingerprint = privateKey.sign(data);
             meta["seed"] = seed;
             meta["fingerprint"] = Base64.encode(fingerprint)
@@ -1441,8 +1570,7 @@ if (typeof MingKeMing !== "object") {
         if (!this.data) {
             var string = this.getValue("data");
             if (string) {
-                var str = new ns.type.String(string);
-                this.data = str.getBytes()
+                this.data = ns.type.String.from(string).getBytes()
             }
         }
         return this.data
@@ -1522,8 +1650,7 @@ if (typeof MingKeMing !== "object") {
         }
         this.status = 1;
         var string = JSON.encode(this.getProperties());
-        var str = new ns.type.String(string);
-        this.data = str.getBytes();
+        this.data = ns.type.String.from(string).getBytes();
         this.signature = privateKey.sign(this.data);
         this.setValue("data", string);
         this.setValue("signature", Base64.encode(this.signature));
@@ -3839,7 +3966,7 @@ if (typeof DaoKeDao !== "object") {
         function decode(string) {
             var buffer = decodeUnsafe(string);
             if (buffer) {
-                return buffer
+                return ns.type.Data.from(buffer).getBytes()
             }
             throw new Error("Non-base" + BASE + " character")
         }
@@ -3984,6 +4111,7 @@ if (typeof DaoKeDao !== "object") {
     ns.format.PEM.parser = new pem()
 }(DIMP);
 ! function(ns) {
+    var Data = ns.type.Data;
     var Dictionary = ns.type.Dictionary;
     var SymmetricKey = ns.crypto.SymmetricKey;
     var Base64 = ns.format.Base64;
@@ -3997,18 +4125,15 @@ if (typeof DaoKeDao !== "object") {
         return Hex.decode(result)
     };
     var random_data = function(size) {
-        var data = [];
+        var data = new Data(size);
         for (var i = 0; i < size; ++i) {
             data.push(Math.floor(Math.random() * 256))
         }
-        return data
+        return data.getBytes()
     };
     var zero_data = function(size) {
-        var data = [];
-        for (var i = 0; i < size; ++i) {
-            data.push(0)
-        }
-        return data
+        var data = new Data(size);
+        return data.getBytes()
     };
     var AESKey = function(key) {
         Dictionary.call(this, key)
@@ -4242,6 +4367,7 @@ if (typeof DaoKeDao !== "object") {
     ns.plugins.RSAPrivateKey = RSAPrivateKey
 }(DIMP);
 ! function(ns) {
+    var Data = ns.type.Data;
     var SHA256 = ns.digest.SHA256;
     var RIPEMD160 = ns.digest.RIPEMD160;
     var Base58 = ns.format.Base58;
@@ -4253,8 +4379,8 @@ if (typeof DaoKeDao !== "object") {
         if (data.length !== 25) {
             throw RangeError("address length error: " + string)
         }
-        var prefix = [];
-        var suffix = [];
+        var prefix = new Data(21);
+        var suffix = new Data(4);
         var i;
         for (i = 0; i < 21; ++i) {
             prefix.push(data[i])
@@ -4262,8 +4388,8 @@ if (typeof DaoKeDao !== "object") {
         for (i = 21; i < 25; ++i) {
             suffix.push(data[i])
         }
-        var cc = check_code(prefix);
-        if (!ns.type.Arrays.equals(cc, suffix)) {
+        var cc = check_code(prefix.getBytes());
+        if (!ns.type.Arrays.equals(cc, suffix.getBytes())) {
             throw Error("address check code error: " + string)
         }
         this.network = new NetworkType(data[0]);
@@ -4278,30 +4404,30 @@ if (typeof DaoKeDao !== "object") {
     };
     DefaultAddress.generate = function(fingerprint, network) {
         var digest = RIPEMD160.digest(SHA256.digest(fingerprint));
-        var head = [];
+        var head = new Data(21);
         head.push(network.value);
         var i;
         for (i = 0; i < 20; ++i) {
             head.push(digest[i])
         }
-        var cc = check_code(head);
-        var data = [];
+        var cc = check_code(head.getBytes());
+        var data = new Data(25);
         for (i = 0; i < 21; ++i) {
-            data.push(head[i])
+            data.push(head.getByte(i))
         }
         for (i = 0; i < 4; ++i) {
             data.push(cc[i])
         }
-        return new DefaultAddress(Base58.encode(data))
+        return new DefaultAddress(Base58.encode(data.getBytes()))
     };
     var check_code = function(data) {
         var sha256d = SHA256.digest(SHA256.digest(data));
-        var cc = [];
+        var cc = new Data(4);
         var i;
         for (i = 0; i < 4; ++i) {
             cc.push(sha256d[i])
         }
-        return cc
+        return cc.getBytes()
     };
     var search_number = function(cc) {
         return (cc[0] | cc[1] << 8 | cc[2] << 16) + cc[3] * 16777216
@@ -6065,10 +6191,15 @@ if (typeof StarGate !== "object") {
     if (typeof StarGate.extensions !== "object") {
         sg.extensions = {}
     }
+    if (typeof StarGate.network !== "object") {
+        sg.network = {}
+    }
     DIMP.namespace(fsm);
     DIMP.namespace(sg);
     DIMP.namespace(sg.extensions);
-    sg.register("extensions")
+    DIMP.namespace(sg.network);
+    sg.register("extensions");
+    sg.register("network")
 }(StarGate, FiniteStateMachine);
 ! function(ns) {
     var Delegate = function() {};
@@ -6576,6 +6707,207 @@ if (typeof StarGate !== "object") {
     };
     ns.extensions.SocketClient = SocketClient;
     ns.extensions.register("SocketClient")
+}(StarGate);
+! function(ns) {
+    var Host = function(ip, port, data) {
+        this.ip = ip;
+        this.port = port;
+        this.data = data
+    };
+    Host.prototype.valueOf = function() {
+        console.assert(false, "implement me!");
+        return null
+    };
+    Host.prototype.toString = function() {
+        return this.valueOf()
+    };
+    Host.prototype.toLocaleString = function() {
+        return this.valueOf()
+    };
+    Host.prototype.toArray = function(default_port) {
+        var data = this.data;
+        var port = this.port;
+        var len = data.length;
+        var array, index;
+        if (!port || port === default_port) {
+            array = new Uint8Array(len);
+            for (index = 0; index < len; ++index) {
+                array[index] = data[index]
+            }
+        } else {
+            array = new Uint8Array(len + 2);
+            for (index = 0; index < len; ++index) {
+                array[index] = data[index]
+            }
+            array[len] = port >> 8;
+            array[len + 1] = port & 255
+        }
+        return array
+    };
+    ns.network.Host = Host;
+    ns.network.register("Host")
+}(StarGate);
+! function(ns) {
+    var Host = ns.network.Host;
+    var IPv4 = function(ip, port, data) {
+        if (data) {
+            if (!ip) {
+                ip = data[0] + "." + data[1] + "." + data[2] + "." + data[3];
+                if (data.length === 6) {
+                    port = (data[4] << 8) | data[5]
+                }
+            }
+        } else {
+            if (ip) {
+                data = new Uint8Array(4);
+                var array = ip.split(".");
+                for (var index = 0; index < 4; ++index) {
+                    data[index] = parseInt(array[index], 10)
+                }
+            } else {
+                throw URIError("IP data empty: " + data + ", " + ip + ", " + port)
+            }
+        }
+        Host.call(this, ip, port, data)
+    };
+    DIMP.type.Class(IPv4, Host);
+    IPv4.prototype.valueOf = function() {
+        if (this.port === 0) {
+            return this.ip
+        } else {
+            return this.ip + ":" + this.port
+        }
+    };
+    IPv4.patten = /^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?$/;
+    IPv4.parse = function(host) {
+        if (!this.patten.test(host)) {
+            return null
+        }
+        var pair = host.split(":");
+        var ip = pair[0],
+            port = 0;
+        if (pair.length === 2) {
+            port = parseInt(pair[1])
+        }
+        return new IPv4(ip, port)
+    };
+    ns.network.IPv4 = IPv4;
+    ns.network.register("IPv4")
+}(StarGate);
+! function(ns) {
+    var Host = ns.network.Host;
+    var parse_v4 = function(data, array) {
+        var item, index = data.byteLength;
+        for (var i = array.length - 1; i >= 0; --i) {
+            item = array[i];
+            data[--index] = item
+        }
+        return data
+    };
+    var parse_v6 = function(data, ip, count) {
+        var array, item, index;
+        var pos = ip.indexOf("::");
+        if (pos < 0) {
+            array = ip.split(":");
+            index = -1;
+            for (var i = 0; i < count; ++i) {
+                item = parseInt(array[i], 16);
+                data[++index] = item >> 8;
+                data[++index] = item & 255
+            }
+        } else {
+            var left = ip.substring(0, pos).split(":");
+            index = -1;
+            for (var j = 0; j < left.length; ++j) {
+                item = parseInt(left[j], 16);
+                data[++index] = item >> 8;
+                data[++index] = item & 255
+            }
+            var right = ip.substring(pos + 2).split(":");
+            index = count * 2;
+            for (var k = right.length - 1; k >= 0; --k) {
+                item = parseInt(right[k], 16);
+                data[--index] = item & 255;
+                data[--index] = item >> 8
+            }
+        }
+        return data
+    };
+    var hex_encode = function(hi, lo) {
+        if (hi > 0) {
+            if (lo >= 16) {
+                return Number(hi).toString(16) + Number(lo).toString(16)
+            }
+            return Number(hi).toString(16) + "0" + Number(lo).toString(16)
+        } else {
+            return Number(lo).toString(16)
+        }
+    };
+    var IPv6 = function(ip, port, data) {
+        if (data) {
+            if (!ip) {
+                ip = hex_encode(data[0], data[1]);
+                for (var index = 2; index < 16; index += 2) {
+                    ip += ":" + hex_encode(data[index], data[index + 1])
+                }
+                ip = ip.replace(/:(0:){2,}/, "::");
+                ip = ip.replace(/^(0::)/, "::");
+                ip = ip.replace(/(::0)$/, "::");
+                if (data.length === 18) {
+                    port = (data[16] << 8) | data[17]
+                }
+            }
+        } else {
+            if (ip) {
+                data = new Uint8Array(16);
+                var array = ip.split(".");
+                if (array.length === 1) {
+                    data = parse_v6(data, ip, 8)
+                } else {
+                    if (array.length === 4) {
+                        var prefix = array[0];
+                        var pos = prefix.lastIndexOf(":");
+                        array[0] = prefix.substring(pos + 1);
+                        prefix = prefix.substring(0, pos);
+                        data = parse_v6(data, prefix, 6);
+                        data = parse_v4(data, array)
+                    } else {
+                        throw URIError("IPv6 format error: " + ip)
+                    }
+                }
+            } else {
+                throw URIError("IP data empty: " + data + ", " + ip + ", " + port)
+            }
+        }
+        Host.call(this, ip, port, data)
+    };
+    DIMP.type.Class(IPv6, Host);
+    IPv6.prototype.valueOf = function() {
+        if (this.port === 0) {
+            return this.ip
+        } else {
+            return "[" + this.ip + "]:" + this.port
+        }
+    };
+    IPv6.patten = /^\[?([0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(]:\d{1,5})?$/;
+    IPv6.patten_compat = /^\[?([0-9A-Fa-f]{0,4}:){2,6}(\d{1,3}.){3}\d{1,3}(]:\d{1,5})?$/;
+    IPv6.parse = function(host) {
+        if (!this.patten.test(host) && !this.patten_compat.test(host)) {
+            return null
+        }
+        var ip, port;
+        if (host.charAt(0) === "[") {
+            var pos = host.indexOf("]");
+            ip = host.substring(1, pos);
+            port = parseInt(host.substring(pos + 2))
+        } else {
+            ip = host;
+            port = 0
+        }
+        return new IPv6(ip, port)
+    };
+    ns.network.IPv6 = IPv6;
+    ns.network.register("IPv6")
 }(StarGate);
 if (typeof DIMP.fsm !== "object") {
     DIMP.fsm = {}

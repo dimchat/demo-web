@@ -463,6 +463,7 @@
     ns.extensions.Register = Register
 }(DIMP);
 ! function(ns) {
+    var Data = ns.type.Data;
     var Base64 = ns.format.Base64;
     var SHA256 = ns.digest.SHA256;
     var SymmetricKey = ns.crypto.SymmetricKey;
@@ -476,24 +477,25 @@
             var i;
             var len = Password.KEY_SIZE - data.length;
             if (len > 0) {
-                var merged = [];
+                var merged = new Data(Password.KEY_SIZE);
                 for (i = 0; i < len; ++i) {
                     merged.push(digest[i])
                 }
                 for (i = 0; i < data.length; ++i) {
                     merged.push(data[i])
                 }
-                data = merged
+                data = merged.getBytes()
             } else {
                 if (len < 0) {
                     data = digest
                 }
             }
-            var iv = [];
+            var iv = new Data(Password.BLOCK_SIZE);
             i = 256 / 8 - Password.BLOCK_SIZE;
             for (; i < Password.KEY_SIZE; ++i) {
                 iv.push(digest[i])
             }
+            iv = iv.getBytes();
             var key = {
                 "algorithm": SymmetricKey.AES,
                 "data": Base64.encode(data),
@@ -973,6 +975,9 @@
     Server.prototype.exitState = function(state, machine) {};
     Server.prototype.pauseState = function(state, machine) {};
     Server.prototype.resumeState = function(state, machine) {};
+    if (typeof ns.network !== "object") {
+        ns.network = {}
+    }
     ns.network.Server = Server
 }(DIMP);
 ! function(ns) {
