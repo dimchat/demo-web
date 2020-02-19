@@ -449,11 +449,13 @@
 
     Application.prototype.doHost58 = function (cmd) {
         var pair = cmd.split(/\s+/);
-        var host = new Host58(pair[1], 9394);
+        var h58;
         if (pair[0] === 'encode') {
-            return host.encode();
+            h58 = new Host58(pair[1]);
+            return pair[1] + ' -> ' + h58.toString() + ' -> ' + h58.encode(9394);
         } else if (pair[0] === 'decode') {
-            return host.toString();
+            h58 = new Host58(pair[1]);
+            return pair[1] + ' -> ' + h58.toString();
         } else {
             throw Error('unknown command "' + cmd + '"');
         }

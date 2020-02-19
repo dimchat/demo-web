@@ -237,27 +237,4 @@
         });
     });
 
-    //
-    //  Makefile
-    //
-    var building = false;
-    if (!release && building) {
-        var text = 'cat';
-        for (var k = 0; k < dim_client.length; ++k) {
-            text += ' ' + dim_client[k];
-        }
-        text += ' > js/dimclient.js';
-        var div = document.createElement('DIV');
-        div.style.cssText = 'position: absolute;' +
-            'bottom: 4px;' +
-            'margin: 4px;' +
-            'padding: 4px;' +
-            'background-color: gray;' +
-            'z-index: 3333;' +
-            'font-family: Arial, sans-serif;' +
-            'font-size: 10pt;';
-        div.innerText = text;
-        document.body.appendChild(div);
-    }
-
 }(window);

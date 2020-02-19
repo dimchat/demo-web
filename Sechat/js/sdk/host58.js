@@ -47,61 +47,43 @@
     //          [X:X:X:X:X:X:127.0.0.1]:9527
     //
 
-    var IP = function (info) {
+    var Host = function (ip, port, data) {
+        // ip string
+        this.ip = ip;      // String
+
+        // port number
+        this.port = port;  // Number
+
         // ip data array
-        var data = info['data'];
-        if (data instanceof Uint8Array) {
-            this.data = data;
-        }
-
-        // ip
-        var ip = info['ip'];
-        if (typeof ip === 'string') {
-            this.ip = ip;
-        }
-
-        // default port
-        var default_port = info['default_port'];
-        if (default_port) {
-            this.default_port = default_port;
-        } else {
-            this.default_port = 0;
-        }
-
-        // port
-        var port = info['port'];
-        if (port) {
-            this.port = port;
-        } else {
-            this.port = this.default_port;
-        }
+        this.data = data;  // Uint8Array
     };
-    IP.prototype.valueOf = function () {
+    Host.prototype.valueOf = function () {
         console.assert(false, 'implement me!');
         return null;
     };
-    IP.prototype.toString = function () {
+    Host.prototype.toString = function () {
         return this.valueOf();
     };
-    IP.prototype.toLocaleString = function () {
+    Host.prototype.toLocaleString = function () {
         return this.valueOf();
     };
-    IP.prototype.toArray = function () {
+    Host.prototype.toArray = function (default_port) {
         var data = this.data; // ip data
         var port = this.port;
         var len = data.length;
-        var array;
-        if (port === this.default_port) {
+        var array, index;
+        if (!port || port === default_port) {
+            // ip
             array = new Uint8Array(len);
+            for (index = 0; index < len; ++index) {
+                array[index] = data[index];
+            }
         } else {
+            // ip + port
             array = new Uint8Array(len + 2);
-        }
-        // ip
-        for (var i = 0; i < len; ++i) {
-            array[i] = data[i];
-        }
-        // port
-        if (port !== this.default_port) {
+            for (index = 0; index < len; ++index) {
+                array[index] = data[index];
+            }
             array[len] = port >> 8;
             array[len+1] = port & 0xFF;
         }
@@ -113,26 +95,31 @@
     //      127.0.0.1
     //      127.0.0.1:9527
     //
-    var IPv4 = function (info) {
-        var ip = info['ip'];
-        if (ip instanceof Uint8Array) {
-            info['data'] = ip;
-            delete info['ip'];
-        } else if (typeof ip === 'string') {
-            // parse IPv4 string
-            var data = new Uint8Array(4);
-            var array = ip.split('.');
-            for (var i = 0; i < 4; ++i) {
-                data[i] = parseInt(array[i], 10);
+    var IPv4 = function (ip, port, data) {
+        if (data) {
+            if (!ip) {
+                // get ip+port from data array
+                ip = data[0] + '.' + data[1] + '.' + data[2] + '.' + data[3];
+                if (data.length === 6) {
+                    port = (data[4] << 8) | data[5];
+                }
             }
-            info['data'] = data;
+        } else if (ip) {
+            // parse IPv4 string
+            data = new Uint8Array(4);
+            var array = ip.split('.');
+            for (var index = 0; index < 4; ++index) {
+                data[index] = parseInt(array[index], 10);
+            }
+        } else {
+            throw URIError('IP data empty: ' + data + ', ' + ip + ', ' + port);
         }
-        IP.call(this, info);
+        Host.call(this, ip, port, data);
     };
-    DIMP.type.Class(IPv4, IP);
+    DIMP.type.Class(IPv4, Host);
 
     IPv4.prototype.valueOf = function () {
-        if (this.port === this.default_port) {
+        if (this.port === 0) {
             return this.ip;
         } else {
             return this.ip + ':' + this.port;
@@ -141,23 +128,17 @@
 
     IPv4.patten = /^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?$/;  // 127.0.0.1:9527
 
-    IPv4.parse = function (host, default_port/* =0 */) {
+    IPv4.parse = function (host) {
         // check
         if (!this.patten.test(host)) {
             return null;
         }
-        var ip, port = 0;
-        if (default_port) {
-            port = default_port;
-        }
-        // parse
         var pair = host.split(':');
-        ip = pair[0];
+        var ip = pair[0], port = 0;
         if (pair.length === 2) {
             port = parseInt(pair[1]);
         }
-        // OK, create it
-        return new IPv4({ip: ip, port: port, default_port:default_port});
+        return new IPv4(ip, port);
     };
 
     //
@@ -211,68 +192,6 @@
         return data;
     };
 
-    var IPv6 = function (info) {
-        var ip = info['ip'];
-        if (ip instanceof Uint8Array) {
-            info['data'] = ip;
-            delete info['ip'];
-        } else if (typeof ip === 'string') {
-            // parse IPv6 string
-            var data = new Uint8Array(16);
-            var array = ip.split('.');
-            if (array.length === 1) {
-                data = parse_v6(data, ip, 8);
-            } else if (array.length === 4) {
-                // parse compatible address for IPv4
-                //      ::127.0.0.1
-                var prefix = array[0];
-                var pos = prefix.lastIndexOf(':')+1;
-                array[0] = prefix.substring(pos);
-                prefix = prefix.substring(0, pos);
-                data = parse_v6(data, prefix, 6);
-                data = parse_v4(data, array);
-            } else {
-                throw URIError('IPv6 format error: ' + ip);
-            }
-            info['data'] = data;
-        }
-        IP.call(this, info);
-    };
-    DIMP.type.Class(IPv6, IP);
-
-    IPv6.prototype.valueOf = function () {
-        if (this.port === this.default_port) {
-            return this.ip;
-        } else {
-            return '[' + this.ip + ']:' + this.port;
-        }
-    };
-
-    IPv6.patten = /^\[?([0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(]:\d{1,5})?$/;
-    IPv6.patten_compat = /^\[?([0-9A-Fa-f]{0,4}:){2,6}(\d{1,3}.){3}\d{1,3}(]:\d{1,5})?$/;
-
-    IPv6.parse = function (host, default_port/* =0 */) {
-        // check
-        if (!this.patten.test(host) && !this.patten_compat.test(host)) {
-            return null;
-        }
-        var ip, port = 0;
-        if (default_port) {
-            port = default_port;
-        }
-        // parse
-        if (host.charAt(0) === '[') {
-            // [0:0:0:0:0:0:0:0]:9527
-            var pos = host.indexOf(']');
-            ip = host.substring(1, pos);
-            port = parseInt(host.substring(pos+2));
-        } else {
-            ip = host;
-        }
-        // OK, create it
-        return new IPv6({ip: ip, port: port, default_port: default_port});
-    };
-
     var hex_encode = function (hi, lo) {
         if (hi > 0) {
             if (lo >= 16) {
@@ -284,70 +203,136 @@
         }
     };
 
-    var Base58 = DIMP.format.Base58;
-
-    var Host58 = function (host, default_port/* =0 */) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host, default_port);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host, default_port);
-                if (!ipv) {
-                    throw URIError('IP format error');
-                }
-            }
-        } else {
-            // base58
-            var ip, port = 0;
-            if (default_port) {
-                port = default_port;
-            }
-            var array = Base58.decode(host);
-            var count = array.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ip = array[0] + '.' + array[1] + '.' + array[2] + '.' + array[3];
-                if (count === 6) {
-                    port = (array[4] << 8) + array[5];
-                }
-                ipv = new IPv4({ip: ip, port: port, default_port: default_port});
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ip = hex_encode(array[0], array[1]);
+    var IPv6 = function (ip, port, data) {
+        if (data) {
+            if (!ip) {
+                // get ip+port from data array
+                ip = hex_encode(data[0], data[1]);
                 for (var index = 2; index < 16; index += 2) {
-                    ip += ':' + hex_encode(array[index], array[index+1]);
-                }
-                if (count === 18) {
-                    port = (array[16] << 8) + array[17];
+                    ip += ':' + hex_encode(data[index], data[index+1]);
                 }
                 // compress it
-                ip = ip.replace(/:(0:){3,}/, '::');
+                ip = ip.replace(/:(0:){2,}/, '::');
                 ip = ip.replace(/^(0::)/, '::');
                 ip = ip.replace(/(::0)$/, '::');
-                ipv = new IPv6({ip: ip, port: port, default_port: default_port})
-            } else {
-                throw URIError('host error: ' + host);
+                if (data.length === 18) {
+                    port = (data[16] << 8) | data[17];
+                }
             }
+        } else if (ip) {
+            // parse IPv6 string
+            data = new Uint8Array(16);
+            var array = ip.split('.');
+            if (array.length === 1) {
+                // standard IPv6 address
+                //      ::7f00:1
+                data = parse_v6(data, ip, 8);
+            } else if (array.length === 4) {
+                // compatible address for IPv4
+                //      ::127.0.0.1
+                var prefix = array[0];
+                var pos = prefix.lastIndexOf(':');
+                array[0] = prefix.substring(pos+1); // keep first number of IPv4
+                prefix = prefix.substring(0, pos);  // cut IPv4
+                data = parse_v6(data, prefix, 6);
+                data = parse_v4(data, array);
+            } else {
+                throw URIError('IPv6 format error: ' + ip);
+            }
+        } else {
+            throw URIError('IP data empty: ' + data + ', ' + ip + ', ' + port);
         }
-        IP.call(this, ipv);
-        this.ipv = ipv;
+        Host.call(this, ip, port, data);
     };
-    DIMP.type.Class(Host58, IP);
+    DIMP.type.Class(IPv6, Host);
 
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
+    IPv6.prototype.valueOf = function () {
+        if (this.port === 0) {
+            return this.ip;
+        } else {
+            return '[' + this.ip + ']:' + this.port;
+        }
     };
 
-    Host58.prototype.encode = function () {
-        return Base58.encode(this.ipv.toArray());
+    IPv6.patten = /^\[?([0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(]:\d{1,5})?$/;
+    IPv6.patten_compat = /^\[?([0-9A-Fa-f]{0,4}:){2,6}(\d{1,3}.){3}\d{1,3}(]:\d{1,5})?$/;
+
+    IPv6.parse = function (host) {
+        // check
+        if (!this.patten.test(host) && !this.patten_compat.test(host)) {
+            return null;
+        }
+        var ip, port;
+        if (host.charAt(0) === '[') {
+            // [0:0:0:0:0:0:0:0]:9527
+            var pos = host.indexOf(']');
+            ip = host.substring(1, pos);
+            port = parseInt(host.substring(pos+2));
+        } else {
+            ip = host;
+            port = 0;
+        }
+        return new IPv6(ip, port);
     };
 
     //-------- namespace --------
     if (typeof ns.network !== 'object') {
         ns.network = {};
     }
+    ns.network.Host = Host;
+    ns.network.IPv4 = IPv4;
+    ns.network.IPv6 = IPv6;
+
+}(DIMP);
+
+!function (ns) {
+
+    var Host = ns.network.Host;
+    var IPv4 = ns.network.IPv4;
+    var IPv6 = ns.network.IPv6;
+
+    var Base58 = DIMP.format.Base58;
+
+    var Host58 = function (host) {
+        var ipv;
+        if (/[.:]+/.test(host)) {
+            // try IPv4
+            ipv = IPv4.parse(host);
+            if (!ipv) {
+                // try IPv6
+                ipv = IPv6.parse(host);
+                if (!ipv) {
+                    throw URIError('IP format error');
+                }
+            }
+        } else {
+            // base58
+            var data = Base58.decode(host);
+            var count = data.length;
+            if (count === 4 || count === 6) {
+                // IPv4
+                ipv = new IPv4(null, 0, data);
+            } else if (count === 16 || count === 18) {
+                // IPv6
+                ipv = new IPv6(null, 0, data);
+            } else {
+                throw URIError('host error: ' + host);
+            }
+        }
+        Host.call(this, ipv.ip, ipv.port, ipv.data);
+        this.ipv = ipv;
+    };
+    DIMP.type.Class(Host58, Host);
+
+    Host58.prototype.valueOf = function () {
+        return this.ipv.valueOf();
+    };
+
+    Host58.prototype.encode = function (default_port) {
+        return Base58.encode(this.ipv.toArray(default_port));
+    };
+
+    //-------- namespace --------
     ns.network.Host58 = Host58;
 
 }(DIMP);
