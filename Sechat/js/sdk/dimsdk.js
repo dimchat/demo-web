@@ -262,20 +262,16 @@ if (typeof DIMP !== "object") {
             this.length = 0
         } else {
             if (value instanceof bytes) {
-                this.array = value.getBytes();
+                this.array = value.array;
                 this.length = value.length
             } else {
                 if (value instanceof Uint8Array) {
                     this.array = value;
                     this.length = value.length
                 } else {
-                    if (value instanceof Array) {
-                        value = new Uint8Array(value);
-                        this.array = value;
-                        this.length = value.length
-                    } else {
-                        throw Error("bytes length error: " + value)
-                    }
+                    value = new Uint8Array(value);
+                    this.array = value;
+                    this.length = value.length
                 }
             }
         }
@@ -339,7 +335,7 @@ if (typeof DIMP !== "object") {
             if (value instanceof bytes) {
                 array = value.getBytes()
             } else {
-                throw TypeError("bytes value error: " + value)
+                array = new Uint8Array(value)
             }
         }
         for (var i = 0; i < array.length; ++i) {
@@ -347,7 +343,7 @@ if (typeof DIMP !== "object") {
         }
     };
     bytes.prototype.pop = function() {
-        if (this.length === 0) {
+        if (this.length < 1) {
             throw RangeError("bytes empty")
         }
         this.length -= 1;
@@ -604,14 +600,11 @@ if (typeof DIMP !== "object") {
 ! function(ns) {
     var Data = ns.type.Data;
     var hex_encode = function(data) {
-        var i = 0;
         var len = data.length;
-        var num;
         var str = "";
         var s;
-        for (; i < len; ++i) {
-            num = Number(data[i]);
-            s = num.toString(16);
+        for (var i = 0; i < len; ++i) {
+            s = Number(data[i]).toString(16);
             if (s.length % 2) {
                 str += "0" + s
             } else {
@@ -632,24 +625,20 @@ if (typeof DIMP !== "object") {
         }
         var ch;
         var data = new Data(len / 2);
-        for (;
-            (i + 1) < len; i += 2) {
-            ch = str.substring(i, i + 2);
+        --len;
+        for (; i < len; i += 2) {
+            ch = str.substr(i, 2);
             data.push(parseInt(ch, 16))
         }
         return data.getBytes()
     };
     var base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    var base64_values = [];
+    var base64_values = new Int8Array(128);
     ! function(chars, values) {
         var i;
-        for (i = 0; i < 128; ++i) {
-            values[i] = -1
-        }
         for (i = 0; i < chars.length; ++i) {
             values[chars.charCodeAt(i)] = i
         }
-        values[61] = 0
     }(base64_chars, base64_values);
     var base64_encode = function(data) {
         var base64 = "";
