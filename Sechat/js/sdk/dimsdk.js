@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 10, 2020
+ * @date      Feb. 22, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -277,6 +277,24 @@ if (typeof DIMP !== "object") {
         }
     };
     ns.type.Class(bytes, ns.type.Object);
+    bytes.prototype.equals = function(other) {
+        if (!other) {
+            return this.length === 0
+        } else {
+            if (other instanceof bytes) {
+                if (this.length !== other.length) {
+                    return false
+                } else {
+                    if (this.array === other.array) {
+                        return true
+                    }
+                }
+                return ns.type.Arrays.equals(this.getBytes(), other.getBytes())
+            } else {
+                return ns.type.Arrays.equals(this.getBytes(), other)
+            }
+        }
+    };
     bytes.prototype.getBytes = function(copy) {
         if (this.length < 1) {
             return null
@@ -515,9 +533,27 @@ if (typeof DIMP !== "object") {
             if (a1.length !== a2.length) {
                 return false
             }
+            var v1, v2;
             for (var k in a1) {
-                if (a1[k] !== a2[k]) {
-                    return false
+                if (!a1.hasOwnProperty(k)) {
+                    continue
+                }
+                v1 = a1[k];
+                v2 = a2[k];
+                if (typeof v1["equals"] === "function") {
+                    if (!v1.equals(v2)) {
+                        return false
+                    }
+                } else {
+                    if (typeof v2["equals"] === "function") {
+                        if (!v2.equals(v1)) {
+                            return false
+                        }
+                    } else {
+                        if (v1 !== v2) {
+                            return false
+                        }
+                    }
                 }
             }
             return true
@@ -599,17 +635,27 @@ if (typeof DIMP !== "object") {
 }(DIMP);
 ! function(ns) {
     var Data = ns.type.Data;
+    var hex_chars = "0123456789abcdef";
+    var hex_values = new Int8Array(128);
+    ! function(chars, values) {
+        for (var i = 0; i < chars.length; ++i) {
+            values[chars.charCodeAt(i)] = i
+        }
+        values["A".charCodeAt(0)] = 10;
+        values["B".charCodeAt(0)] = 11;
+        values["C".charCodeAt(0)] = 12;
+        values["D".charCodeAt(0)] = 13;
+        values["E".charCodeAt(0)] = 14;
+        values["F".charCodeAt(0)] = 15
+    }(hex_chars, hex_values);
     var hex_encode = function(data) {
         var len = data.length;
         var str = "";
-        var s;
+        var byt;
         for (var i = 0; i < len; ++i) {
-            s = Number(data[i]).toString(16);
-            if (s.length % 2) {
-                str += "0" + s
-            } else {
-                str += s
-            }
+            byt = data[i];
+            str += hex_chars[byt >> 4];
+            str += hex_chars[byt & 15]
         }
         return str
     };
@@ -623,20 +669,21 @@ if (typeof DIMP !== "object") {
                 }
             }
         }
-        var ch;
-        var data = new Data(len / 2);
+        var size = Math.floor(len / 2);
+        var data = new Data(size);
         --len;
+        var hi, lo;
         for (; i < len; i += 2) {
-            ch = str.substr(i, 2);
-            data.push(parseInt(ch, 16))
+            hi = hex_values[str.charCodeAt(i)];
+            lo = hex_values[str.charCodeAt(i + 1)];
+            data.push((hi << 4) | lo)
         }
         return data.getBytes()
     };
     var base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     var base64_values = new Int8Array(128);
     ! function(chars, values) {
-        var i;
-        for (i = 0; i < chars.length; ++i) {
+        for (var i = 0; i < chars.length; ++i) {
             values[chars.charCodeAt(i)] = i
         }
     }(base64_chars, base64_values);
@@ -3140,7 +3187,6 @@ if (typeof DaoKeDao !== "object") {
 ! function(ns) {
     var ID = ns.ID;
     var Command = ns.protocol.Command;
-    var HistoryCommand = ns.protocol.HistoryCommand;
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = function(info) {
         var group = null;
@@ -3238,41 +3284,34 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     ns.type.Class(QueryCommand, Command);
-    GroupCommand.invite = function(group, member) {
-        var cmd = new InviteCommand(group);
+    var create = function(clazz, group, member) {
+        var cmd = new clazz(group);
         if (typeof member === "string" || member instanceof ID) {
             cmd.setMember(member)
         } else {
-            cmd.setMembers(member)
+            if (member instanceof Array) {
+                cmd.setMembers(member)
+            }
         }
         return cmd
+    };
+    GroupCommand.invite = function(group, member) {
+        return create(InviteCommand, group, member)
     };
     GroupCommand.expel = function(group, member) {
-        var cmd = new ExpelCommand(group);
-        if (typeof member === "string" || member instanceof ID) {
-            cmd.setMember(member)
-        } else {
-            cmd.setMembers(member)
-        }
-        return cmd
+        return create(ExpelCommand, group, member)
     };
     GroupCommand.join = function(group) {
-        return new JoinCommand(group)
+        return create(JoinCommand, group)
     };
     GroupCommand.quit = function(group) {
-        return new QuitCommand(group)
+        return create(QuitCommand, group)
     };
     GroupCommand.reset = function(group, member) {
-        var cmd = new ResetCommand(group);
-        if (typeof member === "string" || member instanceof ID) {
-            cmd.setMember(member)
-        } else {
-            cmd.setMembers(member)
-        }
-        return cmd
+        return create(ResetCommand, group, member)
     };
     GroupCommand.query = function(group) {
-        return new QueryCommand(group)
+        return create(QueryCommand, group)
     };
     GroupCommand.register(GroupCommand.INVITE, InviteCommand);
     GroupCommand.register(GroupCommand.EXPEL, ExpelCommand);
@@ -4202,6 +4241,7 @@ if (typeof DaoKeDao !== "object") {
     var Hex = ns.format.Hex;
     var Base64 = ns.format.Base64;
     var PEM = ns.format.PEM;
+    var Data = ns.type.Data;
     var Dictionary = ns.type.Dictionary;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var PublicKey = ns.crypto.PublicKey;
@@ -4234,7 +4274,9 @@ if (typeof DaoKeDao !== "object") {
             var cipher = new JSEncrypt();
             cipher.setPublicKey(key);
             if (cipher.key.e === 0 || cipher.key.n === null) {
+                der = Data.from(der).toArray();
                 der = x509_header.concat(der);
+                der = Data.from(der).getBytes();
                 key = Base64.encode(der);
                 cipher.setPublicKey(key)
             }

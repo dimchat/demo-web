@@ -142,6 +142,9 @@
     if (ns['DEBUG']) {
         release = false;
     }
+    if (window.location.href.indexOf('?debug') > 0) {
+        release = false;
+    }
 
     var sdk = [
         /* third party cryptography libs */

@@ -93,15 +93,7 @@
         }
         return div;
     };
-
-    Bubble.prototype.showText = function () {
-        this.show(convert.apply(this, arguments));
-    };
-
-    Bubble.prototype.show = function () {
-        var text = convert.apply(this, arguments);
-        console.log('[Bubble] ' + text);
-        // append DIV
+    Bubble.prototype.getDiv = function (text) {
         var div = document.createElement('DIV');
         div.style.cssText = 'margin-bottom: 2px; margin-left: auto;' +
             'padding: 2px 8px;' +
@@ -111,6 +103,18 @@
             'color: yellow;';
         div.alpha = 55;
         div.innerText = text;
+        return div;
+    };
+
+    Bubble.prototype.showText = function () {
+        this.show(convert.apply(this, arguments));
+    };
+
+    Bubble.prototype.show = function () {
+        var text = convert.apply(this, arguments);
+        console.log('[Bubble] ' + text);
+        // append DIV
+        var div = this.getDiv(text);
         this.getTray().appendChild(div);
         // delay for fade out
         setTimeout(function () {
