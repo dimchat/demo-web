@@ -334,31 +334,49 @@ if (typeof DIMP !== "object") {
         bigger.set(this.array);
         this.array = bigger
     };
-    var add_one = function(value) {
+    var add_item = function(value) {
         if (this.length >= this.array.length) {
-            expand.call(this, this.length * 2)
+            expand.call(this, this.length << 1)
         }
         this.array[this.length] = value;
         ++this.length
     };
-    bytes.prototype.push = function(value) {
-        if (typeof value === "number") {
-            add_one.call(this, value);
+    var add_array = function(array) {
+        if (!array) {
             return
         }
-        var array;
-        if (value instanceof Uint8Array) {
-            array = value
-        } else {
-            if (value instanceof bytes) {
-                array = value.getBytes()
-            } else {
-                array = new Uint8Array(value)
+        var size = array.length;
+        if (size < 1) {
+            return
+        }
+        size += this.length;
+        var capacity = this.array.length;
+        if (size > capacity) {
+            while (capacity < size) {
+                capacity = capacity << 1
             }
+            expand.call(this, capacity)
         }
-        for (var i = 0; i < array.length; ++i) {
-            add_one.call(this, array[i])
+        this.array.set(array, this.length);
+        this.length = size
+    };
+    bytes.prototype.push = function(items) {
+        if (typeof items === "number") {
+            add_item.call(this, items)
+        } else {
+            var array;
+            if (items instanceof Uint8Array) {
+                array = items
+            } else {
+                if (items instanceof bytes) {
+                    array = items.getBytes()
+                } else {
+                    array = new Uint8Array(items)
+                }
+            }
+            add_array.call(this, array)
         }
+        return this.length
     };
     bytes.prototype.pop = function() {
         if (this.length < 1) {
@@ -369,11 +387,22 @@ if (typeof DIMP !== "object") {
         this.array[this.length] = 0;
         return last
     };
+    bytes.prototype.copy = function() {
+        return new bytes(this.getBytes(true))
+    };
+    bytes.prototype.concat = function(items) {
+        var clone = this.copy();
+        for (var i = 0; i < arguments.length; ++i) {
+            clone.push(arguments[i])
+        }
+        return clone
+    };
     bytes.prototype.toArray = function() {
+        var array = this.getBytes();
         if (typeof Array.from === "function") {
-            return Array.from(this.array)
+            return Array.from(array)
         } else {
-            return [].slice.call(this.array)
+            return [].slice.call(array)
         }
     };
     bytes.from = function(array) {
@@ -4267,6 +4296,7 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     var x509_header = [48, -127, -97, 48, 13, 6, 9, 42, -122, 72, -122, -9, 13, 1, 1, 1, 5, 0, 3, -127, -115, 0];
+    x509_header = new Data(x509_header);
     var parse_key = function() {
         if (!this.cipher) {
             var der = this.getData();
@@ -4274,9 +4304,7 @@ if (typeof DaoKeDao !== "object") {
             var cipher = new JSEncrypt();
             cipher.setPublicKey(key);
             if (cipher.key.e === 0 || cipher.key.n === null) {
-                der = Data.from(der).toArray();
-                der = x509_header.concat(der);
-                der = Data.from(der).getBytes();
+                der = x509_header.concat(der).getBytes();
                 key = Base64.encode(der);
                 cipher.setPublicKey(key)
             }
