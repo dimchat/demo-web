@@ -26,7 +26,7 @@
             this.setKeywords(keywords)
         }
     };
-    ns.type.Class(SearchCommand, Command);
+    ns.Class(SearchCommand, Command);
     SearchCommand.SEARCH = "search";
     SearchCommand.ONLINE_USERS = "users";
     SearchCommand.prototype.setKeywords = function(keywords) {
@@ -226,7 +226,7 @@
     var HandshakeCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.type.Class(HandshakeCommandProcessor, CommandProcessor);
+    ns.Class(HandshakeCommandProcessor, CommandProcessor);
     var success = function() {
         var session = this.getContext("session_key");
         var server = this.messenger.server;
@@ -258,7 +258,7 @@
     var ReceiptCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.type.Class(ReceiptCommandProcessor, CommandProcessor);
+    ns.Class(ReceiptCommandProcessor, CommandProcessor);
     ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
         return null
     };
@@ -274,7 +274,7 @@
     var SearchCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.type.Class(SearchCommandProcessor, CommandProcessor);
+    ns.Class(SearchCommandProcessor, CommandProcessor);
     var user_info = function(string) {
         var facebook = Facebook.getInstance();
         var identifier = facebook.getIdentifier(string);
@@ -493,7 +493,7 @@
         State.call(this);
         this.name = name
     };
-    ns.type.Class(ServerState, State);
+    ns.Class(ServerState, State);
     ServerState.prototype.equals = function(state) {
         if (state instanceof ServerState) {
             return this.name === state.name
@@ -619,7 +619,7 @@
         this.addState(stopped_state());
         this.server = null
     };
-    ns.type.Class(StateMachine, Machine);
+    ns.Class(StateMachine, Machine);
     StateMachine.prototype.addState = function(state) {
         Machine.prototype.addState.call(this, state, state.name)
     };
@@ -741,7 +741,7 @@
         this.waitingList = [];
         this.sendingTable = {}
     };
-    ns.type.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
+    ns.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
     Server.prototype.getCurrentUser = function() {
         return this.currentUser
     };

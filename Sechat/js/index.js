@@ -79,18 +79,38 @@
         this.alpha = alpha;
     };
 
+    var full_url = function (src) {
+        if (!src) {
+            return null;
+        }
+        var url;
+        if (src.indexOf('://') > 0) {
+            // absolute URL
+            url = src;
+        } else if (src[0] === '/') {
+            // absolute path
+            var pos = this.base.indexOf('://');
+            pos = this.base.indexOf('/', pos + 3);
+            url = this.base.substring(0, pos) + src;
+        } else {
+            // relative path
+            url = this.base + src;
+        }
+        return url;
+    };
+
     Loader.prototype.importCSS = function (href) {
-        var url = href;
-        if (href.indexOf('://') < 0) {
-            url = this.base + href;
+        var url = full_url.call(this, href);
+        if (!url) {
+            return;
         }
         this.tarsier.importCSS(url);
     };
 
     Loader.prototype.importJS = function (src, callback) {
-        var url = src;
-        if (src.indexOf('://') < 0) {
-            url = this.base + src;
+        var url = full_url.call(this, src);
+        if (!url) {
+            return;
         }
         this.count += 1;
         var loader = this;
@@ -160,7 +180,8 @@
         'js/sdk/dimsdk.js',
 
         'js/sdk/host58.js',
-        'js/sdk/bubble.js'
+        'js/sdk/bubble.js',
+        null
     ];
     if (release) {
         sdk = [
@@ -172,7 +193,8 @@
             'js/sdk/dimsdk.min.js',
 
             'js/sdk/host58.js',
-            'js/sdk/bubble.js'
+            'js/sdk/bubble.js',
+            null
         ]
     }
 
@@ -199,27 +221,32 @@
         'js/dimc/cache.js',
         'js/dimc/ans.js',
         'js/dimc/facebook.js',
-        'js/dimc/messenger.js'
+        'js/dimc/messenger.js',
+        null
     ];
     if (release) {
         dim_client = [
             // 'js/dim.js'
-            'js/dim.min.js'
+            'js/dim.min.js',
+            null
         ]
     }
 
     var ui = [
         /* UI: Console */
         'js/3rd/jquery-3.4.1.slim.min.js',
-        'js/3rd/underscore-1.8.2.min.js'
+        'js/3rd/underscore-1.8.2.min.js',
+        null
     ];
 
     var stylesheets = [
-        'css/index.css'
+        'css/index.css',
+        null
     ];
     var scripts = [
         'js/console.js',
-        'js/app.js'
+        'js/app.js',
+        null
     ];
     scripts = [].concat(sdk, dim_client, ui, scripts);
 

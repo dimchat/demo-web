@@ -69,7 +69,7 @@
             this.setKeywords(keywords);
         }
     };
-    ns.type.Class(SearchCommand, Command);
+    ns.Class(SearchCommand, Command);
 
     SearchCommand.SEARCH = 'search';
     SearchCommand.ONLINE_USERS = 'users'; // search online users
