@@ -130,7 +130,7 @@
         var user = this.getCurrentUser();
         // create handshake command
         var cmd = HandshakeCommand.restart(session);
-        var env = Envelope.newEnvelope(user.identifier, this.identifier);
+        var env = Envelope.newEnvelope(user.identifier, this.identifier, 0);
         var iMsg = InstantMessage.newMessage(cmd, env);
         var sMsg = this.messenger.encryptMessage(iMsg);
         var rMsg = this.messenger.signMessage(sMsg);

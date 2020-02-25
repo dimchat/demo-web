@@ -49,7 +49,7 @@
     var SearchCommandProcessor = function (messenger) {
         CommandProcessor.call(this, messenger);
     };
-    ns.Class(SearchCommandProcessor, CommandProcessor);
+    ns.Class(SearchCommandProcessor, CommandProcessor, null);
 
     var user_info = function (string) {
         var facebook = Facebook.getInstance();

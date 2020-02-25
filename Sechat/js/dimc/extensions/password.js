@@ -48,32 +48,22 @@
         BLOCK_SIZE: 16,
 
         generate: function (string) {
-            var str = new ns.type.String(string);
-            var data = str.getBytes('UTF-8');
+            var data = ns.type.String.from(string).getBytes('UTF-8');
             var digest = SHA256.digest(data);
-            var i;
             // AES key data
             var len = Password.KEY_SIZE - data.length;
             if (len > 0) {
                 // format: {digest_prefix}+{pwd_data}
                 var merged = new Data(Password.KEY_SIZE);
-                for (i = 0; i < len; ++i) {
-                    merged.push(digest[i]);
-                }
-                for (i = 0; i < data.length; ++i) {
-                    merged.push(data[i]);
-                }
-                data = merged.getBytes();
+                merged.push(digest.subarray(0, len));
+                merged.push(data);
+                data = merged.getBytes(false);
             } else if (len < 0) {
                 data = digest;
             }
             // AES iv
-            var iv = new Data(Password.BLOCK_SIZE);
-            i = 256 / 8 - Password.BLOCK_SIZE;
-            for (; i < Password.KEY_SIZE; ++i) {
-                iv.push(digest[i]);
-            }
-            iv = iv.getBytes();
+            var pos = Password.KEY_SIZE - Password.BLOCK_SIZE;
+            var iv = digest.subarray(pos);
             // generate AES key
             var key = {
                 'algorithm': SymmetricKey.AES,

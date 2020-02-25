@@ -66,7 +66,7 @@
         Host.call(this, ipv.ip, ipv.port, ipv.data);
         this.ipv = ipv;
     };
-    ns.Class(Host58, Host);
+    ns.Class(Host58, Host, null);
 
     Host58.prototype.valueOf = function () {
         return this.ipv.valueOf();

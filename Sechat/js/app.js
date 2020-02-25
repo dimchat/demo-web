@@ -353,7 +353,7 @@
         if (!receiver) {
             return 'Please set a recipient';
         }
-        if (messenger.sendContent(content, receiver)) {
+        if (messenger.sendContent(content, receiver, null, false)) {
             // return 'Sending message ...';
             return null;
         } else {
@@ -371,7 +371,7 @@
         var server = messenger.server;
         var user = server.currentUser;
         var content = new TextContent(text);
-        var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE);
+        var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE, 0);
         var msg = InstantMessage.newMessage(content, env);
         msg = messenger.signMessage(messenger.encryptMessage(msg));
         var forward = new ForwardContent(msg);

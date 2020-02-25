@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 22, 2020
+ * @date      Feb. 25, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -26,7 +26,7 @@
             this.setKeywords(keywords)
         }
     };
-    ns.Class(SearchCommand, Command);
+    ns.Class(SearchCommand, Command, null);
     SearchCommand.SEARCH = "search";
     SearchCommand.ONLINE_USERS = "users";
     SearchCommand.prototype.setKeywords = function(keywords) {
@@ -226,7 +226,7 @@
     var HandshakeCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.Class(HandshakeCommandProcessor, CommandProcessor);
+    ns.Class(HandshakeCommandProcessor, CommandProcessor, null);
     var success = function() {
         var session = this.getContext("session_key");
         var server = this.messenger.server;
@@ -258,7 +258,7 @@
     var ReceiptCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.Class(ReceiptCommandProcessor, CommandProcessor);
+    ns.Class(ReceiptCommandProcessor, CommandProcessor, null);
     ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
         return null
     };
@@ -274,7 +274,7 @@
     var SearchCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.Class(SearchCommandProcessor, CommandProcessor);
+    ns.Class(SearchCommandProcessor, CommandProcessor, null);
     var user_info = function(string) {
         var facebook = Facebook.getInstance();
         var identifier = facebook.getIdentifier(string);
@@ -449,31 +449,21 @@
         KEY_SIZE: 32,
         BLOCK_SIZE: 16,
         generate: function(string) {
-            var str = new ns.type.String(string);
-            var data = str.getBytes("UTF-8");
+            var data = ns.type.String.from(string).getBytes("UTF-8");
             var digest = SHA256.digest(data);
-            var i;
             var len = Password.KEY_SIZE - data.length;
             if (len > 0) {
                 var merged = new Data(Password.KEY_SIZE);
-                for (i = 0; i < len; ++i) {
-                    merged.push(digest[i])
-                }
-                for (i = 0; i < data.length; ++i) {
-                    merged.push(data[i])
-                }
-                data = merged.getBytes()
+                merged.push(digest.subarray(0, len));
+                merged.push(data);
+                data = merged.getBytes(false)
             } else {
                 if (len < 0) {
                     data = digest
                 }
             }
-            var iv = new Data(Password.BLOCK_SIZE);
-            i = 256 / 8 - Password.BLOCK_SIZE;
-            for (; i < Password.KEY_SIZE; ++i) {
-                iv.push(digest[i])
-            }
-            iv = iv.getBytes();
+            var pos = Password.KEY_SIZE - Password.BLOCK_SIZE;
+            var iv = digest.subarray(pos);
             var key = {
                 "algorithm": SymmetricKey.AES,
                 "data": Base64.encode(data),
@@ -493,7 +483,7 @@
         State.call(this);
         this.name = name
     };
-    ns.Class(ServerState, State);
+    ns.Class(ServerState, State, null);
     ServerState.prototype.equals = function(state) {
         if (state instanceof ServerState) {
             return this.name === state.name
@@ -619,7 +609,7 @@
         this.addState(stopped_state());
         this.server = null
     };
-    ns.Class(StateMachine, Machine);
+    ns.Class(StateMachine, Machine, null);
     StateMachine.prototype.addState = function(state) {
         Machine.prototype.addState.call(this, state, state.name)
     };
@@ -777,7 +767,7 @@
         }
         var user = this.getCurrentUser();
         var cmd = HandshakeCommand.restart(session);
-        var env = Envelope.newEnvelope(user.identifier, this.identifier);
+        var env = Envelope.newEnvelope(user.identifier, this.identifier, 0);
         var iMsg = InstantMessage.newMessage(cmd, env);
         var sMsg = this.messenger.encryptMessage(iMsg);
         var rMsg = this.messenger.signMessage(sMsg);
@@ -1567,18 +1557,18 @@
         }
         var receiver = msg.envelope.sender;
         receiver = Facebook.getInstance().getIdentifier(receiver);
-        this.sendContent(res, receiver);
+        this.sendContent(res, receiver, null, false);
         return null
     };
     Messenger.prototype.sendCommand = function(cmd) {
         if (!this.server) {
             throw Error("server not connect")
         }
-        return this.sendContent(cmd, this.server.identifier)
+        return this.sendContent(cmd, this.server.identifier, null, false)
     };
     Messenger.prototype.broadcastContent = function(content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE)
+        return this.sendContent(content, ID.ANYONE, null, false)
     };
     Messenger.prototype.broadcastProfile = function(profile) {
         var user = this.server.getCurrentUser();
@@ -1595,7 +1585,7 @@
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
         for (var i = 0; i < contacts.length; ++i) {
-            this.sendContent(cmd, contacts[i])
+            this.sendContent(cmd, contacts[i], null, false)
         }
         return true
     };
@@ -1605,7 +1595,7 @@
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendContent(cmd, receiver)
+        return this.sendContent(cmd, receiver, null, false)
     };
     Messenger.prototype.postProfile = function(profile) {
         if (!this.server) {
@@ -1679,7 +1669,7 @@
         var cmd = GroupCommand.query(group);
         var checking = false;
         for (var i = 0; i < members.length; ++i) {
-            if (this.sendContent(cmd, members[i])) {
+            if (this.sendContent(cmd, members[i], null, false)) {
                 checking = true
             }
         }

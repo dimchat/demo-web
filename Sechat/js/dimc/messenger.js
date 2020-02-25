@@ -185,7 +185,7 @@
         // normal response
         var receiver = msg.envelope.sender;
         receiver = Facebook.getInstance().getIdentifier(receiver);
-        this.sendContent(res, receiver);
+        this.sendContent(res, receiver, null, false);
         // DON'T respond to station directly
         return null;
     };
@@ -204,7 +204,7 @@
         if (!this.server) {
             throw Error('server not connect');
         }
-        return this.sendContent(cmd, this.server.identifier);
+        return this.sendContent(cmd, this.server.identifier, null, false);
     };
 
     /**
@@ -215,7 +215,7 @@
      */
     Messenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE);
+        return this.sendContent(content, ID.ANYONE, null, false);
     };
 
     /**
@@ -241,7 +241,7 @@
         // pack and send profile to every contact
         var cmd = ProfileCommand.response(identifier, profile, meta);
         for (var i = 0; i < contacts.length; ++i) {
-            this.sendContent(cmd, contacts[i]);
+            this.sendContent(cmd, contacts[i], null, false);
         }
         return true;
     };
@@ -252,7 +252,7 @@
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendContent(cmd, receiver);
+        return this.sendContent(cmd, receiver, null, false);
     };
 
     /**
@@ -348,7 +348,7 @@
         var cmd = GroupCommand.query(group);
         var checking = false;
         for (var i = 0; i < members.length; ++i) {
-            if (this.sendContent(cmd, members[i])) {
+            if (this.sendContent(cmd, members[i], null, false)) {
                 checking = true;
             }
         }
