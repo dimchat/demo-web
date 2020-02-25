@@ -42,7 +42,7 @@ body {
     white-space: nowrap;"
 }
 #messages_div{
-    height: 620px;
+    height: 50px;
     overflow: auto;
 }
 .hideScroll::-webkit-scrollbar {
@@ -76,10 +76,12 @@ body {
     line-height: 200%;
     clear: both;
     overflow: auto;
-    margin-bottom: 12px;
+
 }
 #messages_div .text-row{
     line-height: 200%;
+    overflow: auto;
+    margin-bottom: 12px;
 }
 #messages_div .text-row .text-content{
     font-size: 16px;
@@ -93,4 +95,9 @@ body {
 }
 #messages_div .otherText .text-content{
     float: left;
+}
+
+#message_textarea:focus{
+    border: none;
+    box-shadow:none;
 }

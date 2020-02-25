@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="DIMP Client" />
     <meta name="author" content="Albert Moky" />
-
+    <link rel="shortcut icon" href="#"/>
     <link rel="stylesheet" type="text/css" href="css/index.css"/>
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
 
@@ -60,10 +60,8 @@
 </head>
 <body class="fullpage">
 
-<div id="vue1" class="container" style="min-height: 100%;">
-    <div class="row border-bottom">
-        <div class="col bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+<div id="vue1" class="container d-flex flex-column" style="min-height: 100%;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
         <a class="navbar-brand" href="#">DIM</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -82,23 +80,20 @@
             </ul>
         </div>
     </nav>
-        </div>
-    </div>
-    <div class="row">
-    <div class="col-4 col-xl-4 bg-light">
-        <div class=" mainHeight">
+    <div class="flex-fill d-flex">
+    <div class="d-flex flex-column col-4 bg-light">
         <div>
             <input type="radio" id="display_local_radio" value="local" v-model="display_list">
             <label for="display_local_radio">local</label>
             <input type="radio" id="display_online_radio" value="online" v-model="display_list">
             <label for="display_online_radio">online</label>
         </div>
-        <div v-show="display_list=='local'">
+        <div class="flex-fill" v-show="display_list=='local'">
             <div class="row mb-2">
                 <div class="col-10">
                     <input type="text" placeholder="xxxx@addressxxxxxxxxxxxxxxxx" class="form-control" v-model="searchInput">
                 </div>
-                <div class="col-2">
+                <div class="col-2" style="padding-left: 0;">
                     <button class="btn btn-block btn-outline-success" v-on:click="searchContact()">+</button>
                 </div>
             </div>
@@ -113,7 +108,7 @@
                 </a>
             </div>
         </div>
-        <div v-show="display_list=='online'">
+        <div class="flex-fill"  v-show="display_list=='online'">
             <div>
                 <span>在线用户</span>
                 <input type="button" value="refresh" class="float-right" v-on:click="refreshOnlineUsers()"/>
@@ -122,36 +117,22 @@
                 <option v-for="onlineUser in onlineUsers">{{onlineUser.string}}</option>
             </select>
         </div>
-        </div>
     </div>
-    <div class="col-8 mainHeight messagesCol" v-if="target">
-        <div id="targetTitleRow" class="row bg-light">
-            <div class="col">
-            <h5 id="targetTitle" class="pt-3 pb-2">
+    <div class="d-flex flex-fill flex-column messagesCol" v-if="target">
+            <h5 id="targetTitle" class="p-3 pb-2 bg-light border-bottom">
                 {{target.string}}
             </h5>
-            </div>
-        </div>
-        <div class="row">
-            <div id="messages_div" class="col hideScroll mb-3" style="border-bottom: 1px solid #f1f1f1;">
+            <div id="messages_div" class="p-3 hideScroll border-bottom flex-fill" style="">
                 <div v-for="message in messages.filter(m => m.sender == target.string || m.receiver == target.string )">
                     <div class="from_user_row" v-bind:class="{'fromMe': message.sender == user.identifier.toString()}">{{message.sender|getUserName}} <span class="text-muted">{{message.time | formatDate}}</span></div>
                     <div class="text-row" v-bind:class="[message.sender == user.identifier.toString() ? 'myText':'otherText']">
                         <span class="text-content badge text-wrap p-2" v-bind:class="[message.sender == user.identifier.toString() ? 'badge-success':'badge-light']">{{message.content.text}}</span></div>
                 </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-12" style="position: relative;">
-                <textarea id="message_textarea" rows="5" v-model="textInput" class="form-control border-0" style="resize: none;"  onkeydown="if(event.keyCode==13){vue.send();return false;}"></textarea>
-                <button class="btn btn-primary sendButton" v-on:click="send()">send</button>
+            <div class="position-relative p-3">
+                <textarea id="message_textarea" rows="5" v-model="textInput" class="form-control border-0" style="resize: none;" placeholder="Send Messages..." onkeydown="if(event.keyCode==13){vue.send();return false;}"></textarea>
+                <button class="btn btn-primary sendButton" v-on:click="send()" style="right: 10px;bottom: 10px;">Send</button>
             </div>
-        </div>
-        <div class="row">
-            <div class="col">
-
-            </div>
-        </div>
     </div>
     </div>
 </div>
