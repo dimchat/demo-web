@@ -37,6 +37,7 @@
 
     var StationDelegate = function () {
     };
+    ns.Interface(StationDelegate, null);
 
     /**
      *  Send data package to station success

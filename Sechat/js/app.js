@@ -452,7 +452,7 @@
         var h58;
         if (pair[0] === 'encode') {
             h58 = new Host58(pair[1]);
-            return pair[1] + ' -> ' + h58.toString() + ' -> ' + h58.encode(9394);
+            return pair[1] + ' -> ' + h58.encode() + ' -> ' + h58.encode(9394);
         } else if (pair[0] === 'decode') {
             h58 = new Host58(pair[1]);
             return pair[1] + ' -> ' + h58.toString();
