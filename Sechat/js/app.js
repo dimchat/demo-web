@@ -297,6 +297,9 @@
                 }
             }
         }
+        if (!port) {
+            port = 9394;
+        }
         server.connect(host, port);
     };
 

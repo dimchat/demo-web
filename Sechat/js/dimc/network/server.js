@@ -168,6 +168,9 @@
     };
 
     Server.prototype.connect = function (host, port) {
+        if (!port) {
+            port = 9394;
+        }
         this.fsm.changeState(this.fsm.defaultStateName);
         if (this.getStatus().equals(StarStatus.Connected) &&
             host === this.host &&
