@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 25, 2020
+ * @date      Feb. 27, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -670,6 +670,7 @@
 }(DIMP);
 ! function(ns) {
     var StationDelegate = function() {};
+    ns.Interface(StationDelegate, null);
     StationDelegate.prototype.didSendPackage = function(data, server) {
         console.assert(data !== null, "data empty");
         console.assert(server !== null, "server empty");
@@ -797,6 +798,9 @@
         }
     };
     Server.prototype.connect = function(host, port) {
+        if (!port) {
+            port = 9394
+        }
         this.fsm.changeState(this.fsm.defaultStateName);
         if (this.getStatus().equals(StarStatus.Connected) && host === this.host && port === this.port) {
             console.log("already connected to " + host + ":" + port);

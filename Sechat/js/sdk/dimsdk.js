@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 25, 2020
+ * @date      Feb. 27, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -96,6 +96,19 @@ if (typeof DIMP !== "object") {
     ns.register("crypto")
 }(DIMP);
 ! function(ns) {
+    var conforms = function(object, protocol) {
+        if (object instanceof protocol) {
+            return true
+        }
+        var child = Object.getPrototypeOf(object);
+        var names = Object.getOwnPropertyNames(protocol.prototype);
+        for (var i = 0; i < names.length; ++i) {
+            if (!child.hasOwnProperty(names[i])) {
+                return false
+            }
+        }
+        return true
+    };
     var inherit = function(clazz, protocol) {
         var prototype = protocol.prototype;
         var names = Object.getOwnPropertyNames(prototype);
@@ -134,6 +147,7 @@ if (typeof DIMP !== "object") {
         }
         return child
     };
+    interfacefy.conforms = conforms;
     var classify = function(child, parent, interfaces) {
         if (!child) {
             child = function() {}
@@ -162,28 +176,11 @@ if (typeof DIMP !== "object") {
     ns.register("Class")
 }(DIMP);
 ! function(ns) {
-    var is_instance = function(object, clazz) {
-        if (object instanceof clazz) {
-            return true
-        }
-        var child = Object.getPrototypeOf(object);
-        var names = Object.getOwnPropertyNames(clazz.prototype);
-        for (var i = 0; i < names.length; ++i) {
-            if (!child.hasOwnProperty(names[i])) {
-                return false
-            }
-        }
-        return true
-    };
     var obj = function() {};
     ns.Class(obj, Object, null);
     obj.prototype.equals = function(other) {
         return this === other
     };
-    obj.prototype.isinstance = function(clazz) {
-        return is_instance(this, clazz)
-    };
-    obj.isinstance = is_instance;
     ns.type.Object = obj;
     ns.type.register("Object")
 }(DIMP);
@@ -626,7 +623,7 @@ if (typeof DIMP !== "object") {
             return !this.dictionary
         } else {
             if (other instanceof map) {
-                return arrays.equals(this.dictionary, other.dictionary)
+                return arrays.equals(this.dictionary, other.getMap(false))
             } else {
                 return arrays.equals(this.dictionary, other)
             }
@@ -805,7 +802,7 @@ if (typeof DIMP !== "object") {
         return null
     };
     var hex = function() {};
-    ns.Class(hex, null, coder);
+    ns.Class(hex, ns.type.Object, coder);
     hex.prototype.encode = function(data) {
         return hex_encode(data)
     };
@@ -813,7 +810,7 @@ if (typeof DIMP !== "object") {
         return hex_decode(str)
     };
     var base64 = function() {};
-    ns.Class(base64, null, coder);
+    ns.Class(base64, ns.type.Object, coder);
     base64.prototype.encode = function(data) {
         return base64_encode(data)
     };
@@ -821,7 +818,7 @@ if (typeof DIMP !== "object") {
         return base64_decode(string)
     };
     var base58 = function() {};
-    ns.Class(base58, null, coder);
+    ns.Class(base58, ns.type.Object, coder);
     base58.prototype.encode = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "Base58 encode not implemented");
@@ -835,7 +832,7 @@ if (typeof DIMP !== "object") {
     var C = function(lib) {
         this.coder = lib
     };
-    ns.Class(C, null, coder);
+    ns.Class(C, ns.type.Object, coder);
     C.prototype.encode = function(data) {
         return this.coder.encode(data)
     };
@@ -865,7 +862,7 @@ if (typeof DIMP !== "object") {
         return null
     };
     var json = function() {};
-    ns.Class(json, null, parser);
+    ns.Class(json, ns.type.Object, parser);
     json.prototype.encode = function(container) {
         return JSON.stringify(container)
     };
@@ -875,7 +872,7 @@ if (typeof DIMP !== "object") {
     var P = function(lib) {
         this.parser = lib
     };
-    ns.Class(P, null, parser);
+    ns.Class(P, ns.type.Object, parser);
     P.prototype.encode = function(container) {
         return this.parser.encode(container)
     };
@@ -911,7 +908,7 @@ if (typeof DIMP !== "object") {
         return null
     };
     var pem = function() {};
-    ns.Class(pem, null, parser);
+    ns.Class(pem, ns.type.Object, parser);
     pem.prototype.encodePublicKey = function(key) {
         console.assert(key != null, "public key content empty");
         console.assert(false, "PEM parser not implemented");
@@ -935,7 +932,7 @@ if (typeof DIMP !== "object") {
     var P = function(lib) {
         this.parser = lib
     };
-    ns.Class(P, null, parser);
+    ns.Class(P, ns.type.Object, parser);
     P.prototype.encodePublicKey = function(key) {
         return this.parser.encodePublicKey(key)
     };
@@ -962,21 +959,21 @@ if (typeof DIMP !== "object") {
         return null
     };
     var md5 = function() {};
-    ns.Class(md5, null, hash);
+    ns.Class(md5, ns.type.Object, hash);
     md5.prototype.digest = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "MD5 not implemented");
         return null
     };
     var sha256 = function() {};
-    ns.Class(sha256, null, hash);
+    ns.Class(sha256, ns.type.Object, hash);
     sha256.prototype.digest = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "SHA256 not implemented");
         return null
     };
     var ripemd160 = function() {};
-    ns.Class(ripemd160, null, hash);
+    ns.Class(ripemd160, ns.type.Object, hash);
     ripemd160.prototype.digest = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "RIPEMD160 not implemented");
@@ -985,7 +982,7 @@ if (typeof DIMP !== "object") {
     var H = function(lib) {
         this.hash = lib
     };
-    ns.Class(H, null, hash);
+    ns.Class(H, ns.type.Object, hash);
     H.prototype.digest = function(data) {
         return this.hash.digest(data)
     };
@@ -999,13 +996,11 @@ if (typeof DIMP !== "object") {
     ns.digest.register("RIPEMD160")
 }(DIMP);
 ! function(ns) {
-    var CryptographyKey = function() {};
-    ns.Interface(CryptographyKey, null);
-    CryptographyKey.prototype.equals = function(other) {
-        console.assert(other != null, "other key empty");
-        console.assert(false, "implement me!");
-        return false
+    var Dictionary = ns.type.Dictionary;
+    var CryptographyKey = function(key) {
+        Dictionary.call(this, key)
     };
+    ns.Class(CryptographyKey, Dictionary, null);
     CryptographyKey.prototype.getData = function() {
         console.assert(false, "implement me!");
         return null
@@ -1021,36 +1016,38 @@ if (typeof DIMP !== "object") {
             return new clazz(map)
         }
     };
+    ns.crypto.CryptographyKey = CryptographyKey
+}(DIMP);
+! function(ns) {
     var EncryptKey = function() {};
-    ns.Interface(EncryptKey, CryptographyKey);
+    ns.Interface(EncryptKey, null);
     EncryptKey.prototype.encrypt = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     var DecryptKey = function() {};
-    ns.Interface(DecryptKey, CryptographyKey);
+    ns.Interface(DecryptKey, null);
     DecryptKey.prototype.decrypt = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     var SignKey = function() {};
-    ns.Interface(SignKey, CryptographyKey);
+    ns.Interface(SignKey, null);
     SignKey.prototype.sign = function(data) {
         console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     var VerifyKey = function() {};
-    ns.Interface(VerifyKey, CryptographyKey);
+    ns.Interface(VerifyKey, null);
     VerifyKey.prototype.verify = function(data, signature) {
         console.assert(data != null, "data empty");
         console.assert(signature != null, "signature empty");
         console.assert(false, "implement me!");
         return false
     };
-    ns.crypto.CryptographyKey = CryptographyKey;
     ns.crypto.EncryptKey = EncryptKey;
     ns.crypto.DecryptKey = DecryptKey;
     ns.crypto.SignKey = SignKey;
@@ -1066,8 +1063,10 @@ if (typeof DIMP !== "object") {
     var DecryptKey = ns.crypto.DecryptKey;
     var promise = "Moky loves May Lee forever!";
     promise = ns.type.String.from(promise).getBytes(null);
-    var SymmetricKey = function() {};
-    ns.Interface(SymmetricKey, EncryptKey, DecryptKey);
+    var SymmetricKey = function(key) {
+        CryptographyKey.call(this, key)
+    };
+    ns.Class(SymmetricKey, CryptographyKey, EncryptKey, DecryptKey);
     SymmetricKey.prototype.equals = function(other) {
         var ciphertext = other.encrypt(promise);
         var plaintext = this.decrypt(ciphertext);
@@ -1086,7 +1085,7 @@ if (typeof DIMP !== "object") {
         if (!key) {
             return null
         } else {
-            if (ns.type.Object.isinstance(key, SymmetricKey)) {
+            if (key instanceof SymmetricKey) {
                 return key
             }
         }
@@ -1104,8 +1103,10 @@ if (typeof DIMP !== "object") {
 }(DIMP);
 ! function(ns) {
     var CryptographyKey = ns.crypto.CryptographyKey;
-    var AsymmetricKey = function() {};
-    ns.Interface(AsymmetricKey, CryptographyKey);
+    var AsymmetricKey = function(key) {
+        CryptographyKey.call(this, key)
+    };
+    ns.Class(AsymmetricKey, CryptographyKey, null);
     AsymmetricKey.RSA = "RSA";
     AsymmetricKey.ECC = "ECC";
     ns.crypto.AsymmetricKey = AsymmetricKey;
@@ -1117,8 +1118,10 @@ if (typeof DIMP !== "object") {
     var VerifyKey = ns.crypto.VerifyKey;
     var promise = "Moky loves May Lee forever!";
     promise = ns.type.String.from(promise).getBytes(null);
-    var PublicKey = function() {};
-    ns.Interface(PublicKey, AsymmetricKey, VerifyKey);
+    var PublicKey = function(key) {
+        AsymmetricKey.call(this, key)
+    };
+    ns.Class(PublicKey, AsymmetricKey, VerifyKey);
     PublicKey.prototype.matches = function(privateKey) {
         if (!privateKey) {
             return false
@@ -1138,7 +1141,7 @@ if (typeof DIMP !== "object") {
         if (!key) {
             return null
         } else {
-            if (ns.type.Object.isinstance(key, PublicKey)) {
+            if (key instanceof PublicKey) {
                 return key
             }
         }
@@ -1156,8 +1159,10 @@ if (typeof DIMP !== "object") {
     var CryptographyKey = ns.crypto.CryptographyKey;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var SignKey = ns.crypto.SignKey;
-    var PrivateKey = function() {};
-    ns.Interface(PrivateKey, AsymmetricKey, SignKey);
+    var PrivateKey = function(key) {
+        AsymmetricKey.call(this, key)
+    };
+    ns.Class(PrivateKey, AsymmetricKey, SignKey);
     PrivateKey.prototype.equals = function(other) {
         var publicKey = this.getPublicKey();
         if (!publicKey) {
@@ -1182,7 +1187,7 @@ if (typeof DIMP !== "object") {
         if (!key) {
             return null
         } else {
-            if (ns.type.Object.isinstance(key, PrivateKey)) {
+            if (key instanceof PrivateKey) {
                 return key
             }
         }
@@ -1515,7 +1520,7 @@ if (typeof MingKeMing !== "object") {
             if (key_id_addr instanceof Address) {
                 return match_address.call(this, key_id_addr)
             } else {
-                if (ns.type.Object.isinstance(key_id_addr, PublicKey)) {
+                if (key_id_addr instanceof PublicKey) {
                     return match_public_key.call(this, key_id_addr)
                 }
             }
@@ -1911,7 +1916,7 @@ if (typeof MingKeMing !== "object") {
 }(MingKeMing);
 ! function(ns) {
     var EncryptKey = ns.crypto.EncryptKey;
-    var VerifyKey = ns.crypto.VerifyKey;
+    var PublicKey = ns.crypto.PublicKey;
     var Entity = ns.Entity;
     var User = function(identifier) {
         Entity.call(this, identifier)
@@ -1941,7 +1946,7 @@ if (typeof MingKeMing !== "object") {
             return key
         }
         key = meta_key.call(this);
-        if (key && ns.type.Object.isinstance(key, EncryptKey)) {
+        if (key && ns.Interface.conforms(key, EncryptKey)) {
             return key
         }
         throw Error("failed to get encrypt key for user: " + this.identifier)
@@ -1953,7 +1958,7 @@ if (typeof MingKeMing !== "object") {
         }
         keys = [];
         var key = profile_key.call(this);
-        if (key && ns.type.Object.isinstance(key, VerifyKey)) {
+        if (key && (key instanceof PublicKey)) {
             keys.push(key)
         }
         key = meta_key.call(this);
@@ -3461,12 +3466,11 @@ if (typeof DaoKeDao !== "object") {
     ns.register("CipherKeyDelegate")
 }(DIMP);
 ! function(ns) {
-    var Dictionary = ns.type.Dictionary;
     var SymmetricKey = ns.crypto.SymmetricKey;
     var PlainKey = function(key) {
-        Dictionary.call(this, key)
+        SymmetricKey.call(this, key)
     };
-    ns.Class(PlainKey, Dictionary, SymmetricKey);
+    ns.Class(PlainKey, SymmetricKey, null);
     PlainKey.prototype.encrypt = function(data) {
         return data
     };
@@ -3493,7 +3497,7 @@ if (typeof DaoKeDao !== "object") {
         this.keyMap = {};
         this.isDirty = false
     };
-    ns.Class(KeyCache, null, CipherKeyDelegate);
+    ns.Class(KeyCache, ns.type.Object, CipherKeyDelegate);
     KeyCache.prototype.reload = function() {
         var map = this.loadKeys();
         if (!map) {
@@ -3596,7 +3600,7 @@ if (typeof DaoKeDao !== "object") {
         this.userMap = {};
         this.groupMap = {}
     };
-    ns.Class(Barrack, null, EntityDelegate, UserDataSource, GroupDataSource);
+    ns.Class(Barrack, ns.type.Object, EntityDelegate, UserDataSource, GroupDataSource);
     var thanos = function(map, finger) {
         var keys = Object.keys(map);
         for (var i = 0; i < keys.length; ++i) {
@@ -3759,7 +3763,7 @@ if (typeof DaoKeDao !== "object") {
         this.entityDelegate = null;
         this.cipherKeyDelegate = null
     };
-    ns.Class(Transceiver, null, InstantMessageDelegate, SecureMessageDelegate, ReliableMessageDelegate);
+    ns.Class(Transceiver, ns.type.Object, InstantMessageDelegate, SecureMessageDelegate, ReliableMessageDelegate);
     var get_key = function(sender, receiver) {
         var key = this.cipherKeyDelegate.getCipherKey(sender, receiver);
         if (!key) {
@@ -4080,7 +4084,7 @@ if (typeof DaoKeDao !== "object") {
     var bs58 = base("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
     var BaseCoder = ns.format.BaseCoder;
     var base58 = function() {};
-    ns.Class(base58, null, BaseCoder);
+    ns.Class(base58, ns.type.Object, BaseCoder);
     base58.prototype.encode = function(data) {
         return bs58.encode(data)
     };
@@ -4092,7 +4096,7 @@ if (typeof DaoKeDao !== "object") {
 ! function(ns) {
     var Hash = ns.digest.Hash;
     var md5 = function() {};
-    ns.Class(md5, null, Hash);
+    ns.Class(md5, ns.type.Object, Hash);
     md5.prototype.digest = function(data) {
         var hex = ns.format.Hex.encode(data);
         var array = CryptoJS.enc.Hex.parse(hex);
@@ -4104,7 +4108,7 @@ if (typeof DaoKeDao !== "object") {
 ! function(ns) {
     var Hash = ns.digest.Hash;
     var sha256 = function() {};
-    ns.Class(sha256, null, Hash);
+    ns.Class(sha256, ns.type.Object, Hash);
     sha256.prototype.digest = function(data) {
         var hex = ns.format.Hex.encode(data);
         var array = CryptoJS.enc.Hex.parse(hex);
@@ -4116,7 +4120,7 @@ if (typeof DaoKeDao !== "object") {
 ! function(ns) {
     var Hash = ns.digest.Hash;
     var ripemd160 = function() {};
-    ns.Class(ripemd160, null, Hash);
+    ns.Class(ripemd160, ns.type.Object, Hash);
     ripemd160.prototype.digest = function(data) {
         var hex = ns.format.Hex.encode(data);
         var array = CryptoJS.enc.Hex.parse(hex);
@@ -4196,7 +4200,7 @@ if (typeof DaoKeDao !== "object") {
     };
     var KeyParser = ns.format.KeyParser;
     var pem = function() {};
-    ns.Class(pem, null, KeyParser);
+    ns.Class(pem, ns.type.Object, KeyParser);
     pem.prototype.encodePublicKey = function(key) {
         return encode_public(key)
     };
@@ -4212,7 +4216,6 @@ if (typeof DaoKeDao !== "object") {
     ns.format.PEM.parser = new pem()
 }(DIMP);
 ! function(ns) {
-    var Dictionary = ns.type.Dictionary;
     var SymmetricKey = ns.crypto.SymmetricKey;
     var Base64 = ns.format.Base64;
     var Hex = ns.format.Hex;
@@ -4235,9 +4238,9 @@ if (typeof DaoKeDao !== "object") {
         return new Uint8Array(size)
     };
     var AESKey = function(key) {
-        Dictionary.call(this, key)
+        SymmetricKey.call(this, key)
     };
-    ns.Class(AESKey, Dictionary, SymmetricKey);
+    ns.Class(AESKey, SymmetricKey, null);
     AESKey.prototype.getSize = function() {
         var size = this.getValue("keySize");
         if (size) {
@@ -4313,14 +4316,13 @@ if (typeof DaoKeDao !== "object") {
     var Base64 = ns.format.Base64;
     var PEM = ns.format.PEM;
     var Data = ns.type.Data;
-    var Dictionary = ns.type.Dictionary;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var PublicKey = ns.crypto.PublicKey;
     var EncryptKey = ns.crypto.EncryptKey;
     var RSAPublicKey = function(key) {
-        Dictionary.call(this, key)
+        PublicKey.call(this, key)
     };
-    ns.Class(RSAPublicKey, Dictionary, PublicKey, EncryptKey);
+    ns.Class(RSAPublicKey, PublicKey, EncryptKey);
     RSAPublicKey.prototype.getData = function() {
         var data = this.getValue("data");
         if (data) {
@@ -4380,15 +4382,14 @@ if (typeof DaoKeDao !== "object") {
     var Hex = ns.format.Hex;
     var Base64 = ns.format.Base64;
     var PEM = ns.format.PEM;
-    var Dictionary = ns.type.Dictionary;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var PrivateKey = ns.crypto.PrivateKey;
     var DecryptKey = ns.crypto.DecryptKey;
     var PublicKey = ns.crypto.PublicKey;
     var RSAPrivateKey = function(key) {
-        Dictionary.call(this, key)
+        PrivateKey.call(this, key)
     };
-    ns.Class(RSAPrivateKey, Dictionary, PrivateKey, DecryptKey);
+    ns.Class(RSAPrivateKey, PrivateKey, DecryptKey);
     RSAPrivateKey.prototype.getData = function() {
         var data = this.getValue("data");
         if (data) {
@@ -4766,13 +4767,13 @@ if (typeof DaoKeDao !== "object") {
     StorageCommand.prototype.decrypt = function(key) {
         if (!this.plaintext) {
             var pwd = null;
-            if (ns.type.Object.isinstance(key, PrivateKey)) {
+            if (key instanceof PrivateKey) {
                 pwd = this.decryptKey(key);
                 if (!pwd) {
                     throw Error("failed to decrypt key: " + key)
                 }
             } else {
-                if (ns.type.Object.isinstance(key, SymmetricKey)) {
+                if (key instanceof SymmetricKey) {
                     pwd = key
                 } else {
                     throw TypeError("Decryption key error: " + key)
@@ -5958,7 +5959,7 @@ if (typeof DaoKeDao !== "object") {
     Facebook.prototype.getPrivateKeysForDecryption = function(identifier) {
         var keys = [];
         var sKey = this.getPrivateKeyForSignature(identifier);
-        if (sKey && ns.type.Object.isinstance(sKey, DecryptKey)) {
+        if (sKey && ns.Interface.conforms(sKey, DecryptKey)) {
             keys.push(sKey)
         }
         return keys
@@ -6720,7 +6721,7 @@ if (typeof StarGate !== "object") {
         this.status = StarStatus.Init;
         this.waitingList = []
     };
-    DIMP.Class(Fence, null, Star);
+    DIMP.Class(Fence, DIMP.type.Object, Star);
     Fence.prototype.onReceived = function(data) {
         this.delegate.onReceived(data, this)
     };
@@ -7127,7 +7128,7 @@ StarGate.exports(DIMP.stargate);
         load_account.call(this, HULK);
         load_account.call(this, MOKI)
     };
-    ns.Class(Immortals, null, UserDataSource);
+    ns.Class(Immortals, ns.type.Object, UserDataSource);
     var load_account = function(identifier) {
         this.idMap[identifier.toString()] = identifier;
         this.metaMap[identifier] = load_meta.call(this, identifier);
@@ -7235,7 +7236,7 @@ StarGate.exports(DIMP.stargate);
     };
     Immortals.prototype.getPrivateKeysForDecryption = function(identifier) {
         var key = this.privateKeyMap[identifier];
-        if (key && ns.type.Object.isinstance(key, DecryptKey)) {
+        if (key && ns.Interface.conforms(key, DecryptKey)) {
             return [key]
         }
         return null
