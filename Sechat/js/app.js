@@ -207,6 +207,7 @@
     text += '        show users               - list online users\n';
     text += '        search <ID|number>       - search users by ID or number\n';
     text += '        profile <ID>             - query profile with ID\n';
+    text += '        export [private key]     - export user info\n';
     text += '        <anytext>                - send to current chatroom\n';
     text = Bubble.convertToString(text);
 
@@ -462,6 +463,40 @@
         } else {
             throw Error('unknown command "' + cmd + '"');
         }
+    };
+
+    var clipboard_set = function (format, data) {
+        if (window.clipboardData) {
+            window.clipboardData.setData(format, data);
+        } else if (window.navigator.clipboard) {
+            if (format === 'text') {
+                window.navigator.clipboard.writeText(data);
+            } else {
+                throw TypeError('Clipboard data format not support: ' + format);
+            }
+        } else {
+            throw EvalError('Failed to access clipboard');
+        }
+    };
+
+    Application.prototype.doImport = function () {
+        // TODO: implement me
+        return 'import command not support yet';
+    };
+
+    Application.prototype.doExport = function () {
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            return 'Current user not found';
+        }
+        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        if (!privateKey) {
+            return 'Failed to get private key for current user: ' + user;
+        }
+        var pem = privateKey.getValue('data');
+        clipboard_set('text', pem);
+        return 'Your private key has been copied to clipboard, please save it carefully.';
     };
 
 }(DIMP);

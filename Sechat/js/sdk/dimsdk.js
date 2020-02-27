@@ -3788,13 +3788,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.encryptMessage = function(msg) {
         var sender = this.entityDelegate.getIdentifier(msg.envelope.sender);
         var receiver = this.entityDelegate.getIdentifier(msg.envelope.receiver);
-        var group = this.entityDelegate.getIdentifier(msg.content.getGroup());
-        var password;
-        if (group) {
-            password = get_key.call(this, sender, group)
-        } else {
-            password = get_key.call(this, sender, receiver)
-        }
+        var password = get_key.call(this, sender, receiver);
         if (!msg.delegate) {
             msg.delegate = this
         }
