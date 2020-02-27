@@ -181,6 +181,7 @@
 
         'js/sdk/host58.js',
         'js/sdk/bubble.js',
+        'js/sdk/clipboard.js',
         null
     ];
     if (release) {
@@ -194,6 +195,7 @@
 
             'js/sdk/host58.js',
             'js/sdk/bubble.js',
+            'js/sdk/clipboard.js',
             null
         ]
     }

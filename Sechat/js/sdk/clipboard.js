@@ -26,61 +26,45 @@
 //
 
 /**
- *  Convert host string (IP:port) to/from Base58 string
+ *  Patch for window.clipboardData
  */
-
 !function (ns) {
     'use strict';
 
-    var Host = ns.stargate.network.Host;
-    var IPv4 = ns.stargate.network.IPv4;
-    var IPv6 = ns.stargate.network.IPv6;
+    var clipboardData = ns.clipboardData;
 
-    var Base58 = DIMP.format.Base58;
+    if (clipboardData) {
+        // IE
+        return;
+    }
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw URIError('IP format error');
-                }
+    var navigator = ns.navigator;
+
+    var setData = function (format, data) {
+        if (navigator.clipboard) {
+            if (format === 'text') {
+                navigator.clipboard.writeText(data);
+            } else {
+                throw TypeError('Only support text data to clipboard');
             }
         } else {
-            // base58
-            var data = Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw URIError('host error: ' + host);
+            var input = document.createElement('input');
+            input.readOnly = true;
+            document.body.appendChild(input);
+            input.value = data;
+            input.setSelectionRange(0, data.length);
+            input.focus();
+            var ok = document.execCommand('Copy');
+            document.body.removeChild(input);
+            if (!ok) {
+                throw EvalError('Failed to access clipboard!');
             }
         }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
-    };
-    ns.Class(Host58, Host, null);
-
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
     };
 
-    Host58.prototype.encode = function (default_port) {
-        return Base58.encode(this.ipv.toArray(default_port));
+    ns.clipboardData = {
+        setData: setData
     };
 
-    //-------- namespace --------
-    if (typeof ns.network !== 'object') {
-        ns.network = {};
-    }
-    ns.network.Host58 = Host58;
 
-}(DIMP);
+}(window);

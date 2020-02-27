@@ -26,6 +26,7 @@
 //
 
 !function (ns) {
+    'use strict';
 
     var join = function () {
         var str = '';
