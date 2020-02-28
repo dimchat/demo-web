@@ -31,40 +31,86 @@
 !function (ns) {
     'use strict';
 
-    var clipboardData = ns.clipboardData;
-
-    if (clipboardData) {
+    if (ns.clipboardData) {
         // IE
         return;
     }
 
-    var navigator = ns.navigator;
+    var nav_clipboard = ns.navigator ? ns.navigator.clipboard : null;
 
-    var setData = function (format, data) {
-        if (navigator.clipboard) {
-            if (format === 'text') {
-                navigator.clipboard.writeText(data);
+    var getData;
+    if (nav_clipboard) {
+        getData = function (format) {
+            if (!format || format === 'text') {
+                return nav_clipboard.readText();
             } else {
+                // TODO:
+                throw TypeError('Only support text data from clipboard');
+            }
+        };
+    } else {
+        getData = function (format) {
+            // TODO:
+            return 'Not implemented, format: ' + format;
+        }
+    }
+
+    var setData;
+    if (nav_clipboard) {
+        setData = function (format, data) {
+            if (format === 'text') {
+                // noinspection JSIgnoredPromiseFromCall
+                nav_clipboard.writeText(data);
+            } else {
+                // TODO:
                 throw TypeError('Only support text data to clipboard');
             }
-        } else {
-            var input = document.createElement('input');
-            input.readOnly = true;
-            document.body.appendChild(input);
-            input.value = data;
-            input.setSelectionRange(0, data.length);
-            input.focus();
-            var ok = document.execCommand('Copy');
-            document.body.removeChild(input);
-            if (!ok) {
-                throw EvalError('Failed to access clipboard!');
+        };
+    } else {
+        setData = function (format, data) {
+            if (format === 'text') {
+                var input = document.createElement('textarea');
+                input.readOnly = true;
+                document.body.appendChild(input);
+                input.value = data;
+                input.setSelectionRange(0, data.length);
+                input.focus();
+                var ok = document.execCommand('Copy');
+                document.body.removeChild(input);
+                if (!ok) {
+                    throw EvalError('Failed to access clipboard!');
+                }
+            } else {
+                // TODO:
+                throw TypeError('Only support text data to clipboard');
             }
+        };
+    }
+
+    // noinspection JSValidateTypes
+    /**
+     *  Interfaces for clipboard data access
+     *
+     * @type {DataTransfer}
+     */
+    ns.clipboardData = {
+
+        /**
+         * Returns the specified data. If there is no such data, returns the empty string.
+         */
+        getData: getData,
+
+        /**
+         * Adds the specified data.
+         */
+        setData: setData,
+
+        /**
+         * Removes the data of the specified formats. Removes all data if the argument is omitted.
+         */
+        clearData: function (format) {
+            this.setData(format, '');
         }
     };
-
-    ns.clipboardData = {
-        setData: setData
-    };
-
 
 }(window);
