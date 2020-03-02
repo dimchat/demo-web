@@ -2052,6 +2052,10 @@ if (typeof DaoKeDao !== "object") {
         PAGE: (32),
         QUOTE: (55),
         MONEY: (64),
+        TRANSFER: (65),
+        LUCKY_MONEY: (66),
+        CLAIM_PAYMENT: (72),
+        SPLIT_BILL: (73),
         COMMAND: (136),
         HISTORY: (137),
         FORWARD: (255)
@@ -2082,7 +2086,11 @@ if (typeof DaoKeDao !== "object") {
             }
         }
         Dictionary.call(this, info);
-        this.type = new ContentType(info["type"]);
+        var type = info["type"];
+        if (type instanceof ContentType) {
+            type = type.valueOf()
+        }
+        this.type = type;
         this.sn = info["sn"]
     };
     ns.Class(Content, Dictionary, null);
@@ -2175,14 +2183,18 @@ if (typeof DaoKeDao !== "object") {
     };
     Envelope.prototype.getType = function() {
         var type = this.getValue("type");
-        if (type) {
-            return new ContentType(type)
+        if (type instanceof ContentType) {
+            return type.valueOf()
         } else {
-            return null
+            return type
         }
     };
     Envelope.prototype.setType = function(type) {
-        this.setValue("type", type)
+        if (type instanceof ContentType) {
+            this.setValue("type", type.valueOf())
+        } else {
+            this.setValue("type", type)
+        }
     };
     ns.Envelope = Envelope;
     ns.register("Envelope")
@@ -3161,17 +3173,6 @@ if (typeof DaoKeDao !== "object") {
     };
     HistoryCommand.REGISTER = "register";
     HistoryCommand.SUICIDE = "suicide";
-    HistoryCommand.FOUND = "found";
-    HistoryCommand.ABDICATE = "abdicate";
-    HistoryCommand.INVITE = "invite";
-    HistoryCommand.EXPEL = "expel";
-    HistoryCommand.JOIN = "join";
-    HistoryCommand.QUIT = "quit";
-    HistoryCommand.QUERY = "query";
-    HistoryCommand.RESET = "reset";
-    HistoryCommand.HIRE = "hire";
-    HistoryCommand.FIRE = "fire";
-    HistoryCommand.RESIGN = "resign";
     HistoryCommand.getInstance = function(cmd) {
         if (!cmd) {
             return null
@@ -3232,17 +3233,17 @@ if (typeof DaoKeDao !== "object") {
         this.setValue("members", members);
         this.setValue("member", null)
     };
-    GroupCommand.FOUND = HistoryCommand.FOUND;
-    GroupCommand.ABDICATE = HistoryCommand.ABDICATE;
-    GroupCommand.INVITE = HistoryCommand.INVITE;
-    GroupCommand.EXPEL = HistoryCommand.EXPEL;
-    GroupCommand.JOIN = HistoryCommand.JOIN;
-    GroupCommand.QUIT = HistoryCommand.QUIT;
-    GroupCommand.QUERY = HistoryCommand.QUERY;
-    GroupCommand.RESET = HistoryCommand.RESET;
-    GroupCommand.HIRE = HistoryCommand.HIRE;
-    GroupCommand.FIRE = HistoryCommand.FIRE;
-    GroupCommand.RESIGN = HistoryCommand.RESIGN;
+    GroupCommand.FOUND = "found";
+    GroupCommand.ABDICATE = "abdicate";
+    GroupCommand.INVITE = "invite";
+    GroupCommand.EXPEL = "expel";
+    GroupCommand.JOIN = "join";
+    GroupCommand.QUIT = "quit";
+    GroupCommand.QUERY = "query";
+    GroupCommand.RESET = "reset";
+    GroupCommand.HIRE = "hire";
+    GroupCommand.FIRE = "fire";
+    GroupCommand.RESIGN = "resign";
     GroupCommand.register = function(name, clazz) {
         Command.register(name, clazz)
     };
