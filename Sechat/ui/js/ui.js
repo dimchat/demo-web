@@ -1,7 +1,7 @@
 ;
 
 if (typeof dimsdk !== "object") {
-    dimsdk = {}
+    dimsdk = dimp = DIMP;
 }
 
 var vue;
@@ -12,11 +12,15 @@ var CONST = {
 };
 
 $(function () {
-    console.log(2);
-
-    app.write = function () {
-        
+    dimsdk.Application.prototype.write = function () {
+        var str = '';
+        for (var i = 0; i < arguments.length; ++i) {
+            str += arguments[i] + '';
+        }
+        str = Bubble.convertToString(str);
+        console.log('console: ' + str);
     };
+    var server = DIMP.Messenger.getInstance().server;
     server.start();
     Vue.filter('formatDate', function(value) {
         if (value) {
@@ -44,7 +48,7 @@ $(function () {
             onlineUsers: null,
             server: server,
             serverStatus: '',
-            user: facebook.getCurrentUser(),
+            user: DIMP.Facebook.getInstance().getCurrentUser(),
             messages: [],
             selectedIdentifier: null,
             target: null,
@@ -79,7 +83,11 @@ $(function () {
             },
             scrollToBottom: function () {
                 setTimeout(function () {
-                    $('#messages_div').scrollTop($('#messages_div')[0].scrollHeight);
+                    if($('#messages_div')[0])
+                    {
+                        $('#messages_div').scrollTop($('#messages_div')[0].scrollHeight);
+                    }
+
                 },300);
             },
             refreshOnlineUsers: function(event){

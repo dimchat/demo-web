@@ -84,7 +84,7 @@
             var sender = msg.envelope.sender;
             var nickname = facebook.getUsername(sender);
             var text = msg.content.getValue('text');
-            var msgType = msg.envelope.getType().value;
+            var msgType = msg.envelope.type;
             // according to different message type
             switch (msgType) {
                 case 136:
@@ -99,6 +99,10 @@
                     //text
                     vue.addMessage(sender, msg);
                     await vue.addContactFromIdentifier(sender);
+                    break;
+                default:
+                    console.log('Unknow msgType!');
+                    break;
             }
 
             res = '[Message received] ' + nickname + ': ' + text;
