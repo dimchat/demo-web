@@ -1252,6 +1252,7 @@
     ns.AddressNameService = AddressNameService
 }(DIMP);
 ! function(ns) {
+    var NetworkType = ns.protocol.NetworkType;
     var AddressNameService = ns.AddressNameService;
     var Immortals = ns.Immortals;
     var Table = ns.db.Table;
@@ -1304,7 +1305,7 @@
         var nickname = this.getNickname(identifier);
         var number = this.getNumberString(identifier);
         if (nickname != null && nickname.length > 0) {
-            if (identifier.getType().isUser()) {
+            if (identifier.isUser()) {
                 if (username != null && username.length > 0) {
                     return nickname + " (" + username + ")"
                 } else {
@@ -1314,7 +1315,7 @@
             return nickname
         } else {
             if (username != null && username.length > 0) {
-                if (identifier.getType().isUser()) {
+                if (identifier.isUser()) {
                     return username + " (" + number + ")"
                 }
                 return username
@@ -1350,7 +1351,7 @@
     Facebook.prototype.loadPrivateKey = function(identifier) {
         var db = Table.create(PrivateTable);
         var key = db.loadPrivateKey(identifier);
-        if (!key && identifier.getType().isPerson()) {
+        if (!key && NetworkType.Main.equals(identifier.getType())) {
             key = this.immortals.getPrivateKeyForSignature(identifier)
         }
         return key
@@ -1373,7 +1374,7 @@
         if (meta) {
             return meta
         }
-        if (identifier.getType().isPerson()) {
+        if (NetworkType.Main.equals(identifier.getType())) {
             meta = this.immortals.getMeta(identifier);
             if (meta) {
                 return meta
@@ -1406,7 +1407,7 @@
                 return profile
             }
         }
-        if (identifier.getType().isPerson()) {
+        if (NetworkType.Main.equals(identifier.getType())) {
             var tai = this.immortals.getProfile(identifier);
             if (tai) {
                 return tai

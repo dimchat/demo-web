@@ -431,7 +431,7 @@
             return 'User error: ' + name;
         }
         Messenger.getInstance().queryProfile(identifier);
-        if (identifier.getType().isGroup()) {
+        if (identifier.isGroup()) {
             return 'Querying profile for group: ' + identifier;
         } else {
             return 'Querying profile for user: ' + identifier;

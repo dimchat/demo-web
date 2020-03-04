@@ -136,14 +136,16 @@ if (typeof DIMP !== "object") {
             child = function() {}
         }
         if (parent) {
-            if (!(parent instanceof Array)) {
-                var list = [];
+            var ancestors;
+            if (parent instanceof Array) {
+                ancestors = parent
+            } else {
+                ancestors = [];
                 for (var i = 1; i < arguments.length; ++i) {
-                    list.push(arguments[i])
+                    ancestors.push(arguments[i])
                 }
-                parent = list
             }
-            child = inherits(child, parent)
+            child = inherits(child, ancestors)
         }
         return child
     };
@@ -158,14 +160,16 @@ if (typeof DIMP !== "object") {
         child.prototype = Object.create(parent.prototype);
         inherit(child, parent);
         if (interfaces) {
-            if (!(interfaces instanceof Array)) {
-                var list = [];
+            var ancestors;
+            if (interfaces instanceof Array) {
+                ancestors = interfaces
+            } else {
+                ancestors = [];
                 for (var i = 2; i < arguments.length; ++i) {
-                    list.push(arguments[i])
+                    ancestors.push(arguments[i])
                 }
-                interfaces = list
             }
-            child = inherits(child, interfaces)
+            child = inherits(child, ancestors)
         }
         child.prototype.constructor = child;
         return child
@@ -698,12 +702,12 @@ if (typeof DIMP !== "object") {
         }
         return str
     };
-    var hex_decode = function(str) {
+    var hex_decode = function(string) {
         var i = 0;
-        var len = str.length;
+        var len = string.length;
         if (len > 2) {
-            if (str[0] === "0") {
-                if (str[1] === "x" || str[1] === "X") {
+            if (string[0] === "0") {
+                if (string[1] === "x" || string[1] === "X") {
                     i += 2
                 }
             }
@@ -713,8 +717,8 @@ if (typeof DIMP !== "object") {
         --len;
         var hi, lo;
         for (; i < len; i += 2) {
-            hi = hex_values[str.charCodeAt(i)];
-            lo = hex_values[str.charCodeAt(i + 1)];
+            hi = hex_values[string.charCodeAt(i)];
+            lo = hex_values[string.charCodeAt(i + 1)];
             data.push((hi << 4) | lo)
         }
         return data.getBytes(false)
@@ -792,12 +796,10 @@ if (typeof DIMP !== "object") {
     var coder = function() {};
     ns.Interface(coder, null);
     coder.prototype.encode = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     coder.prototype.decode = function(string) {
-        console.assert(string != null, "string empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -820,12 +822,10 @@ if (typeof DIMP !== "object") {
     var base58 = function() {};
     ns.Class(base58, ns.type.Object, coder);
     base58.prototype.encode = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "Base58 encode not implemented");
         return null
     };
     base58.prototype.decode = function(string) {
-        console.assert(string != null, "string empty");
         console.assert(false, "Base58 decode not implemented");
         return null
     };
@@ -852,12 +852,10 @@ if (typeof DIMP !== "object") {
     var parser = function() {};
     ns.Interface(parser, null);
     parser.prototype.encode = function(container) {
-        console.assert(container != null, "container empty");
         console.assert(false, "implement me!");
         return null
     };
     parser.prototype.decode = function(string) {
-        console.assert(string != null, "string empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -888,44 +886,36 @@ if (typeof DIMP !== "object") {
     var parser = function() {};
     ns.Interface(parser, null);
     parser.prototype.encodePublicKey = function(key) {
-        console.assert(key != null, "public key empty");
         console.assert(false, "implement me!");
         return null
     };
     parser.prototype.encodePrivateKey = function(key) {
-        console.assert(key != null, "private key empty");
         console.assert(false, "implement me!");
         return null
     };
     parser.prototype.decodePublicKey = function(pem) {
-        console.assert(pem != null, "pem content empty");
         console.assert(false, "implement me!");
         return null
     };
     parser.prototype.decodePrivateKey = function(pem) {
-        console.assert(pem != null, "pem content empty");
         console.assert(false, "implement me!");
         return null
     };
     var pem = function() {};
     ns.Class(pem, ns.type.Object, parser);
     pem.prototype.encodePublicKey = function(key) {
-        console.assert(key != null, "public key content empty");
         console.assert(false, "PEM parser not implemented");
         return null
     };
     pem.prototype.encodePrivateKey = function(key) {
-        console.assert(key != null, "private key content empty");
         console.assert(false, "PEM parser not implemented");
         return null
     };
     pem.prototype.decodePublicKey = function(pem) {
-        console.assert(pem != null, "pem content empty");
         console.assert(false, "PEM parser not implemented");
         return null
     };
     pem.prototype.decodePrivateKey = function(pem) {
-        console.assert(pem != null, "pem content empty");
         console.assert(false, "PEM parser not implemented");
         return null
     };
@@ -954,28 +944,24 @@ if (typeof DIMP !== "object") {
     var hash = function() {};
     ns.Interface(hash, null);
     hash.prototype.digest = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     var md5 = function() {};
     ns.Class(md5, ns.type.Object, hash);
     md5.prototype.digest = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "MD5 not implemented");
         return null
     };
     var sha256 = function() {};
     ns.Class(sha256, ns.type.Object, hash);
     sha256.prototype.digest = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "SHA256 not implemented");
         return null
     };
     var ripemd160 = function() {};
     ns.Class(ripemd160, ns.type.Object, hash);
     ripemd160.prototype.digest = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "RIPEMD160 not implemented");
         return null
     };
@@ -1021,30 +1007,25 @@ if (typeof DIMP !== "object") {
 ! function(ns) {
     var EncryptKey = function() {};
     ns.Interface(EncryptKey, null);
-    EncryptKey.prototype.encrypt = function(data) {
-        console.assert(data != null, "data empty");
+    EncryptKey.prototype.encrypt = function(plaintext) {
         console.assert(false, "implement me!");
         return null
     };
     var DecryptKey = function() {};
     ns.Interface(DecryptKey, null);
-    DecryptKey.prototype.decrypt = function(data) {
-        console.assert(data != null, "data empty");
+    DecryptKey.prototype.decrypt = function(ciphertext) {
         console.assert(false, "implement me!");
         return null
     };
     var SignKey = function() {};
     ns.Interface(SignKey, null);
     SignKey.prototype.sign = function(data) {
-        console.assert(data != null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
     var VerifyKey = function() {};
     ns.Interface(VerifyKey, null);
     VerifyKey.prototype.verify = function(data, signature) {
-        console.assert(data != null, "data empty");
-        console.assert(signature != null, "signature empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -1226,26 +1207,14 @@ if (typeof MingKeMing !== "object") {
     NetworkType.prototype.toByte = function() {
         return String.fromCharCode(this.value)
     };
-    NetworkType.prototype.isPerson = function() {
-        return (this.value === NetworkType.Main.value) || (this.value === NetworkType.BTCMain.value)
+    NetworkType.isUser = function(network) {
+        var main = NetworkType.Main.valueOf();
+        var btcMain = NetworkType.BTCMain.valueOf();
+        return ((network & main) === main) || (network === btcMain)
     };
-    NetworkType.prototype.isUser = function() {
-        return ((this.value & NetworkType.Main.value) === NetworkType.Main.value) || (this.value === NetworkType.BTCMain.value)
-    };
-    NetworkType.prototype.isGroup = function() {
-        return (this.value & NetworkType.Group.value) === NetworkType.Group.value
-    };
-    NetworkType.prototype.isStation = function() {
-        return this.value === NetworkType.Station.value
-    };
-    NetworkType.prototype.isProvider = function() {
-        return this.value === NetworkType.Provider.value
-    };
-    NetworkType.prototype.isThing = function() {
-        return (this.value & NetworkType.Thing.value) === NetworkType.Thing.value
-    };
-    NetworkType.prototype.isRobot = function() {
-        return this.value === NetworkType.Robot.value
+    NetworkType.isGroup = function(network) {
+        var group = NetworkType.Group.valueOf();
+        return (network & group) === group
     };
     ns.protocol.NetworkType = NetworkType;
     ns.protocol.register("NetworkType")
@@ -1259,9 +1228,6 @@ if (typeof MingKeMing !== "object") {
         ETH: (4),
         ExETH: (5)
     });
-    MetaType.prototype.hasSeed = function() {
-        return (this.value & MetaType.MKM.value) === MetaType.MKM.value
-    };
     ns.protocol.MetaType = MetaType;
     ns.protocol.register("MetaType")
 }(MingKeMing);
@@ -1273,21 +1239,32 @@ if (typeof MingKeMing !== "object") {
     ns.Class(Address, ns.type.String, null);
     Address.prototype.getNetwork = function() {
         console.assert(false, "implement me!");
-        return null
+        return 0
     };
     Address.prototype.getCode = function() {
         console.assert(false, "implement me!");
         return 0
     };
     Address.prototype.isBroadcast = function() {
-        var network = this.getNetwork();
-        if (Address.EVERYWHERE.getNetwork().equals(network)) {
-            return this.equals(Address.EVERYWHERE)
+        if (this.getCode() !== BROADCAST_CODE) {
+            return false
         }
-        if (Address.ANYWHERE.getNetwork().equals(network)) {
-            return this.equals(Address.ANYWHERE)
+        var network = this.getNetwork();
+        if (network === NetworkType.Group.valueOf()) {
+            return this.equals(EVERYWHERE)
+        }
+        if (network === NetworkType.Main.valueOf()) {
+            return this.equals(ANYWHERE)
         }
         return false
+    };
+    Address.prototype.isUser = function() {
+        var network = this.getNetwork();
+        return NetworkType.isUser(network)
+    };
+    Address.prototype.isGroup = function() {
+        var network = this.getNetwork();
+        return NetworkType.isGroup(network)
     };
     var address_classes = [];
     Address.register = function(clazz) {
@@ -1301,11 +1278,11 @@ if (typeof MingKeMing !== "object") {
                 return string
             }
         }
-        if (Address.ANYWHERE.equalsIgnoreCase(string)) {
-            return Address.ANYWHERE
+        if (ANYWHERE.equalsIgnoreCase(string)) {
+            return ANYWHERE
         }
-        if (Address.EVERYWHERE.equalsIgnoreCase(string)) {
-            return Address.EVERYWHERE
+        if (EVERYWHERE.equalsIgnoreCase(string)) {
+            return EVERYWHERE
         }
         var clazz;
         for (var i = address_classes.length - 1; i >= 0; --i) {
@@ -1321,6 +1298,9 @@ if (typeof MingKeMing !== "object") {
     };
     var ConstantAddress = function(string, network, number) {
         Address.call(this, string);
+        if (network instanceof NetworkType) {
+            network = network.valueOf()
+        }
         this.network = network;
         this.number = number
     };
@@ -1331,8 +1311,11 @@ if (typeof MingKeMing !== "object") {
     ConstantAddress.prototype.getCode = function() {
         return this.number
     };
-    Address.ANYWHERE = new ConstantAddress("anywhere", ns.protocol.NetworkType.Main, 9527);
-    Address.EVERYWHERE = new ConstantAddress("everywhere", ns.protocol.NetworkType.Group, 9527);
+    var BROADCAST_CODE = 9527;
+    var ANYWHERE = new ConstantAddress("anywhere", NetworkType.Main, BROADCAST_CODE);
+    var EVERYWHERE = new ConstantAddress("everywhere", NetworkType.Group, BROADCAST_CODE);
+    Address.ANYWHERE = ANYWHERE;
+    Address.EVERYWHERE = EVERYWHERE;
     ns.Address = Address;
     ns.register("Address")
 }(MingKeMing);
@@ -1417,6 +1400,12 @@ if (typeof MingKeMing !== "object") {
     ID.prototype.isBroadcast = function() {
         return this.address.isBroadcast()
     };
+    ID.prototype.isUser = function() {
+        return this.address.isUser()
+    };
+    ID.prototype.isGroup = function() {
+        return this.address.isGroup()
+    };
     ID.ANYONE = new ID("anyone", Address.ANYWHERE);
     ID.EVERYONE = new ID("everyone", Address.EVERYWHERE);
     ID.getInstance = function(string) {
@@ -1440,11 +1429,18 @@ if (typeof MingKeMing !== "object") {
     var NetworkType = ns.protocol.NetworkType;
     var Address = ns.Address;
     var ID = ns.ID;
+    var contains_seed = function(version) {
+        return (version & MetaType.MKM.value) === MetaType.MKM.value
+    };
     var Meta = function(map) {
         Dictionary.call(this, map);
-        this.version = new MetaType(map["version"]);
+        var version = map["version"];
+        if (version instanceof MetaType) {
+            version = version.valueOf()
+        }
+        this.version = version;
         this.key = PublicKey.getInstance(map["key"]);
-        if (this.version.hasSeed()) {
+        if (contains_seed(version)) {
             this.seed = map["seed"];
             this.fingerprint = Base64.decode(map["fingerprint"])
         } else {
@@ -1471,7 +1467,7 @@ if (typeof MingKeMing !== "object") {
             if (!this.key) {
                 this.status = -1
             } else {
-                if (this.version.hasSeed()) {
+                if (contains_seed(this.version)) {
                     if (!this.seed || !this.fingerprint) {
                         this.status = -1
                     } else {
@@ -1494,7 +1490,7 @@ if (typeof MingKeMing !== "object") {
         if (this.key.equals(publicKey)) {
             return true
         }
-        if (this.version.hasSeed()) {
+        if (contains_seed(this.version)) {
             var data = ns.type.String.from(this.seed).getBytes();
             var signature = this.fingerprint;
             return publicKey.verify(data, signature)
@@ -1532,7 +1528,6 @@ if (typeof MingKeMing !== "object") {
         return new ID(this.seed, address)
     };
     Meta.prototype.generateAddress = function(network) {
-        console.assert(network instanceof NetworkType, "network error: " + network);
         console.assert(false, "implement me!");
         return null
     };
@@ -1541,7 +1536,7 @@ if (typeof MingKeMing !== "object") {
             "version": version,
             "key": privateKey.getPublicKey()
         };
-        if (version.hasSeed()) {
+        if (contains_seed(version)) {
             var data = ns.type.String.from(seed).getBytes();
             var fingerprint = privateKey.sign(data);
             meta["seed"] = seed;
@@ -1603,22 +1598,17 @@ if (typeof MingKeMing !== "object") {
         return null
     };
     TAI.prototype.getProperty = function(name) {
-        console.assert(name !== null, "property name empty");
         console.assert(false, "implement me!");
         return null
     };
     TAI.prototype.setProperty = function(name, value) {
-        console.assert(name !== null, "property name empty");
-        console.assert(value !== null, "property value empty");
         console.assert(false, "implement me!")
     };
     TAI.prototype.verify = function(publicKey) {
-        console.assert(publicKey !== null, "public key empty");
         console.assert(false, "implement me!");
         return false
     };
     TAI.prototype.sign = function(privateKey) {
-        console.assert(privateKey !== null, "private key empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -1791,12 +1781,10 @@ if (typeof MingKeMing !== "object") {
     var EntityDataSource = function() {};
     ns.Interface(EntityDataSource, null);
     EntityDataSource.prototype.getMeta = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     EntityDataSource.prototype.getProfile = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -1808,25 +1796,20 @@ if (typeof MingKeMing !== "object") {
     var UserDataSource = function() {};
     ns.Interface(UserDataSource, EntityDataSource);
     UserDataSource.prototype.getContacts = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     UserDataSource.prototype.getPublicKeyForEncryption = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         return null
     };
     UserDataSource.prototype.getPublicKeysForVerification = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         return null
     };
     UserDataSource.prototype.getPrivateKeysForDecryption = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     UserDataSource.prototype.getPrivateKeyForSignature = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -1838,17 +1821,14 @@ if (typeof MingKeMing !== "object") {
     var GroupDataSource = function() {};
     ns.Interface(GroupDataSource, EntityDataSource);
     GroupDataSource.prototype.getFounder = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     GroupDataSource.prototype.getOwner = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     GroupDataSource.prototype.getMembers = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -1883,11 +1863,11 @@ if (typeof MingKeMing !== "object") {
     };
     Entity.prototype.toString = function() {
         var clazz = Object.getPrototypeOf(this).constructor;
-        return "<" + clazz.name + "|" + this.getType().toString() + " " + this.identifier + " (" + this.getNumber().toString() + ")" + ' "' + this.getName() + '">'
+        return "<" + clazz.name + "|" + this.getType() + " " + this.identifier + " (" + this.getNumber().toString() + ")" + ' "' + this.getName() + '">'
     };
     Entity.prototype.toLocaleString = function() {
         var clazz = Object.getPrototypeOf(this).constructor;
-        return "<" + clazz.name + "|" + this.getType().toLocaleString() + " " + this.identifier + " (" + this.getNumber().toLocaleString() + ")" + ' "' + this.getName() + '">'
+        return "<" + clazz.name + "|" + this.getType() + " " + this.identifier + " (" + this.getNumber().toLocaleString() + ")" + ' "' + this.getName() + '">'
     };
     Entity.prototype.getType = function() {
         return this.identifier.getType()
@@ -2205,86 +2185,54 @@ if (typeof DaoKeDao !== "object") {
     var InstantMessageDelegate = function() {};
     ns.Interface(InstantMessageDelegate, MessageDelegate);
     InstantMessageDelegate.prototype.encryptContent = function(content, pwd, msg) {
-        console.assert(content !== null, "content empty");
-        console.assert(pwd !== null, "key empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     InstantMessageDelegate.prototype.encodeData = function(data, msg) {
-        console.assert(data !== null, "msg data empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     InstantMessageDelegate.prototype.encryptKey = function(pwd, receiver, msg) {
-        console.assert(pwd !== null, "key empty");
-        console.assert(receiver !== null, "receiver empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     InstantMessageDelegate.prototype.encodeKey = function(key, msg) {
-        console.assert(key !== null, "key data empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     var SecureMessageDelegate = function() {};
     ns.Interface(SecureMessageDelegate, MessageDelegate);
     SecureMessageDelegate.prototype.decodeKey = function(key, msg) {
-        console.assert(key !== null, "key string empty");
-        console.assert(msg !== null, "secure message empty");
         console.assert(false, "implement me!");
         return null
     };
     SecureMessageDelegate.prototype.decryptKey = function(key, sender, receiver, msg) {
-        console.assert(key !== null, "key data empty");
-        console.assert(sender !== null, "sender empty");
-        console.assert(receiver !== null, "receiver empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     SecureMessageDelegate.prototype.decodeData = function(data, msg) {
-        console.assert(data !== null, "msg data empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     SecureMessageDelegate.prototype.decryptContent = function(data, pwd, msg) {
-        console.assert(data !== null, "msg data empty");
-        console.assert(pwd !== null, "key empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     SecureMessageDelegate.prototype.signData = function(data, sender, msg) {
-        console.assert(data !== null, "msg data empty");
-        console.assert(sender !== null, "sender empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     SecureMessageDelegate.prototype.encodeSignature = function(signature, msg) {
-        console.assert(signature !== null, "msg signature empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     var ReliableMessageDelegate = function() {};
     ns.Interface(ReliableMessageDelegate, SecureMessageDelegate);
     ReliableMessageDelegate.prototype.decodeSignature = function(signature, msg) {
-        console.assert(msg !== null, "msg empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     ReliableMessageDelegate.prototype.verifyDataSignature = function(data, signature, sender, msg) {
-        console.assert(msg !== null, "msg empty");
-        console.assert(msg !== null, "msg empty");
-        console.assert(msg !== null, "msg empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -3424,17 +3372,14 @@ if (typeof DaoKeDao !== "object") {
     var EntityDelegate = function() {};
     ns.Interface(EntityDelegate, null);
     EntityDelegate.prototype.getIdentifier = function(string) {
-        console.assert(string !== null, "ID string empty");
         console.assert(false, "implement me!");
         return null
     };
     EntityDelegate.prototype.getUser = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
     EntityDelegate.prototype.getGroup = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -3445,21 +3390,13 @@ if (typeof DaoKeDao !== "object") {
     var CipherKeyDelegate = function() {};
     ns.Interface(CipherKeyDelegate, null);
     CipherKeyDelegate.prototype.getCipherKey = function(sender, receiver) {
-        console.assert(sender !== null, "sender empty");
-        console.assert(receiver !== null, "receiver empty");
         console.assert(false, "implement me!");
         return null
     };
     CipherKeyDelegate.prototype.cacheCipherKey = function(sender, receiver, key) {
-        console.assert(sender !== null, "sender empty");
-        console.assert(receiver !== null, "receiver empty");
-        console.assert(key !== null, "key empty");
         console.assert(false, "implement me!")
     };
     CipherKeyDelegate.prototype.reuseCipherKey = function(sender, receiver, key) {
-        console.assert(sender !== null, "sender empty");
-        console.assert(receiver !== null, "receiver empty");
-        console.assert(key !== null, "key empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -3514,7 +3451,6 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     KeyCache.prototype.saveKeys = function(map) {
-        console.assert(map !== null, "map empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -3694,11 +3630,9 @@ if (typeof DaoKeDao !== "object") {
         return this.metaMap[identifier]
     };
     Barrack.prototype.getPublicKeyForEncryption = function(identifier) {
-        console.assert(identifier.getType().isUser(), "user ID error");
         return null
     };
     Barrack.prototype.getPublicKeysForVerification = function(identifier) {
-        console.assert(identifier.getType().isUser(), "user ID error");
         return null
     };
     Barrack.prototype.getFounder = function(identifier) {
@@ -3794,7 +3728,7 @@ if (typeof DaoKeDao !== "object") {
             msg.delegate = this
         }
         var sMsg;
-        if (receiver.getType().isGroup()) {
+        if (receiver.isGroup()) {
             var members = this.entityDelegate.getMembers(receiver);
             sMsg = msg.encrypt(password, members)
         } else {
@@ -4483,7 +4417,7 @@ if (typeof DaoKeDao !== "object") {
         if (!ns.type.Arrays.equals(cc, suffix)) {
             throw Error("address check code error: " + string)
         }
-        this.network = new NetworkType(data[0]);
+        this.network = data[0];
         this.code = search_number(cc)
     };
     ns.Class(DefaultAddress, Address, null);
@@ -4494,9 +4428,12 @@ if (typeof DaoKeDao !== "object") {
         return this.code
     };
     DefaultAddress.generate = function(fingerprint, network) {
+        if (network instanceof NetworkType) {
+            network = network.valueOf()
+        }
         var digest = RIPEMD160.digest(SHA256.digest(fingerprint));
         var head = new Data(21);
-        head.push(network.valueOf());
+        head.push(network);
         head.push(digest);
         var cc = check_code(head.getBytes(false));
         var data = new Data(25);
@@ -4515,6 +4452,7 @@ if (typeof DaoKeDao !== "object") {
     ns.plugins.DefaultAddress = DefaultAddress
 }(DIMP);
 ! function(ns) {
+    var NetworkType = ns.protocol.NetworkType;
     var MetaType = ns.protocol.MetaType;
     var Meta = ns.Meta;
     var DefaultAddress = ns.plugins.DefaultAddress;
@@ -4524,6 +4462,9 @@ if (typeof DaoKeDao !== "object") {
     };
     ns.Class(DefaultMeta, Meta, null);
     DefaultMeta.prototype.generateIdentifier = function(network) {
+        if (network instanceof NetworkType) {
+            network = network.valueOf()
+        }
         var identifier = this.idMap[network];
         if (!identifier) {
             identifier = Meta.prototype.generateIdentifier.call(this, network);
@@ -4536,6 +4477,9 @@ if (typeof DaoKeDao !== "object") {
     DefaultMeta.prototype.generateAddress = function(network) {
         if (!this.isValid()) {
             throw Error("meta invalid: " + this)
+        }
+        if (network instanceof NetworkType) {
+            network = network.valueOf()
         }
         var identifier = this.idMap[network];
         if (identifier) {
@@ -5535,8 +5479,6 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     AddressNameService.prototype.save = function(name, identifier) {
-        console.assert(name !== null, "name empty");
-        console.assert(identifier !== null, "ID empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -5564,7 +5506,6 @@ if (typeof DaoKeDao !== "object") {
     var Callback = function() {};
     ns.Interface(Callback, null);
     Callback.prototype.onFinished = function(result, error) {
-        console.assert(result || error, "result empty");
         console.assert(false, "implement me!")
     };
     ns.Callback = Callback;
@@ -5577,7 +5518,6 @@ if (typeof DaoKeDao !== "object") {
         console.assert(false, "implement me!")
     };
     CompletionHandler.prototype.onFailed = function(error) {
-        console.assert(error !== null, "result empty");
         console.assert(false, "implement me!")
     };
     CompletionHandler.newHandler = function(onSuccess, onFailed) {
@@ -5593,7 +5533,6 @@ if (typeof DaoKeDao !== "object") {
     var ConnectionDelegate = function() {};
     ns.Interface(ConnectionDelegate, null);
     ConnectionDelegate.prototype.onReceivePackage = function(data) {
-        console.assert(data !== null, "data empty");
         console.assert(false, "implement me!");
         return null
     };
@@ -5604,20 +5543,14 @@ if (typeof DaoKeDao !== "object") {
     var MessengerDelegate = function() {};
     ns.Interface(MessengerDelegate, null);
     MessengerDelegate.prototype.uploadData = function(data, msg) {
-        console.assert(data !== null, "data empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     MessengerDelegate.prototype.downloadData = function(url, msg) {
-        console.assert(url !== null, "URL empty");
-        console.assert(msg !== null, "msg empty");
         console.assert(false, "implement me!");
         return null
     };
     MessengerDelegate.prototype.sendPackage = function(data, handler) {
-        console.assert(data !== null, "data empty");
-        console.assert(handler !== null, "handler empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -5652,7 +5585,6 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     KeyStore.prototype.saveKeys = function(map) {
-        console.assert(map !== null, "map empty");
         return false
     };
     KeyStore.prototype.loadKeys = function() {
@@ -5698,12 +5630,11 @@ if (typeof DaoKeDao !== "object") {
         return Barrack.prototype.cacheMeta.call(this, meta, identifier)
     };
     Facebook.prototype.saveMeta = function(meta, identifier) {
-        console.assert(meta !== null, "meta empty");
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return false
     };
     Facebook.prototype.loadMeta = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return null
     };
     var EXPIRES_KEY = "expires";
@@ -5721,7 +5652,7 @@ if (typeof DaoKeDao !== "object") {
             }
         }
         var meta;
-        if (identifier.getType().isGroup()) {
+        if (identifier.isGroup()) {
             var members = this.getMembers(identifier);
             if (members) {
                 var id;
@@ -5738,7 +5669,7 @@ if (typeof DaoKeDao !== "object") {
             }
             var owner = this.getOwner(identifier);
             if (!owner) {
-                if (identifier.getType().equals(NetworkType.Polylogue)) {
+                if (NetworkType.Polylogue.equals(identifier.getType())) {
                     meta = this.getMeta(identifier)
                 } else {
                     return false
@@ -5774,12 +5705,11 @@ if (typeof DaoKeDao !== "object") {
         return true
     };
     Facebook.prototype.saveProfile = function(profile, identifier) {
-        console.assert(profile !== null, "profile empty");
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return false
     };
     Facebook.prototype.loadProfile = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return null
     };
     Facebook.prototype.verifyPrivateKey = function(key, identifier) {
@@ -5802,12 +5732,11 @@ if (typeof DaoKeDao !== "object") {
         return true
     };
     Facebook.prototype.savePrivateKey = function(key, identifier) {
-        console.assert(key !== null, "private key empty");
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return false
     };
     Facebook.prototype.loadPrivateKey = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return null
     };
     Facebook.prototype.cacheContacts = function(contacts, identifier) {
@@ -5819,12 +5748,11 @@ if (typeof DaoKeDao !== "object") {
         return true
     };
     Facebook.prototype.saveContacts = function(contacts, identifier) {
-        console.assert(contacts !== null, "contacts empty");
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return false
     };
     Facebook.prototype.loadContacts = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return null
     };
     Facebook.prototype.cacheMembers = function(members, identifier) {
@@ -5836,12 +5764,11 @@ if (typeof DaoKeDao !== "object") {
         return true
     };
     Facebook.prototype.saveMembers = function(members, identifier) {
-        console.assert(members !== null, "members empty");
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return false
     };
     Facebook.prototype.loadMembers = function(identifier) {
-        console.assert(identifier !== null, "ID empty");
+        console.assert(false, "implement me!");
         return null
     };
     Facebook.prototype.getLocalUsers = function() {
@@ -5867,13 +5794,13 @@ if (typeof DaoKeDao !== "object") {
             return new User(identifier)
         }
         var type = identifier.getType();
-        if (type.isPerson()) {
+        if (NetworkType.Main.equals(type) || NetworkType.BTCMain.equals(type)) {
             return new User(identifier)
         }
-        if (type.isRobot()) {
+        if (NetworkType.Robot.equals(type)) {
             return new Robot(identifier)
         }
-        if (type.isStation()) {
+        if (NetworkType.Station.equals(type)) {
             return new Station(identifier)
         }
         throw TypeError("Unsupported user type: " + type)
@@ -5883,13 +5810,13 @@ if (typeof DaoKeDao !== "object") {
             return new Group(identifier)
         }
         var type = identifier.getType();
-        if (type.equals(NetworkType.Polylogue)) {
+        if (NetworkType.Polylogue.equals(type)) {
             return new Polylogue(identifier)
         }
-        if (type.equals(NetworkType.Chatroom)) {
+        if (NetworkType.Chatroom.equals(type)) {
             return new Chatroom(identifier)
         }
-        if (type.isProvider()) {
+        if (NetworkType.Provider.equals(type)) {
             return new ServiceProvider(identifier)
         }
         throw TypeError("Unsupported group type: " + type)
@@ -5986,7 +5913,7 @@ if (typeof DaoKeDao !== "object") {
         if (owner) {
             return owner
         }
-        if (identifier.getType().equals(NetworkType.Polylogue)) {
+        if (NetworkType.Polylogue.equals(identifier.getType())) {
             return this.getFounder(identifier)
         }
         return null
@@ -6017,7 +5944,7 @@ if (typeof DaoKeDao !== "object") {
         return gMeta.matches(mMeta.key)
     };
     Facebook.prototype.isOwner = function(member, group) {
-        if (group.getType().equals(NetworkType.Polylogue)) {
+        if (NetworkType.Polylogue.equals(group.getType())) {
             return this.isFounder(member, group)
         }
         throw Error("only Polylogue so far")
@@ -6097,7 +6024,7 @@ if (typeof DaoKeDao !== "object") {
                 return users[0]
             }
         }
-        if (receiver.getType().isGroup()) {
+        if (receiver.isGroup()) {
             var members = facebook.getMembers(receiver);
             if (!members || members.length === 0) {
                 return null
@@ -6124,7 +6051,7 @@ if (typeof DaoKeDao !== "object") {
         if (!user) {
             return null
         } else {
-            if (receiver.getType().isGroup()) {
+            if (receiver.isGroup()) {
                 msg = msg.trim(user.identifier)
             }
         }
@@ -6227,7 +6154,7 @@ if (typeof DaoKeDao !== "object") {
         var sMsg = this.encryptMessage(msg);
         var rMsg = this.signMessage(sMsg);
         var ok = true;
-        if (split && receiver.getType().isGroup()) {
+        if (split && receiver.isGroup()) {
             var messages = null;
             var members = facebook.getMembers(receiver);
             if (members && members.length > 0) {
@@ -6260,12 +6187,10 @@ if (typeof DaoKeDao !== "object") {
         return this.delegate.sendPackage(data, handler)
     };
     Messenger.prototype.saveMessage = function(msg) {
-        console.assert(msg !== null, "message empty");
         console.assert(false, "implement me!");
         return false
     };
     Messenger.prototype.suspendMessage = function(msg) {
-        console.assert(msg !== null, "message empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -6340,23 +6265,13 @@ if (typeof StarGate !== "object") {
     var Delegate = function() {};
     DIMP.Interface(Delegate, null);
     Delegate.prototype.enterState = function(state, machine) {
-        console.assert(state !== null, "state empty");
-        console.assert(machine !== null, "machine empty");
         console.assert(false, "implement me!")
     };
     Delegate.prototype.exitState = function(state, machine) {
-        console.assert(state !== null, "state empty");
-        console.assert(machine !== null, "machine empty");
         console.assert(false, "implement me!")
     };
-    Delegate.prototype.pauseState = function(state, machine) {
-        console.assert(state !== null, "state empty");
-        console.assert(machine !== null, "machine empty")
-    };
-    Delegate.prototype.resumeState = function(state, machine) {
-        console.assert(state !== null, "state empty");
-        console.assert(machine !== null, "machine empty")
-    };
+    Delegate.prototype.pauseState = function(state, machine) {};
+    Delegate.prototype.resumeState = function(state, machine) {};
     ns.StateDelegate = Delegate;
     ns.register("StateDelegate")
 }(FiniteStateMachine);
@@ -6366,7 +6281,6 @@ if (typeof StarGate !== "object") {
     };
     DIMP.Class(Transition, DIMP.type.Object, null);
     Transition.prototype.evaluate = function(machine) {
-        console.assert(machine !== null, "machine empty");
         console.assert(false, "implement me!");
         return false
     };
@@ -6395,19 +6309,13 @@ if (typeof StarGate !== "object") {
         }
     };
     State.prototype.onEnter = function(machine) {
-        console.assert(machine !== null, "machine empty");
         console.assert(false, "implement me!")
     };
     State.prototype.onExit = function(machine) {
-        console.assert(machine !== null, "machine empty");
         console.assert(false, "implement me!")
     };
-    State.prototype.onPause = function(machine) {
-        console.assert(machine !== null, "machine empty")
-    };
-    State.prototype.onResume = function(machine) {
-        console.assert(machine !== null, "machine empty")
-    };
+    State.prototype.onPause = function(machine) {};
+    State.prototype.onResume = function(machine) {};
     ns.State = State;
     ns.register("State")
 }(FiniteStateMachine);
@@ -6486,7 +6394,6 @@ if (typeof StarGate !== "object") {
     var Observer = function() {};
     DIMP.Interface(Observer, null);
     Observer.prototype.onReceiveNotification = function(notification) {
-        console.assert(notification !== null, "notification empty");
         console.assert(false, "implement me!")
     };
     ns.Observer = Observer;
@@ -6639,18 +6546,12 @@ if (typeof StarGate !== "object") {
     var Delegate = function() {};
     DIMP.Interface(Delegate, null);
     Delegate.prototype.onReceived = function(response, star) {
-        console.assert(response !== null, "response empty");
-        console.assert(star !== null, "star empty");
         console.assert(false, "implement me!")
     };
     Delegate.prototype.onStatusChanged = function(status, star) {
-        console.assert(status !== null, "status empty");
-        console.assert(star !== null, "star empty");
         console.assert(false, "implement me!")
     };
     Delegate.prototype.onSent = function(request, error, star) {
-        console.assert(request !== null, "request empty");
-        console.assert(star !== null, "star empty");
         console.assert(false, "implement me!")
     };
     var Status = DIMP.type.Enum({
@@ -6672,7 +6573,6 @@ if (typeof StarGate !== "object") {
         return null
     };
     Star.prototype.launch = function(options) {
-        console.assert(options !== null, "options empty");
         console.assert(false, "implement me!")
     };
     Star.prototype.terminate = function() {
@@ -6681,8 +6581,6 @@ if (typeof StarGate !== "object") {
     Star.prototype.pause = function(options) {};
     Star.prototype.resume = function(options) {};
     Star.prototype.send = function(payload, delegate) {
-        console.assert(payload !== null, "payload empty");
-        console.assert(delegate !== null, "delegate empty");
         console.assert(false, "implement me!")
     };
     ns.Star = Star;
@@ -6737,8 +6635,6 @@ if (typeof StarGate !== "object") {
         return this.waitingList.shift()
     };
     Fence.prototype.connect = function(host, port) {
-        console.assert(host !== null, "host empty");
-        console.assert(port !== null, "port empty");
         console.assert(false, "implement me!")
     };
     Fence.prototype.disconnect = function() {
