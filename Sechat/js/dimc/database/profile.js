@@ -51,7 +51,7 @@
         console.log('saving profile for ' + identifier);
         var nc = NotificationCenter.getInstance();
         if (save_profiles(this.profiles)) {
-            nc.postNotification(kNotificationProfileUpdated, this, profile);
+            nc.postNotification(nc.kNotificationProfileUpdated, this, profile);
         } else {
             var text = 'failed to save profile: '
                 + profile.getIdentifier() + ' -> '

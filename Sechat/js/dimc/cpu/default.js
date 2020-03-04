@@ -87,7 +87,7 @@
         }
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationMessageReceived, this, msg);
+        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
 
         // check group message
         var group = content.getGroup();

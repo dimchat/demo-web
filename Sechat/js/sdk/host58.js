@@ -1,10 +1,5 @@
 ;
 // license: https://mit-license.org
-//
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
-//
-//                               Written in 2020 by Moky <albert.moky@gmail.com>
-//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -30,45 +25,62 @@
 // =============================================================================
 //
 
-//! require <dimsdk.js>
+/**
+ *  Convert host string (IP:port) to/from Base58 string
+ */
 
 !function (ns) {
     'use strict';
 
-    var StationDelegate = function () {
-    };
-    ns.Interface(StationDelegate, null);
+    var Host = ns.stargate.network.Host;
+    var IPv4 = ns.stargate.network.IPv4;
+    var IPv6 = ns.stargate.network.IPv6;
 
-    /**
-     *  Send data package to station success
-     *
-     * @param data
-     * @param server
-     */
-    StationDelegate.prototype.didSendPackage = function (data, server) {
-        console.assert(data !== null, 'data empty');
-        console.assert(server !== null, 'server empty');
-        console.assert(false, 'implement me!');
+    var Base58 = DIMP.format.Base58;
+
+    var Host58 = function (host) {
+        var ipv;
+        if (/[.:]+/.test(host)) {
+            // try IPv4
+            ipv = IPv4.parse(host);
+            if (!ipv) {
+                // try IPv6
+                ipv = IPv6.parse(host);
+                if (!ipv) {
+                    throw URIError('IP format error');
+                }
+            }
+        } else {
+            // base58
+            var data = Base58.decode(host);
+            var count = data.length;
+            if (count === 4 || count === 6) {
+                // IPv4
+                ipv = new IPv4(null, 0, data);
+            } else if (count === 16 || count === 18) {
+                // IPv6
+                ipv = new IPv6(null, 0, data);
+            } else {
+                throw URIError('host error: ' + host);
+            }
+        }
+        Host.call(this, ipv.ip, ipv.port, ipv.data);
+        this.ipv = ipv;
+    };
+    ns.Class(Host58, Host, null);
+
+    Host58.prototype.valueOf = function () {
+        return this.ipv.valueOf();
     };
 
-    /**
-     *  Failed to send data package to station
-     *
-     * @param error
-     * @param data
-     * @param server
-     */
-    StationDelegate.prototype.didFailToSendPackage = function (error, data, server) {
-        console.assert(error !== null, 'error empty');
-        console.assert(data !== null, 'data empty');
-        console.assert(server !== null, 'server empty');
-        console.assert(false, 'implement me!');
+    Host58.prototype.encode = function (default_port) {
+        return Base58.encode(this.ipv.toArray(default_port));
     };
 
     //-------- namespace --------
     if (typeof ns.network !== 'object') {
         ns.network = {};
     }
-    ns.network.StationDelegate = StationDelegate;
+    ns.network.Host58 = Host58;
 
 }(DIMP);

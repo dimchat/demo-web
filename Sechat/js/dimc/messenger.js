@@ -18,6 +18,10 @@
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
 
+    var GroupCommand = ns.protocol.GroupCommand;
+    var InviteCommand = ns.protocol.group.InviteCommand;
+    var ResetCommand = ns.protocol.group.ResetCommand;
+
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
 
@@ -33,8 +37,80 @@
             s_messenger.entityDelegate = Facebook.getInstance();
             s_messenger.cipherKeyDelegate = KeyStore.getInstance();
             s_messenger.server = null; // current station connected
+            // for duplicated querying
+            s_messenger.metaQueryTime = {};    // ID -> Date
+            s_messenger.profileQueryTime = {}; // ID -> Date
+            s_messenger.groupQueryTime = {};   // ID -> Date
         }
         return s_messenger;
+    };
+
+    // check whether group info empty
+    var is_empty = function (group) {
+        var facebook = this.getFacebook();
+        var members = facebook.getMembers(group);
+        if (!members || members.length === 0) {
+            return true;
+        }
+        var owner = facebook.getOwner(group);
+        return !owner;
+    };
+
+    // check whether need to update group
+    var check_group = function (content, sender) {
+        // Check if it is a group message,
+        // and whether the group members info needs update
+        var facebook = this.getFacebook();
+        var group = facebook.getIdentifier(content.getGroup());
+        if (!group || group.isBroadcast()) {
+            // 1. personal message
+            // 2. broadcast message
+            return false;
+        }
+        // check meta for new group ID
+        var meta = facebook.getMeta(group);
+        if (!meta) {
+            // NOTICE: if meta for group not found,
+            //         facebook should query it from DIM network automatically
+            // TODO: insert the message to a temporary queue to wait meta
+            //throw new NullPointerException("group meta not found: " + group);
+            return true;
+        }
+        // query group info
+        if (is_empty.call(this, group)) {
+            // NOTICE: if the group info not found, and this is not an 'invite' command
+            //         query group info from the sender
+            if ((content instanceof InviteCommand) || (content instanceof ResetCommand)) {
+                // FIXME: can we trust this stranger?
+                //        may be we should keep this members list temporary,
+                //        and send 'query' to the owner immediately.
+                // TODO: check whether the members list is a full list,
+                //       it should contain the group owner(owner)
+                return false;
+            } else {
+                return this.queryGroupInfo(group, sender);
+            }
+        } else if (facebook.existsMember(sender, group)
+            || facebook.existsAssistant(sender, group)
+            || facebook.isOwner(sender, group)) {
+            // normal membership
+            return false;
+        } else {
+            var admins = [];
+            // if assistants exists, query them
+            var assistants = facebook.getAssistants(group);
+            if (assistants) {
+                for (var i = 0; i < assistants.length; ++i) {
+                    admins.push(assistants[i]);
+                }
+            }
+            // if owner found, query it too
+            var owner = facebook.getOwner(group);
+            if (owner && admins.indexOf(owner) < 0) {
+                admins.push(owner);
+            }
+            return this.queryGroupInfo(group, admins);
+        }
     };
 
     //
@@ -86,8 +162,17 @@
     };
 
     // Override
-    var process = Messenger.prototype.process;
-    Messenger.prototype.process = function (msg) {
+    var process = Messenger.prototype.processInstantMessage;
+    Messenger.prototype.processInstantMessage = function (msg) {
+        var content = msg.content;
+        var sender = msg.envelope.sender;
+        sender = this.getFacebook().getIdentifier(sender);
+        if (check_group.call(this, content, sender)) {
+            // save this message in a queue to wait group meta response
+            this.suspendMessage(msg);
+            return null;
+        }
+
         var res = process.call(this, msg);
         if (!res) {
             // respond nothing
@@ -100,7 +185,7 @@
         // normal response
         var receiver = msg.envelope.sender;
         receiver = Facebook.getInstance().getIdentifier(receiver);
-        this.sendContent(res, receiver);
+        this.sendContent(res, receiver, null, false);
         // DON'T respond to station directly
         return null;
     };
@@ -119,7 +204,7 @@
         if (!this.server) {
             throw Error('server not connect');
         }
-        return this.sendContent(cmd, this.server.identifier);
+        return this.sendContent(cmd, this.server.identifier, null, false);
     };
 
     /**
@@ -130,7 +215,7 @@
      */
     Messenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE);
+        return this.sendContent(content, ID.ANYONE, null, false);
     };
 
     /**
@@ -156,9 +241,18 @@
         // pack and send profile to every contact
         var cmd = ProfileCommand.response(identifier, profile, meta);
         for (var i = 0; i < contacts.length; ++i) {
-            this.sendContent(cmd, contacts[i]);
+            this.sendContent(cmd, contacts[i], null, false);
         }
         return true;
+    };
+
+    Messenger.prototype.sendProfile = function (profile, receiver) {
+        var facebook = this.getFacebook();
+        var identifier = profile.getIdentifier();
+        identifier = facebook.getIdentifier(identifier);
+        var meta = facebook.getMeta(identifier);
+        var cmd = ProfileCommand.response(identifier, profile, meta);
+        return this.sendContent(cmd, receiver, null, false);
     };
 
     /**
@@ -168,12 +262,10 @@
      * @returns {boolean}
      */
     Messenger.prototype.postProfile = function (profile) {
-        var facebook = this.getFacebook();
-        var identifier = profile.getIdentifier();
-        identifier = facebook.getIdentifier(identifier);
-        var meta = facebook.getMeta(identifier);
-        var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendCommand(cmd);
+        if (!this.server) {
+            throw Error('server not connect');
+        }
+        return this.sendProfile(profile, this.server.identifier);
     };
 
     Messenger.prototype.postContacts = function (contacts) {
@@ -213,16 +305,54 @@
         if (identifier.isBroadcast()) {
             return false;
         }
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.metaQueryTime[identifier];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
+            return false;
+        }
+        this.metaQueryTime[identifier] = now;
+        // query from DIM network
         var cmd = new MetaCommand(identifier);
         return this.sendCommand(cmd);
     };
 
     Messenger.prototype.queryProfile = function (identifier) {
-        if (identifier.isBroadcast()) {
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.profileQueryTime[identifier];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
             return false;
         }
+        this.profileQueryTime[identifier] = now;
+        // query from DIM network
         var cmd = new ProfileCommand(identifier);
         return this.sendCommand(cmd);
+    };
+
+    Messenger.prototype.queryGroupInfo = function (group, member) {
+        // check for duplicated querying
+        var now = new Date();
+        var last = this.groupQueryTime[group];
+        if (last && (now.getTime() - last.getTime()) < 30000) {
+            return false;
+        }
+        this.groupQueryTime[group] = now;
+        // query from any members
+        var members;
+        if (member instanceof Array) {
+            members = member;
+        } else {
+            members = [member];
+        }
+        var cmd = GroupCommand.query(group);
+        var checking = false;
+        for (var i = 0; i < members.length; ++i) {
+            if (this.sendContent(cmd, members[i], null, false)) {
+                checking = true;
+            }
+        }
+        return checking;
     };
 
     Messenger.prototype.queryOnlineUsers = function () {

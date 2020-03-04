@@ -80,7 +80,7 @@
         this.waitingList = []; // RequestWrapper
         this.sendingTable = {}; // String -> RequestWrapper
     };
-    ns.type.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
+    ns.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
 
     Server.prototype.getCurrentUser = function () {
         return this.currentUser;
@@ -130,7 +130,7 @@
         var user = this.getCurrentUser();
         // create handshake command
         var cmd = HandshakeCommand.restart(session);
-        var env = Envelope.newEnvelope(user.identifier, this.identifier);
+        var env = Envelope.newEnvelope(user.identifier, this.identifier, 0);
         var iMsg = InstantMessage.newMessage(cmd, env);
         var sMsg = this.messenger.encryptMessage(iMsg);
         var rMsg = this.messenger.signMessage(sMsg);
@@ -160,7 +160,7 @@
             this.session = session;
             // TODO: broadcast profile to DIM network
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationHandshakeAccepted,
+            nc.postNotification(nc.kNotificationHandshakeAccepted,
                 this, {session: session});
         } else {
             console.log('handshake again with session: ' + session);
@@ -168,6 +168,9 @@
     };
 
     Server.prototype.connect = function (host, port) {
+        if (!port) {
+            port = 9394;
+        }
         this.fsm.changeState(this.fsm.defaultStateName);
         if (this.getStatus().equals(StarStatus.Connected) &&
             host === this.host &&
@@ -177,7 +180,7 @@
         }
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationStationConnecting, this, {
+        nc.postNotification(nc.kNotificationStationConnecting, this, {
             'host': host,
             'port': port
         });
@@ -209,7 +212,7 @@
             };
         }
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationStationConnecting, this, options);
+        nc.postNotification(nc.kNotificationStationConnecting, this, options);
 
         if (!this.star) {
             var socket = new SocketClient(this);
@@ -217,7 +220,7 @@
             socket.onConnected = function () {
                 onConnected.call(this);
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(kNotificationStationConnected, this, options);
+                nc.postNotification(nc.kNotificationStationConnected, this, options);
             };
             this.star = socket;
         }
@@ -345,7 +348,7 @@
         } else if (state.equals(StateMachine.errorState)) {
             console.log('Station connection error!');
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationStationError, this, null);
+            nc.postNotification(nc.kNotificationStationError, this, null);
         } else if (state.equals(StateMachine.stoppedState)) {
             console.log('Station stop.');
         }
@@ -358,6 +361,9 @@
     };
 
     //-------- namespace --------
+    if (typeof ns.network !== 'object') {
+        ns.network = {};
+    }
     ns.network.Server = Server;
 
 }(DIMP);

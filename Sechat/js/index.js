@@ -1,17 +1,28 @@
 ;
 
-if (typeof dimsdk !== "object") {
-    dimsdk = {}
-}
-
 !function (ns) {
     'use strict';
 
-    var Loader = function (base) {
-        this.base = base;
-        this.status = document.getElementById('tarsier-status');
+    var Loader = function (tarsier, home) {
+        this.tarsier = tarsier;
+        var url = this.currentTask().url;
+        this.base = url.substring(0, url.indexOf(home));
+        this.count = 0; // total scripts
         this.alpha = 0;
         this.timer = null;
+        this.status = document.getElementById('tarsier-status');
+        this.showStatus('Loading DIM client from ' + this.base + ' ...');
+    };
+
+    Loader.prototype.getTasks = function () {
+        return this.tarsier.base.importings;
+    };
+    Loader.prototype.getTask = function (index) {
+        var tasks = this.getTasks();
+        return index < tasks.length ? tasks[index] : null;
+    };
+    Loader.prototype.currentTask = function () {
+        return this.getTask(0);
     };
 
     Loader.prototype.startAnimate = function (action, timeout) {
@@ -68,17 +79,47 @@ if (typeof dimsdk !== "object") {
         this.alpha = alpha;
     };
 
+    var full_url = function (src) {
+        if (!src) {
+            return null;
+        }
+        var url;
+        if (src.indexOf('://') > 0) {
+            // absolute URL
+            url = src;
+        } else if (src[0] === '/') {
+            // absolute path
+            var pos = this.base.indexOf('://');
+            pos = this.base.indexOf('/', pos + 3);
+            url = this.base.substring(0, pos) + src;
+        } else {
+            // relative path
+            url = this.base + src;
+        }
+        return url;
+    };
+
     Loader.prototype.importCSS = function (href) {
-        tarsier.importCSS(this.base + href);
+        var url = full_url.call(this, href);
+        if (!url) {
+            return;
+        }
+        this.tarsier.importCSS(url);
     };
 
     Loader.prototype.importJS = function (src, callback) {
+        var url = full_url.call(this, src);
+        if (!url) {
+            return;
+        }
+        this.count += 1;
         var loader = this;
-        tarsier.importJS(this.base + src, function () {
-            var tasks = tarsier.base.importings;
+        this.tarsier.importJS(url, function () {
+            var tasks = loader.getTasks();
             if (tasks.length > 1) {
                 var next = tasks[1];
-                loader.showStatus('Loading ' + next.url + ' ...');
+                var index = loader.count - tasks.length + 2;
+                loader.showStatus('Loading (' + index + '/' + loader.count + ') ' + next.url + ' ...');
             } else {
                 setTimeout(function () {
                     loader.fadeOut();
@@ -92,9 +133,9 @@ if (typeof dimsdk !== "object") {
 
     ns.Loader = Loader;
 
-}(dimsdk);
+}(window);
 
-!function (ns) {
+!function (node) {
     'use strict';
 
     var html =
@@ -110,17 +151,22 @@ if (typeof dimsdk !== "object") {
 
     html += '<div id="tarsier-status">Loading tarsier ...</div>';
 
-    document.body.innerHTML = html;
+    node.innerHTML = html;
 
-}(dimsdk);
+}(window.document.body);
 
 !function (ns) {
     'use strict';
 
-    var stylesheets = [
-        'css/index.css'
-    ];
-    var scripts = [
+    var release = true;
+    if (ns['DEBUG']) {
+        release = false;
+    }
+    if (window.location.href.indexOf('?debug') > 0) {
+        release = false;
+    }
+
+    var sdk = [
         /* third party cryptography libs */
         'js/sdk/3rd/crypto-js/core.js',
         'js/sdk/3rd/crypto-js/cipher-core.js',
@@ -133,6 +179,28 @@ if (typeof dimsdk !== "object") {
         /* DIM SDK */
         'js/sdk/dimsdk.js',
 
+        'js/sdk/host58.js',
+        'js/sdk/bubble.js',
+        'js/sdk/clipboard.js',
+        null
+    ];
+    if (release) {
+        sdk = [
+            /* third party cryptography libs */
+            'js/sdk/3rd/crypto.min.js',
+            'js/sdk/3rd/jsencrypt.min.js',
+
+            /* DIM SDK */
+            'js/sdk/dimsdk.min.js',
+
+            'js/sdk/host58.js',
+            'js/sdk/bubble.js',
+            'js/sdk/clipboard.js',
+            null
+        ]
+    }
+
+    var dim_client = [
         /* DIM Client */
         'js/dimc/protocol/search.js',
         'js/dimc/cpu/default.js',
@@ -156,31 +224,35 @@ if (typeof dimsdk !== "object") {
         'js/dimc/ans.js',
         'js/dimc/facebook.js',
         'js/dimc/messenger.js',
+        null
+    ];
+    if (release) {
+        dim_client = [
+            // 'js/dim.js'
+            'js/dim.min.js',
+            null
+        ]
+    }
 
+    var ui = [
         /* UI: Console */
         'js/3rd/jquery-3.4.1.slim.min.js',
         'js/3rd/underscore-1.8.2.min.js',
-
-        'js/console.js',
-        'js/app.js'
+        null
     ];
 
-    var main = function () {
-        $(function () {
-            app.write = window.shell_output;
-            server.start();
-        });
-    };
+    var stylesheets = [
+        'css/index.css',
+        null
+    ];
+    var scripts = [
+        'js/console.js',
+        'js/app.js',
+        null
+    ];
+    scripts = [].concat(sdk, dim_client, ui, scripts);
 
-    // create loader with base URL
-    var tasks = tarsier.base.importings;
-    var current = tasks[0];
-    var url = current.url;
-    var base = url.substring(0, url.indexOf('js/index.js'));
-
-    var loader = new ns.Loader(base);
-    loader.showStatus('Loading DIM client from ' + base + ' ...');
-
+    var loader = new ns.Loader(tarsier, 'js/index.js');
     for (var i = 0; i < stylesheets.length; ++i) {
         loader.importCSS(stylesheets[i]);
     }
@@ -188,6 +260,13 @@ if (typeof dimsdk !== "object") {
     for (var j = 0; j < scripts.length; ++j) {
         loader.importJS(scripts[j]);
     }
-    loader.importJS('js/config.js', main);
+    loader.importJS('js/config.js', function () {
+        // start after last script loaded
+        $(function () {
+            dimsdk.Application.prototype.write = window.shell_output;
+            var server = dimsdk.Messenger.getInstance().server;
+            server.start();
+        });
+    });
 
-}(dimsdk);
+}(window);

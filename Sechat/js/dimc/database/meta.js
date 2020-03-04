@@ -55,7 +55,7 @@
         console.log('saving meta for ' + identifier);
         var nc = NotificationCenter.getInstance();
         if (save_metas(this.metas)) {
-            nc.postNotification(kNotificationMetaAccepted, this, {'ID': identifier, 'meta': meta});
+            nc.postNotification(nc.kNotificationMetaAccepted, this, {'ID': identifier, 'meta': meta});
         } else {
             var text = 'failed to save meta: '
                 + identifier + ' -> '

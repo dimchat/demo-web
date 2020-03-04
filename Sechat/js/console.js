@@ -1,4 +1,8 @@
 ;
+
+// namespaces
+dimsdk = dimp = DIMP;
+
 $(function() {
     console.log(1);
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
@@ -27,17 +31,9 @@ $(function() {
         for (var i = 0; i < arguments.length; ++i) {
             str += arguments[i] + '';
         }
-        str = str
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\n/g, '<br/>')
-            .replace(/  /g, ' &nbsp;');
+        str = Bubble.convertToString(str);
 
         var err_class = '';
-
-        $left.text('');
-        $cursor.html('&nbsp;');
-        $right.text('');
 
         $shell.before(template_output({separate:'&gt;', value:str, error: err_class}));
 
@@ -59,7 +55,7 @@ $(function() {
             //e.clipboardData.getData('text/plain');
         }
         if (pastedText) {
-            $left.append(pastedText.replace(/  /g, ' &nbsp;'))
+            $left.append(pastedText.replace(/ {2}/g, ' &nbsp;'))
         }
     });
 
@@ -112,10 +108,11 @@ $(function() {
             $shell.before(template_output({separate:'$', value:cmd, error: ''}));
 
             try {
+                var app = dimsdk.Application.getInstance();
                 if (cmd) {
                     val_ouput = app.exec(cmd);
-                } else {
-                    val_ouput = app.doWho();
+                // } else {
+                //     val_ouput = app.doWho();
                 }
             } catch (e) {
                 val_ouput = '\'' + cmd + '\': command not found';
