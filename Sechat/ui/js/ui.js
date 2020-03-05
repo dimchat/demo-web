@@ -41,9 +41,16 @@ $(function () {
             return DIMP.Facebook.getInstance().getUsername(value);
         }
     });
+    Vue.filter('getNickName', function(value) {
+        if (value) {
+            return DIMP.Facebook.getInstance().getNickname(value);
+        }
+    });
     vue = new Vue({
         el: '#vue1',
         data: {
+            DIMP: DIMP,
+            facebook: DIMP.Facebook.getInstance(),
             display_list: 'local',
             onlineUsers: null,
             server: server,
@@ -54,6 +61,7 @@ $(function () {
             target: null,
             searchInput: '',
             textInput: '',
+            panelUser: null,
             localContracts: []
         },
         watch: {
@@ -80,6 +88,11 @@ $(function () {
                 }
                 this.target = identifier;
                 this.scrollToBottom();
+                let profile = facebook.loadProfile(identifier);
+                this.panelUser = {
+                    identifier:identifier,
+                    profile: profile
+                };
             },
             scrollToBottom: function () {
                 setTimeout(function () {
@@ -125,11 +138,19 @@ $(function () {
                 }
                 await this.addContactFromIdentifier(this.searchInput);
             },
+            openProfile: async function(identifierString) {
+                // let facebook = DIMP.Facebook.getInstance();
+                // let identifier = facebook.getIdentifier(identifierString);
+                // let profile = facebook.loadProfile(identifier);
+
+                layer.open({
+                    type: 1,
+                    area: ['600px', '360px'],
+                    shadeClose: true, //点击遮罩关闭
+                    content: $('#profilePanel')
+                });
+            },
             addContactFromIdentifier:async function(identifierString){
-                if(this.localContracts.find(o => o.owner == this.user.identifier && o.identifier == identifierString))
-                {
-                    return;
-                }
                 let facebook = DIMP.Facebook.getInstance();
                 try
                 {
@@ -144,7 +165,14 @@ $(function () {
                     alert("user error: "+identifierString);
                     return;
                 }
-                if (identifier.getType().isGroup()) {
+
+                if(this.localContracts.find(o => o.owner == this.user.identifier && o.identifier == identifier.toString()))
+                {
+                    return;
+                }
+
+                let identifierType = identifier.getType();
+                if (identifierType.isGroup()) {
                     alert('This profile is a group, do nothing.');
                     return;
                 }
@@ -152,18 +180,7 @@ $(function () {
                 let meta = facebook.getMeta(identifier);
                 let contact = new Contact(this.user.identifier, identifier, meta);
 
-                var profile;
-                var i = 0;
-                do {
-                    profile = facebook.loadProfile(identifier);
-                    if(profile!= undefined && profile != null)
-                    {
-                        contact.profile = profile;
-                        break;
-                    }
-                    await sleep(500);
-                    i ++;
-                }while (i<6);
+                let profile = facebook.loadProfile(identifier);
 
                 this.addContactToLocal(contact);
             },
@@ -196,9 +213,13 @@ $(function () {
                     return 'Login first';
                 }
                 var receiver = this.target;
+
                 if (!receiver) {
                     return 'Please set a recipient';
                 }
+
+                this.addContactFromIdentifier(receiver);
+
                 var TextContent = DIMP.protocol.TextContent;
                 var content = new TextContent(this.textInput);
 

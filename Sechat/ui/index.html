@@ -48,6 +48,7 @@
     <script src='/js/3rd/underscore-1.8.2.min.js'></script>
     <script src='/js/3rd/popper.min.js'></script>
     <script src='/js/3rd/bootstrap.min.js'></script>
+    <script src='/js/3rd/layer/layer.js'></script>
     <script src='/js/3rd/vue.js'></script>
     <script src='/ui/js/appui.js'></script>
     <script src='/js/config.js'></script>
@@ -71,7 +72,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link disabled text-muted" href="#">{{user.identifier }}</a>
+                    <a class="nav-link text-muted" href="#">{{user.identifier }}</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link disabled text-muted" href="#">server: {{server.host}}:{{server.port}}</a>
@@ -122,7 +123,7 @@
     </div>
     <div class="d-flex flex-fill flex-column messagesCol" v-if="target">
             <h5 id="targetTitle" class="p-3 pb-2 bg-light border-bottom">
-                {{target.string}}
+                <a href="#" v-on:click="openProfile(target.string)">{{target.string}}</a>
             </h5>
             <div id="messages_div" class="p-3 hideScroll border-bottom flex-fill" style="">
                 <div v-for="message in messages.filter(m => m.sender == target.string || m.receiver == target.string )">
@@ -136,6 +137,30 @@
                 <button class="btn btn-primary sendButton" v-on:click="send()" style="right: 10px;bottom: 10px;">Send</button>
             </div>
     </div>
+    </div>
+    <div style="height: 0;width: 0;overflow: hidden;">
+        <div id="profilePanel" style="padding:20px;" v-if="panelUser">
+            <div class="card">
+                <img src="" class="card-img-top" v-if="panelUser.profile && panelUser.profile.avatar">
+                <div class="card-body">
+                    <h5 class="card-title">{{facebook.getNickname(panelUser.identifier)}}</h5>
+                    <p class="card-text">
+                    <div class="row">
+                        <div class="col-3 text-right text-muted">ID</div>
+                        <div class="col-9">{{panelUser.identifier}}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 text-right text-muted">number</div>
+                        <div class="col-9">{{facebook.getNumberString(panelUser.identifier)}}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 text-right text-muted">nickname</div>
+                        <div class="col-9">{{facebook.getNickname(panelUser.identifier)}}</div>
+                    </div>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>
