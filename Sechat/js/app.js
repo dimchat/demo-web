@@ -27,7 +27,7 @@
         nc.addObserver(this, nc.kNotificationProfileUpdated);
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    ns.Class(Application, null, StationDelegate);
+    ns.Class(Application, null, [StationDelegate]);
 
     var s_application = null;
     Application.getInstance = function () {

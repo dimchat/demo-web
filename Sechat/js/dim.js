@@ -732,7 +732,7 @@
         this.waitingList = [];
         this.sendingTable = {}
     };
-    ns.Class(Server, Station, MessengerDelegate, StarDelegate, StateDelegate);
+    ns.Class(Server, Station, [MessengerDelegate, StarDelegate, StateDelegate]);
     Server.prototype.getCurrentUser = function() {
         return this.currentUser
     };
