@@ -4910,7 +4910,12 @@ if (typeof DaoKeDao !== "object") {
     ns.Class(ForwardContentProcessor, ContentProcessor, null);
     ForwardContentProcessor.prototype.process = function(content, sender, msg) {
         var rMsg = content.getMessage();
-        return this.messenger.processReliableMessage(rMsg)
+        var messenger = this.messenger;
+        rMsg = messenger.processReliableMessage(rMsg);
+        if (rMsg) {
+            messenger.sendMessage(rMsg, null, false)
+        }
+        return null
     };
     ContentProcessor.register(ContentType.FORWARD, ForwardContentProcessor);
     ns.cpu.ForwardContentProcessor = ForwardContentProcessor;
@@ -5996,6 +6001,7 @@ if (typeof DaoKeDao !== "object") {
     var Meta = ns.Meta;
     var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
+    var ReliableMessage = ns.ReliableMessage;
     var FileContent = ns.protocol.FileContent;
     var ContentProcessor = ns.cpu.ContentProcessor;
     var CompletionHandler = ns.CompletionHandler;
@@ -6037,12 +6043,8 @@ if (typeof DaoKeDao !== "object") {
             }
         }
         if (receiver.isGroup()) {
-            var members = facebook.getMembers(receiver);
-            if (!members || members.length === 0) {
-                return null
-            }
             for (var i = 0; i < users.length; ++i) {
-                if (members.indexOf(users[i].identifier) >= 0) {
+                if (facebook.existsMember(users[i].identifier, receiver)) {
                     return users[i]
                 }
             }
@@ -6061,7 +6063,7 @@ if (typeof DaoKeDao !== "object") {
         receiver = facebook.getIdentifier(receiver);
         var user = select.call(this, receiver);
         if (!user) {
-            return null
+            msg = null
         } else {
             if (receiver.isGroup()) {
                 msg = msg.trim(user.identifier)
@@ -6160,6 +6162,13 @@ if (typeof DaoKeDao !== "object") {
         return this.sendMessage(msg, callback, split)
     };
     Messenger.prototype.sendMessage = function(msg, callback, split) {
+        if (msg instanceof ReliableMessage) {
+            return send_message.call(this, msg, callback)
+        } else {
+            if (!(msg instanceof InstantMessage)) {
+                throw TypeError("message error: " + msg)
+            }
+        }
         var facebook = this.getFacebook();
         var receiver = msg.envelope.receiver;
         receiver = facebook.getIdentifier(receiver);
@@ -6211,45 +6220,50 @@ if (typeof DaoKeDao !== "object") {
         if (!rMsg) {
             return null
         }
-        var response = this.processReliableMessage(rMsg);
-        if (!response) {
+        rMsg = this.processReliableMessage(rMsg);
+        if (!rMsg) {
             return null
         }
-        var facebook = this.getFacebook();
-        var sender = facebook.getIdentifier(rMsg.envelope.sender);
-        var receiver = facebook.getIdentifier(rMsg.envelope.receiver);
-        var user = select.call(this, receiver);
-        if (!user) {
-            user = facebook.getCurrentUser();
-            if (!user) {
-                throw Error("current user not found!")
-            }
-        }
-        var env = Envelope.newEnvelope(user.identifier, sender, 0);
-        var iMsg = InstantMessage.newMessage(response, env);
-        var nMsg = this.signMessage(this.encryptMessage(iMsg));
-        return this.serializeMessage(nMsg)
+        return this.serializeMessage(rMsg)
     };
     Messenger.prototype.processReliableMessage = function(msg) {
         var sMsg = this.verifyMessage(msg);
         if (!sMsg) {
             return null
         }
-        return this.processSecureMessage(sMsg)
+        sMsg = this.processSecureMessage(sMsg);
+        if (!sMsg) {
+            return null
+        }
+        return this.signMessage(sMsg)
     };
     Messenger.prototype.processSecureMessage = function(msg) {
         var iMsg = this.decryptMessage(msg);
-        return this.processInstantMessage(iMsg)
+        if (!iMsg) {
+            return null
+        }
+        iMsg = this.processInstantMessage(iMsg);
+        if (!iMsg) {
+            return null
+        }
+        return this.encryptMessage(iMsg)
     };
     Messenger.prototype.processInstantMessage = function(msg) {
+        var facebook = this.getFacebook();
         var content = msg.content;
-        var sender = msg.envelope.sender;
-        sender = this.getFacebook().getIdentifier(sender);
+        var env = msg.envelope;
+        var sender = facebook.getIdentifier(env.sender);
         var res = this.cpu.process(content, sender, msg);
         if (!this.saveMessage(msg)) {
             return null
         }
-        return res
+        if (!res) {
+            return null
+        }
+        var receiver = facebook.getIdentifier(env.receiver);
+        var user = select.call(this, receiver);
+        env = Envelope.newEnvelope(user.identifier, sender, 0);
+        return InstantMessage.newMessage(res, env)
     };
     ns.Messenger = Messenger;
     ns.register("Messenger")

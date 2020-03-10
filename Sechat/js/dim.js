@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 27, 2020
+ * @date      Mar. 10, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1553,16 +1553,14 @@
             this.suspendMessage(msg);
             return null
         }
-        var res = process.call(this, msg);
-        if (!res) {
+        var iMsg = process.call(this, msg);
+        if (!iMsg) {
             return null
         }
-        if (res instanceof HandshakeCommand) {
-            return res
+        if (iMsg.content instanceof HandshakeCommand) {
+            return iMsg
         }
-        var receiver = msg.envelope.sender;
-        receiver = Facebook.getInstance().getIdentifier(receiver);
-        this.sendContent(res, receiver, null, false);
+        this.sendMessage(iMsg, null, false);
         return null
     };
     Messenger.prototype.sendCommand = function(cmd) {

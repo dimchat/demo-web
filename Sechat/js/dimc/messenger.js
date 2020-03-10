@@ -173,19 +173,26 @@
             return null;
         }
 
-        var res = process.call(this, msg);
-        if (!res) {
+        var iMsg = process.call(this, msg);
+        if (!iMsg) {
             // respond nothing
             return null;
         }
-        if (res instanceof HandshakeCommand) {
+        if (iMsg.content instanceof HandshakeCommand) {
             // urgent command
-            return res;
+            return iMsg;
         }
+        // if (iMsg.content instanceof ReceiptCommand) {
+        //     var receiver = msg.envelope.sender;
+        //     receiver = this.getFacebook().getIdentifier(receiver);
+        //     if (NetworkType.Station.equals(receiver.getType())) {
+        //         // no need to respond receipt to station
+        //         return null;
+        //     }
+        // }
+
         // normal response
-        var receiver = msg.envelope.sender;
-        receiver = Facebook.getInstance().getIdentifier(receiver);
-        this.sendContent(res, receiver, null, false);
+        this.sendMessage(iMsg, null, false);
         // DON'T respond to station directly
         return null;
     };
