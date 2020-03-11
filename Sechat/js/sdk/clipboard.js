@@ -41,7 +41,7 @@
     var getData;
     if (nav_clipboard) {
         getData = function (format) {
-            if (!format || format === 'text') {
+            if (!format || format === 'text' || format === 'Text') {
                 return nav_clipboard.readText();
             } else {
                 // TODO:
@@ -52,13 +52,14 @@
         getData = function (format) {
             // TODO:
             return 'Not implemented, format: ' + format;
-        }
+        };
     }
+    getData = null;
 
     var setData;
     if (nav_clipboard) {
         setData = function (format, data) {
-            if (format === 'text') {
+            if (format === 'text' || format === 'Text') {
                 // noinspection JSIgnoredPromiseFromCall
                 nav_clipboard.writeText(data);
             } else {
@@ -68,7 +69,7 @@
         };
     } else {
         setData = function (format, data) {
-            if (format === 'text') {
+            if (format === 'text' || format === 'Text') {
                 var input = document.createElement('textarea');
                 input.readOnly = true;
                 document.body.appendChild(input);
