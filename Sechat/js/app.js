@@ -97,7 +97,7 @@
                     }
                     res = this.doCall(identifier);
                     if (res.indexOf('You are talking') === 0) {
-                        res = this.doShow('users')
+                        res = this.doShow('history')
                     }
                 } else {
                     res = this.doProfile('chatroom');
@@ -417,6 +417,10 @@
         if (what === 'stat') {
             this.doSend('show stat');
             return 'Querying statistics ...';
+        }
+        if (what === 'history') {
+            this.doSend('show history');
+            return 'Querying chat history ...';
         }
         return 'Command error: show ' + what;
     };
