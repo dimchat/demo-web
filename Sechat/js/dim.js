@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 15, 2020
+ * @date      Mar. 17, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1260,6 +1260,7 @@
     var MetaTable = ns.db.MetaTable;
     var ProfileTable = ns.db.ProfileTable;
     var UserTable = ns.db.UserTable;
+    var GroupTable = ns.db.GroupTable;
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
     var s_facebook = null;
@@ -1427,16 +1428,29 @@
         return contacts
     };
     Facebook.prototype.addMember = function(member, group) {
-        return true
+        var list = this.loadMembers(group);
+        if (list.indexOf(member) < 0) {
+            list.push(member)
+        }
+        return this.saveMembers(list, group)
     };
     Facebook.prototype.removeMember = function(member, group) {
-        return true
+        var list = this.loadMembers(group);
+        var index = list.indexOf(member);
+        if (index < 0) {
+            return false
+        }
+        list.splice(index, 1);
+        return this.saveMembers(list, group)
     };
     Facebook.prototype.saveMembers = function(members, group) {
-        return true
+        if (!this.cacheMembers(members, group)) {
+            return false
+        }
+        return GroupTable.getInstance().saveMembers(members, group)
     };
     Facebook.prototype.loadMembers = function(group) {
-        return null
+        return GroupTable.getInstance().loadMembers(group)
     };
     var getFounder = Facebook.prototype.getFounder;
     Facebook.prototype.getFounder = function(group) {
@@ -1451,6 +1465,7 @@
 ! function(ns) {
     var SymmetricKey = ns.crypto.SymmetricKey;
     var ID = ns.ID;
+    var ForwardContent = ns.protocol.ForwardContent;
     var HandshakeCommand = ns.protocol.HandshakeCommand;
     var MetaCommand = ns.protocol.MetaCommand;
     var ProfileCommand = ns.protocol.ProfileCommand;
@@ -1544,8 +1559,8 @@
         }
         return encryptKey.call(this, pwd, receiver, iMsg)
     };
-    Messenger.prototype.saveMessage = function(msg) {
-        var content = msg.content;
+    Messenger.prototype.saveMessage = function(iMsg) {
+        var content = iMsg.content;
         if (content instanceof HandshakeCommand) {
             return true
         }
@@ -1557,6 +1572,18 @@
         }
         if (content instanceof SearchCommand) {
             return true
+        }
+        if (content instanceof ForwardContent) {
+            return true
+        }
+        if (content instanceof InviteCommand) {
+            var facebook = this.getFacebook();
+            var me = facebook.getIdentifier(iMsg.envelope.receiver);
+            var group = facebook.getIdentifier(content.getGroup());
+            var key = this.cipherKeyDelegate.getCipherKey(me, group);
+            if (key) {
+                delete key["reused"]
+            }
         }
         return true
     };

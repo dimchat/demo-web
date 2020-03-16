@@ -9,6 +9,8 @@
     var SymmetricKey = ns.crypto.SymmetricKey;
     var ID = ns.ID;
 
+    var ForwardContent = ns.protocol.ForwardContent;
+
     var HandshakeCommand = ns.protocol.HandshakeCommand;
     var MetaCommand = ns.protocol.MetaCommand;
     var ProfileCommand = ns.protocol.ProfileCommand;
@@ -152,8 +154,8 @@
     //
 
     // Override
-    Messenger.prototype.saveMessage = function (msg) {
-        var content = msg.content;
+    Messenger.prototype.saveMessage = function (iMsg) {
+        var content = iMsg.content;
         // TODO: check message type
         //       only save normal message and group commands
         //       ignore 'Handshake', ...
@@ -178,6 +180,22 @@
             // search result will be parsed by CPUs
             // no need to save search command here
             return true;
+        }
+        if (content instanceof ForwardContent) {
+            // forward content will be parsed, if secret message decrypted, save it
+            // no need to save forward content itself
+            return true;
+        }
+
+        if (content instanceof InviteCommand) {
+            // send keys again
+            var facebook = this.getFacebook();
+            var me = facebook.getIdentifier(iMsg.envelope.receiver);
+            var group = facebook.getIdentifier(content.getGroup());
+            var key = this.cipherKeyDelegate.getCipherKey(me, group);
+            if (key) {
+                delete key['reused'];
+            }
         }
 
         // TODO: save instant message into database

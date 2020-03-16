@@ -219,6 +219,7 @@
         'js/dimc/database/private.js',
         'js/dimc/database/profile.js',
         'js/dimc/database/user.js',
+        'js/dimc/database/group.js',
 
         'js/dimc/cache.js',
         'js/dimc/ans.js',

@@ -129,10 +129,25 @@
             var msg = notification.userInfo;
             var sender = msg.envelope.sender;
             sender = facebook.getIdentifier(sender);
-            var nickname = facebook.getNickname(sender);
+            var username = facebook.getNickname(sender);
+            if (!username) {
+                username = sender.name;
+            }
             var number = facebook.getNumberString(sender);
             var text = msg.content.getValue('text');
-            res = nickname + ' (' + number + '): ' + text;
+            var group = msg.content.getGroup();
+            if (group) {
+                group = facebook.getIdentifier(group);
+                name = facebook.getNickname(group);
+                if (name) {
+                    group = name;
+                } else {
+                    group = group.name;
+                }
+                res = username + ' @[' + group + ']: ' + text;
+            } else {
+                res = username + ' (' + number + '): ' + text;
+            }
         } else {
             res = 'Unknown notification: ' + name;
         }
@@ -356,6 +371,18 @@
         }
         if (!receiver) {
             return 'Please set a recipient';
+        } else if (receiver.isGroup()) {
+            var facebook = Facebook.getInstance();
+            var members = facebook.getMembers(receiver);
+            if (!members || members.length === 0) {
+                var ass = facebook.getAssistants(receiver);
+                if (ass && ass.length > 0) {
+                    messenger.queryGroupInfo(receiver, ass);
+                    return 'Querying group members ...'
+                }
+                return 'Group members not found.';
+            }
+            content.setGroup(receiver);
         }
         if (messenger.sendContent(content, receiver, null, false)) {
             // return 'Sending message ...';

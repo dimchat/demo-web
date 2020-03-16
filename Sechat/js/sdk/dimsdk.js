@@ -2407,15 +2407,17 @@ if (typeof DaoKeDao !== "object") {
         var key;
         if (members && members.length > 0) {
             var keys = {};
+            var keys_length = 0;
             var member;
             for (var i = 0; i < members.length; ++i) {
                 member = members[i];
                 key = this.delegate.encryptKey(password, member, this);
                 if (key) {
-                    keys[member] = this.delegate.encodeKey(key, this)
+                    keys[member] = this.delegate.encodeKey(key, this);
+                    keys_length += 1
                 }
             }
-            if (keys.length > 0) {
+            if (keys_length > 0) {
                 msg["keys"] = keys
             }
             msg["group"] = this.content.getGroup()

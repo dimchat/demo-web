@@ -15,6 +15,7 @@
     var MetaTable = ns.db.MetaTable;
     var ProfileTable = ns.db.ProfileTable;
     var UserTable = ns.db.UserTable;
+    var GroupTable = ns.db.GroupTable;
 
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
@@ -252,25 +253,38 @@
     };
 
     Facebook.prototype.addMember = function (member, group) {
-        // TODO: update members of group
-        return true;
+        // update members of group
+        var list = this.loadMembers(group);
+        if (list.indexOf(member) < 0) {
+            list.push(member);
+        }
+        return this.saveMembers(list, group);
     };
 
     Facebook.prototype.removeMember = function (member, group) {
-        // TODO: update members of group
-        return true;
+        // update members of group
+        var list = this.loadMembers(group);
+        var index = list.indexOf(member);
+        if (index < 0) {
+            return false;
+        }
+        list.splice(index, 1);
+        return this.saveMembers(list, group);
     };
 
     // Override
     Facebook.prototype.saveMembers = function (members, group) {
-        // TODO: load members of group from database
-        return true;
+        if (!this.cacheMembers(members, group)) {
+            return false;
+        }
+        // save members of group into database
+        return GroupTable.getInstance().saveMembers(members, group);
     };
 
     // Override
     Facebook.prototype.loadMembers = function (group) {
-        // TODO: save members of group into database
-        return null;
+        // load members of group from database
+        return GroupTable.getInstance().loadMembers(group);
     };
 
     //
