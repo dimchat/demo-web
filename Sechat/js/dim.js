@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 10, 2020
+ * @date      Mar. 15, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1522,6 +1522,27 @@
                 return this.queryGroupInfo(group, admins)
             }
         }
+    };
+    var encryptMessage = Messenger.prototype.encryptMessage;
+    Messenger.prototype.encryptMessage = function(iMsg) {
+        var sMsg = encryptMessage.call(this, iMsg);
+        var facebook = this.getFacebook();
+        var env = iMsg.envelope;
+        var receiver = facebook.getIdentifier(env.receiver);
+        if (receiver.isGroup()) {
+            var keyCache = this.cipherKeyDelegate;
+            var sender = facebook.getIdentifier(env.sender);
+            var key = keyCache.getCipherKey(sender, receiver);
+            key["reused"] = true
+        }
+        return sMsg
+    };
+    var encryptKey = Messenger.prototype.encryptKey;
+    Messenger.prototype.encryptKey = function(pwd, receiver, iMsg) {
+        if (pwd["reused"]) {
+            return null
+        }
+        return encryptKey.call(this, pwd, receiver, iMsg)
     };
     Messenger.prototype.saveMessage = function(msg) {
         var content = msg.content;

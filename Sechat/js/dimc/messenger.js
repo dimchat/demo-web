@@ -114,6 +114,40 @@
     };
 
     //
+    //  Reuse message key
+    //
+
+    var encryptMessage = Messenger.prototype.encryptMessage;
+    // Override
+    Messenger.prototype.encryptMessage = function (iMsg) {
+        var sMsg = encryptMessage.call(this, iMsg);
+
+        var facebook = this.getFacebook();
+        var env = iMsg.envelope;
+        var receiver = facebook.getIdentifier(env.receiver);
+        if (receiver.isGroup()) {
+            var keyCache = this.cipherKeyDelegate;
+            // reuse group message keys
+            var sender = facebook.getIdentifier(env.sender);
+            var key = keyCache.getCipherKey(sender, receiver);
+            key['reused'] = true;
+        }
+        // TODO: reuse personal message key?
+
+        return sMsg;
+    };
+
+    var encryptKey = Messenger.prototype.encryptKey;
+    // Override
+    Messenger.prototype.encryptKey = function(pwd, receiver, iMsg) {
+        if (pwd['reused']) {
+            // no need to encrypt reused key again
+            return null;
+        }
+        return encryptKey.call(this, pwd, receiver, iMsg);
+    };
+
+    //
     //  Processing Message
     //
 
