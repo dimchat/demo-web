@@ -6,6 +6,8 @@
 !function (ns) {
     'use strict';
 
+    var ID = ns.ID;
+
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
 
@@ -136,7 +138,7 @@
             var number = facebook.getNumberString(sender);
             var text = msg.content.getValue('text');
             var group = msg.content.getGroup();
-            if (group) {
+            if (group && !ID.EVERYONE.equals(group)) {
                 group = facebook.getIdentifier(group);
                 name = facebook.getNickname(group);
                 if (name) {
@@ -144,9 +146,9 @@
                 } else {
                     group = group.name;
                 }
-                res = '"' + username + '" @[' + group + ']: ' + text;
+                res = '[' + group + '] (' + number + ') ' + username + ': ' + text;
             } else {
-                res = '"' + username + '" (' + number + '): ' + text;
+                res = '(' + number + ') ' + username + ': ' + text;
             }
         } else {
             res = 'Unknown notification: ' + name;
