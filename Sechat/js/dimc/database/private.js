@@ -51,6 +51,10 @@
         return save_keys(this.privateKeys);
     };
 
+    PrivateTable.getInstance = function () {
+        return Table.create(PrivateTable);
+    };
+
     //-------- namespace --------
     ns.db.PrivateTable = PrivateTable;
 

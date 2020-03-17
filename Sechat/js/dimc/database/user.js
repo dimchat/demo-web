@@ -5,8 +5,6 @@
 !function (ns) {
     'use strict';
 
-    var User = ns.User;
-
     var Facebook = ns.Facebook;
 
     var Table = ns.db.Table;
@@ -43,25 +41,22 @@
     };
 
     UserTable.prototype.addUser = function (user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
         var list = this.allUsers();
         if (list.indexOf(user) >= 0) {
-            throw Error('user already exists: ' + user);
+            // throw Error('user already exists: ' + user);
+            return true;
         }
         list.push(user);
         return save_users(list);
     };
     UserTable.prototype.removeUser = function (user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
         var list = this.allUsers();
-        if (list.indexOf(user) < 0) {
-            throw Error('user not exists: ' + user);
+        var index = list.indexOf(user);
+        if (index < 0) {
+            // throw Error('user not exists: ' + user);
+            return true;
         }
-        ns.type.Arrays.remove(list, user);
+        list.splice(index, 1);
         return save_users(list);
     };
 
@@ -74,20 +69,21 @@
         }
     };
     UserTable.prototype.setCurrentUser = function (user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
         var list = this.allUsers();
         var index = list.indexOf(user);
         if (index === 0) {
             // already the first user
-            return;
+            return true;
         } else if (index > 0) {
             // already exists, but not the first user
-            ns.type.Arrays.remove(list, user);
+            list.splice(index, 1);
         }
         list.unshift(user);
-        save_users(list);
+        return save_users(list);
+    };
+
+    UserTable.getInstance = function () {
+        return Table.create(UserTable);
     };
 
     //-------- namespace --------

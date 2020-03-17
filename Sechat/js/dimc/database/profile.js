@@ -52,12 +52,18 @@
         var nc = NotificationCenter.getInstance();
         if (save_profiles(this.profiles)) {
             nc.postNotification(nc.kNotificationProfileUpdated, this, profile);
+            return true;
         } else {
             var text = 'failed to save profile: '
                 + profile.getIdentifier() + ' -> '
                 + profile.getValue('data');
             console.log(text);
+            return false;
         }
+    };
+
+    ProfileTable.getInstance = function () {
+        return Table.create(ProfileTable);
     };
 
     //-------- namespace --------

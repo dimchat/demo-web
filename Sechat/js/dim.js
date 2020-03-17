@@ -1028,11 +1028,16 @@
             nc.postNotification(nc.kNotificationMetaAccepted, this, {
                 "ID": identifier,
                 "meta": meta
-            })
+            });
+            return true
         } else {
             var text = "failed to save meta: " + identifier + " -> " + ns.format.JSON.encode(meta);
-            console.log(text)
+            console.log(text);
+            return false
         }
+    };
+    MetaTable.getInstance = function() {
+        return Table.create(MetaTable)
     };
     ns.db.MetaTable = MetaTable
 }(DIMP);
@@ -1076,6 +1081,9 @@
         this.privateKeys[identifier] = key;
         console.log("saving private key for " + identifier);
         return save_keys(this.privateKeys)
+    };
+    PrivateTable.getInstance = function() {
+        return Table.create(PrivateTable)
     };
     ns.db.PrivateTable = PrivateTable
 }(DIMP);
@@ -1121,16 +1129,20 @@
         console.log("saving profile for " + identifier);
         var nc = NotificationCenter.getInstance();
         if (save_profiles(this.profiles)) {
-            nc.postNotification(nc.kNotificationProfileUpdated, this, profile)
+            nc.postNotification(nc.kNotificationProfileUpdated, this, profile);
+            return true
         } else {
             var text = "failed to save profile: " + profile.getIdentifier() + " -> " + profile.getValue("data");
-            console.log(text)
+            console.log(text);
+            return false
         }
+    };
+    ProfileTable.getInstance = function() {
+        return Table.create(ProfileTable)
     };
     ns.db.ProfileTable = ProfileTable
 }(DIMP);
 ! function(ns) {
-    var User = ns.User;
     var Facebook = ns.Facebook;
     var Table = ns.db.Table;
     var save_users = function(list) {
@@ -1162,25 +1174,20 @@
         return this.users
     };
     UserTable.prototype.addUser = function(user) {
-        if (user instanceof User) {
-            user = user.identifier
-        }
         var list = this.allUsers();
         if (list.indexOf(user) >= 0) {
-            throw Error("user already exists: " + user)
+            return true
         }
         list.push(user);
         return save_users(list)
     };
     UserTable.prototype.removeUser = function(user) {
-        if (user instanceof User) {
-            user = user.identifier
-        }
         var list = this.allUsers();
-        if (list.indexOf(user) < 0) {
-            throw Error("user not exists: " + user)
+        var index = list.indexOf(user);
+        if (index < 0) {
+            return true
         }
-        ns.type.Arrays.remove(list, user);
+        list.splice(index, 1);
         return save_users(list)
     };
     UserTable.prototype.getCurrentUser = function() {
@@ -1192,71 +1199,203 @@
         }
     };
     UserTable.prototype.setCurrentUser = function(user) {
-        if (user instanceof User) {
-            user = user.identifier
-        }
         var list = this.allUsers();
         var index = list.indexOf(user);
         if (index === 0) {
-            return
+            return true
         } else {
             if (index > 0) {
-                ns.type.Arrays.remove(list, user)
+                list.splice(index, 1)
             }
         }
         list.unshift(user);
-        save_users(list)
+        return save_users(list)
+    };
+    UserTable.getInstance = function() {
+        return Table.create(UserTable)
     };
     ns.db.UserTable = UserTable
 }(DIMP);
 ! function(ns) {
-    var Storage = ns.stargate.SessionStorage;
     var Facebook = ns.Facebook;
+    var NotificationCenter = ns.stargate.NotificationCenter;
+    var Table = ns.db.Table;
+    var save_contacts = function(map) {
+        return Table.save(map, ContactTable)
+    };
+    var load_contacts = function() {
+        var users = {};
+        var map = Table.load(ContactTable);
+        if (map) {
+            var facebook = Facebook.getInstance();
+            var u_list = Object.keys(map);
+            for (var i = 0; i < u_list.length; ++i) {
+                var user = u_list[i];
+                var c_list = map[user];
+                user = facebook.getIdentifier(user);
+                if (!user) {
+                    throw TypeError("user ID error: " + u_list[i])
+                }
+                var contacts = [];
+                for (var j = 0; j < c_list.length; ++j) {
+                    var item = c_list[j];
+                    item = facebook.getIdentifier(item);
+                    if (!item) {
+                        throw TypeError("contact ID error: " + c_list[j])
+                    }
+                    contacts.push(item)
+                }
+                users[user] = contacts
+            }
+        }
+        return users
+    };
+    var ContactTable = function() {
+        this.users = null
+    };
+    ContactTable.prototype.loadContacts = function(user) {
+        if (!this.users) {
+            this.users = load_contacts()
+        }
+        return this.users[user]
+    };
+    ContactTable.prototype.saveContacts = function(contacts, user) {
+        this.loadContacts(user);
+        this.users[user] = contacts;
+        console.log("saving contacts for user: " + user);
+        var nc = NotificationCenter.getInstance();
+        if (save_contacts(this.users)) {
+            nc.postNotification("ContactsUpdated", this, {
+                "user": user,
+                "contacts": contacts
+            });
+            return true
+        } else {
+            var text = "failed to save contacts: " + user + " -> " + contacts;
+            console.log(text);
+            return false
+        }
+    };
+    ContactTable.getInstance = function() {
+        return Table.create(ContactTable)
+    };
+    ns.db.ContactTable = ContactTable
+}(DIMP);
+! function(ns) {
+    var Facebook = ns.Facebook;
+    var NotificationCenter = ns.stargate.NotificationCenter;
+    var Table = ns.db.Table;
+    var save_groups = function(map) {
+        return Table.save(map, GroupTable)
+    };
+    var load_groups = function() {
+        var groups = {};
+        var map = Table.load(GroupTable);
+        if (map) {
+            var facebook = Facebook.getInstance();
+            var g_list = Object.keys(map);
+            for (var i = 0; i < g_list.length; ++i) {
+                var group = g_list[i];
+                var m_list = map[group];
+                group = facebook.getIdentifier(group);
+                if (!group) {
+                    throw TypeError("group ID error: " + g_list[i])
+                }
+                var members = [];
+                for (var j = 0; j < m_list.length; ++j) {
+                    var item = m_list[j];
+                    item = facebook.getIdentifier(item);
+                    if (!item) {
+                        throw TypeError("member ID error: " + m_list[j])
+                    }
+                    members.push(item)
+                }
+                groups[group] = members
+            }
+        }
+        return groups
+    };
+    var GroupTable = function() {
+        this.groups = null
+    };
+    GroupTable.prototype.loadMembers = function(group) {
+        if (!this.groups) {
+            this.groups = load_groups()
+        }
+        return this.groups[group]
+    };
+    GroupTable.prototype.saveMembers = function(members, group) {
+        this.loadMembers(group);
+        this.groups[group] = members;
+        console.log("saving members for group: " + group);
+        var nc = NotificationCenter.getInstance();
+        if (save_groups(this.groups)) {
+            nc.postNotification("MembersUpdated", this, {
+                "group": group,
+                "members": members
+            });
+            return true
+        } else {
+            var text = "failed to save members: " + group + " -> " + members;
+            console.log(text);
+            return false
+        }
+    };
+    GroupTable.getInstance = function() {
+        return Table.create(GroupTable)
+    };
+    ns.db.GroupTable = GroupTable
+}(DIMP);
+! function(ns) {
+    var Storage = ns.stargate.SessionStorage;
+    var InstantMessage = ns.InstantMessage;
     var load = function(name) {
         return Storage.loadJSON(name)
     };
     var save = function(name, value) {
         return Storage.saveJSON(value, name)
     };
-    var GroupTable = function() {
-        this.memberTable = {}
+    var MessageTable = function() {
+        this.tables = {}
     };
-    GroupTable.prototype.saveMembers = function(members, group) {
-        if (!members) {
-            return false
-        }
-        this.memberTable[group] = members;
-        return save(group, members)
+    var table_name = function(identifier) {
+        return identifier.address
     };
-    GroupTable.prototype.loadMembers = function(group) {
-        var members = this.memberTable[group];
-        if (members) {
-            return members
+    var store_name = function(identifier) {
+        return "Messages-" + identifier.address
+    };
+    MessageTable.prototype.saveMessages = function(messages, conversation) {
+        this.tables[table_name(conversation)] = messages;
+        return save(store_name(conversation), messages)
+    };
+    MessageTable.prototype.loadMessages = function(conversation) {
+        var messages = this.tables[table_name(conversation)];
+        if (messages) {
+            return messages
         }
-        members = [];
-        var list = load(group);
+        messages = [];
+        var list = load(store_name(conversation));
         if (list) {
-            var facebook = Facebook.getInstance();
-            var item;
+            var msg;
             for (var i = 0; i < list.length; ++i) {
-                item = facebook.getIdentifier(list[i]);
-                if (!item) {
-                    throw Error("ID error: " + list[i])
+                msg = InstantMessage.getInstance(list[i]);
+                if (!msg) {
+                    throw Error("Message error: " + list[i])
                 }
-                members.push(item)
+                messages.push(msg)
             }
         }
-        this.memberTable[group] = members;
-        return members
+        this.tables[table_name(conversation)] = messages;
+        return messages
     };
     var s_instance = null;
-    GroupTable.getInstance = function() {
+    MessageTable.getInstance = function() {
         if (!s_instance) {
-            s_instance = new GroupTable()
+            s_instance = new MessageTable()
         }
         return s_instance
     };
-    ns.db.GroupTable = GroupTable
+    ns.db.MessageTable = MessageTable
 }(DIMP);
 ! function(ns) {
     var KeyStore = ns.KeyStore;
@@ -1302,13 +1441,15 @@
 }(DIMP);
 ! function(ns) {
     var NetworkType = ns.protocol.NetworkType;
+    var User = ns.User;
+    var Group = ns.Group;
     var AddressNameService = ns.AddressNameService;
     var Immortals = ns.Immortals;
-    var Table = ns.db.Table;
     var PrivateTable = ns.db.PrivateTable;
     var MetaTable = ns.db.MetaTable;
     var ProfileTable = ns.db.ProfileTable;
     var UserTable = ns.db.UserTable;
+    var ContactTable = ns.db.ContactTable;
     var GroupTable = ns.db.GroupTable;
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
@@ -1324,7 +1465,7 @@
     };
     Facebook.prototype.getLocalUsers = function() {
         if (!this.users) {
-            var db = Table.create(UserTable);
+            var db = UserTable.getInstance();
             var list = db.allUsers();
             var users = [];
             for (var i = 0; i < list.length; ++i) {
@@ -1335,19 +1476,28 @@
         return this.users
     };
     Facebook.prototype.setCurrentUser = function(user) {
-        var db = Table.create(UserTable);
-        db.setCurrentUser(user.identifier);
-        this.users = null
+        this.users = null;
+        if (user instanceof User) {
+            user = user.identifier
+        }
+        var db = UserTable.getInstance();
+        return db.setCurrentUser(user)
     };
     Facebook.prototype.addUser = function(user) {
-        var db = Table.create(UserTable);
-        db.addUser(user.identifier);
-        this.users = null
+        this.users = null;
+        if (user instanceof User) {
+            user = user.identifier
+        }
+        var db = UserTable.getInstance();
+        return db.addUser(user)
     };
     Facebook.prototype.removeUser = function(user) {
-        var db = Table.create(UserTable);
-        db.removeUser(user.identifier);
-        this.users = null
+        this.users = null;
+        if (user instanceof User) {
+            user = user.identifier
+        }
+        var db = UserTable.getInstance();
+        return db.removeUser(user)
     };
     Facebook.prototype.getUsername = function(identifier) {
         identifier = this.getIdentifier(identifier);
@@ -1388,18 +1538,15 @@
         string = string.substring(0, 3) + "-" + string.substring(3, 6) + "-" + string.substring(6);
         return string
     };
-    Facebook.prototype.addContact = function(contact, user) {};
-    Facebook.prototype.removeContact = function(contact, user) {};
     Facebook.prototype.savePrivateKey = function(key, identifier) {
         if (!this.cachePrivateKey(key, identifier)) {
             return false
         }
-        var db = Table.create(PrivateTable);
-        db.savePrivateKey(key, identifier);
-        return true
+        var db = PrivateTable.getInstance();
+        return db.savePrivateKey(key, identifier)
     };
     Facebook.prototype.loadPrivateKey = function(identifier) {
-        var db = Table.create(PrivateTable);
+        var db = PrivateTable.getInstance();
         var key = db.loadPrivateKey(identifier);
         if (!key && NetworkType.Main.equals(identifier.getType())) {
             key = this.immortals.getPrivateKeyForSignature(identifier)
@@ -1411,15 +1558,14 @@
             console.log("meta not match ID: " + identifier);
             return false
         }
-        var db = Table.create(MetaTable);
-        db.saveMeta(meta, identifier);
-        return true
+        var db = MetaTable.getInstance();
+        return db.saveMeta(meta, identifier)
     };
     Facebook.prototype.loadMeta = function(identifier) {
         if (identifier.isBroadcast()) {
             return null
         }
-        var db = Table.create(MetaTable);
+        var db = MetaTable.getInstance();
         var meta = db.loadMeta(identifier);
         if (meta) {
             return meta
@@ -1444,12 +1590,11 @@
         if (!this.cacheProfile(profile, identifier)) {
             return false
         }
-        var db = Table.create(ProfileTable);
-        db.saveProfile(profile, identifier);
-        return true
+        var db = ProfileTable.getInstance();
+        return db.saveProfile(profile, identifier)
     };
     Facebook.prototype.loadProfile = function(identifier) {
-        var db = Table.create(ProfileTable);
+        var db = ProfileTable.getInstance();
         var profile = db.loadProfile(identifier);
         if (profile) {
             var names = profile.allPropertyNames();
@@ -1466,48 +1611,113 @@
         Messenger.getInstance().queryProfile(identifier);
         return profile
     };
-    Facebook.prototype.saveContacts = function(contacts, user) {
-        return true
-    };
-    Facebook.prototype.loadContacts = function(user) {
-        var contacts = null;
-        if (!contacts || contacts.length === 0) {
-            contacts = this.immortals.getContacts(user)
+    Facebook.prototype.addContact = function(contact, user) {
+        if (contact instanceof User) {
+            contact = contact.identifier
         }
-        return contacts
-    };
-    Facebook.prototype.addMember = function(member, group) {
-        var list = this.loadMembers(group);
-        if (list.indexOf(member) < 0) {
-            list.push(member)
+        var list = this.loadContacts(user);
+        if (list) {
+            if (list.indexOf(contact) >= 0) {
+                return false
+            }
+            list.push(contact)
+        } else {
+            list = [contact]
         }
-        return this.saveMembers(list, group)
+        return this.saveContacts(list, user)
     };
-    Facebook.prototype.removeMember = function(member, group) {
-        var list = this.loadMembers(group);
-        var index = list.indexOf(member);
+    Facebook.prototype.removeContact = function(contact, user) {
+        if (contact instanceof User) {
+            contact = contact.identifier
+        }
+        var index = -1;
+        var list = this.loadContacts(user);
+        if (list) {
+            index = list.indexOf(contact)
+        }
         if (index < 0) {
             return false
         }
         list.splice(index, 1);
+        return this.saveContacts(list, user)
+    };
+    Facebook.prototype.saveContacts = function(contacts, user) {
+        if (user instanceof User) {
+            user = user.identifier
+        }
+        if (!this.cacheContacts(contacts, user)) {
+            return false
+        }
+        var db = ContactTable.getInstance();
+        return db.saveContacts(contacts, user)
+    };
+    Facebook.prototype.loadContacts = function(user) {
+        if (user instanceof User) {
+            user = user.identifier
+        }
+        var db = ContactTable.getInstance();
+        var list = db.loadContacts(user);
+        if (list) {
+            return list
+        } else {
+            return []
+        }
+    };
+    Facebook.prototype.addMember = function(member, group) {
+        if (member instanceof User) {
+            member = member.identifier
+        }
+        var list = this.loadMembers(group);
+        if (list) {
+            if (list.indexOf(member) >= 0) {
+                return false
+            }
+            list.push(member)
+        } else {
+            list = [member]
+        }
+        return this.saveMembers(list, group)
+    };
+    Facebook.prototype.removeMember = function(member, group) {
+        if (member instanceof User) {
+            member = member.identifier
+        }
+        var index = -1;
+        var list = this.loadMembers(group);
+        if (list) {
+            index = list.indexOf(member)
+        }
+        if (index < 0) {
+            return false
+        }
+        list = list.splice(index, 1);
         return this.saveMembers(list, group)
     };
     Facebook.prototype.saveMembers = function(members, group) {
+        if (group instanceof Group) {
+            group = group.identifier
+        }
+        if (!members || members.length < 1) {
+            console.log("members should not be empty: " + group);
+            return false
+        }
         if (!this.cacheMembers(members, group)) {
             return false
         }
-        return GroupTable.getInstance().saveMembers(members, group)
+        var db = GroupTable.getInstance();
+        return db.saveMembers(members, group)
     };
     Facebook.prototype.loadMembers = function(group) {
-        return GroupTable.getInstance().loadMembers(group)
-    };
-    var getFounder = Facebook.prototype.getFounder;
-    Facebook.prototype.getFounder = function(group) {
-        return getFounder.call(this, group)
-    };
-    var getOwner = Facebook.prototype.getOwner;
-    Facebook.prototype.getOwner = function(group) {
-        return getOwner.call(this, group)
+        if (group instanceof Group) {
+            group = group.identifier
+        }
+        var db = GroupTable.getInstance();
+        var list = db.loadMembers(group);
+        if (list) {
+            return list
+        } else {
+            return []
+        }
     };
     ns.Facebook = Facebook
 }(DIMP);

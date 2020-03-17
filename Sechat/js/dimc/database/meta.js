@@ -36,7 +36,7 @@
     };
 
     var MetaTable = function () {
-        this.metas = null;
+        this.metas = null; // ID => Array<Meta>
     };
 
     MetaTable.prototype.loadMeta = function (identifier) {
@@ -55,13 +55,20 @@
         console.log('saving meta for ' + identifier);
         var nc = NotificationCenter.getInstance();
         if (save_metas(this.metas)) {
-            nc.postNotification(nc.kNotificationMetaAccepted, this, {'ID': identifier, 'meta': meta});
+            nc.postNotification(nc.kNotificationMetaAccepted, this,
+                {'ID': identifier, 'meta': meta});
+            return true;
         } else {
             var text = 'failed to save meta: '
                 + identifier + ' -> '
                 + ns.format.JSON.encode(meta);
             console.log(text);
+            return false;
         }
+    };
+
+    MetaTable.getInstance = function () {
+        return Table.create(MetaTable);
     };
 
     //-------- namespace --------

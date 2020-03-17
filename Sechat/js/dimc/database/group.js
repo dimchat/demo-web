@@ -1,62 +1,78 @@
 ;
 
-//!require <stargate.js>
+//! require 'table.js'
 
 !function (ns) {
     'use strict';
 
-    var Storage = ns.stargate.SessionStorage;
-
     var Facebook = ns.Facebook;
+    var NotificationCenter = ns.stargate.NotificationCenter;
 
-    var load = function (name) {
-        return Storage.loadJSON(name);
+    var Table = ns.db.Table;
+
+    var save_groups = function (map) {
+        return Table.save(map, GroupTable);
     };
-    var save = function (name, value) {
-        return Storage.saveJSON(value, name);
+    var load_groups = function () {
+        var groups = {};
+        var map = Table.load(GroupTable);
+        if (map) {
+            var facebook = Facebook.getInstance();
+            var g_list = Object.keys(map);
+            for (var i = 0; i < g_list.length; ++i) {
+                var group = g_list[i];
+                var m_list = map[group];
+                // group ID
+                group = facebook.getIdentifier(group);
+                if (!group) {
+                    throw TypeError('group ID error: ' + g_list[i]);
+                }
+                // group members
+                var members = [];
+                for (var j = 0; j < m_list.length; ++j) {
+                    var item = m_list[j];
+                    item = facebook.getIdentifier(item);
+                    if (!item) {
+                        throw TypeError('member ID error: ' + m_list[j]);
+                    }
+                    members.push(item);
+                }
+                // got members for one group
+                groups[group] = members;
+            }
+        }
+        return groups;
     };
 
     var GroupTable = function () {
-        this.memberTable = {}; // ID => Array<ID>
-    };
-
-    GroupTable.prototype.saveMembers = function (members, group) {
-        if (!members) {
-            return false;
-        }
-        this.memberTable[group] = members;
-        return save(group, members);
+        this.groups = null; // ID => Array<ID>
     };
 
     GroupTable.prototype.loadMembers = function (group) {
-        var members = this.memberTable[group];
-        if (members) {
-            return members;
+        if (!this.groups) {
+            this.groups = load_groups();
         }
-        members = [];
-        var list = load(group);
-        if (list) {
-            var facebook = Facebook.getInstance();
-            var item;
-            for (var i = 0; i < list.length; ++i) {
-                item = facebook.getIdentifier(list[i]);
-                if (!item) {
-                    throw Error('ID error: ' + list[i]);
-                }
-                members.push(item);
-            }
-        }
-        this.memberTable[group] = members;
-        return members;
+        return this.groups[group];
     };
 
-    var s_instance = null;
+    GroupTable.prototype.saveMembers = function (members, group) {
+        this.loadMembers(group);
+        this.groups[group] = members;
+        console.log('saving members for group: ' + group);
+        var nc = NotificationCenter.getInstance();
+        if (save_groups(this.groups)) {
+            nc.postNotification('MembersUpdated', this,
+                {'group': group, 'members': members});
+            return true;
+        } else {
+            var text = 'failed to save members: ' + group + ' -> ' + members;
+            console.log(text);
+            return false;
+        }
+    };
 
     GroupTable.getInstance = function () {
-        if (!s_instance) {
-            s_instance = new GroupTable();
-        }
-        return s_instance;
+        return Table.create(GroupTable);
     };
 
     //-------- namespace --------
