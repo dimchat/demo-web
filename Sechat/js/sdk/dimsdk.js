@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 15, 2020
+ * @date      Mar. 17, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -3580,24 +3580,8 @@ if (typeof DaoKeDao !== "object") {
         var table = this.keyMap[sender];
         if (table) {
             var old = table[receiver];
-            if (old) {
-                var equals = true;
-                var v1, v2;
-                for (var k in key) {
-                    if (!key.hasOwnProperty(k)) {
-                        continue
-                    }
-                    v1 = key[k];
-                    v2 = old[k];
-                    if (v1 === v2) {
-                        continue
-                    }
-                    equals = false;
-                    break
-                }
-                if (equals) {
-                    return
-                }
+            if (old && old.equals(key)) {
+                return
             }
         } else {
             table = {};
