@@ -2420,7 +2420,6 @@ if (typeof DaoKeDao !== "object") {
             if (keys_length > 0) {
                 msg["keys"] = keys
             }
-            msg["group"] = this.content.getGroup()
         } else {
             var receiver = this.envelope.receiver;
             key = this.delegate.encryptKey(password, receiver, this);

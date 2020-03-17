@@ -273,6 +273,7 @@
 !function (ns) {
     'use strict';
 
+    var NetworkType = ns.protocol.NetworkType;
     var ID = ns.ID;
     var Profile = ns.Profile;
     var Envelope = ns.Envelope;
@@ -412,14 +413,30 @@
         var server = messenger.server;
         var user = server.currentUser;
         var content = new TextContent(text);
-        if (this.receiver.isGroup()) {
-            content.setGroup(this.receiver);
+        // get recipient
+        var receiver = this.receiver;
+        if (NetworkType.Robot.equals(receiver.getType())) {
+            // check admin
+            var facebook = Facebook.getInstance();
+            var admin = facebook.getIdentifier('chatroom');
+            if (receiver.equals(admin)) {
+                // message sent to chatroom will be broadcast,
+                // so change receiver to everyone
+                receiver = ID.EVERYONE;
+            }
         }
-        var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE, 0);
-        var msg = InstantMessage.newMessage(content, env);
-        msg = messenger.signMessage(messenger.encryptMessage(msg));
-        var forward = new ForwardContent(msg);
-        return send_content.call(this, forward, this.receiver);
+        if (receiver.isGroup()) {
+            // group message
+            content.setGroup(receiver);
+        }
+        if (receiver.equals(ID.EVERYONE)) {
+            // forward to chatroom admin
+            var env = Envelope.newEnvelope(user.identifier, receiver, 0);
+            var msg = InstantMessage.newMessage(content, env);
+            msg = messenger.signMessage(messenger.encryptMessage(msg));
+            content = new ForwardContent(msg);
+        }
+        return send_content.call(this, content, this.receiver);
     };
 
     Application.prototype.doName = function (nickname) {
