@@ -144,9 +144,9 @@
                 } else {
                     group = group.name;
                 }
-                res = username + ' @[' + group + ']: ' + text;
+                res = '"' + username + '" @[' + group + ']: ' + text;
             } else {
-                res = username + ' (' + number + '): ' + text;
+                res = '"' + username + '" (' + number + '): ' + text;
             }
         } else {
             res = 'Unknown notification: ' + name;
@@ -245,14 +245,24 @@
             return Bubble.convertToString(user);
         }
         if (this.receiver) {
-            var contact = facebook.getUser(this.receiver);
-            if (contact) {
-                contact = contact.getName() + ' ('
-                    + facebook.getNumberString(this.receiver) + ') ' + this.receiver;
+            var res = 'You (' + user.getName() + ') are talking';
+            if (this.receiver.isGroup()) {
+                var group = facebook.getGroup(this.receiver);
+                if (group) {
+                    res += ' in group: "' + group.name + '" ' + this.receiver;
+                } else {
+                    res += ' in group: ' + this.receiver;
+                }
             } else {
-                contact = this.receiver;
+                var contact = facebook.getUser(this.receiver);
+                if (contact) {
+                    res += ' with user: "' + contact.getName() + '" ('
+                        + facebook.getNumberString(this.receiver) + ') ' + this.receiver;
+                } else {
+                    res += ' with user: ' + this.receiver;
+                }
             }
-            return 'You (' + user.getName() + ') are talking with ' + contact;
+            return res;
         } else {
             return facebook.getUsername(user.identifier);
         }
@@ -402,6 +412,9 @@
         var server = messenger.server;
         var user = server.currentUser;
         var content = new TextContent(text);
+        if (this.receiver.isGroup()) {
+            content.setGroup(this.receiver);
+        }
         var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE, 0);
         var msg = InstantMessage.newMessage(content, env);
         msg = messenger.signMessage(messenger.encryptMessage(msg));
