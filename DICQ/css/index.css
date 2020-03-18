@@ -1,0 +1,19 @@
+
+.ts_window {
+    border: 1px solid #bbbbbb;
+    padding: 2px;
+    background-color: #e0e0e0;
+}
+
+.ts_window_title {
+    background-color: navy;
+    color: white;
+}
+
+.ts_window_close {
+    background-color: lightgray;
+    background-image: url(../images/close.jpg);
+    background-repeat:no-repeat;
+    background-size:100% 100%;
+    -moz-background-size:100% 100%;
+}
