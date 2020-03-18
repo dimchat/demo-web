@@ -52,14 +52,16 @@
         }
         this.setFrame(frame);
 
-        var this_window = this.__ie;
-        Draggable.enable(this_window);
-        this_window.onclick = function (ev) {
-            $(this_window).floatToTop();
+        var ctrl = this;
+        var element = this.__ie;
+
+        Draggable.enable(element);
+        element.onclick = function (ev) {
+            ctrl.floatToTop();
         };
 
         // init title
-        var title = new Label();
+        var title = new View();
         title.setClassName('ts_window_title');
         title.setPadding('2px 6px');
         title.setSize(frame.size.width-12, 24);
@@ -73,8 +75,10 @@
         close.setPadding(2);
         close.setSize(24, 24);
         close.setOrigin(frame.size.width-24, 4);
-        close.onClick = function () {
-            this_window.remove();
+        close.onClick = function (ev) {
+            if (ctrl.onClose(ev)) {
+                element.remove();
+            }
         };
         this.appendChild(close);
     };
@@ -83,6 +87,10 @@
 
     Window.prototype.setTitle = function (title) {
         this.title.setText(title);
+    };
+
+    Window.prototype.onClose = function (ev) {
+        return true;
     };
 
     //-------- namespace --------

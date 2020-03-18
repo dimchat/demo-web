@@ -1397,6 +1397,17 @@
     };
     ns.db.MessageTable = MessageTable
 }(DIMP);
+!function (ns) {
+    var NotificationCenter = ns.stargate.NotificationCenter;
+    var nc = NotificationCenter.getInstance();
+    nc.kNotificationStationConnecting = 'StationConnecting';
+    nc.kNotificationStationConnected  = 'StationConnected';
+    nc.kNotificationStationError      = 'StationError';
+    nc.kNotificationHandshakeAccepted = 'HandshakeAccepted';
+    nc.kNotificationMetaAccepted      = 'MetaAccepted';
+    nc.kNotificationProfileUpdated    = 'ProfileUpdated';
+    nc.kNotificationMessageReceived   = 'MessageReceived';
+}(DIMP);
 ! function(ns) {
     var KeyStore = ns.KeyStore;
     var s_key_store = null;

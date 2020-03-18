@@ -223,6 +223,7 @@
         'js/dimc/database/group.js',
         'js/dimc/database/message.js',
 
+        'js/dimc/constants.js',
         'js/dimc/cache.js',
         'js/dimc/ans.js',
         'js/dimc/facebook.js',

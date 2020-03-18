@@ -32,11 +32,11 @@
 
     var View = ns.View;
 
-    var Label = function (text) {
-        View.call(this);
-        if (text) {
-            this.setText(text);
+    var Label = function (span) {
+        if (!span) {
+            span = document.createElement('SPAN');
         }
+        View.call(this, span);
     };
     Label.prototype = Object.create(View.prototype);
     Label.prototype.constructor = Label;

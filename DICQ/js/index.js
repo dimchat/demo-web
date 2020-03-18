@@ -204,6 +204,7 @@
         '../Sechat/js/dimc/database/group.js',
         '../Sechat/js/dimc/database/message.js',
 
+        '../Sechat/js/dimc/constants.js',
         '../Sechat/js/dimc/cache.js',
         '../Sechat/js/dimc/ans.js',
         '../Sechat/js/dimc/facebook.js',
@@ -248,7 +249,10 @@
         null
     ];
     var scripts = [
-        'js/register.js',
+        'js/controllers/register.js',
+        'js/controllers/login.js',
+        'js/controllers/main.js',
+        'js/connect.js',
         'js/app.js',
         null
     ];
