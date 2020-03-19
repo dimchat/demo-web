@@ -232,6 +232,7 @@
         '../TarsierUI/src/input.js',
         '../TarsierUI/src/image.js',
         '../TarsierUI/src/button.js',
+        '../TarsierUI/src/link.js',
 
         '../TarsierUI/src/window.js',
         null
@@ -246,9 +247,11 @@
 
     var stylesheets = [
         'css/index.css',
+        'css/main.css',
         null
     ];
     var scripts = [
+        'js/controllers/about.js',
         'js/controllers/register.js',
         'js/controllers/login.js',
         'js/controllers/main.js',

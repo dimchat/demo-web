@@ -1,11 +1,21 @@
 
+button {
+    user-focus: none;
+}
+
 .ts_window {
+    margin: 0;
     border: 1px solid #bbbbbb;
-    padding: 2px;
-    background-color: #e0e0e0;
+    padding: 20px 2px 2px 2px;
+    background-color: #D5D2CF;
 }
 
 .ts_window_title {
+    margin: 2px;
+    padding: 2px 8px;
+    font-family: "Times New Roman", sans-serif;
+    font-size: 22px;
+    font-weight: bold;
     color: white;
     background: -moz-linear-gradient(left, navy 0%, #e0e0f5 100%);
     background: -webkit-gradient(linear, left top, right bottom, color-stop(0%, navy), color-stop(100%, #e0e0f5));
@@ -16,17 +26,124 @@
 }
 
 .ts_window_close {
-    background-color: lightgray;
+    position: absolute;
+    border: 0;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
     background-image: url(../images/close.jpg);
-    background-repeat:no-repeat;
-    background-size:100% 100%;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
     -moz-background-size:100% 100%;
 }
 
-#login span {
+/**
+ *  Register Window
+ */
+
+#registerWindow .nickname {
+    position: relative;
+    left: 60px;
+    top: 60px;
+}
+
+#registerWindow .input {
+    position: relative;
+    width: 120px;
+    height: 20px;
+    left: 68px;
+    top: 60px;
+}
+
+#registerWindow .OK {
+    position: absolute;
+    width: 30%;
+    height: 30px;
+    bottom: 40px;
+    left: 35%;
+}
+
+/**
+ *  Login Window
+ */
+
+#loginWindow span {
+    position: relative;
     text-align: center;
     display: inline-block;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+#loginWindow .nickname {
+    width: 240px;
+    height: 20px;
+    top: 40px;
+    left: 40px;
+}
+
+#loginWindow .number {
+    width: 240px;
+    height: 20px;
+    top: 40px;
+    left: 40px;
+}
+
+#loginWindow .identifier {
+    width: 240px;
+    height: 20px;
+    top: 40px;
+    left: 40px;
+}
+
+#loginWindow .OK {
+    position: absolute;
+    width: 30%;
+    height: 30px;
+    bottom: 40px;
+    left: 35%;
+}
+
+/**
+ *  About Window
+ */
+
+.aboutWindow {
+    width: 240px;
+    height: 320px;
+}
+
+.aboutWindow .banner {
+    display: block;
+    width: 80px;
+    height: 80px;
+    margin: 32px auto 8px;
+}
+
+.aboutWindow a {
+    display: block;
+    text-align: center;
+}
+
+.aboutWindow .version {
+    display: block;
+    margin: 28px;
+    text-align: center;
+}
+
+.aboutWindow .copyright {
+    display: block;
+    margin: 4px;
+    text-align: center;
+}
+
+.aboutWindow .OK {
+    position: absolute;
+    width: 30%;
+    height: 30px;
+    bottom: 40px;
+    left: 35%;
 }

@@ -122,8 +122,8 @@
                 'number': facebook.getNumberString(identifier)
             };
             // login
-            // var login = new ns.LoginWindow(info);
-            var login = new ns.MainWindow(user);
+            var login = new ns.LoginWindow(info);
+            // var login = new ns.MainWindow(user);
             tui.$(document.body).appendChild(login);
         } else {
             // register account

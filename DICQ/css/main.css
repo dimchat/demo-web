@@ -1,0 +1,98 @@
+
+.buttonNormal {
+    border-top: 2px solid #FFFCF9;
+    border-left: 2px solid #FFFCF9;
+    border-right: 2px solid #727377;
+    border-bottom: 2px solid #727377;
+    background-color: #D7CED2;
+}
+
+.buttonActive {
+    border-top: 2px solid #727377;
+    border-left: 2px solid #727377;
+    border-right: 2px solid #FFFCF9;
+    border-bottom: 2px solid #FFFCF9;
+    background-color: #D7CED2;
+}
+
+#mainWindow .navItem {
+    margin: 4px 0 0 4px;
+    width: 32px;
+    height: 32px;
+}
+
+#mainWindow #box {
+    margin: 4px;
+    border-top: 2px solid #716E6B;
+    border-left: 2px solid #716E6B;
+    border-right: 2px solid #F7EEFB;
+    border-bottom: 2px solid #F7EEFB;
+    background-color: #8580A3;
+    width: 228px;
+    height: 456px;
+}
+
+/**
+ *  Functions
+ */
+
+#mainWindow #chatBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 32px;
+    height: 32px;
+    left: 2px;
+    bottom: 72px;
+}
+#mainWindow #searchBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 200px;
+    height: 32px;
+    right: 2px;
+    bottom: 72px;
+    font-size: 14px;
+    font-weight: bold;
+}
+#mainWindow #browserBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 32px;
+    height: 32px;
+    left: 2px;
+    bottom: 40px;
+}
+#mainWindow #msgBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 200px;
+    height: 32px;
+    right: 2px;
+    bottom: 40px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/**
+ *  About
+ */
+
+#mainWindow #aboutBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 196px;
+    height: 32px;
+    left: 2px;
+    bottom: 4px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#mainWindow #faceBtn {
+    position: absolute;
+    margin: 0 2px;
+    width: 32px;
+    height: 32px;
+    right: 2px;
+    bottom: 4px;
+}

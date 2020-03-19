@@ -9,33 +9,28 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
-    var Facebook = dimp.Facebook;
     var Register = dimp.extensions.Register;
 
     var RegisterWindow = function () {
         var frame = new Rect(100, 50, 320, 240);
         Window.call(this, frame);
-        this.setId('register');
-        this.setTitle('Register');
+        this.setId('registerWindow');
+        this.setTitle('Create user account');
         var win = this;
         // label
         var label = new Label();
+        label.setClassName('nickname');
         label.setText('Nickname:');
-        label.setSize(80, 20);
-        label.setOrigin(40, 94);
-        // label.setBackgroundColor(Color.Green);
         this.appendChild(label);
         // input
         var input = new Input();
-        input.setSize(138, 20);
-        input.setOrigin( 120, 90);
+        input.setClassName('input');
         this.appendChild(input);
         this.input = input;
         // button
         var button = new Button();
-        button.setSize(100, 30);
-        button.setOrigin(110, 160);
-        button.setText('OK');
+        button.setClassName('OK');
+        button.setText('Register');
         button.onClick = function () {
             win.submit(input.getValue());
         };

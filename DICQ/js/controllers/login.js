@@ -15,31 +15,27 @@
     var LoginWindow = function (user) {
         var frame = new Rect(100, 50, 320, 240);
         Window.call(this, frame);
-        this.setId('login');
+        this.setId('loginWindow');
         this.setTitle('Login');
         var win = this;
         // nickname
         var nickname = new Label();
+        nickname.setClassName('nickname');
         nickname.setText(user['nickname']);
-        nickname.setSize(240, 20);
-        nickname.setOrigin(40, 60);
         this.appendChild(nickname);
         // number
         var number = new Label();
+        number.setClassName('number');
         number.setText(user['number']);
-        number.setSize(240, 20);
-        number.setOrigin(40, 90);
         this.appendChild(number);
         // identifier
         var identifier = new Label();
+        identifier.setClassName('identifier');
         identifier.setText(user['ID']);
-        identifier.setSize(240, 20);
-        identifier.setOrigin(40, 120);
         this.appendChild(identifier);
         // button
         var button = new Button();
-        button.setSize(100, 30);
-        button.setOrigin(110, 160);
+        button.setClassName('OK');
         button.setText('OK');
         button.onClick = function () {
             win.login(user['ID']);

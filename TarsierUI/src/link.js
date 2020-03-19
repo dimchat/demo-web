@@ -28,64 +28,22 @@
 !function (ns) {
     'use strict';
 
-    var Rect = ns.Rect;
-
     var View = ns.View;
-    var Button = ns.Button;
 
-    var Draggable = ns.Draggable;
-
-    var Window = function (frame) {
-        View.call(this);
-
-        this.setClassName('ts_window');
-
-        var ctrl = this;
-        var element = this.__ie;
-
-        Draggable.enable(element);
-        element.onclick = function (ev) {
-            ctrl.floatToTop();
-        };
-
-        // init title
-        var title = new View();
-        title.setClassName('ts_window_title');
-        this.appendChild(title);
-        this.titleView = title;
-
-        // close button
-        var close = new Button();
-        close.setClassName('ts_window_close');
-        close.onClick = function (ev) {
-            if (ctrl.onClose(ev)) {
-                element.remove();
-            }
-        };
-        this.appendChild(close);
-
-        // init frame
-        if (arguments.length === 4) {
-            frame = new Rect(arguments[0], arguments[1], arguments[2], arguments[3]);
-        } else if (arguments.length === 2) {
-            frame = new Rect(arguments[0], arguments[1]);
-        } else if (!(frame instanceof Rect)) {
-            frame = new Rect(frame);
+    var Link = function (a) {
+        if (!a) {
+            a = document.createElement('A');
         }
-        this.setFrame(frame);
+        View.call(this, a);
     };
-    Window.prototype = Object.create(View.prototype);
-    Window.prototype.constructor = Window;
+    Link.prototype = Object.create(View.prototype);
+    Link.prototype.constructor = Link;
 
-    Window.prototype.setTitle = function (title) {
-        this.titleView.setText(title);
-    };
-
-    Window.prototype.onClose = function (ev) {
-        return true;
+    Link.prototype.setURL = function (url) {
+        this.__ie.href = url;
     };
 
     //-------- namespace --------
-    ns.Window = Window;
+    ns.Link = Link;
 
 }(tarsier.ui);
