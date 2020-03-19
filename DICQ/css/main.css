@@ -1,4 +1,8 @@
 
+button:focus {
+    outline: 0;
+}
+
 .buttonNormal {
     border-top: 2px solid #FFFCF9;
     border-left: 2px solid #FFFCF9;
@@ -53,6 +57,7 @@
     bottom: 72px;
     font-size: 14px;
     font-weight: bold;
+    color: gray;
 }
 .mainWindow .browserBtn {
     position: absolute;
@@ -71,6 +76,7 @@
     bottom: 40px;
     font-size: 14px;
     font-weight: bold;
+    color: darkblue;
 }
 
 /**
@@ -86,6 +92,7 @@
     bottom: 4px;
     font-size: 16px;
     font-weight: bold;
+    color: darkblue;
 }
 
 .mainWindow .faceBtn {
@@ -95,4 +102,6 @@
     height: 32px;
     right: 2px;
     bottom: 4px;
+    font-weight: bold;
+    color: gray;
 }

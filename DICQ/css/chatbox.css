@@ -1,0 +1,76 @@
+
+.chatWindow .logoImageView {
+    float: left;
+    width: 40px;
+    height: 40px;
+    margin: 4px;
+}
+
+.chatWindow .identifierLabel {
+    float: left;
+    width: 580px;
+    margin: 4px;
+}
+
+.chatWindow .nameLabel {
+    float: left;
+    margin: 2px;
+}
+
+.chatWindow .numberLabel {
+    float: left;
+    margin: 2px;
+}
+
+.chatWindow .historyView {
+    position: absolute;
+    margin: 4px;
+    border-top: 2px solid #727377;
+    border-left: 2px solid #727377;
+    border-right: 2px solid #FFFCF9;
+    border-bottom: 2px solid #FFFCF9;
+    background-color: #eeeeee;
+    width: 400px;
+    height: 280px;
+    top: 82px;
+    left: 0;
+}
+
+.chatWindow .messageView {
+    position: absolute;
+    margin: 4px;
+    border-top: 2px solid #727377;
+    border-left: 2px solid #727377;
+    border-right: 2px solid #FFFCF9;
+    border-bottom: 2px solid #FFFCF9;
+    padding: 0;
+    width: 400px;
+    height: 66px;
+    top: 368px;
+    left: 0;
+    background-color: white;
+}
+
+.chatWindow .sendButton {
+    position: absolute;
+    width: 80px;
+    height: 30px;
+    bottom: 4px;
+    left: 326px;
+    font-size: 16px;
+    font-weight: bold;
+    color: darkblue;
+}
+
+.groupChatWindow .membersView {
+    position: absolute;
+    margin: 4px;
+    border-top: 2px solid #727377;
+    border-left: 2px solid #727377;
+    border-right: 2px solid #FFFCF9;
+    border-bottom: 2px solid #FFFCF9;
+    width: 220px;
+    height: 386px;
+    top: 82px;
+    right: 0;
+}

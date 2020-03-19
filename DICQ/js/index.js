@@ -230,6 +230,7 @@
 
         '../TarsierUI/src/label.js',
         '../TarsierUI/src/input.js',
+        '../TarsierUI/src/textarea.js',
         '../TarsierUI/src/image.js',
         '../TarsierUI/src/button.js',
         '../TarsierUI/src/link.js',
@@ -248,15 +249,19 @@
     var stylesheets = [
         'css/index.css',
         'css/main.css',
-        'css/chatroom.css',
+        'css/chatbox.css',
         null
     ];
     var scripts = [
+        'js/conversation/chatbox.js',
+        'js/conversation/groupchat.js',
+        'js/conversation/chatroom.js',
+
         'js/controllers/about.js',
         'js/controllers/register.js',
         'js/controllers/login.js',
         'js/controllers/main.js',
-        'js/controllers/chatroom.js',
+
         'js/connect.js',
         'js/app.js',
         null

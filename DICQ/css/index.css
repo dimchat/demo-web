@@ -1,11 +1,14 @@
 
-button {
+button, textarea {
     user-focus: none;
 }
 
 .ts_window {
     margin: 0;
-    border: 1px solid #bbbbbb;
+    border-top: 2px solid #FFFCF9;
+    border-left: 2px solid #FFFCF9;
+    border-right: 2px solid #727377;
+    border-bottom: 2px solid #727377;
     padding: 20px 2px 2px 2px;
     background-color: #D5D2CF;
 }
@@ -13,8 +16,9 @@ button {
 .ts_window_title {
     margin: 2px;
     padding: 2px 8px;
+    height: 24px;
     font-family: "Times New Roman", sans-serif;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     background: -moz-linear-gradient(left, navy 0%, #e0e0f5 100%);

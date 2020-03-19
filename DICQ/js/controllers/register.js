@@ -11,6 +11,7 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
+    var Facebook = dimp.Facebook;
     var Register = dimp.extensions.Register;
 
     var RegisterWindow = function () {
@@ -46,6 +47,8 @@
         var reg = new Register();
         var user = reg.createUser(nickname);
         if (user) {
+            var facebook = Facebook.getInstance();
+            facebook.setCurrentUser(user);
             // open login window
             ns.Main();
         } else {

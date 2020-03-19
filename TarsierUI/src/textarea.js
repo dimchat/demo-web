@@ -30,23 +30,23 @@
 
     var View = ns.View;
 
-    var Input = function (input) {
-        if (!input) {
-            input = document.createElement('INPUT');
+    var TextArea = function (textarea) {
+        if (!textarea) {
+            textarea = document.createElement('TEXTAREA');
         }
-        View.call(this, input);
+        View.call(this, textarea);
     };
-    Input.prototype = Object.create(View.prototype);
-    Input.prototype.constructor = Input;
+    TextArea.prototype = Object.create(View.prototype);
+    TextArea.prototype.constructor = TextArea;
 
-    Input.prototype.getValue = function () {
+    TextArea.prototype.getValue = function () {
         return this.__ie.value;
     };
-    Input.prototype.setValue = function (text) {
+    TextArea.prototype.setValue = function (text) {
         this.__ie.value = text;
     };
 
     //-------- namespace --------
-    ns.Input = Input;
+    ns.TextArea = TextArea;
 
 }(tarsier.ui);
