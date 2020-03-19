@@ -202,19 +202,19 @@
         }
 
         // save instant message into database
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
-        var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
-        if (sender.equals(receiver)) {
-            console.log('loop message: ' + iMsg.getMap(false));
-            return true;
-        }
         if (group) {
             return save_msg(iMsg, group);
         }
+        var sender = facebook.getIdentifier(iMsg.envelope.sender);
+        var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
+        // if (sender.equals(receiver)) {
+        //     console.log('loop message: ' + iMsg.getMap(false));
+        //     return true;
+        // }
         if (facebook.getPrivateKeyForSignature(receiver)) {
-            if (facebook.getPrivateKeyForSignature(sender)) {
-                throw Error('loop message: ' + iMsg.getMap(false));
-            }
+            // if (facebook.getPrivateKeyForSignature(sender)) {
+            //     throw Error('loop message: ' + iMsg.getMap(false));
+            // }
             return save_msg(iMsg, sender);
         }
         return save_msg(iMsg, receiver);
