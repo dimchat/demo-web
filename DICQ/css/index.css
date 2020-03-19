@@ -1,6 +1,14 @@
 
-button, textarea {
+body {
+    background-color: #387E83;
+}
+
+button {
     user-focus: none;
+}
+
+textarea {
+    resize: none;
 }
 
 .ts_window {

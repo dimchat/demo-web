@@ -40,7 +40,7 @@
         if (!clazz) {
             clazz = GroupChatWindow;
         }
-        return ChatWindow.show.call(this, identifier, clazz);
+        return ChatWindow.show(identifier, clazz);
     };
 
     ns.GroupChatWindow = GroupChatWindow;

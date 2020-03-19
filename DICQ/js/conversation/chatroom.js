@@ -49,11 +49,14 @@
         return this.sendContent(new ForwardContent(msg));
     };
 
-    ChatroomWindow.show = function (admin) {
+    ChatroomWindow.show = function (admin, clazz) {
         if (admin instanceof User) {
             admin = admin.identifier;
         }
-        return GroupChatWindow.show(admin);
+        if (!clazz) {
+            clazz = ChatroomWindow;
+        }
+        return GroupChatWindow.show(admin, clazz);
     };
 
     ns.ChatroomWindow = ChatroomWindow;

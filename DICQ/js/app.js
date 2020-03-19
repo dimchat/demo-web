@@ -95,7 +95,7 @@
     Application.prototype.didFailToSendPackage = function (error, data, server) {
         console.assert(data !== null, 'data empty');
         console.assert(server !== null, 'server empty');
-        console.log('Failed to send message, please check connection. error: ' + error);
+        console.log('Failed to send message, please check connection. error: ', error);
     };
 
     ns.Application = Application;

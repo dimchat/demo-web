@@ -224,6 +224,12 @@
         var db = MessageTable.getInstance();
         var messages = db.loadMessages(conversation);
         if (messages) {
+            for (var i = 0; i < messages.length; ++i) {
+                if (messages[i].equals(msg)) {
+                    console.log('duplicated message', msg);
+                    return false;
+                }
+            }
             messages.push(msg);
         } else {
             messages = [msg];

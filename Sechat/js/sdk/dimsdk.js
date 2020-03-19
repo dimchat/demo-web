@@ -267,11 +267,15 @@ if (typeof DIMP !== "object") {
                 if (!obj2) {
                     return false
                 } else {
-                    if (typeof obj1["equals"] === "function") {
-                        return obj1.equals(obj2)
+                    if (typeof obj1 === "string" || typeof obj2 === "string") {
+                        return false
                     } else {
-                        if (typeof obj2["equals"] === "function") {
-                            return obj2.equals(obj1)
+                        if (typeof obj1["equals"] === "function") {
+                            return obj1.equals(obj2)
+                        } else {
+                            if (typeof obj2["equals"] === "function") {
+                                return obj2.equals(obj1)
+                            }
                         }
                     }
                 }

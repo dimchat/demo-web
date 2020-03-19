@@ -20,6 +20,8 @@
     var Messenger = dimp.Messenger;
     var StarStatus = dimp.stargate.StarStatus;
 
+    var NotificationCenter = dimp.stargate.NotificationCenter;
+
     var MessageTable = dimp.db.MessageTable;
 
     var random_point = function () {
@@ -79,6 +81,9 @@
             win.sendText(message.getValue());
         };
         this.appendChild(button);
+
+        var nc = NotificationCenter.getInstance();
+        nc.addObserver(this, nc.kNotificationMessageReceived);
     };
     ChatWindow.prototype = Object.create(Window.prototype);
     ChatWindow.prototype.constructor = ChatWindow;
@@ -92,6 +97,26 @@
         this.numberLabel.setText('(' + number + ')');
         this.__identifier = identifier;
         this.reloadData();
+    };
+
+    ChatWindow.prototype.onReceiveNotification = function (notification) {
+        var identifier = this.__identifier;
+        if (!identifier) {
+            throw Error('conversation ID not set');
+        }
+        var nc = NotificationCenter.getInstance();
+        var name = notification.name;
+        if (name === nc.kNotificationMessageReceived) {
+            var msg = notification.userInfo;
+            var env = msg.envelope;
+            if (identifier.equals(env.getGroup())) {
+                this.appendMessage(msg);
+            } else if (identifier.equals(env.sender)) {
+                this.appendMessage(msg);
+            } else if (identifier.equals(env.receiver)) {
+                this.appendMessage(msg);
+            }
+        }
     };
 
     ChatWindow.prototype.reloadData = function () {
@@ -129,6 +154,7 @@
         if (content instanceof TextContent) {
             text += content.getText();
             history.innerText = text;
+            history.scrollTop = history.scrollHeight;
         }
     };
 
@@ -167,8 +193,9 @@
             content.setGroup(receiver);
         }
         if (messenger.sendContent(content, receiver, null, false)) {
-            console.log('sending message: ' + content.getMap(false));
+            console.log('sending message: ', content);
             this.messageView.setValue('');
+            this.reloadData();
             return true;
         } else {
             alert('Cannot send message now.');

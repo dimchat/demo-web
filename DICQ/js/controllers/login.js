@@ -95,8 +95,8 @@
         if (status.equals(StarStatus.Connected)) {
             // connected
             return null;
-        } else if (status.equals(StarStatus.Error)) {
-            return 'Connecting ...';
+        } else if (status.equals(StarStatus.Connecting)) {
+            return 'Connecting station ...';
         } else if (status.equals(StarStatus.Error)) {
             return 'Connection error!';
         }
