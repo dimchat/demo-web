@@ -43,13 +43,13 @@ button {
  *  Register Window
  */
 
-#registerWindow .nickname {
+.registerWindow .nickname {
     position: relative;
     left: 60px;
     top: 60px;
 }
 
-#registerWindow .input {
+.registerWindow .input {
     position: relative;
     width: 120px;
     height: 20px;
@@ -57,7 +57,7 @@ button {
     top: 60px;
 }
 
-#registerWindow .OK {
+.registerWindow .OK {
     position: absolute;
     width: 30%;
     height: 30px;
@@ -69,7 +69,7 @@ button {
  *  Login Window
  */
 
-#loginWindow span {
+.loginWindow span {
     position: relative;
     text-align: center;
     display: inline-block;
@@ -78,28 +78,28 @@ button {
     text-overflow: ellipsis;
 }
 
-#loginWindow .nickname {
+.loginWindow .nickname {
     width: 240px;
     height: 20px;
     top: 40px;
     left: 40px;
 }
 
-#loginWindow .number {
+.loginWindow .number {
     width: 240px;
     height: 20px;
     top: 40px;
     left: 40px;
 }
 
-#loginWindow .identifier {
+.loginWindow .identifier {
     width: 240px;
     height: 20px;
     top: 40px;
     left: 40px;
 }
 
-#loginWindow .OK {
+.loginWindow .OK {
     position: absolute;
     width: 30%;
     height: 30px;

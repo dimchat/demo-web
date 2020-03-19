@@ -2,6 +2,8 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var $ = tui.$;
+
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -12,43 +14,57 @@
     var Messenger = dimp.Messenger;
     var StarStatus = dimp.stargate.StarStatus;
 
-    var LoginWindow = function (user) {
+    var LoginWindow = function () {
         var frame = new Rect(100, 50, 320, 240);
         Window.call(this, frame);
         this.setId('loginWindow');
+        this.setClassName('loginWindow');
         this.setTitle('Login');
-        var win = this;
         // nickname
         var nickname = new Label();
         nickname.setClassName('nickname');
-        nickname.setText(user['nickname']);
         this.appendChild(nickname);
+        this.nicknameLabel = nickname;
         // number
         var number = new Label();
         number.setClassName('number');
-        number.setText(user['number']);
         this.appendChild(number);
+        this.numberLabel = number;
         // identifier
         var identifier = new Label();
         identifier.setClassName('identifier');
-        identifier.setText(user['ID']);
         this.appendChild(identifier);
+        this.identifierLabel = identifier;
         // button
         var button = new Button();
         button.setClassName('OK');
         button.setText('OK');
+        var win = this;
         button.onClick = function () {
-            win.login(user['ID']);
+            if (win.__user) {
+                win.login(win.__user.identifier);
+            } else {
+                alert('User info error');
+            }
         };
         this.appendChild(button);
+        // current user
+        this.__user = number;
     };
     LoginWindow.prototype = Object.create(Window.prototype);
     LoginWindow.prototype.constructor = LoginWindow;
 
+    LoginWindow.prototype.setUser = function (user) {
+        var facebook = Facebook.getInstance();
+        this.nicknameLabel.setText(facebook.getNickname(user.identifier));
+        this.numberLabel.setText(facebook.getNumberString(user.identifier));
+        this.identifierLabel.setText(user.identifier);
+        this.__user = user;
+    };
+
     LoginWindow.prototype.onClose = function (ev) {
         // open register window
-        var register = new ns.RegisterWindow();
-        tui.$(document.body).appendChild(register);
+        ns.RegisterWindow.show();
         return true;
     };
 
@@ -69,8 +85,7 @@
         var messenger = Messenger.getInstance();
         messenger.login(user);
         // open main window
-        var main = new ns.MainWindow(user);
-        tui.$(document.body).appendChild(main);
+        ns.MainWindow.show();
         this.remove();
     };
 
@@ -86,6 +101,19 @@
             return 'Connection error!';
         }
         return 'Connect to a DIM station first.';
+    };
+
+    LoginWindow.show = function (user) {
+        var box = document.getElementById('loginWindow');
+        if (box) {
+            box = $(box);
+        } else {
+            box = new LoginWindow();
+            $(document.body).appendChild(box);
+        }
+        box.setUser(user);
+        box.floatToTop();
+        return box;
     };
 
     ns.LoginWindow = LoginWindow;

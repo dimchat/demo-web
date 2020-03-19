@@ -23,14 +23,13 @@
     var AboutWindow = function () {
         var frame = new Rect(random_point(), new Size(240, 360));
         Window.call(this, frame);
-        // this.setId('aboutWindow');
+        this.setId('aboutWindow');
         this.setClassName('aboutWindow');
         this.setTitle('About DICQ');
-        var win = this;
         // banner
         var banner = new Image();
         banner.setClassName('banner');
-        banner.setSrc('https://avatars1.githubusercontent.com/u/45818514');
+        banner.setSrc('https://dimchat.github.io/images/icon-512.png');
         this.appendChild(banner);
         // link
         var link = new Link();
@@ -51,6 +50,7 @@
         var button = new Button();
         button.setClassName('OK');
         button.setText('OK');
+        var win = this;
         button.onClick = function () {
             win.remove();
         };
@@ -60,8 +60,15 @@
     AboutWindow.prototype.constructor = AboutWindow;
 
     AboutWindow.show = function () {
-        var about = new AboutWindow();
-        $(document.body).appendChild(about);
+        var box = document.getElementById('aboutWindow');
+        if (box) {
+            box = $(box);
+        } else {
+            box = new AboutWindow();
+            $(document.body).appendChild(box);
+        }
+        box.floatToTop();
+        return box;
     };
 
     ns.AboutWindow = AboutWindow;

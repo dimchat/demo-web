@@ -2,6 +2,8 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var $ = tui.$;
+
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -15,6 +17,7 @@
         var frame = new Rect(100, 50, 320, 240);
         Window.call(this, frame);
         this.setId('registerWindow');
+        this.setClassName('registerWindow');
         this.setTitle('Create user account');
         var win = this;
         // label
@@ -48,6 +51,19 @@
         } else {
             alert('Failed to create user account');
         }
+        this.remove();
+    };
+
+    RegisterWindow.show = function () {
+        var box = document.getElementById('registerWindow');
+        if (box) {
+            box = $(box);
+        } else {
+            box = new RegisterWindow();
+            $(document.body).appendChild(box);
+        }
+        box.floatToTop();
+        return box;
     };
 
     ns.RegisterWindow = RegisterWindow;

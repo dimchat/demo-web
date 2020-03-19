@@ -33,6 +33,7 @@
     var Link = function (a) {
         if (!a) {
             a = document.createElement('A');
+            a.target = '_blank';
         }
         View.call(this, a);
     };

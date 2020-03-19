@@ -15,13 +15,13 @@
     background-color: #D7CED2;
 }
 
-#mainWindow .navItem {
+.mainWindow .navItem {
     margin: 4px 0 0 4px;
     width: 32px;
     height: 32px;
 }
 
-#mainWindow #box {
+.mainWindow .box {
     margin: 4px;
     border-top: 2px solid #716E6B;
     border-left: 2px solid #716E6B;
@@ -36,7 +36,7 @@
  *  Functions
  */
 
-#mainWindow #chatBtn {
+.mainWindow .chatBtn {
     position: absolute;
     margin: 0 2px;
     width: 32px;
@@ -44,7 +44,7 @@
     left: 2px;
     bottom: 72px;
 }
-#mainWindow #searchBtn {
+.mainWindow .searchBtn {
     position: absolute;
     margin: 0 2px;
     width: 200px;
@@ -54,7 +54,7 @@
     font-size: 14px;
     font-weight: bold;
 }
-#mainWindow #browserBtn {
+.mainWindow .browserBtn {
     position: absolute;
     margin: 0 2px;
     width: 32px;
@@ -62,7 +62,7 @@
     left: 2px;
     bottom: 40px;
 }
-#mainWindow #msgBtn {
+.mainWindow .msgBtn {
     position: absolute;
     margin: 0 2px;
     width: 200px;
@@ -77,10 +77,10 @@
  *  About
  */
 
-#mainWindow #aboutBtn {
+.mainWindow .aboutBtn {
     position: absolute;
     margin: 0 2px;
-    width: 196px;
+    width: 192px;
     height: 32px;
     left: 2px;
     bottom: 4px;
@@ -88,10 +88,10 @@
     font-weight: bold;
 }
 
-#mainWindow #faceBtn {
+.mainWindow .faceBtn {
     position: absolute;
     margin: 0 2px;
-    width: 32px;
+    width: 36px;
     height: 32px;
     right: 2px;
     bottom: 4px;

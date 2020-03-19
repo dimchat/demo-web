@@ -2,6 +2,8 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var $ = tui.$;
+
     var Rect = tui.Rect;
 
     var View = tui.View;
@@ -9,11 +11,13 @@
     var Window = tui.Window;
 
     var Facebook = dimp.Facebook;
+    var facebook = Facebook.getInstance();
 
-    var MainWindow = function (user) {
+    var MainWindow = function () {
         var frame = new Rect(10, 10, 240, 640);
         Window.call(this, frame);
         this.setId('mainWindow');
+        this.setClassName('mainWindow');
         this.setTitle('DICQ 2020 (Alpha)');
 
         //
@@ -37,6 +41,7 @@
         //
         var box = new View();
         box.setId('box');
+        box.setClassName('box');
         this.appendChild(box);
 
         //
@@ -61,7 +66,13 @@
         var msg = new Button();
         msg.setId('msgBtn');
         msg.setClassName('msgBtn buttonActive');
-        msg.setText('Message');
+        msg.setText('Chat Room');
+        msg.onClick = function () {
+            var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
+            admin = facebook.getIdentifier(admin);
+            admin = facebook.getUser(admin);
+            ns.ChatroomWindow.show(admin);
+        };
         this.appendChild(msg);
 
         //
@@ -86,19 +97,23 @@
     MainWindow.prototype.constructor = MainWindow;
 
     MainWindow.prototype.onClose = function (ev) {
-        var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (user) {
-            var identifier = user.identifier;
-            var info = {
-                'ID': identifier,
-                'nickname': facebook.getNickname(identifier),
-                'number': facebook.getNumberString(identifier)
-            };
-            var login = new ns.LoginWindow(info);
-            tui.$(document.body).appendChild(login);
+            ns.LoginWindow.show(user);
         }
         return true;
+    };
+
+    MainWindow.show = function () {
+        var box = document.getElementById('mainWindow');
+        if (box) {
+            box = $(box);
+        } else {
+            box = new MainWindow();
+            $(document.body).appendChild(box);
+        }
+        box.floatToTop();
+        return box;
     };
 
     ns.MainWindow = MainWindow;

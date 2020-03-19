@@ -248,6 +248,7 @@
     var stylesheets = [
         'css/index.css',
         'css/main.css',
+        'css/chatroom.css',
         null
     ];
     var scripts = [
@@ -255,6 +256,7 @@
         'js/controllers/register.js',
         'js/controllers/login.js',
         'js/controllers/main.js',
+        'js/controllers/chatroom.js',
         'js/connect.js',
         'js/app.js',
         null

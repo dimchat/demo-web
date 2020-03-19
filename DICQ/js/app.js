@@ -111,29 +111,26 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var facebook = dimp.Facebook.getInstance();
+
     var Main = function () {
-        var facebook = dimp.Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (user) {
-            var identifier = user.identifier;
-            var info = {
-                'ID': identifier,
-                'nickname': facebook.getNickname(identifier),
-                'number': facebook.getNumberString(identifier)
-            };
             // login
-            var login = new ns.LoginWindow(info);
-            // var login = new ns.MainWindow(user);
-            tui.$(document.body).appendChild(login);
+            ns.LoginWindow.show(user);
         } else {
-            // register account
-            var register = new ns.RegisterWindow();
-            tui.$(document.body).appendChild(register);
+            // register new account
+            new ns.RegisterWindow.show();
         }
     };
 
     Main();
 
     ns.Main = Main;
+
+    // var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
+    // admin = facebook.getIdentifier(admin);
+    // admin = facebook.getUser(admin);
+    // ns.ChatroomWindow.show(admin).setOrigin(10, 10);
 
 }(window, tarsier.ui, DIMP);
