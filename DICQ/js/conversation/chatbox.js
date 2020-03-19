@@ -20,6 +20,8 @@
     var Messenger = dimp.Messenger;
     var StarStatus = dimp.stargate.StarStatus;
 
+    var MessageTable = dimp.db.MessageTable;
+
     var random_point = function () {
         var x = 50 + Math.random() * 100;
         var y = 50 + Math.random() * 100;
@@ -89,6 +91,45 @@
         this.nameLabel.setText(name);
         this.numberLabel.setText('(' + number + ')');
         this.__identifier = identifier;
+        this.reloadData();
+    };
+
+    ChatWindow.prototype.reloadData = function () {
+        this.clearMessages();
+        var db = MessageTable.getInstance();
+        var messages = db.loadMessages(this.__identifier);
+        if (messages) {
+            for (var i = 0; i < messages.length; ++i) {
+                this.appendMessage(messages[i]);
+            }
+        }
+    };
+
+    ChatWindow.prototype.clearMessages = function () {
+        var history = this.historyView.__ie;
+        history.innerText = '';
+    };
+    ChatWindow.prototype.appendMessage = function (iMsg) {
+        var history = this.historyView.__ie;
+        var text = history.innerText;
+        if (text) {
+            text += '\n--------\n';
+        }
+        // sender
+        var facebook = Facebook.getInstance();
+        var sender = facebook.getIdentifier(iMsg.envelope.sender);
+        var name = facebook.getNickname(sender);
+        if (!name) {
+            name = sender.name;
+        }
+        var number = facebook.getNumberString(sender);
+        text += '(' + number + ') ' + name + ': ';
+        // text
+        var content = iMsg.content;
+        if (content instanceof TextContent) {
+            text += content.getText();
+            history.innerText = text;
+        }
     };
 
     ChatWindow.prototype.sendText = function (text) {

@@ -32,6 +32,8 @@
 
     var Messenger = ns.Messenger;
 
+    var MessageTable = ns.db.MessageTable;
+
     var s_messenger = null;
     Messenger.getInstance = function () {
         if (!s_messenger) {
@@ -187,19 +189,46 @@
             return true;
         }
 
+        var facebook = this.getFacebook();
+        var group = facebook.getIdentifier(content.getGroup());
+
         if (content instanceof InviteCommand) {
             // send keys again
-            var facebook = this.getFacebook();
             var me = facebook.getIdentifier(iMsg.envelope.receiver);
-            var group = facebook.getIdentifier(content.getGroup());
             var key = this.cipherKeyDelegate.getCipherKey(me, group);
             if (key) {
                 delete key['reused'];
             }
         }
 
-        // TODO: save instant message into database
-        return true;
+        // save instant message into database
+        var sender = facebook.getIdentifier(iMsg.envelope.sender);
+        var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
+        if (sender.equals(receiver)) {
+            console.log('loop message: ' + iMsg.getMap(false));
+            return true;
+        }
+        if (group) {
+            return save_msg(iMsg, group);
+        }
+        if (facebook.getPrivateKeyForSignature(receiver)) {
+            if (facebook.getPrivateKeyForSignature(sender)) {
+                throw Error('loop message: ' + iMsg.getMap(false));
+            }
+            return save_msg(iMsg, sender);
+        }
+        return save_msg(iMsg, receiver);
+    };
+
+    var save_msg = function (msg, conversation) {
+        var db = MessageTable.getInstance();
+        var messages = db.loadMessages(conversation);
+        if (messages) {
+            messages.push(msg);
+        } else {
+            messages = [msg];
+        }
+        return db.saveMessages(messages, conversation);
     };
 
     // Override
