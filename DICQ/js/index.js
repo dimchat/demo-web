@@ -155,12 +155,7 @@
 
     var dimsdk = [
         /* third party cryptography libs */
-        '../Sechat/js/sdk/3rd/crypto-js/core.js',
-        '../Sechat/js/sdk/3rd/crypto-js/cipher-core.js',
-        '../Sechat/js/sdk/3rd/crypto-js/aes.js',
-        '../Sechat/js/sdk/3rd/crypto-js/md5.js',
-        '../Sechat/js/sdk/3rd/crypto-js/sha256.js',
-        '../Sechat/js/sdk/3rd/crypto-js/ripemd160.js',
+        '../Sechat/js/sdk/3rd/crypto.js',
         '../Sechat/js/sdk/3rd/jsencrypt.js',
 
         /* DIM SDK */
@@ -178,7 +173,6 @@
             '../Sechat/js/sdk/3rd/jsencrypt.min.js',
 
             /* DIM SDK */
-            // '../Sechat/js/sdk/dimsdk.js',
             '../Sechat/js/sdk/dimsdk.min.js',
 
             '../Sechat/js/sdk/host58.js',
@@ -190,70 +184,23 @@
 
     var dim_client = [
         /* DIM Client */
-        '../Sechat/js/dimc/extensions/constants.js',
-        '../Sechat/js/dimc/extensions/conversation.js',
-        '../Sechat/js/dimc/extensions/register.js',
-        '../Sechat/js/dimc/extensions/password.js',
-        '../Sechat/js/dimc/protocol/search.js',
-
-        '../Sechat/js/dimc/cpu/default.js',
-        '../Sechat/js/dimc/cpu/handshake.js',
-        '../Sechat/js/dimc/cpu/receipt.js',
-        '../Sechat/js/dimc/cpu/search.js',
-
-        '../Sechat/js/dimc/network/fsm.js',
-        '../Sechat/js/dimc/network/delegate.js',
-        '../Sechat/js/dimc/network/request.js',
-        '../Sechat/js/dimc/network/server.js',
-
-        '../Sechat/js/dimc/database/table.js',
-        '../Sechat/js/dimc/database/meta.js',
-        '../Sechat/js/dimc/database/private.js',
-        '../Sechat/js/dimc/database/profile.js',
-        '../Sechat/js/dimc/database/user.js',
-        '../Sechat/js/dimc/database/contact.js',
-        '../Sechat/js/dimc/database/group.js',
-        '../Sechat/js/dimc/database/message.js',
-
-        '../Sechat/js/dimc/cache.js',
-        '../Sechat/js/dimc/ans.js',
-        '../Sechat/js/dimc/amanuensis.js',
-        '../Sechat/js/dimc/facebook.js',
-        '../Sechat/js/dimc/messenger.js',
+        '../Sechat/js/dim.js',
         null
     ];
     if (release) {
         dim_client = [
-            // '../Sechat/js/dim.js'
             '../Sechat/js/dim.min.js',
             null
         ]
     }
 
     var tarsier_ui = [
-        '../TarsierUI/src/base.js',
-
-        '../TarsierUI/src/color.js',
-        '../TarsierUI/src/geometry.js',
-        '../TarsierUI/src/draggable.js',
-
-        '../TarsierUI/src/view.js',
-        '../TarsierUI/src/scroll.js',
-
-        '../TarsierUI/src/label.js',
-        '../TarsierUI/src/input.js',
-        '../TarsierUI/src/textarea.js',
-        '../TarsierUI/src/image.js',
-        '../TarsierUI/src/button.js',
-        '../TarsierUI/src/link.js',
-
-        '../TarsierUI/src/window.js',
+        'http://moky.github.io/Tarsier/build/tarsier-ui.js',
         null
     ];
     if (release) {
         tarsier_ui = [
-            // '../TarsierUI/build/tarsier-ui.js',
-            '../TarsierUI/build/tarsier-ui.min.js',
+            'http://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             null
         ];
     }

@@ -33,8 +33,9 @@
     border-right: 2px solid #FFFCF9;
     border-bottom: 2px solid #FFFCF9;
     background-color: #eeeeee;
-    width: 400px;
-    height: 280px;
+    padding: 2px;
+    width: 396px;
+    height: 268px;
     top: 82px;
     left: 0;
     overflow-y: auto;
@@ -49,8 +50,8 @@
     border-bottom: 2px solid #FFFCF9;
     padding: 0;
     width: 400px;
-    height: 66px;
-    top: 368px;
+    height: 72px;
+    top: 360px;
     left: 0;
     background-color: white;
 }
