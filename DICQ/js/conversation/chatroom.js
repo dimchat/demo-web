@@ -33,7 +33,6 @@
     };
 
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
-        var identifier = ID.EVERYONE;
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
         if (name === nc.kNotificationMessageReceived) {
@@ -74,6 +73,7 @@
             return false;
         }
         var content = new TextContent(text);
+        content.setGroup(ID.EVERYONE);
         var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE, 0);
         var msg = InstantMessage.newMessage(content, env);
         messenger.saveMessage(msg);
@@ -88,7 +88,16 @@
         if (!clazz) {
             clazz = ChatroomWindow;
         }
-        return GroupChatWindow.show(admin, clazz);
+        var box = GroupChatWindow.show(admin, clazz);
+        // query history
+        var messenger = Messenger.getInstance();
+        var server = messenger.server;
+        var user = server.currentUser;
+        if (user) {
+            var content = new TextContent('show history');
+            messenger.sendContent(content, admin);
+        }
+        return box;
     };
 
     ns.ChatroomWindow = ChatroomWindow;

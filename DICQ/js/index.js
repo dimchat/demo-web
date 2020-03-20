@@ -10,7 +10,14 @@
         this.count = 0; // total scripts
         this.alpha = 0;
         this.timer = null;
-        this.status = document.getElementById('tarsier-status');
+        var div = document.getElementById('tarsier-status');
+        if (!div) {
+            div = document.createElement('DIV');
+            div.id = 'tarsier-status';
+            div.innerText = 'Loading tarsier ...';
+            document.body.appendChild(div);
+        }
+        this.status = div;
         this.showStatus('Loading DICQ from ' + this.base + ' ...');
     };
 
