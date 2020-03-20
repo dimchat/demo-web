@@ -25,7 +25,8 @@
                 // user ID
                 user = facebook.getIdentifier(user);
                 if (!user) {
-                    throw TypeError('user ID error: ' + u_list[i]);
+                    console.error('user ID error', u_list[i]);
+                    continue;
                 }
                 // user contacts
                 var contacts = [];
@@ -33,7 +34,8 @@
                     var item = c_list[j];
                     item = facebook.getIdentifier(item);
                     if (!item) {
-                        throw TypeError('contact ID error: ' + c_list[j]);
+                        console.error('contact ID error', c_list[j]);
+                        continue;
                     }
                     contacts.push(item);
                 }

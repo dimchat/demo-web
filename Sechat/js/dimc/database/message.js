@@ -9,6 +9,9 @@
 
     var InstantMessage = ns.InstantMessage;
 
+    var ConversationDataSource = ns.ConversationDataSource;
+    var ConversationDelegate = ns.ConversationDelegate;
+
     var load = function (name) {
         return Storage.loadJSON(name);
     };
@@ -19,6 +22,7 @@
     var MessageTable = function () {
         this.tables = {}; // ID => Array<InstantMessage>
     };
+    ns.Class(MessageTable, null, [ConversationDataSource, ConversationDelegate]);
 
     var table_name = function (identifier) {
         return identifier.address;
@@ -77,5 +81,122 @@
 
     //-------- namespace --------
     ns.db.MessageTable = MessageTable;
+
+}(DIMP);
+
+!function (ns) {
+    'use strict';
+
+    //
+    //  ConversationDataSource
+    //
+
+    var MessageTable = ns.db.MessageTable;
+
+    MessageTable.prototype.getMessageCount = function (conversation) {
+        var identifier = conversation.getIdentifier();
+        var messages = this.loadMessages(identifier);
+        if (messages) {
+            return messages.length;
+        } else {
+            return 0;
+        }
+    };
+
+    MessageTable.prototype.getMessage = function (index, conversation) {
+        var identifier = conversation.getIdentifier();
+        var messages = this.loadMessages(identifier);
+        console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
+        return messages[index];
+    };
+
+    //
+    //  ConversationDelegate
+    //
+
+    MessageTable.prototype.insertMessage = function (iMsg, conversation) {
+        var identifier = conversation.getIdentifier();
+        var messages = this.loadMessages(identifier);
+        if (messages) {
+            if (!insert_message(iMsg, messages)) {
+                // duplicate message?
+                return false;
+            }
+        } else {
+            messages = [iMsg];
+        }
+        return this.saveMessages(messages, identifier);
+    };
+
+    var insert_message = function (iMsg, messages) {
+        // timestamp
+        var t1, t2;
+        t1 = iMsg.envelope.time;
+        if (!t1) {
+            t1 = 0;
+        }
+        // serial number
+        var sn1, sn2;
+        sn1 = iMsg.content.sn;
+
+        var index;
+        var item;
+        for (index = messages.length - 1; index >=0; --index) {
+            item = messages[index];
+            t2 = item.envelope.time;
+            if (t2 && t2 < t1) {
+                // finished
+                break;
+            }
+            sn2 = item.content.sn;
+            if (sn1 === sn2) {
+                console.log('duplicate message, no need to insert');
+                return false;
+            }
+        }
+        // insert after
+        ns.type.Arrays.insert(messages, index+1, iMsg);
+        return true;
+    };
+    var remove_message = function (iMsg, messages) {
+        // timestamp
+        var t1, t2;
+        t1 = iMsg.envelope.time;
+        if (!t1) {
+            t1 = 0;
+        }
+        // serial number
+        var sn1, sn2;
+        sn1 = iMsg.content.sn;
+
+        var index;
+        var item;
+        for (index = messages.length - 1; index >=0; --index) {
+            item = messages[index];
+            t2 = item.envelope.time;
+            if (t2 && t2 < t1) {
+                console.log('message not found');
+                return false;
+            }
+            sn2 = item.content.sn;
+            if (sn1 === sn2) {
+                // got it
+                break;
+            }
+        }
+        // insert after
+        ns.type.Arrays.insert(messages, index+1, iMsg);
+        return true;
+    };
+
+    MessageTable.prototype.removeMessage = function (iMsg, conversation) {
+        var identifier = conversation.getIdentifier();
+        var messages = this.loadMessages(identifier);
+        console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
+        if (!remove_message(iMsg, messages)) {
+            return false;
+        }
+        return this.saveMessages(messages, conversation);
+    };
 
 }(DIMP);

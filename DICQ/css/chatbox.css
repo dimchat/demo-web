@@ -34,7 +34,7 @@
     height: 280px;
     top: 82px;
     left: 0;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .chatWindow .messageView {

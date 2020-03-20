@@ -8,7 +8,7 @@
     var Size = tui.Size;
     var Rect = tui.Rect;
 
-    var View = tui.View;
+    var ScrollView = tui.ScrollView;
     var Label = tui.Label;
     var TextArea = tui.TextArea;
     var Button = tui.Button;
@@ -62,7 +62,7 @@
         //
         //  Message
         //
-        var history = new View();
+        var history = new ScrollView();
         history.setClassName('historyView');
         this.appendChild(history);
         this.historyView = history;
@@ -140,6 +140,26 @@
         if (text) {
             text += '\n--------\n';
         }
+        // time
+        var time = iMsg.envelope.getTime();
+        if (time) {
+            var year = time.getFullYear();
+            var month = time.getMonth() + 1;
+            var date = time.getDate();
+            var hours = time.getHours();
+            var minutes = time.getMinutes();
+            var seconds = time.getSeconds();
+
+            if (month < 10) month = '0' + month;
+            if (date < 10) date = '0' + date;
+            if (hours < 10) hours = '0' + hours;
+            if (minutes < 10) minutes = '0' + minutes;
+            if (seconds < 10) seconds = '0' + seconds;
+
+            var ts = year + '-' + month + '-' + date;
+            ts += ' ' + hours + ':' + minutes + ':' + seconds;
+            text += '[' + ts + '] ';
+        }
         // sender
         var facebook = Facebook.getInstance();
         var sender = facebook.getIdentifier(iMsg.envelope.sender);
@@ -148,7 +168,7 @@
             name = sender.name;
         }
         var number = facebook.getNumberString(sender);
-        text += '(' + number + ') ' + name + ': ';
+        text += name + ' (' + number + '):\n';
         // text
         var content = iMsg.content;
         if (content instanceof TextContent) {

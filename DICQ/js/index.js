@@ -138,7 +138,7 @@
 !function (ns) {
     'use strict';
 
-    var release = false;
+    var release = true;
     if (ns['DEBUG']) {
         release = false;
     }
@@ -183,13 +183,17 @@
 
     var dim_client = [
         /* DIM Client */
+        '../Sechat/js/dimc/extensions/constants.js',
+        '../Sechat/js/dimc/extensions/conversation.js',
+        '../Sechat/js/dimc/extensions/register.js',
+        '../Sechat/js/dimc/extensions/password.js',
         '../Sechat/js/dimc/protocol/search.js',
+
         '../Sechat/js/dimc/cpu/default.js',
         '../Sechat/js/dimc/cpu/handshake.js',
         '../Sechat/js/dimc/cpu/receipt.js',
         '../Sechat/js/dimc/cpu/search.js',
-        '../Sechat/js/dimc/extensions/register.js',
-        '../Sechat/js/dimc/extensions/password.js',
+
         '../Sechat/js/dimc/network/fsm.js',
         '../Sechat/js/dimc/network/delegate.js',
         '../Sechat/js/dimc/network/request.js',
@@ -204,9 +208,9 @@
         '../Sechat/js/dimc/database/group.js',
         '../Sechat/js/dimc/database/message.js',
 
-        '../Sechat/js/dimc/constants.js',
         '../Sechat/js/dimc/cache.js',
         '../Sechat/js/dimc/ans.js',
+        '../Sechat/js/dimc/amanuensis.js',
         '../Sechat/js/dimc/facebook.js',
         '../Sechat/js/dimc/messenger.js',
         null
@@ -224,9 +228,10 @@
 
         '../TarsierUI/src/color.js',
         '../TarsierUI/src/geometry.js',
+        '../TarsierUI/src/draggable.js',
 
         '../TarsierUI/src/view.js',
-        '../TarsierUI/src/draggable.js',
+        '../TarsierUI/src/scroll.js',
 
         '../TarsierUI/src/label.js',
         '../TarsierUI/src/input.js',

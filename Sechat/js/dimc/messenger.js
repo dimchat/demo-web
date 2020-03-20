@@ -41,7 +41,7 @@
             s_messenger.entityDelegate = Facebook.getInstance();
             s_messenger.cipherKeyDelegate = KeyStore.getInstance();
             s_messenger.server = null; // current station connected
-            // for duplicated querying
+            // for duplicate querying
             s_messenger.metaQueryTime = {};    // ID -> Date
             s_messenger.profileQueryTime = {}; // ID -> Date
             s_messenger.groupQueryTime = {};   // ID -> Date
@@ -226,7 +226,7 @@
         if (messages) {
             for (var i = 0; i < messages.length; ++i) {
                 if (messages[i].equals(msg)) {
-                    console.log('duplicated message', msg);
+                    console.log('duplicate message', msg);
                     return false;
                 }
             }
@@ -399,7 +399,7 @@
         if (identifier.isBroadcast()) {
             return false;
         }
-        // check for duplicated querying
+        // check for duplicate querying
         var now = new Date();
         var last = this.metaQueryTime[identifier];
         if (last && (now.getTime() - last.getTime()) < 30000) {
@@ -412,7 +412,7 @@
     };
 
     Messenger.prototype.queryProfile = function (identifier) {
-        // check for duplicated querying
+        // check for duplicate querying
         var now = new Date();
         var last = this.profileQueryTime[identifier];
         if (last && (now.getTime() - last.getTime()) < 30000) {
@@ -425,7 +425,7 @@
     };
 
     Messenger.prototype.queryGroupInfo = function (group, member) {
-        // check for duplicated querying
+        // check for duplicate querying
         var now = new Date();
         var last = this.groupQueryTime[group];
         if (last && (now.getTime() - last.getTime()) < 30000) {

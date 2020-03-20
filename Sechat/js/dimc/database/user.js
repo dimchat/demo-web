@@ -21,7 +21,8 @@
             for (var i = 0; i < list.length; ++i) {
                 item = facebook.getIdentifier(list[i]);
                 if (!item) {
-                    throw Error('ID error: ' + list[i]);
+                    console.error('user ID error', list[i]);
+                    continue;
                 }
                 users.push(item);
             }
@@ -43,7 +44,7 @@
     UserTable.prototype.addUser = function (user) {
         var list = this.allUsers();
         if (list.indexOf(user) >= 0) {
-            // throw Error('user already exists: ' + user);
+            console.error('user already exists', user);
             return true;
         }
         list.push(user);
@@ -53,7 +54,7 @@
         var list = this.allUsers();
         var index = list.indexOf(user);
         if (index < 0) {
-            // throw Error('user not exists: ' + user);
+            console.error('user not exists', user);
             return true;
         }
         list.splice(index, 1);

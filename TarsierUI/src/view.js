@@ -46,6 +46,8 @@
         this.__ie = div;  // inner element
         this.__frame = Rect.Zero.clone();
         this.__bounds = Rect.Zero.clone();
+
+        this.setScroll(false);
     };
     View.prototype = Object.create(Object.prototype);
     View.prototype.constructor = View;
