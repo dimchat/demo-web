@@ -60,8 +60,12 @@ textarea {
     background-color: transparent;
     background-image: url(../images/close.jpg);
     background-repeat: no-repeat;
-    background-size: 100% 100%;
-    -moz-background-size:100% 100%;
+    background-position: -2px -2px;
+    background-size: 28px 28px;
+    -moz-background-size: 28px 28px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
 }
 
 /**
@@ -146,6 +150,9 @@ textarea {
     width: 80px;
     height: 80px;
     margin: 32px auto 8px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
 }
 
 .aboutWindow a {
@@ -162,6 +169,7 @@ textarea {
 .aboutWindow .copyright {
     display: block;
     margin: 4px;
+    font-size: small;
     text-align: center;
 }
 

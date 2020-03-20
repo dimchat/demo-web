@@ -12,43 +12,50 @@ if (typeof tarsier !== "object") {
 if (typeof tarsier.ui !== "object") {
     tarsier.ui = {}
 }! function(ns) {
-    var $ = function(div) {
-        if (!div) {
+    var $ = function(node) {
+        if (!node) {
             return null
         }
-        if (div instanceof ns.View) {
-            return div
+        if (node.__vc instanceof ns.View) {
+            return node.__vc
         }
-        if (typeof div === "string") {
-            div = select(div)
+        if (node instanceof ns.View) {
+            return node
         }
-        if (div.__vc instanceof ns.View) {
-            return div.__vc
-        } else {
-            if (div instanceof HTMLInputElement) {
-                return new ns.Input(div)
-            } else {
-                if (div instanceof HTMLImageElement) {
-                    return new ns.Image(div)
-                } else {
-                    if (div instanceof HTMLButtonElement) {
-                        return new ns.Button(div)
-                    } else {
-                        if (div instanceof HTMLElement) {
-                            return new ns.View(div)
-                        } else {
-                            throw TypeError("element error: " + div)
-                        }
-                    }
-                }
-            }
+        if (node instanceof HTMLDivElement) {
+            return new ns.View(node)
         }
+        if (node instanceof HTMLSpanElement) {
+            return new ns.Label(node)
+        }
+        if (node instanceof HTMLImageElement) {
+            return new ns.Image(node)
+        }
+        if (node instanceof HTMLButtonElement) {
+            return new ns.Button(node)
+        }
+        if (node instanceof HTMLLinkElement) {
+            return new ns.Link(node)
+        }
+        if (node instanceof HTMLInputElement) {
+            return new ns.Input(node)
+        }
+        if (node instanceof HTMLTextAreaElement) {
+            return new ns.TextArea(node)
+        }
+        if (node instanceof HTMLElement) {
+            return new ns.View(node)
+        }
+        if (typeof node === "string") {
+            return $(select(node))
+        }
+        throw TypeError("element error: " + node)
     };
-    var select = function(div) {
-        if (div.charAt(0) === "#") {
-            return document.getElementById(div.substring(1))
+    var select = function(path) {
+        if (path.charAt(0) === "#") {
+            return document.getElementById(path.substring(1))
         }
-        console.error("could not get element: " + div)
+        throw Error("failed to select element: " + path)
     };
     ns.$ = $
 }(tarsier.ui);
@@ -240,7 +247,8 @@ if (typeof tarsier.ui !== "object") {
         this.__ie = div;
         this.__frame = Rect.Zero.clone();
         this.__bounds = Rect.Zero.clone();
-        this.setScroll(false)
+        this.setScroll(false);
+        this.needsLayoutSubviews = false
     };
     View.prototype = Object.create(Object.prototype);
     View.prototype.constructor = View;
@@ -295,14 +303,14 @@ if (typeof tarsier.ui !== "object") {
     };
     View.prototype.removeChild = function(child) {
         child = $(child);
-        var div = child.__ie;
-        delete div.__vc;
-        this.__ie.removeChild(div)
+        this.__ie.removeChild(child.__ie);
+        delete child.__ie
     };
     View.prototype.replaceChild = function(newChild, oldChild) {
         newChild = $(newChild);
         oldChild = $(oldChild);
-        this.__ie.replaceChild(newChild.__ie, oldChild.__ie)
+        this.__ie.replaceChild(newChild.__ie, oldChild.__ie);
+        delete oldChild.__ie
     };
     View.prototype.contains = function(child) {
         child = $(child);
@@ -391,13 +399,20 @@ if (typeof tarsier.ui !== "object") {
         var right = frame.size.width - left - bounds.size.width;
         var bottom = frame.size.height - top - bounds.size.height;
         this.setPadding(top + "px " + right + "px " + bottom + "px " + left + "px");
-        var needsLayoutSubviews = !this.__bounds.size.equals(bounds.size);
+        this.needsLayoutSubviews = true;
         this.__bounds = bounds;
-        if (needsLayoutSubviews) {
-            this.layoutSubviews()
-        }
+        this.layoutSubviews()
     };
-    View.prototype.layoutSubviews = function() {};
+    View.prototype.layoutSubviews = function() {
+        if (!this.needsLayoutSubviews) {
+            return
+        }
+        var children = this.getChildren();
+        for (var i = 0; i < children.length; ++i) {
+            children[i].layoutSubviews()
+        }
+        this.needsLayoutSubviews = false
+    };
     View.prototype.setMargin = function(margin) {
         if (typeof margin === "number") {
             margin = margin + "px"
@@ -431,7 +446,7 @@ if (typeof tarsier.ui !== "object") {
                             top = parse_int(values[0]);
                             right = parse_int(values[1]);
                             bottom = parse_int(values[2]);
-                            left = right = parse_int(values[3])
+                            left = parse_int(values[3])
                         } else {
                             throw Error("padding error: " + padding)
                         }
@@ -467,18 +482,17 @@ if (typeof tarsier.ui !== "object") {
         this.__ie.style.padding = padding
     };
     View.prototype.getZ = function() {
-        var zIndex = this.__ie.style.zIndex;
-        if (zIndex) {
-            return parseInt(zIndex)
-        } else {
-            return 0
-        }
+        return parse_int(this.__ie.style.zIndex)
     };
     View.prototype.setZ = function(zIndex) {
         this.__ie.style.zIndex = zIndex
     };
     View.prototype.floatToTop = function() {
         var parent = this.getParent();
+        if (!parent) {
+            console.error("parent node empty");
+            return
+        }
         var brothers = parent.getChildren();
         var pos = brothers.indexOf(this);
         var zIndex = 0,

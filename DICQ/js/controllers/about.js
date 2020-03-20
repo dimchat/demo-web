@@ -39,12 +39,12 @@
         // version
         var version = new Label();
         version.setClassName('version');
-        version.setText('DICQ 2020\nPowered by DIMP');
+        version.setText('DICQ 2020\n(Powered by DIMP)');
         this.appendChild(version);
         // copyright
         var copyright = new Label();
         copyright.setClassName('copyright');
-        copyright.setText('Albert Moky @2020');
+        copyright.setText('@2020 Albert Moky');
         this.appendChild(copyright);
         // button
         var button = new Button();

@@ -35,36 +35,54 @@ if (typeof tarsier.ui !== "object") {
 !function (ns) {
     'use strict';
 
-    var $ = function (div) {
-        if (!div) {
+    var $ = function (node) {
+        if (!node) {
             return null;
         }
-        if (div instanceof ns.View) {
-            return div;
+        // already create?
+        if (node.__vc instanceof ns.View) {
+            return node.__vc;
         }
-        if (typeof div === 'string') {
-            div = select(div);
+        if (node instanceof ns.View) {
+            return node;
         }
-        if (div.__vc instanceof ns.View) {
-            return div.__vc;
-        } else if (div instanceof HTMLInputElement) {
-            return new ns.Input(div);
-        } else if (div instanceof HTMLImageElement) {
-            return new ns.Image(div);
-        } else if (div instanceof HTMLButtonElement) {
-            return new ns.Button(div);
-        } else if (div instanceof HTMLElement) {
-            return new ns.View(div);
-        } else {
-            throw TypeError('element error: ' + div);
+        // create with element type
+        if (node instanceof HTMLDivElement) {
+            return new ns.View(node);
         }
+        if (node instanceof HTMLSpanElement) {
+            return new ns.Label(node);
+        }
+        if (node instanceof HTMLImageElement) {
+            return new ns.Image(node);
+        }
+        if (node instanceof HTMLButtonElement) {
+            return new ns.Button(node);
+        }
+        if (node instanceof HTMLLinkElement) {
+            return new ns.Link(node);
+        }
+        if (node instanceof HTMLInputElement) {
+            return new ns.Input(node);
+        }
+        if (node instanceof HTMLTextAreaElement) {
+            return new ns.TextArea(node);
+        }
+        if (node instanceof HTMLElement) {
+            return new ns.View(node);
+        }
+        // select by path string
+        if (typeof node === 'string') {
+            return $(select(node));
+        }
+        throw TypeError('element error: ' + node);
     };
 
-    var select = function (div) {
-        if (div.charAt(0) === '#') {
-            return document.getElementById(div.substring(1));
+    var select = function (path) {
+        if (path.charAt(0) === '#') {
+            return document.getElementById(path.substring(1));
         }
-        console.error('could not get element: ' + div);
+        throw Error('failed to select element: ' + path);
     };
 
     //-------- namespace --------

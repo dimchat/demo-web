@@ -48,6 +48,8 @@
         this.__bounds = Rect.Zero.clone();
 
         this.setScroll(false);
+        // indicates whether need to layout childNodes
+        this.needsLayoutSubviews = false;
     };
     View.prototype = Object.create(Object.prototype);
     View.prototype.constructor = View;
@@ -110,16 +112,20 @@
     };
     View.prototype.removeChild = function (child) {
         child = $(child);
-        // 1. remove view controller
-        var div = child.__ie;
-        delete div.__vc;
-        // 2. remove inner element
-        this.__ie.removeChild(div);
+        // 1. remove child node from parent node
+        this.__ie.removeChild(child.__ie);
+        // 2. remove child node from node controller
+        //    (to break circular reference)
+        delete child.__ie;
     };
     View.prototype.replaceChild = function (newChild, oldChild) {
         newChild = $(newChild);
         oldChild = $(oldChild);
+        // 1. replace old node with new node
         this.__ie.replaceChild(newChild.__ie, oldChild.__ie);
+        // 2. remove old node from node controller
+        //    (to break circular reference)
+        delete oldChild.__ie;
     };
     View.prototype.contains = function (child) {
         child = $(child);
@@ -219,23 +225,30 @@
             // bounds not change
             return ;
         }
-        // padding
+
+        // update padding for new bounds
         var frame = this.__frame;
         var left = bounds.origin.x;
         var top = bounds.origin.y;
         var right = frame.size.width - left - bounds.size.width;
         var bottom = frame.size.height - top - bounds.size.height;
         this.setPadding(top + 'px ' + right + 'px ' + bottom + 'px ' + left + 'px');
+
         // update bounds and layout subviews
-        var needsLayoutSubviews = !this.__bounds.size.equals(bounds.size);
+        this.needsLayoutSubviews = true;//!this.__bounds.size.equals(bounds.size);
         this.__bounds = bounds;
-        if (needsLayoutSubviews) {
-            this.layoutSubviews();
-        }
+        this.layoutSubviews();
     };
 
     View.prototype.layoutSubviews = function () {
-        // implement me to adjust subviews
+        if (!this.needsLayoutSubviews) {
+            return ;
+        }
+        var children = this.getChildren();
+        for (var i = 0; i < children.length; ++i) {
+            children[i].layoutSubviews();
+        }
+        this.needsLayoutSubviews = false;
     };
 
     View.prototype.setMargin = function (margin) {
@@ -269,7 +282,7 @@
                 top = parse_int(values[0]);
                 right = parse_int(values[1]);
                 bottom = parse_int(values[2]);
-                left = right = parse_int(values[3]);
+                left = parse_int(values[3]);
             } else {
                 throw Error('padding error: ' + padding);
             }
@@ -301,12 +314,7 @@
     };
 
     View.prototype.getZ = function () {
-        var zIndex = this.__ie.style.zIndex;
-        if (zIndex) {
-            return parseInt(zIndex);
-        } else {
-            return 0;
-        }
+        return parse_int(this.__ie.style.zIndex);
     };
     View.prototype.setZ = function (zIndex) {
         this.__ie.style.zIndex = zIndex;
@@ -314,6 +322,10 @@
 
     View.prototype.floatToTop = function () {
         var parent = this.getParent();
+        if (!parent) {
+            console.error('parent node empty');
+            return ;
+        }
         var brothers = parent.getChildren();
         var pos = brothers.indexOf(this);
         var zIndex = 0, z;
