@@ -49,8 +49,6 @@
 
     var ContentProcessor = ns.cpu.ContentProcessor;
 
-    var NotificationCenter = ns.stargate.NotificationCenter;
-
     /**
      *  Default Content Processor
      */
@@ -85,9 +83,6 @@
             // Other
             return process.call(this, content, sender, msg);
         }
-
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
 
         // check group message
         var group = content.getGroup();

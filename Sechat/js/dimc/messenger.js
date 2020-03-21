@@ -201,9 +201,10 @@
             }
         }
 
+        var db = MessageTable.getInstance();
         // save instant message into database
         if (group) {
-            return save_msg(iMsg, group);
+            return db.insertMessage(iMsg, group);
         }
         var sender = facebook.getIdentifier(iMsg.envelope.sender);
         var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
@@ -215,26 +216,9 @@
             // if (facebook.getPrivateKeyForSignature(sender)) {
             //     throw Error('loop message: ' + iMsg.getMap(false));
             // }
-            return save_msg(iMsg, sender);
+            return db.insertMessage(iMsg, sender);
         }
-        return save_msg(iMsg, receiver);
-    };
-
-    var save_msg = function (msg, conversation) {
-        var db = MessageTable.getInstance();
-        var messages = db.loadMessages(conversation);
-        if (messages) {
-            for (var i = 0; i < messages.length; ++i) {
-                if (messages[i].equals(msg)) {
-                    console.log('duplicate message', msg);
-                    return false;
-                }
-            }
-            messages.push(msg);
-        } else {
-            messages = [msg];
-        }
-        return db.saveMessages(messages, conversation);
+        return db.insertMessage(iMsg, receiver);
     };
 
     // Override

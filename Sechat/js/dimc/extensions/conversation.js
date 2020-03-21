@@ -50,7 +50,7 @@
      *  Save the new message to local storage
      *
      * @param {InstantMessage} iMsg
-     * @param {Conversation} conversation
+     * @param {ID} conversation - contact/group ID
      * @returns boolean
      */
     ConversationDelegate.prototype.insertMessage = function (iMsg, conversation) {
@@ -63,7 +63,7 @@
      *  Delete the message
      *
      * @param {InstantMessage} iMsg
-     * @param {Conversation} conversation
+     * @param {ID} conversation - contact/group ID
      * @returns {boolean}
      */
     ConversationDelegate.prototype.removeMessage = function (iMsg, conversation) {
@@ -75,7 +75,7 @@
      *  Try to withdraw the message, maybe won't success
      *
      * @param {InstantMessage} iMsg
-     * @param {Conversation} conversation
+     * @param {ID} conversation - contact/group ID
      * @returns {boolean}
      */
     ConversationDelegate.prototype.withdrawMessage = function (iMsg, conversation) {
@@ -161,15 +161,15 @@
     };
 
     Conversation.prototype.insertMessage = function (iMsg) {
-        return this.delegate.insertMessage(iMsg, this);
+        return this.delegate.insertMessage(iMsg, this.getIdentifier());
     };
 
     Conversation.prototype.removeMessage = function (iMsg) {
-        return this.delegate.removeMessage(iMsg, this);
+        return this.delegate.removeMessage(iMsg, this.getIdentifier());
     };
 
     Conversation.prototype.withdrawMessage = function (iMsg) {
-        return this.delegate.withdrawMessage(iMsg, this);
+        return this.delegate.withdrawMessage(iMsg, this.getIdentifier());
     };
 
     //-------- namespace --------

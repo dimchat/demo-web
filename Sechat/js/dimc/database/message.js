@@ -87,14 +87,15 @@
 !function (ns) {
     'use strict';
 
+    var NotificationCenter = ns.stargate.NotificationCenter;
+
     //
     //  ConversationDataSource
     //
 
     var MessageTable = ns.db.MessageTable;
 
-    MessageTable.prototype.getMessageCount = function (conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.getMessageCount = function (identifier) {
         var messages = this.loadMessages(identifier);
         if (messages) {
             return messages.length;
@@ -103,8 +104,7 @@
         }
     };
 
-    MessageTable.prototype.getMessage = function (index, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.getMessage = function (index, identifier) {
         var messages = this.loadMessages(identifier);
         console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
         return messages[index];
@@ -114,8 +114,7 @@
     //  ConversationDelegate
     //
 
-    MessageTable.prototype.insertMessage = function (iMsg, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.insertMessage = function (iMsg, identifier) {
         var messages = this.loadMessages(identifier);
         if (messages) {
             if (!insert_message(iMsg, messages)) {
@@ -125,7 +124,12 @@
         } else {
             messages = [iMsg];
         }
-        return this.saveMessages(messages, identifier);
+        if (this.saveMessages(messages, identifier)) {
+            var nc = NotificationCenter.getInstance();
+            nc.postNotification(nc.kNotificationMessageReceived, this, iMsg);
+        } else {
+            throw Error('failed to save message: ' + iMsg);
+        }
     };
 
     var insert_message = function (iMsg, messages) {
@@ -189,14 +193,13 @@
         return true;
     };
 
-    MessageTable.prototype.removeMessage = function (iMsg, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.removeMessage = function (iMsg, identifier) {
         var messages = this.loadMessages(identifier);
         console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
         if (!remove_message(iMsg, messages)) {
             return false;
         }
-        return this.saveMessages(messages, conversation);
+        return this.saveMessages(messages, identifier);
     };
 
 }(DIMP);

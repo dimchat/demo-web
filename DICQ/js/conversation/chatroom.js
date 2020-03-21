@@ -23,6 +23,14 @@
     };
     dimp.Class(ChatroomWindow, GroupChatWindow, null);
 
+    ChatroomWindow.prototype.getAdministrator = function () {
+        return this.__identifier;
+    };
+    ChatroomWindow.prototype.getParticipants = function () {
+        // TODO: query online users
+        return [];
+    };
+
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
@@ -33,43 +41,36 @@
             if (ID.EVERYONE.equals(env.receiver) ||
                 identifier.equals(env.receiver) ||
                 identifier.equals(env.sender)) {
-                this.appendMessage(msg);
+                // reload chat history
+                this.historyView.reloadData();
             }
         }
+        // TODO: process group members updated notification
     };
 
-    ChatroomWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
-        var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
-            var msg = notification.userInfo;
-            var receiver = msg.envelope.receiver;
-            if (ID.EVERYONE.equals(receiver)) {
-                this.appendMessage(msg);
-            } else if (ID.EVERYONE.equals(msg.content.getGroup())) {
-                this.appendMessage(msg);
-            }
-        }
+    ChatroomWindow.prototype.reloadData = function () {
+        ChatWindow.prototype.reloadData.call(this);
+        // TODO: query group owner & members
+        this.membersView.reloadData();
     };
 
     //
     //  TableViewDataSource
     //
     ChatroomWindow.prototype.titleForHeaderInSection = function (section, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.titleForHeaderInSection.call(this, section, tableView);
+        }
         if (section === 0) {
-            return 'Admin';
+            return 'Administrator';
         } else {
             return 'Online user(s)';
         }
     };
 
-    ChatroomWindow.prototype.reloadData = function () {
-        ChatWindow.prototype.reloadData.call(this);
-        // reload members
-        this.owner = this.__identifier;
-        this.membersView.refresh();
-    };
-
+    //
+    //  Send message
+    //
     ChatroomWindow.prototype.sendText = function (text) {
         var messenger = Messenger.getInstance();
         var server = messenger.server;
@@ -87,6 +88,9 @@
         return this.sendContent(new ForwardContent(msg));
     };
 
+    //
+    //  Factory
+    //
     ChatroomWindow.show = function (admin, clazz) {
         if (!clazz) {
             clazz = ChatroomWindow;

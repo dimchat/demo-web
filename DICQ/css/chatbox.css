@@ -46,6 +46,29 @@
     overflow-y: auto;
 }
 
+.chatWindow .historyView .ts_cell {
+    border-bottom: 1px dashed #FFFCF9;
+    padding: 8px;
+}
+
+.chatWindow .historyView span {
+    display: block;
+}
+.chatWindow .historyView .sent {
+    text-align: right;
+}
+.chatWindow .historyView .name {
+    color: darkblue;
+    font-size: small;
+}
+.chatWindow .historyView .time {
+    color: gray;
+    font-size: small;
+}
+.chatWindow .historyView .content {
+    margin: 8px 16px;
+}
+
 .chatWindow .messageView {
     position: absolute;
     margin: 4px;
@@ -94,7 +117,7 @@
 
 .groupChatWindow .membersView .ts_cell {
     width: 100%;
-    border-bottom: 1px dashed #727377;
+    border-bottom: 1px dashed #FFFCF9;
     padding: 8px;
     background-color: #E6E3E0;
     white-space: nowrap;

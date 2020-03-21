@@ -8,7 +8,6 @@
     var Size = tui.Size;
     var Rect = tui.Rect;
 
-    var ScrollView = tui.ScrollView;
     var Label = tui.Label;
     var TextArea = tui.TextArea;
     var Button = tui.Button;
@@ -19,6 +18,11 @@
     var Facebook = dimp.Facebook;
     var Messenger = dimp.Messenger;
     var StarStatus = dimp.stargate.StarStatus;
+
+    var TableViewCell = tui.TableViewCell;
+    var TableViewDataSource = tui.TableViewDataSource;
+    var TableViewDelegate = tui.TableViewDelegate;
+    var TableView = tui.TableView;
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
@@ -62,10 +66,12 @@
         //
         //  Message
         //
-        var history = new ScrollView();
-        history.setClassName('historyView');
-        this.appendChild(history);
-        this.historyView = history;
+        var table = new TableView();
+        table.setClassName('historyView');
+        table.dataSource = this;
+        table.delegate = this;
+        this.appendChild(table);
+        this.historyView = table;
 
         // message
         var message = new TextArea();
@@ -85,7 +91,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    dimp.Class(ChatWindow, Window, null);
+    dimp.Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate]);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = Facebook.getInstance();
@@ -107,35 +113,73 @@
             var identifier = this.__identifier;
             if (identifier.equals(env.sender) ||
                 identifier.equals(env.receiver)) {
-                this.appendMessage(msg);
+                // reload chat history
+                this.historyView.reloadData();
             }
         }
     };
 
     ChatWindow.prototype.reloadData = function () {
-        this.clearMessages();
-        var db = MessageTable.getInstance();
-        var messages = db.loadMessages(this.__identifier);
-        if (messages) {
-            for (var i = 0; i < messages.length; ++i) {
-                this.appendMessage(messages[i]);
-            }
-        }
+        this.historyView.reloadData();
     };
 
-    ChatWindow.prototype.clearMessages = function () {
-        var history = this.historyView.__ie;
-        history.innerText = '';
-    };
-    ChatWindow.prototype.appendMessage = function (iMsg) {
-        var history = this.historyView.__ie;
-        var text = history.innerText;
-        if (text) {
-            text += '\n--------\n';
+    //
+    //  TableViewDataSource
+    //
+    ChatWindow.prototype.numberOfRowsInSection = function (section, tableView) {
+        if (tableView !== this.historyView) {
+            throw Error('table view error');
         }
-        // time
+        var db = MessageTable.getInstance();
+        return db.getMessageCount(this.__identifier);
+    };
+
+    ChatWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
+        if (tableView !== this.historyView) {
+            throw Error('table view error');
+        }
+        var facebook = Facebook.getInstance();
+        var db = MessageTable.getInstance();
+        var iMsg = db.getMessage(indexPath.row, this.__identifier);
+        // create table cell
+        var cell = new TableViewCell();
+
+        // message time
         var time = iMsg.envelope.getTime();
-        if (time) {
+        var timeView = new Label();
+        timeView.setClassName('time');
+        timeView.setText(time_string(time));
+        cell.appendChild(timeView);
+
+        // name & number
+        var sender = facebook.getIdentifier(iMsg.envelope.sender);
+        var name = facebook.getNickname(sender);
+        if (!name) {
+            name = sender.name;
+        }
+        var number = facebook.getNumberString(sender);
+        var nameView = new Label();
+        nameView.setClassName('name');
+        nameView.setText(name + ' (' + number + ')');
+        cell.appendChild(nameView);
+
+        // message content
+        var text = iMsg.content.getValue('text');
+        var textView = new Label();
+        textView.setClassName('content');
+        textView.setText(text);
+        cell.appendChild(textView);
+
+        if (facebook.getPrivateKeyForSignature(sender)) {
+            cell.setClassName('sent');
+        } else {
+            cell.setClassName('received');
+        }
+        return cell;
+    };
+
+    var time_string = function (time) {
+        if (time instanceof Date) {
             var year = time.getFullYear();
             var month = time.getMonth() + 1;
             var date = time.getDate();
@@ -151,25 +195,15 @@
 
             var ts = year + '-' + month + '-' + date;
             ts += ' ' + hours + ':' + minutes + ':' + seconds;
-            text += '[' + ts + '] ';
-        }
-        // sender
-        var facebook = Facebook.getInstance();
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
-        var name = facebook.getNickname(sender);
-        if (!name) {
-            name = sender.name;
-        }
-        var number = facebook.getNumberString(sender);
-        text += name + ' (' + number + '):\n';
-        // text
-        var content = iMsg.content;
-        if (content instanceof TextContent) {
-            text += content.getText();
-            history.innerText = text;
-            history.scrollTop = history.scrollHeight;
+            return ts;
+        } else {
+            return '';
         }
     };
+
+    //
+    //  Send message
+    //
 
     ChatWindow.prototype.sendText = function (text) {
         var content = new TextContent(text);
@@ -208,7 +242,7 @@
         if (messenger.sendContent(content, receiver, null, false)) {
             console.log('sending message: ', content);
             this.messageView.setValue('');
-            this.reloadData();
+            this.historyView.reloadData();
             return true;
         } else {
             alert('Cannot send message now.');
@@ -216,6 +250,9 @@
         }
     };
 
+    //
+    //  Factory
+    //
     ChatWindow.show = function (identifier, clazz) {
         var box = null;
         var elements = document.getElementsByClassName('chatWindow');

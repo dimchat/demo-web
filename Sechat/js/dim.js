@@ -108,13 +108,13 @@
         return this.dataSource.getMessage(count - 1)
     };
     Conversation.prototype.insertMessage = function(iMsg) {
-        return this.delegate.insertMessage(iMsg, this)
+        return this.delegate.insertMessage(iMsg, this.getIdentifier())
     };
     Conversation.prototype.removeMessage = function(iMsg) {
-        return this.delegate.removeMessage(iMsg, this)
+        return this.delegate.removeMessage(iMsg, this.getIdentifier())
     };
     Conversation.prototype.withdrawMessage = function(iMsg) {
-        return this.delegate.withdrawMessage(iMsg, this)
+        return this.delegate.withdrawMessage(iMsg, this.getIdentifier())
     };
     ns.Conversation = Conversation
 }(DIMP);
@@ -298,7 +298,6 @@
     var PageContent = ns.protocol.PageContent;
     var ReceiptCommand = ns.protocol.ReceiptCommand;
     var ContentProcessor = ns.cpu.ContentProcessor;
-    var NotificationCenter = ns.stargate.NotificationCenter;
     var DefaultContentProcessor = ns.cpu.DefaultContentProcessor;
     var process = DefaultContentProcessor.prototype.process;
     DefaultContentProcessor.prototype.process = function(content, sender, msg) {
@@ -328,8 +327,6 @@
                 }
             }
         }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
         var group = content.getGroup();
         if (group) {
             return null
@@ -1517,9 +1514,9 @@
     ns.db.MessageTable = MessageTable
 }(DIMP);
 ! function(ns) {
+    var NotificationCenter = ns.stargate.NotificationCenter;
     var MessageTable = ns.db.MessageTable;
-    MessageTable.prototype.getMessageCount = function(conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.getMessageCount = function(identifier) {
         var messages = this.loadMessages(identifier);
         if (messages) {
             return messages.length
@@ -1527,14 +1524,12 @@
             return 0
         }
     };
-    MessageTable.prototype.getMessage = function(index, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.getMessage = function(index, identifier) {
         var messages = this.loadMessages(identifier);
         console.assert(messages !== null, "failed to get messages for conversation: " + identifier);
         return messages[index]
     };
-    MessageTable.prototype.insertMessage = function(iMsg, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.insertMessage = function(iMsg, identifier) {
         var messages = this.loadMessages(identifier);
         if (messages) {
             if (!insert_message(iMsg, messages)) {
@@ -1543,7 +1538,12 @@
         } else {
             messages = [iMsg]
         }
-        return this.saveMessages(messages, identifier)
+        if (this.saveMessages(messages, identifier)) {
+            var nc = NotificationCenter.getInstance();
+            nc.postNotification(nc.kNotificationMessageReceived, this, iMsg)
+        } else {
+            throw Error("failed to save message: " + iMsg)
+        }
     };
     var insert_message = function(iMsg, messages) {
         var t1, t2;
@@ -1595,14 +1595,13 @@
         ns.type.Arrays.insert(messages, index + 1, iMsg);
         return true
     };
-    MessageTable.prototype.removeMessage = function(iMsg, conversation) {
-        var identifier = conversation.getIdentifier();
+    MessageTable.prototype.removeMessage = function(iMsg, identifier) {
         var messages = this.loadMessages(identifier);
         console.assert(messages !== null, "failed to get messages for conversation: " + identifier);
         if (!remove_message(iMsg, messages)) {
             return false
         }
-        return this.saveMessages(messages, conversation)
+        return this.saveMessages(messages, identifier)
     }
 }(DIMP);
 ! function(ns) {
@@ -2255,31 +2254,16 @@
                 delete key["reused"]
             }
         }
+        var db = MessageTable.getInstance();
         if (group) {
-            return save_msg(iMsg, group)
+            return db.insertMessage(iMsg, group)
         }
         var sender = facebook.getIdentifier(iMsg.envelope.sender);
         var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
         if (facebook.getPrivateKeyForSignature(receiver)) {
-            return save_msg(iMsg, sender)
+            return db.insertMessage(iMsg, sender)
         }
-        return save_msg(iMsg, receiver)
-    };
-    var save_msg = function(msg, conversation) {
-        var db = MessageTable.getInstance();
-        var messages = db.loadMessages(conversation);
-        if (messages) {
-            for (var i = 0; i < messages.length; ++i) {
-                if (messages[i].equals(msg)) {
-                    console.log("duplicate message", msg);
-                    return false
-                }
-            }
-            messages.push(msg)
-        } else {
-            messages = [msg]
-        }
-        return db.saveMessages(messages, conversation)
+        return db.insertMessage(iMsg, receiver)
     };
     Messenger.prototype.suspendMessage = function(msg) {
         if (msg instanceof InstantMessage) {} else {
