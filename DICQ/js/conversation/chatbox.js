@@ -85,8 +85,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    ChatWindow.prototype = Object.create(Window.prototype);
-    ChatWindow.prototype.constructor = ChatWindow;
+    dimp.Class(ChatWindow, Window, null);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = Facebook.getInstance();
@@ -100,20 +99,14 @@
     };
 
     ChatWindow.prototype.onReceiveNotification = function (notification) {
-        var identifier = this.__identifier;
-        if (!identifier) {
-            throw Error('conversation ID not set');
-        }
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
         if (name === nc.kNotificationMessageReceived) {
             var msg = notification.userInfo;
             var env = msg.envelope;
-            if (identifier.equals(env.getGroup())) {
-                this.appendMessage(msg);
-            } else if (identifier.equals(env.sender)) {
-                this.appendMessage(msg);
-            } else if (identifier.equals(env.receiver)) {
+            var identifier = this.__identifier;
+            if (identifier.equals(env.sender) ||
+                identifier.equals(env.receiver)) {
                 this.appendMessage(msg);
             }
         }

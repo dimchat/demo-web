@@ -1,5 +1,5 @@
 
-!function (ns, tui) {
+!function (ns, tui, dimp) {
     'use strict';
 
     var $ = tui.$;
@@ -56,8 +56,7 @@
         };
         this.appendChild(button);
     };
-    AboutWindow.prototype = Object.create(Window.prototype);
-    AboutWindow.prototype.constructor = AboutWindow;
+    dimp.Class(AboutWindow, Window, null);
 
     AboutWindow.show = function () {
         var box = document.getElementById('aboutWindow');
@@ -73,4 +72,4 @@
 
     ns.AboutWindow = AboutWindow;
 
-}(window, tarsier.ui);
+}(window, tarsier.ui, DIMP);

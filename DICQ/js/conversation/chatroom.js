@@ -6,7 +6,6 @@
     var GroupChatWindow = ns.GroupChatWindow;
 
     var ID = dimp.ID;
-    var User = dimp.User;
 
     var ForwardContent = dimp.protocol.ForwardContent;
     var TextContent = dimp.protocol.TextContent;
@@ -17,19 +16,26 @@
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
-    var MessageTable = dimp.db.MessageTable;
-
     var ChatroomWindow = function () {
         GroupChatWindow.call(this);
         this.setClassName('chatroomWindow');
         this.setTitle('Chat Room');
     };
-    ChatroomWindow.prototype = Object.create(GroupChatWindow.prototype);
-    ChatroomWindow.prototype.constructor = ChatroomWindow;
+    dimp.Class(ChatroomWindow, GroupChatWindow, null);
 
-    ChatroomWindow.prototype.setIdentifier = function (identifier) {
-        ChatWindow.prototype.setIdentifier.call(this, identifier);
-        // TODO: update online users
+    ChatroomWindow.prototype.onReceiveNotification = function (notification) {
+        var nc = NotificationCenter.getInstance();
+        var name = notification.name;
+        if (name === nc.kNotificationMessageReceived) {
+            var msg = notification.userInfo;
+            var env = msg.envelope;
+            var identifier = this.__identifier;
+            if (ID.EVERYONE.equals(env.receiver) ||
+                identifier.equals(env.receiver) ||
+                identifier.equals(env.sender)) {
+                this.appendMessage(msg);
+            }
+        }
     };
 
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
@@ -46,22 +52,22 @@
         }
     };
 
-    ChatroomWindow.prototype.reloadData = function () {
-        this.clearMessages();
-        var db = MessageTable.getInstance();
-        var messages = db.loadMessages(ID.EVERYONE);
-        if (messages) {
-            for (var i = 0; i < messages.length; ++i) {
-                this.appendMessage(messages[i]);
-            }
+    //
+    //  TableViewDataSource
+    //
+    ChatroomWindow.prototype.titleForHeaderInSection = function (section, tableView) {
+        if (section === 0) {
+            return 'Admin';
+        } else {
+            return 'Online user(s)';
         }
     };
 
-    ChatroomWindow.prototype.setAdmin = function (admin) {
-        if (admin instanceof User) {
-            admin = admin.identifier;
-        }
-        this.setIdentifier(admin);
+    ChatroomWindow.prototype.reloadData = function () {
+        ChatWindow.prototype.reloadData.call(this);
+        // reload members
+        this.owner = this.__identifier;
+        this.membersView.refresh();
     };
 
     ChatroomWindow.prototype.sendText = function (text) {
@@ -82,9 +88,6 @@
     };
 
     ChatroomWindow.show = function (admin, clazz) {
-        if (admin instanceof User) {
-            admin = admin.identifier;
-        }
         if (!clazz) {
             clazz = ChatroomWindow;
         }

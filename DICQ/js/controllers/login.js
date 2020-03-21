@@ -51,8 +51,7 @@
         // current user
         this.__user = number;
     };
-    LoginWindow.prototype = Object.create(Window.prototype);
-    LoginWindow.prototype.constructor = LoginWindow;
+    dimp.Class(LoginWindow, Window, null);
 
     LoginWindow.prototype.setUser = function (user) {
         var facebook = Facebook.getInstance();

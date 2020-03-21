@@ -95,11 +95,16 @@ button:focus {
     color: darkblue;
 }
 
-.mainWindow .faceBtn {
+.mainWindow .meBtn {
     position: absolute;
     margin: 0 2px;
     width: 36px;
     height: 32px;
+    background-color: transparent;
+    background-image: url(../images/icon-120.png);
+    background-repeat: no-repeat;
+    background-size: 32px 28px;
+    -moz-background-size: 32px 28px;
     right: 2px;
     bottom: 4px;
     font-weight: bold;

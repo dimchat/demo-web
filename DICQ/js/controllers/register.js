@@ -40,8 +40,7 @@
         };
         this.appendChild(button);
     };
-    RegisterWindow.prototype = Object.create(Window.prototype);
-    RegisterWindow.prototype.constructor = RegisterWindow;
+    dimp.Class(RegisterWindow, Window, null);
 
     RegisterWindow.prototype.submit = function (nickname) {
         var reg = new Register();

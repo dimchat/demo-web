@@ -150,6 +150,11 @@ textarea {
     width: 80px;
     height: 80px;
     margin: 32px auto 8px;
+    background-color: transparent;
+    background-image: url(../images/icon-120.png);
+    background-repeat: no-repeat;
+    background-size: 80px 80px;
+    -moz-background-size: 80px 80px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     border-radius: 4px;

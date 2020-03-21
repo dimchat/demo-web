@@ -4,6 +4,11 @@
     width: 40px;
     height: 40px;
     margin: 4px;
+    background-color: transparent;
+    background-image: url(../images/icon-120.png);
+    background-repeat: no-repeat;
+    background-size: 40px 40px;
+    -moz-background-size: 40px 40px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     border-radius: 4px;
@@ -74,8 +79,25 @@
     border-left: 2px solid #727377;
     border-right: 2px solid #FFFCF9;
     border-bottom: 2px solid #FFFCF9;
+    background-color: #E6E3E0;
     width: 220px;
     height: 386px;
     top: 82px;
     right: 0;
+}
+
+.groupChatWindow .membersView .ts_header {
+    padding: 8px;
+    border-bottom: 1px solid #727377;
+    background-color: #D5D2CF;
+}
+
+.groupChatWindow .membersView .ts_cell {
+    width: 100%;
+    border-bottom: 1px dashed #727377;
+    padding: 8px;
+    background-color: #E6E3E0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }

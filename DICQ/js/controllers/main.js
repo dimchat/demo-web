@@ -70,7 +70,6 @@
         msg.onClick = function () {
             var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
             admin = facebook.getIdentifier(admin);
-            admin = facebook.getUser(admin);
             ns.ChatroomWindow.show(admin);
         };
         this.appendChild(msg);
@@ -87,14 +86,12 @@
         };
         this.appendChild(about);
 
-        var face = new Button();
-        face.setId('faceBtn');
-        face.setClassName('faceBtn buttonNormal');
-        face.setText('^_^');
-        this.appendChild(face);
+        var me = new Button();
+        me.setId('meBtn');
+        me.setClassName('meBtn buttonNormal');
+        this.appendChild(me);
     };
-    MainWindow.prototype = Object.create(Window.prototype);
-    MainWindow.prototype.constructor = MainWindow;
+    dimp.Class(MainWindow, Window, null);
 
     MainWindow.prototype.onClose = function (ev) {
         var user = facebook.getCurrentUser();

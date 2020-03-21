@@ -130,7 +130,6 @@
 
     // var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
     // admin = facebook.getIdentifier(admin);
-    // admin = facebook.getUser(admin);
     // ns.ChatroomWindow.show(admin).setOrigin(10, 10);
 
 }(window, tarsier.ui, DIMP);
