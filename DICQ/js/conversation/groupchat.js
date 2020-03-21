@@ -29,18 +29,35 @@
     };
     dimp.Class(GroupChatWindow, ChatWindow, null);
 
-    GroupChatWindow.prototype.getAdministrator = function () {
+    // group owner or admin
+    GroupChatWindow.prototype.getAdministratorCount = function () {
+        var facebook = Facebook.getInstance();
+        var owner = facebook.getOwner(this.__identifier);
+        if (owner) {
+            return 1;
+        } else {
+            return 0;
+        }
+    };
+    GroupChatWindow.prototype.getAdministrator = function (index) {
         var facebook = Facebook.getInstance();
         return facebook.getOwner(this.__identifier);
     };
-    GroupChatWindow.prototype.getParticipants = function () {
+
+    // group members
+    GroupChatWindow.prototype.getParticipantCount = function () {
         var facebook = Facebook.getInstance();
         var members = facebook.getMembers(this.__identifier);
         if (members) {
-            return members;
+            return members.length;
         } else {
-            return [];
+            return 0;
         }
+    };
+    GroupChatWindow.prototype.getParticipant = function (index) {
+        var facebook = Facebook.getInstance();
+        var members = facebook.getMembers(this.__identifier);
+        return members[index];
     };
 
     GroupChatWindow.prototype.onReceiveNotification = function (notification) {
@@ -89,10 +106,9 @@
             return ChatWindow.prototype.numberOfRowsInSection.call(this, section, tableView);
         }
         if (section === 0) {
-            return 1;
+            return this.getAdministratorCount();
         } else {
-            var members = this.getParticipants();
-            return members.length;
+            return this.getParticipantCount();
         }
     };
 
@@ -102,10 +118,9 @@
         }
         var identifier;
         if (indexPath.section === 0) {
-            identifier = this.getAdministrator();
+            identifier = this.getAdministrator(indexPath.row);
         } else {
-            var members = this.getParticipants();
-            identifier = members[indexPath.row];
+            identifier = this.getParticipant(indexPath.row);
         }
         // TODO: create table cell
         var cell = new TableViewCell();

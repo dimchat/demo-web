@@ -104,6 +104,15 @@
         this.reloadData();
     };
 
+    ChatWindow.prototype.getMessageCount = function () {
+        var db = MessageTable.getInstance();
+        return db.getMessageCount(this.__identifier);
+    };
+    ChatWindow.prototype.getMessage = function (index) {
+        var db = MessageTable.getInstance();
+        return db.getMessage(index, this.__identifier);
+    };
+
     ChatWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
@@ -130,17 +139,14 @@
         if (tableView !== this.historyView) {
             throw Error('table view error');
         }
-        var db = MessageTable.getInstance();
-        return db.getMessageCount(this.__identifier);
+        return this.getMessageCount();
     };
 
     ChatWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
         if (tableView !== this.historyView) {
             throw Error('table view error');
         }
-        var facebook = Facebook.getInstance();
-        var db = MessageTable.getInstance();
-        var iMsg = db.getMessage(indexPath.row, this.__identifier);
+        var iMsg = this.getMessage(indexPath.row);
         // create table cell
         var cell = new TableViewCell();
 
@@ -152,6 +158,7 @@
         cell.appendChild(timeView);
 
         // name & number
+        var facebook = Facebook.getInstance();
         var sender = facebook.getIdentifier(iMsg.envelope.sender);
         var name = facebook.getNickname(sender);
         if (!name) {

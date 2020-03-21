@@ -14,6 +14,8 @@
     var Envelope = dimp.Envelope;
     var Messenger = dimp.Messenger;
 
+    var MessageTable = dimp.db.MessageTable;
+
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var ChatroomWindow = function () {
@@ -23,12 +25,31 @@
     };
     dimp.Class(ChatroomWindow, GroupChatWindow, null);
 
-    ChatroomWindow.prototype.getAdministrator = function () {
+    ChatroomWindow.prototype.getMessageCount = function () {
+        var db = MessageTable.getInstance();
+        return db.getMessageCount(ID.EVERYONE);
+    };
+    ChatroomWindow.prototype.getMessage = function (index) {
+        var db = MessageTable.getInstance();
+        return db.getMessage(index, ID.EVERYONE);
+    };
+
+    ChatroomWindow.prototype.getAdministratorCount = function () {
+        return 1;
+    };
+    ChatroomWindow.prototype.getAdministrator = function (index) {
         return this.__identifier;
     };
-    ChatroomWindow.prototype.getParticipants = function () {
+
+    // group members
+    ChatroomWindow.prototype.getParticipantCount = function () {
         // TODO: query online users
-        return [];
+        return 0;
+    };
+    ChatroomWindow.prototype.getParticipant = function (index) {
+        // TODO: query online users
+        console.assert(false, 'error');
+        return null;
     };
 
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
