@@ -258,6 +258,15 @@
         'js/app.js',
         null
     ];
+
+    // check duplicate
+    if (typeof DIMP === 'object') {
+        sdk = [];
+        if (typeof DIMP['Amanuensis'] === 'object') {
+            dim_client = [];
+        }
+    }
+
     scripts = [].concat(sdk, dim_client, ui, scripts);
 
     var loader = new ns.Loader(tarsier, 'js/index.js');
