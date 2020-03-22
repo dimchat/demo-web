@@ -96,8 +96,10 @@
             name = identifier.name;
         }
         var number = facebook.getNumberString(identifier);
-        cell.setClassName('name');
         cell.setText(name + ' (' + number + ')');
+        if (facebook.getPrivateKeyForSignature(identifier)) {
+            cell.setClassName('me');
+        }
         return cell;
     };
 

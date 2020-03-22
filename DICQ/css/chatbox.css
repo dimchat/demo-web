@@ -124,3 +124,7 @@
     text-overflow: ellipsis;
     overflow: hidden;
 }
+
+.groupChatWindow .membersView .me {
+    color: red;
+}
