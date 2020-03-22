@@ -48,6 +48,15 @@
             res = 'Connection error.';
         } else if (name === nc.kNotificationHandshakeAccepted) {
             res = 'Handshake accepted!';
+            var user = facebook.getCurrentUser();
+            if (!user) {
+                return 'Current user not found';
+            }
+            profile = user.getProfile();
+            if (profile && profile.getValue('data')) {
+                var messenger = Messenger.getInstance();
+                messenger.postProfile(profile);
+            }
         } else if (name === nc.kNotificationMetaAccepted) {
             identifier = notification.userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
