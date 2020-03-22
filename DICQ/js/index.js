@@ -1,5 +1,9 @@
 ;
 
+if (typeof dicq !== 'object') {
+    dicq = {};
+}
+
 !function (ns) {
     'use strict';
 
@@ -140,7 +144,7 @@
 
     ns.Loader = Loader;
 
-}(window);
+}(dicq);
 
 !function (ns) {
     'use strict';
@@ -238,6 +242,10 @@
             tarsier_ui = [];
         }
     }
+    if (typeof ns.Application === 'object') {
+        stylesheets = [];
+        scripts = [];
+    }
 
     scripts = [].concat(dimsdk, dim_client, tarsier_ui, scripts);
 
@@ -251,4 +259,4 @@
         loader.importJS(scripts[j]);
     }
 
-}(window);
+}(dicq);

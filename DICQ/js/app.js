@@ -1,15 +1,15 @@
 
-!function (ns) {
+!function (ns, dimp) {
     'use strict';
 
-    var ID = ns.ID;
+    var ID = dimp.ID;
 
-    var Facebook = ns.Facebook;
-    var Messenger = ns.Messenger;
+    var Facebook = dimp.Facebook;
+    var Messenger = dimp.Messenger;
 
-    var StationDelegate = ns.network.StationDelegate;
+    var StationDelegate = dimp.network.StationDelegate;
 
-    var NotificationCenter = ns.stargate.NotificationCenter;
+    var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var Application = function () {
         // notifications
@@ -22,7 +22,7 @@
         nc.addObserver(this, nc.kNotificationProfileUpdated);
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    ns.Class(Application, null, [StationDelegate]);
+    dimp.Class(Application, null, [StationDelegate]);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -115,7 +115,7 @@
     var server = messenger.server;
     server.stationDelegate = app;
 
-}(DIMP);
+}(dicq, DIMP);
 
 !function (ns, tui, dimp) {
     'use strict';
@@ -141,4 +141,4 @@
     // admin = facebook.getIdentifier(admin);
     // ns.ChatroomWindow.show(admin).setOrigin(10, 10);
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

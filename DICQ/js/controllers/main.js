@@ -115,4 +115,4 @@
 
     ns.MainWindow = MainWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

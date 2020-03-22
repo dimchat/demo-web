@@ -1,5 +1,9 @@
 ;
 
+if (typeof dterm !== 'object') {
+    dterm = {};
+}
+
 !function (ns) {
     'use strict';
 
@@ -133,7 +137,7 @@
 
     ns.Loader = Loader;
 
-}(window);
+}(dterm);
 
 !function (node) {
     'use strict';
@@ -157,6 +161,8 @@
 
 !function (ns) {
     'use strict';
+
+    var Loader = ns.Loader;
 
     var release = true;
     if (ns['DEBUG']) {
@@ -269,7 +275,7 @@
 
     scripts = [].concat(sdk, dim_client, ui, scripts);
 
-    var loader = new ns.Loader(tarsier, 'js/index.js');
+    var loader = new Loader(tarsier, 'js/index.js');
     for (var i = 0; i < stylesheets.length; ++i) {
         loader.importCSS(stylesheets[i]);
     }
@@ -280,10 +286,10 @@
     loader.importJS('js/config.js', function () {
         // start after last script loaded
         $(function () {
-            dimsdk.Application.prototype.write = window.shell_output;
-            var server = dimsdk.Messenger.getInstance().server;
+            ns.Application.prototype.write = window.shell_output;
+            var server = DIMP.Messenger.getInstance().server;
             server.start();
         });
     });
 
-}(window);
+}(dterm);

@@ -116,10 +116,9 @@
 }
 
 .groupChatWindow .membersView .ts_cell {
-    width: 100%;
+    width: 204px;
     border-bottom: 1px dashed #FFFCF9;
     padding: 8px;
-    background-color: #E6E3E0;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;

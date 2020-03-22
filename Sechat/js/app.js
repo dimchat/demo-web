@@ -3,19 +3,19 @@
 //! require <dimsdk.js>
 //! require 'bubble.js'
 
-!function (ns) {
+!function (ns, dimp) {
     'use strict';
 
-    var ID = ns.ID;
+    var ID = dimp.ID;
 
-    var Facebook = ns.Facebook;
-    var Messenger = ns.Messenger;
+    var Facebook = dimp.Facebook;
+    var Messenger = dimp.Messenger;
 
-    var StationDelegate = ns.network.StationDelegate;
+    var StationDelegate = dimp.network.StationDelegate;
 
-    var Register = ns.extensions.Register;
+    var Register = dimp.extensions.Register;
 
-    var NotificationCenter = ns.stargate.NotificationCenter;
+    var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var Application = function () {
         this.bubble = new Bubble();
@@ -29,7 +29,7 @@
         nc.addObserver(this, nc.kNotificationProfileUpdated);
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    ns.Class(Application, null, [StationDelegate]);
+    dimp.Class(Application, null, [StationDelegate]);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -174,12 +174,13 @@
 
     ns.Application = Application;
 
-}(DIMP);
+}(dterm, DIMP);
 
-!function (ns) {
+!function (ns, dimp) {
     'use strict';
 
-    var Facebook = ns.Facebook;
+    var Facebook = dimp.Facebook;
+
     var Application = ns.Application;
 
     var getCommand = function (cmd) {
@@ -202,7 +203,7 @@
         if (typeof this[fn] === 'function') {
             args = cmd.replace(command, '').trim();
         } else {
-            //return ns.format.JSON.encode(cmd) + ' command error';
+            //return dimp.format.JSON.encode(cmd) + ' command error';
             fn = 'doForward';
             args = cmd;
         }
@@ -210,7 +211,7 @@
             return this[fn](args);
         } catch (e) {
             return 'failed to execute command: '
-                + ns.format.JSON.encode(cmd) + '<br/>\n' + e;
+                + dimp.format.JSON.encode(cmd) + '<br/>\n' + e;
         }
     };
 
@@ -270,26 +271,27 @@
         }
     };
 
-}(DIMP);
+}(dterm, DIMP);
 
-!function (ns) {
+!function (ns, dimp) {
     'use strict';
 
-    var NetworkType = ns.protocol.NetworkType;
-    var ID = ns.ID;
-    var Profile = ns.Profile;
-    var Envelope = ns.Envelope;
-    var InstantMessage = ns.InstantMessage;
-    var TextContent = ns.protocol.TextContent;
-    var ForwardContent = ns.protocol.ForwardContent;
+    var NetworkType = dimp.protocol.NetworkType;
+    var ID = dimp.ID;
+    var Profile = dimp.Profile;
+    var Envelope = dimp.Envelope;
+    var InstantMessage = dimp.InstantMessage;
+    var TextContent = dimp.protocol.TextContent;
+    var ForwardContent = dimp.protocol.ForwardContent;
 
-    var StarStatus = ns.stargate.StarStatus;
+    var StarStatus = dimp.stargate.StarStatus;
 
-    var Facebook = ns.Facebook;
-    var Messenger = ns.Messenger;
+    var Facebook = dimp.Facebook;
+    var Messenger = dimp.Messenger;
+
+    var Host58 = dimp.network.Host58;
+
     var Application = ns.Application;
-
-    var Host58 = ns.network.Host58;
 
     var check_connection = function () {
         var server = Messenger.getInstance().server;
@@ -509,7 +511,7 @@
             console.log('failed to verify message: ' + json);
         }
         var iMsg = messenger.decryptMessage(rMsg);
-        var text = ns.format.JSON.encode(iMsg);
+        var text = dimp.format.JSON.encode(iMsg);
         console.log('decrypted message: ' + text);
         return text;
     };
@@ -548,4 +550,4 @@
         return 'Your private key has been copied to clipboard, please save it carefully.';
     };
 
-}(DIMP);
+}(dterm, DIMP);

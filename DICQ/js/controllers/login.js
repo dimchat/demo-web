@@ -117,4 +117,4 @@
 
     ns.LoginWindow = LoginWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

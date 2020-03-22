@@ -88,7 +88,7 @@
 
     ns.ChatroomWindow = ChatroomWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);
 
 !function (ns, tui, dimp) {
     'use strict';
@@ -103,6 +103,7 @@
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
+    var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;
 
     // group members
@@ -207,7 +208,7 @@
         // query every 5 minutes
         interval = setInterval(function () {
             query_users(admin);
-        }, 120*1000);
+        }, 60*1000);
     };
     var stop_query_users = function () {
         if (interval) {
@@ -216,4 +217,4 @@
         interval = null;
     };
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

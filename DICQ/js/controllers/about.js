@@ -72,4 +72,4 @@
 
     ns.AboutWindow = AboutWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

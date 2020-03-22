@@ -105,7 +105,7 @@
 
     ns.GroupChatWindow = GroupChatWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);
 
 !function (ns, tui, dimp) {
     'use strict';
@@ -159,4 +159,4 @@
         return ChatWindow.show(identifier, clazz);
     };
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);

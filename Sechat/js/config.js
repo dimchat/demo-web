@@ -3,12 +3,12 @@
 //! require <dimsdk.js>
 //! require 'app.js'
 
-!function (ns) {
+!function (dimp) {
     'use strict';
 
-    var Immortals = ns.Immortals;
+    var Immortals = dimp.Immortals;
 
-    var facebook = ns.Facebook.getInstance();
+    var facebook = dimp.Facebook.getInstance();
 
     // patch for search number
     var getIdentifier = facebook.getIdentifier;
@@ -53,15 +53,16 @@
 
 }(DIMP);
 
-!function (ns) {
+!function (ns, dimp) {
     'use strict';
 
-    var Meta = ns.Meta;
+    var Meta = dimp.Meta;
 
-    var Server = ns.network.Server;
+    var Server = dimp.network.Server;
 
-    var facebook = ns.Facebook.getInstance();
-    var messenger = ns.Messenger.getInstance();
+    var facebook = dimp.Facebook.getInstance();
+    var messenger = dimp.Messenger.getInstance();
+
     var app = ns.Application.getInstance();
 
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
@@ -94,4 +95,4 @@
     messenger.server = server;
     server.messenger = messenger;
 
-}(DIMP);
+}(dterm, DIMP);

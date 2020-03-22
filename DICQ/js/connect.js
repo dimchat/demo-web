@@ -1,13 +1,13 @@
 
-!function (ns) {
+!function (dimp) {
     'use strict';
 
-    var Meta = ns.Meta;
+    var Meta = dimp.Meta;
 
-    var Server = ns.network.Server;
+    var Server = dimp.network.Server;
 
-    var facebook = ns.Facebook.getInstance();
-    var messenger = ns.Messenger.getInstance();
+    var facebook = dimp.Facebook.getInstance();
+    var messenger = dimp.Messenger.getInstance();
 
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
     sid = facebook.getIdentifier(sid);

@@ -70,4 +70,4 @@
 
     ns.RegisterWindow = RegisterWindow;
 
-}(window, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, DIMP);
