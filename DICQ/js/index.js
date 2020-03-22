@@ -159,41 +159,35 @@ if (typeof dicq !== 'object') {
 
     var dimsdk = [
         /* third party cryptography libs */
-        '../Sechat/js/sdk/3rd/crypto.js',
-        '../Sechat/js/sdk/3rd/jsencrypt.js',
+        '../Client/sdk/3rd/crypto.js',
+        '../Client/sdk/3rd/jsencrypt.js',
 
         /* DIM SDK */
-        '../Sechat/js/sdk/dimsdk.js',
+        '../Client/sdk/dimsdk.js',
 
-        '../Sechat/js/sdk/host58.js',
-        '../Sechat/js/sdk/bubble.js',
-        '../Sechat/js/sdk/clipboard.js',
+        '../Client/sdk/host58.js',
+        '../Client/sdk/bubble.js',
+        '../Client/sdk/clipboard.js',
+
+        /* DIM Client */
+        '../Client/dist/client.js',
         null
     ];
     if (release) {
         dimsdk = [
             /* third party cryptography libs */
-            '../Sechat/js/sdk/3rd/crypto.min.js',
-            '../Sechat/js/sdk/3rd/jsencrypt.min.js',
+            '../Client/sdk/3rd/crypto.min.js',
+            '../Client/sdk/3rd/jsencrypt.min.js',
 
             /* DIM SDK */
-            '../Sechat/js/sdk/dimsdk.min.js',
+            '../Client/sdk/dimsdk.min.js',
 
-            '../Sechat/js/sdk/host58.js',
-            '../Sechat/js/sdk/bubble.js',
-            '../Sechat/js/sdk/clipboard.js',
-            null
-        ]
-    }
+            '../Client/sdk/host58.js',
+            '../Client/sdk/bubble.js',
+            '../Client/sdk/clipboard.js',
 
-    var dim_client = [
-        /* DIM Client */
-        '../Sechat/js/dim.js',
-        null
-    ];
-    if (release) {
-        dim_client = [
-            '../Sechat/js/dim.min.js',
+            /* DIM Client */
+            '../Client/dist/client.min.js',
             null
         ]
     }
@@ -233,9 +227,6 @@ if (typeof dicq !== 'object') {
     // check duplicate
     if (typeof DIMP === 'object') {
         dimsdk = [];
-        if (typeof DIMP['Amanuensis'] === 'object') {
-            dim_client = [];
-        }
     }
     if (typeof tarsier === 'object') {
         if (typeof tarsier.ui === 'object') {
@@ -247,7 +238,7 @@ if (typeof dicq !== 'object') {
         scripts = [];
     }
 
-    scripts = [].concat(dimsdk, dim_client, tarsier_ui, scripts);
+    scripts = [].concat(dimsdk, tarsier_ui, scripts);
 
     var loader = new ns.Loader(tarsier, 'js/index.js');
 

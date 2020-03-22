@@ -172,78 +172,37 @@ if (typeof dterm !== 'object') {
         release = false;
     }
 
-    var sdk = [
+    var dimsdk = [
         /* third party cryptography libs */
-        'js/sdk/3rd/crypto-js/core.js',
-        'js/sdk/3rd/crypto-js/cipher-core.js',
-        'js/sdk/3rd/crypto-js/aes.js',
-        'js/sdk/3rd/crypto-js/md5.js',
-        'js/sdk/3rd/crypto-js/sha256.js',
-        'js/sdk/3rd/crypto-js/ripemd160.js',
-        'js/sdk/3rd/jsencrypt.js',
+        '../Client/sdk/3rd/crypto.js',
+        '../Client/sdk/3rd/jsencrypt.js',
 
         /* DIM SDK */
-        'js/sdk/dimsdk.js',
+        '../Client/sdk/dimsdk.js',
 
-        'js/sdk/host58.js',
-        'js/sdk/bubble.js',
-        'js/sdk/clipboard.js',
+        '../Client/sdk/host58.js',
+        '../Client/sdk/bubble.js',
+        '../Client/sdk/clipboard.js',
+
+        /* DIM Client */
+        '../Client/dist/client.js',
         null
     ];
     if (release) {
-        sdk = [
+        dimsdk = [
             /* third party cryptography libs */
-            'js/sdk/3rd/crypto.min.js',
-            'js/sdk/3rd/jsencrypt.min.js',
+            '../Client/sdk/3rd/crypto.min.js',
+            '../Client/sdk/3rd/jsencrypt.min.js',
 
             /* DIM SDK */
-            'js/sdk/dimsdk.min.js',
+            '../Client/sdk/dimsdk.min.js',
 
-            'js/sdk/host58.js',
-            'js/sdk/bubble.js',
-            'js/sdk/clipboard.js',
-            null
-        ]
-    }
+            '../Client/sdk/host58.js',
+            '../Client/sdk/bubble.js',
+            '../Client/sdk/clipboard.js',
 
-    var dim_client = [
-        /* DIM Client */
-        'js/dimc/extensions/constants.js',
-        'js/dimc/extensions/conversation.js',
-        'js/dimc/extensions/register.js',
-        'js/dimc/extensions/password.js',
-        'js/dimc/protocol/search.js',
-
-        'js/dimc/cpu/default.js',
-        'js/dimc/cpu/handshake.js',
-        'js/dimc/cpu/receipt.js',
-        'js/dimc/cpu/search.js',
-
-        'js/dimc/network/fsm.js',
-        'js/dimc/network/delegate.js',
-        'js/dimc/network/request.js',
-        'js/dimc/network/server.js',
-
-        'js/dimc/database/table.js',
-        'js/dimc/database/meta.js',
-        'js/dimc/database/private.js',
-        'js/dimc/database/profile.js',
-        'js/dimc/database/user.js',
-        'js/dimc/database/contact.js',
-        'js/dimc/database/group.js',
-        'js/dimc/database/message.js',
-
-        'js/dimc/cache.js',
-        'js/dimc/ans.js',
-        'js/dimc/facebook.js',
-        'js/dimc/amanuensis.js',
-        'js/dimc/messenger.js',
-        null
-    ];
-    if (release) {
-        dim_client = [
-            // 'js/dim.js'
-            'js/dim.min.js',
+            /* DIM Client */
+            '../Client/dist/client.min.js',
             null
         ]
     }
@@ -267,13 +226,10 @@ if (typeof dterm !== 'object') {
 
     // check duplicate
     if (typeof DIMP === 'object') {
-        sdk = [];
-        if (typeof DIMP['Amanuensis'] === 'object') {
-            dim_client = [];
-        }
+        dimsdk = [];
     }
 
-    scripts = [].concat(sdk, dim_client, ui, scripts);
+    scripts = [].concat(dimsdk, ui, scripts);
 
     var loader = new Loader(tarsier, 'js/index.js');
     for (var i = 0; i < stylesheets.length; ++i) {

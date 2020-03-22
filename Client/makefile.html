@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="DIMP Client" />
     <meta name="author" content="Albert Moky" />
-    <title>DIM Demo Builder</title>
+    <title>DIM Client Builder</title>
     <style>
         h2 {
             padding: 4px 8px;
@@ -67,36 +67,36 @@
         <script>
             var dim_client = [
                 /* DIM Client */
-                'js/dimc/extensions/constants.js',
-                'js/dimc/extensions/conversation.js',
-                'js/dimc/extensions/register.js',
-                'js/dimc/extensions/password.js',
-                'js/dimc/protocol/search.js',
+                'src/extensions/constants.js',
+                'src/extensions/conversation.js',
+                'src/extensions/register.js',
+                'src/extensions/password.js',
+                'src/protocol/search.js',
 
-                'js/dimc/cpu/default.js',
-                'js/dimc/cpu/handshake.js',
-                'js/dimc/cpu/receipt.js',
-                'js/dimc/cpu/search.js',
+                'src/cpu/default.js',
+                'src/cpu/handshake.js',
+                'src/cpu/receipt.js',
+                'src/cpu/search.js',
 
-                'js/dimc/network/fsm.js',
-                'js/dimc/network/delegate.js',
-                'js/dimc/network/request.js',
-                'js/dimc/network/server.js',
+                'src/network/fsm.js',
+                'src/network/delegate.js',
+                'src/network/request.js',
+                'src/network/server.js',
 
-                'js/dimc/database/table.js',
-                'js/dimc/database/meta.js',
-                'js/dimc/database/private.js',
-                'js/dimc/database/profile.js',
-                'js/dimc/database/user.js',
-                'js/dimc/database/contact.js',
-                'js/dimc/database/group.js',
-                'js/dimc/database/message.js',
+                'src/database/table.js',
+                'src/database/meta.js',
+                'src/database/private.js',
+                'src/database/profile.js',
+                'src/database/user.js',
+                'src/database/contact.js',
+                'src/database/group.js',
+                'src/database/message.js',
 
-                'js/dimc/cache.js',
-                'js/dimc/ans.js',
-                'js/dimc/facebook.js',
-                'js/dimc/amanuensis.js',
-                'js/dimc/messenger.js'
+                'src/cache.js',
+                'src/ans.js',
+                'src/facebook.js',
+                'src/amanuensis.js',
+                'src/messenger.js'
             ];
 
             //
@@ -106,7 +106,7 @@
             for (var k = 0; k < dim_client.length; ++k) {
                 text += ' ' + dim_client[k];
             }
-            text += ' > js/dim.js';
+            text += ' > dist/client.js';
             document.writeln(text);
         </script>
     </p>
