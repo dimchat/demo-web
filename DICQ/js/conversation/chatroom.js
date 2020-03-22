@@ -16,8 +16,6 @@
 
     var MessageTable = dimp.db.MessageTable;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
-
     var ChatroomWindow = function () {
         GroupChatWindow.call(this);
         this.setClassName('chatroomWindow');
@@ -41,40 +39,6 @@
         return this.__identifier;
     };
 
-    // group members
-    ChatroomWindow.prototype.getParticipantCount = function () {
-        // TODO: query online users
-        return 0;
-    };
-    ChatroomWindow.prototype.getParticipant = function (index) {
-        // TODO: query online users
-        console.assert(false, 'error');
-        return null;
-    };
-
-    ChatroomWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
-        var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
-            var msg = notification.userInfo;
-            var env = msg.envelope;
-            var identifier = this.__identifier;
-            if (ID.EVERYONE.equals(env.receiver) ||
-                identifier.equals(env.receiver) ||
-                identifier.equals(env.sender)) {
-                // reload chat history
-                this.historyView.reloadData();
-            }
-        }
-        // TODO: process group members updated notification
-    };
-
-    ChatroomWindow.prototype.reloadData = function () {
-        ChatWindow.prototype.reloadData.call(this);
-        // TODO: query group owner & members
-        this.membersView.reloadData();
-    };
-
     //
     //  TableViewDataSource
     //
@@ -82,10 +46,23 @@
         if (tableView !== this.membersView) {
             return ChatWindow.prototype.titleForHeaderInSection.call(this, section, tableView);
         }
+        // if (section === 0) {
+        //     return 'Administrator';
+        // } else {
+        //     return 'Online user(s)';
+        // }
+        return null;
+    };
+
+    ChatroomWindow.prototype.numberOfRowsInSection = function (section, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.numberOfRowsInSection.call(this, section, tableView);
+        }
         if (section === 0) {
-            return 'Administrator';
+            // return this.getAdministratorCount();
+            return 0;
         } else {
-            return 'Online user(s)';
+            return this.getParticipantCount();
         }
     };
 
@@ -109,6 +86,55 @@
         return this.sendContent(new ForwardContent(msg));
     };
 
+    ns.ChatroomWindow = ChatroomWindow;
+
+}(window, tarsier.ui, DIMP);
+
+!function (ns, tui, dimp) {
+    'use strict';
+
+    var ID = dimp.ID;
+
+    var TextContent = dimp.protocol.TextContent;
+    var SearchCommand = dimp.protocol.SearchCommand;
+
+    var Facebook = dimp.Facebook;
+    var Messenger = dimp.Messenger;
+
+    var NotificationCenter = dimp.stargate.NotificationCenter;
+
+    var ChatroomWindow = ns.ChatroomWindow;
+
+    // group members
+    ChatroomWindow.prototype.getParticipantCount = function () {
+        return online_users.length;
+    };
+    ChatroomWindow.prototype.getParticipant = function (index) {
+        return online_users[index];
+    };
+
+    ChatroomWindow.prototype.onReceiveNotification = function (notification) {
+        var nc = NotificationCenter.getInstance();
+        var name = notification.name;
+        if (name === nc.kNotificationMessageReceived) {
+            var msg = notification.userInfo;
+            if (ID.EVERYONE.equals(msg.content.getGroup())) {
+                // reload chat history
+                this.historyView.reloadData();
+            } else if (msg.content instanceof SearchCommand) {
+                // process group members updated notification
+                update_users(msg.content);
+                // reload online users
+                this.membersView.reloadData();
+            }
+        }
+    };
+
+    ChatroomWindow.prototype.onClose = function (ev) {
+        stop_query_users();
+        return GroupChatWindow.prototype.onClose.call(this, ev);
+    };
+
     //
     //  Factory
     //
@@ -117,7 +143,16 @@
             clazz = ChatroomWindow;
         }
         var box = GroupChatWindow.show(admin, clazz);
-        // query history
+        query_history(admin);
+        start_query_users(admin);
+        return box;
+    };
+
+    //
+    //  Chat history
+    //
+
+    var query_history = function (admin) {
         var messenger = Messenger.getInstance();
         var server = messenger.server;
         var user = server.currentUser;
@@ -125,9 +160,59 @@
             var content = new TextContent('show history');
             messenger.sendContent(content, admin);
         }
-        return box;
     };
 
-    ns.ChatroomWindow = ChatroomWindow;
+
+    //
+    //  Online users
+    //
+
+    var online_users = [];
+    var interval = null;
+
+    var update_users = function (cmd) {
+        var users = cmd.getUsers();
+        if (!users) {
+            return ;
+        }
+        var facebook = Facebook.getInstance();
+        online_users = [];
+        var item;
+        for (var i = 0; i < users.length; ++i) {
+            item = facebook.getIdentifier(users[i]);
+            if (!item) {
+                console.error('user ID error: ' + users[i]);
+                continue;
+            }
+            online_users.push(item);
+        }
+    };
+
+    var query_users = function (admin) {
+        var messenger = Messenger.getInstance();
+        var server = messenger.server;
+        var user = server.currentUser;
+        if (user) {
+            var content = new TextContent('show users');
+            messenger.sendContent(content, admin);
+        }
+    };
+
+    var start_query_users = function (admin) {
+        // stop thread
+        stop_query_users();
+        // query once
+        query_users(admin);
+        // query every 5 minutes
+        interval = setInterval(function () {
+            query_users(admin);
+        }, 120*1000);
+    };
+    var stop_query_users = function () {
+        if (interval) {
+            clearInterval(interval);
+        }
+        interval = null;
+    };
 
 }(window, tarsier.ui, DIMP);

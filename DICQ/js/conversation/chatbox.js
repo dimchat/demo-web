@@ -120,8 +120,9 @@
             var msg = notification.userInfo;
             var env = msg.envelope;
             var identifier = this.__identifier;
-            if (identifier.equals(env.sender) ||
-                identifier.equals(env.receiver)) {
+            if (identifier.equals(msg.content.getGroup()) ||
+                identifier.equals(env.receiver) ||
+                identifier.equals(env.sender)) {
                 // reload chat history
                 this.historyView.reloadData();
             }
@@ -267,7 +268,7 @@
             var item;
             for (var i = 0; i < elements.length; ++i) {
                 item = $(elements[i]);
-                if (item.__identifier && item.__identifier.equals(identifier)) {
+                if (identifier.equals(item.__identifier)) {
                     box = item;
                 }
             }

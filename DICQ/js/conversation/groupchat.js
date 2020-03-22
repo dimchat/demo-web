@@ -7,8 +7,6 @@
     var TableViewCell = tui.TableViewCell;
     var TableView = tui.TableView;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
-
     var Facebook = dimp.Facebook;
 
     var GroupChatWindow = function () {
@@ -44,6 +42,79 @@
         return facebook.getOwner(this.__identifier);
     };
 
+    GroupChatWindow.prototype.reloadData = function () {
+        ChatWindow.prototype.reloadData.call(this);
+        this.membersView.reloadData();
+    };
+
+    //
+    //  TableViewDataSource
+    //
+    GroupChatWindow.prototype.numberOfSections = function (tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.numberOfSections.call(this, tableView);
+        }
+        return 2;
+    };
+
+    GroupChatWindow.prototype.titleForHeaderInSection = function (section, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.titleForHeaderInSection.call(this, section, tableView);
+        }
+        if (section === 0) {
+            return 'Owner/admin';
+        } else {
+            return 'Member(s)';
+        }
+    };
+
+    GroupChatWindow.prototype.numberOfRowsInSection = function (section, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.numberOfRowsInSection.call(this, section, tableView);
+        }
+        if (section === 0) {
+            return this.getAdministratorCount();
+        } else {
+            return this.getParticipantCount();
+        }
+    };
+
+    GroupChatWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.cellForRowAtIndexPath.call(this, indexPath, tableView);
+        }
+        var identifier;
+        if (indexPath.section === 0) {
+            identifier = this.getAdministrator(indexPath.row);
+        } else {
+            identifier = this.getParticipant(indexPath.row);
+        }
+        var cell = new TableViewCell();
+        var facebook = Facebook.getInstance();
+        var name = facebook.getNickname(identifier);
+        if (!name) {
+            name = identifier.name;
+        }
+        var number = facebook.getNumberString(identifier);
+        cell.setClassName('name');
+        cell.setText(name + ' (' + number + ')');
+        return cell;
+    };
+
+    ns.GroupChatWindow = GroupChatWindow;
+
+}(window, tarsier.ui, DIMP);
+
+!function (ns, tui, dimp) {
+    'use strict';
+
+    var NotificationCenter = dimp.stargate.NotificationCenter;
+
+    var Facebook = dimp.Facebook;
+
+    var ChatWindow = ns.ChatWindow;
+    var GroupChatWindow = ns.GroupChatWindow;
+
     // group members
     GroupChatWindow.prototype.getParticipantCount = function () {
         var facebook = Facebook.getInstance();
@@ -71,61 +142,8 @@
                 // reload chat history
                 this.historyView.reloadData();
             }
+            // TODO: process group members updated notification
         }
-        // TODO: process group members updated notification
-    };
-
-    GroupChatWindow.prototype.reloadData = function () {
-        ChatWindow.prototype.reloadData.call(this);
-        // TODO: query group owner & members
-        this.membersView.reloadData();
-    };
-
-    //
-    //  TableViewDataSource
-    //
-    GroupChatWindow.prototype.titleForHeaderInSection = function (section, tableView) {
-        if (tableView !== this.membersView) {
-            return ChatWindow.prototype.titleForHeaderInSection.call(this, section, tableView);
-        }
-        if (section === 0) {
-            return 'Owner';
-        } else {
-            return 'Member(s)';
-        }
-    };
-
-    GroupChatWindow.prototype.numberOfSections = function (tableView) {
-        if (tableView !== this.membersView) {
-            return ChatWindow.prototype.numberOfSections.call(this, tableView);
-        }
-        return 2;
-    };
-    GroupChatWindow.prototype.numberOfRowsInSection = function (section, tableView) {
-        if (tableView !== this.membersView) {
-            return ChatWindow.prototype.numberOfRowsInSection.call(this, section, tableView);
-        }
-        if (section === 0) {
-            return this.getAdministratorCount();
-        } else {
-            return this.getParticipantCount();
-        }
-    };
-
-    GroupChatWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
-        if (tableView !== this.membersView) {
-            return ChatWindow.prototype.cellForRowAtIndexPath.call(this, indexPath, tableView);
-        }
-        var identifier;
-        if (indexPath.section === 0) {
-            identifier = this.getAdministrator(indexPath.row);
-        } else {
-            identifier = this.getParticipant(indexPath.row);
-        }
-        // TODO: create table cell
-        var cell = new TableViewCell();
-        cell.setText(identifier);
-        return cell;
     };
 
     //
@@ -135,11 +153,7 @@
         if (!clazz) {
             clazz = GroupChatWindow;
         }
-        var box = ChatWindow.show(identifier, clazz);
-        box.reloadData();
-        return box;
+        return ChatWindow.show(identifier, clazz);
     };
-
-    ns.GroupChatWindow = GroupChatWindow;
 
 }(window, tarsier.ui, DIMP);
