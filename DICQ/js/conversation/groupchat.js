@@ -141,6 +141,7 @@
             if (identifier.equals(content.getGroup())) {
                 // reload chat history
                 this.historyView.reloadData();
+                this.historyView.scrollToBottom();
             }
             // TODO: process group members updated notification
         }

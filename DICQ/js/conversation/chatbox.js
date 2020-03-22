@@ -125,12 +125,19 @@
                 identifier.equals(env.sender)) {
                 // reload chat history
                 this.historyView.reloadData();
+                this.historyView.scrollToBottom();
             }
         }
     };
 
+    // patch for scroll view
+    tui.View.prototype.scrollToBottom = function () {
+        this.__ie.scrollTop = this.__ie.scrollHeight;
+    };
+
     ChatWindow.prototype.reloadData = function () {
         this.historyView.reloadData();
+        this.historyView.scrollToBottom();
     };
 
     //

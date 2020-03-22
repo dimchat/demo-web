@@ -121,6 +121,7 @@
             if (ID.EVERYONE.equals(msg.content.getGroup())) {
                 // reload chat history
                 this.historyView.reloadData();
+                this.historyView.scrollToBottom();
             } else if (msg.content instanceof SearchCommand) {
                 // process group members updated notification
                 update_users(msg.content);
