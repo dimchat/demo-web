@@ -226,7 +226,11 @@
     text += '        search <ID|number>       - search users by ID or number\n';
     text += '        profile <ID>             - query profile with ID\n';
     text += '        export [private key]     - export user info\n';
-    text += '        <anytext>                - send to current chatroom\n';
+    text += '\n';
+    text += '        <anytext>                - forward message (to current chatroom)\n';
+    text += '\n';
+    text += '        open DICQ                - open DICQ 2020\n';
+    text += '\n';
     text = Bubble.convertToString(text);
 
     Application.prototype.doHelp = function () {
@@ -548,6 +552,25 @@
         var pem = privateKey.getValue('data');
         window.clipboardData.setData('text', pem);
         return 'Your private key has been copied to clipboard, please save it carefully.';
+    };
+
+}(dterm, DIMP);
+
+!function (ns, dimp) {
+    'use strict';
+
+    var Application = ns.Application;
+
+    Application.prototype.doOpen = function (dicq) {
+        if (dicq === 'dicq' || dicq === 'DICQ') {
+            if (typeof dicq === 'object') {
+                // open DICQ
+                dicq.Main();
+            } else {
+                // load DICQ
+                ns.loader.importJS('../DICQ/js/index.js');
+            }
+        }
     };
 
 }(dterm, DIMP);

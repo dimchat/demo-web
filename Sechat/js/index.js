@@ -292,4 +292,6 @@ if (typeof dterm !== 'object') {
         });
     });
 
+    dterm.loader = loader;
+
 }(dterm);
