@@ -80,10 +80,10 @@ button:focus {
 }
 
 /**
- *  About
+ *  DICQ
  */
 
-.mainWindow .aboutBtn {
+.mainWindow .dicqBtn {
     position: absolute;
     margin: 0 2px;
     width: 192px;
@@ -95,7 +95,7 @@ button:focus {
     color: darkblue;
 }
 
-.mainWindow .meBtn {
+.mainWindow .iconBtn {
     position: absolute;
     margin: 0 2px;
     width: 36px;

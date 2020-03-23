@@ -4,6 +4,8 @@
 
     var $ = tui.$;
 
+    var Point = tui.Point;
+    var Size = tui.Size;
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -14,29 +16,36 @@
     var Facebook = dimp.Facebook;
     var Register = dimp.extensions.Register;
 
+    var random_point = function () {
+        var x = 50 + Math.random() * 100;
+        var y = 50 + Math.random() * 100;
+        return new Point(Math.round(x), Math.round(y));
+    };
+
     var RegisterWindow = function () {
-        var frame = new Rect(100, 50, 320, 240);
+        var frame = new Rect(random_point(), new Size(320, 240));
         Window.call(this, frame);
         this.setId('registerWindow');
         this.setClassName('registerWindow');
         this.setTitle('Create user account');
-        var win = this;
-        // label
-        var label = new Label();
-        label.setClassName('nickname');
-        label.setText('Nickname:');
-        this.appendChild(label);
-        // input
-        var input = new Input();
-        input.setClassName('input');
-        this.appendChild(input);
-        this.input = input;
+
+        // nickname
+        var nicknameLabel = new Label();
+        nicknameLabel.setClassName('nicknameLabel');
+        nicknameLabel.setText('Please input your nickname');
+        this.appendChild(nicknameLabel);
+        // value
+        var nickname = new Input();
+        nickname.setClassName('nickname');
+        this.appendChild(nickname);
+
         // button
         var button = new Button();
         button.setClassName('OK');
         button.setText('Register');
+        var win = this;
         button.onClick = function () {
-            win.submit(input.getValue());
+            win.submit(nickname.getValue());
         };
         this.appendChild(button);
     };

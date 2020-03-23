@@ -41,3 +41,53 @@
     server.start();
 
 }(DIMP);
+
+!function (dimp) {
+    'use strict';
+
+    var Immortals = dimp.Immortals;
+
+    var facebook = dimp.Facebook.getInstance();
+
+    // patch for search number
+    var getIdentifier = facebook.getIdentifier;
+    facebook.getIdentifier = function (string) {
+        var identifier = getIdentifier.call(this, string);
+        if (identifier && this.ans && !this.ans.getIdentifier(string)) {
+            this.ans.cache(String(identifier.getNumber()), identifier);
+        }
+        return identifier;
+    };
+
+    var force_ans = function (name, identifier) {
+        identifier = facebook.getIdentifier(identifier);
+        // cheat the reserved names checking
+        var isReserved = facebook.ans.isReserved;
+        facebook.ans.isReserved = function () {return false;};
+        facebook.ans.save(name, identifier);
+        facebook.ans.isReserved = isReserved;
+    };
+
+    var test_names = [
+        'moki', Immortals.MOKI,
+        'hulk', Immortals.HULK,
+
+        'station', 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW',
+
+        'chatroom', 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7',
+
+        'assistant', 'assistant@2PpB6iscuBjA15oTjAsiswoX9qis5V3c1Dq',
+        'xiaoxiao', 'xiaoxiao@2PhVByg7PhEtYPNzW5ALk9ygf6wop1gTccp',
+        'lingling', 'lingling@2PemMVAvxpuVZw2SYwwo11iBBEBb7gCvDHa',
+
+        'moky', 'moky@4DnqXWdTV8wuZgfqSCX9GjE2kNq7HJrUgQ',
+        'baloo', 'baloo@4LA5FNbpxP38UresZVpfWroC2GVomDDZ7q',
+        'zero', 'zero@4Zi2iyrcaT1oq4z44sjLVQZCEWSsE8nF8k',
+        'long', 'long@4LJnk9AhRnvQF5SXDeDUzWGvi5whzToGJK',
+        null
+    ];
+    for (var i = 0; i < test_names.length; i += 2) {
+        force_ans(test_names[i], test_names[i+1]);
+    }
+
+}(DIMP);

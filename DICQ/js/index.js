@@ -206,6 +206,7 @@ if (typeof dicq !== 'object') {
     var stylesheets = [
         'css/index.css',
         'css/main.css',
+        'css/account.css',
         'css/chatbox.css',
         null
     ];
@@ -214,10 +215,11 @@ if (typeof dicq !== 'object') {
         'js/conversation/groupchat.js',
         'js/conversation/chatroom.js',
 
-        'js/controllers/about.js',
         'js/controllers/register.js',
         'js/controllers/login.js',
         'js/controllers/main.js',
+        'js/controllers/account.js',
+        'js/controllers/about.js',
 
         'js/connect.js',
         'js/app.js',

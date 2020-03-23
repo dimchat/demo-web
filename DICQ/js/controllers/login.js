@@ -4,6 +4,8 @@
 
     var $ = tui.$;
 
+    var Point = tui.Point;
+    var Size = tui.Size;
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -14,8 +16,14 @@
     var Messenger = dimp.Messenger;
     var StarStatus = dimp.stargate.StarStatus;
 
+    var random_point = function () {
+        var x = 50 + Math.random() * 100;
+        var y = 50 + Math.random() * 100;
+        return new Point(Math.round(x), Math.round(y));
+    };
+
     var LoginWindow = function () {
-        var frame = new Rect(100, 50, 320, 240);
+        var frame = new Rect(random_point(), new Size(320, 240));
         Window.call(this, frame);
         this.setId('loginWindow');
         this.setClassName('loginWindow');
@@ -62,7 +70,7 @@
     };
 
     LoginWindow.prototype.onClose = function (ev) {
-        // open register window
+        // cannot close this window
         ns.RegisterWindow.show();
         return true;
     };

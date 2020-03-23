@@ -75,21 +75,24 @@
         this.appendChild(msg);
 
         //
-        //  about
         //
-        var about = new Button();
-        about.setId('aboutBtn');
-        about.setClassName('aboutBtn buttonNormal');
-        about.setText('DICQ');
-        about.onClick = function () {
+        //
+        var main = new Button();
+        main.setId('dicqBtn');
+        main.setClassName('dicqBtn buttonNormal');
+        main.setText('DICQ');
+        main.onClick = function () {
+            ns.AccountWindow.show();
+        };
+        this.appendChild(main);
+
+        var icon = new Button();
+        icon.setId('iconBtn');
+        icon.setClassName('iconBtn buttonNormal');
+        icon.onClick = function () {
             ns.AboutWindow.show();
         };
-        this.appendChild(about);
-
-        var me = new Button();
-        me.setId('meBtn');
-        me.setClassName('meBtn buttonNormal');
-        this.appendChild(me);
+        this.appendChild(icon);
     };
     dimp.Class(MainWindow, Window, null);
 

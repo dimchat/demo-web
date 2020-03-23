@@ -1,0 +1,56 @@
+
+/**
+ *  Account Window
+ */
+
+.accountWindow span {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin: 2px;
+    padding: 2px;
+}
+
+.accountWindow .numberLabel {
+    position: absolute;
+    text-align: right;
+    width: 80px;
+    height: 20px;
+    top: 70px;
+    left: 36px;
+}
+
+.accountWindow .number {
+    position: absolute;
+    width: 120px;
+    height: 20px;
+    top: 70px;
+    left: 120px;
+}
+
+.accountWindow .nicknameLabel {
+    position: absolute;
+    text-align: right;
+    width: 80px;
+    height: 20px;
+    top: 110px;
+    left: 36px;
+}
+
+.accountWindow .nickname {
+    position: absolute;
+    width: 120px;
+    height: 20px;
+    top: 110px;
+    left: 124px;
+}
+
+.accountWindow .OK {
+    position: absolute;
+    width: 30%;
+    height: 30px;
+    bottom: 40px;
+    left: 35%;
+}
