@@ -51,7 +51,7 @@
         button.setClassName('OK');
         button.setText('OK');
         var win = this;
-        button.onClick = function () {
+        button.onClick = function (ev) {
             win.remove();
         };
         this.appendChild(button);

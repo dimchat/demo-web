@@ -22,6 +22,7 @@
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
 .accountWindow .address {
@@ -33,6 +34,7 @@
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
 .accountWindow .number {
@@ -44,6 +46,7 @@
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
 .accountWindow .nickname {

@@ -83,7 +83,7 @@
         button.setClassName('sendButton');
         button.setText('Send');
         var win = this;
-        button.onClick = function () {
+        button.onClick = function (ev) {
             win.sendText(message.getValue());
         };
         this.appendChild(button);

@@ -74,7 +74,7 @@
         button.setClassName('OK');
         button.setText('Login');
         var win = this;
-        button.onClick = function () {
+        button.onClick = function (ev) {
             if (win.__user) {
                 win.login(win.__user.identifier);
             } else {

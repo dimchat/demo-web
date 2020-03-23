@@ -67,7 +67,7 @@
         msg.setId('msgBtn');
         msg.setClassName('msgBtn buttonActive');
         msg.setText('Chat Room');
-        msg.onClick = function () {
+        msg.onClick = function (ev) {
             var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
             admin = facebook.getIdentifier(admin);
             ns.ChatroomWindow.show(admin);
@@ -81,7 +81,7 @@
         main.setId('dicqBtn');
         main.setClassName('dicqBtn buttonNormal');
         main.setText('DICQ');
-        main.onClick = function () {
+        main.onClick = function (ev) {
             ns.AccountWindow.show();
         };
         this.appendChild(main);
@@ -89,7 +89,7 @@
         var icon = new Button();
         icon.setId('iconBtn');
         icon.setClassName('iconBtn buttonNormal');
-        icon.onClick = function () {
+        icon.onClick = function (ev) {
             ns.AboutWindow.show();
         };
         this.appendChild(icon);

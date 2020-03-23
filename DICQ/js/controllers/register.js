@@ -51,7 +51,7 @@
         button.setClassName('OK');
         button.setText('Register');
         var win = this;
-        button.onClick = function () {
+        button.onClick = function (ev) {
             win.submit(nickname.getValue());
         };
         this.appendChild(button);

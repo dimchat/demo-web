@@ -79,7 +79,7 @@
         button.setClassName('OK');
         button.setText('Update');
         var win = this;
-        button.onClick = function () {
+        button.onClick = function (ev) {
             win.submit({
                 'ID': user.identifier,
                 'nickname': nickname.getValue()
@@ -121,7 +121,7 @@
     };
 
     AccountWindow.show = function () {
-        var box = document.getElementById('registerWindow');
+        var box = document.getElementById('accountWindow');
         if (box) {
             box = $(box);
         } else {

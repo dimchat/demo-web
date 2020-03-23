@@ -34,6 +34,7 @@ button:focus {
     background-color: #8580A3;
     width: 228px;
     height: 456px;
+    overflow-y: auto;
 }
 
 .mainWindow .mainList .contactsBtn, .mainWindow .mainList .groupsBtn {
@@ -42,7 +43,20 @@ button:focus {
     height: 32px;
     font-size: 14px;
     font-weight: bold;
-    color: gray;
+    color: darkblue;
+}
+
+.mainWindow .mainList .avatar {
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin: 16px auto 2px;
+}
+
+.mainWindow .mainList .name {
+    display: block;
+    text-align: center;
+    margin: 2px 8px 16px;
 }
 
 /**
@@ -116,6 +130,4 @@ button:focus {
     -moz-background-size: 32px 28px;
     right: 2px;
     bottom: 4px;
-    font-weight: bold;
-    color: gray;
 }
