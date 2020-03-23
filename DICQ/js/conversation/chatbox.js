@@ -279,6 +279,7 @@
             box = new clazz();
             $(document.body).appendChild(box);
             box.setIdentifier(identifier);
+            box.layoutSubviews();
         }
         box.floatToTop();
         return box;

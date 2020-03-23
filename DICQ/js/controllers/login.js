@@ -71,8 +71,7 @@
 
     LoginWindow.prototype.onClose = function (ev) {
         // cannot close this window
-        ns.RegisterWindow.show();
-        return true;
+        return false;
     };
 
     LoginWindow.prototype.login = function (identifier) {
@@ -117,6 +116,7 @@
         } else {
             box = new LoginWindow();
             $(document.body).appendChild(box);
+            box.layoutSubviews();
         }
         box.setUser(user);
         box.floatToTop();

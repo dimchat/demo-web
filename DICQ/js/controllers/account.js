@@ -119,6 +119,7 @@
         } else {
             box = new AccountWindow();
             $(document.body).appendChild(box);
+            box.layoutSubviews();
         }
         box.floatToTop();
         return box;

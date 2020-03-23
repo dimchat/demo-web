@@ -65,6 +65,7 @@
         } else {
             box = new AboutWindow();
             $(document.body).appendChild(box);
+            box.layoutSubviews();
         }
         box.floatToTop();
         return box;

@@ -72,6 +72,7 @@
         } else {
             box = new RegisterWindow();
             $(document.body).appendChild(box);
+            box.layoutSubviews();
         }
         box.floatToTop();
         return box;
