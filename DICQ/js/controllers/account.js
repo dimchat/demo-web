@@ -30,26 +30,27 @@
         Window.call(this, frame);
         this.setId('accountWindow');
         this.setClassName('accountWindow');
-        this.setTitle('Update user account');
+        this.setTitle('Modify User Info');
         // current user
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
-
-        // // identifier
-        // var idLabel = new Label();
-        // idLabel.setClassName('identifierLabel');
-        // idLabel.setText('ID:');
-        // this.appendChild(idLabel);
-        // // value
-        // var identifier = new Label();
-        // identifier.setClassName('identifier');
-        // identifier.setText(user.identifier);
-        // this.appendChild(identifier);
 
         var basic = new FieldSet();
         basic.setClassName('profileFieldSet');
         basic.setCaption('Basic Info');
         this.appendChild(basic);
+
+        // address
+        var addressLabel = new Label();
+        addressLabel.setClassName('addressLabel');
+        addressLabel.setText('Address:');
+        basic.appendChild(addressLabel);
+        // value
+        var address = new Label();
+        address.setClassName('address');
+        address.setText(user.identifier.address);
+        address.__ie.title = user.identifier;
+        basic.appendChild(address);
 
         // search number
         var numberLabel = new Label();
@@ -76,7 +77,7 @@
         // button
         var button = new Button();
         button.setClassName('OK');
-        button.setText('Save');
+        button.setText('Update');
         var win = this;
         button.onClick = function () {
             win.submit({

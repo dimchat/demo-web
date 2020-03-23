@@ -205,6 +205,7 @@ if (typeof dicq !== 'object') {
 
     var stylesheets = [
         'css/index.css',
+        'css/login.css',
         'css/main.css',
         'css/account.css',
         'css/chatbox.css',

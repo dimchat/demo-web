@@ -1,9 +1,5 @@
 
-/**
- *  Account Window
- */
-
-.accountWindow span {
+.loginWindow span {
     position: relative;
     display: inline-block;
     overflow: hidden;
@@ -13,48 +9,49 @@
     padding: 2px;
 }
 
-.accountWindow .profileFieldSet {
+.loginWindow .profileFieldSet {
     margin: 20px auto;
     width: 240px;
 }
 
-.accountWindow .addressLabel {
+.loginWindow .addressLabel {
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
-.accountWindow .address {
+.loginWindow .address {
     width: 160px;
     height: 20px;
 }
 
-.accountWindow .numberLabel {
+.loginWindow .numberLabel {
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
-.accountWindow .number {
+.loginWindow .number {
     width: 100px;
     height: 20px;
 }
 
-.accountWindow .nicknameLabel {
+.loginWindow .nicknameLabel {
     text-align: right;
     width: 60px;
     height: 20px;
+    color: gray;
 }
 
-.accountWindow .nickname {
-    position: absolute;
-    width: 100px;
+.loginWindow .nickname {
+    width: 160px;
     height: 20px;
-    padding: 0;
-    text-align: center;
+    font-weight: bold;
 }
 
-.accountWindow .OK {
+.loginWindow .OK {
     position: absolute;
     width: 30%;
     height: 30px;

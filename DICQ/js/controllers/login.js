@@ -10,6 +10,8 @@
 
     var Label = tui.Label;
     var Button = tui.Button;
+    var FieldSet = tui.FieldSet;
+
     var Window = tui.Window;
 
     var Facebook = dimp.Facebook;
@@ -27,26 +29,50 @@
         Window.call(this, frame);
         this.setId('loginWindow');
         this.setClassName('loginWindow');
-        this.setTitle('Login');
-        // nickname
-        var nickname = new Label();
-        nickname.setClassName('nickname');
-        this.appendChild(nickname);
-        this.nicknameLabel = nickname;
-        // number
+        this.setTitle('Login DIM station');
+
+        var basic = new FieldSet();
+        basic.setClassName('profileFieldSet');
+        basic.setCaption('Current Account');
+        this.appendChild(basic);
+
+        // address
+        var addressLabel = new Label();
+        addressLabel.setClassName('addressLabel');
+        addressLabel.setText('Address:');
+        basic.appendChild(addressLabel);
+        // value
+        var address = new Label();
+        address.setClassName('address');
+        basic.appendChild(address);
+        this.address = address;
+
+        // search number
+        var numberLabel = new Label();
+        numberLabel.setClassName('numberLabel');
+        numberLabel.setText('Number:');
+        basic.appendChild(numberLabel);
+        // value
         var number = new Label();
         number.setClassName('number');
-        this.appendChild(number);
-        this.numberLabel = number;
-        // identifier
-        var identifier = new Label();
-        identifier.setClassName('identifier');
-        this.appendChild(identifier);
-        this.identifierLabel = identifier;
+        basic.appendChild(number);
+        this.number = number;
+
+        // nickname
+        var nameLabel = new Label();
+        nameLabel.setClassName('nicknameLabel');
+        nameLabel.setText('Name:');
+        basic.appendChild(nameLabel);
+        // value
+        var nickname = new Label();
+        nickname.setClassName('nickname');
+        basic.appendChild(nickname);
+        this.nickname = nickname;
+
         // button
         var button = new Button();
         button.setClassName('OK');
-        button.setText('OK');
+        button.setText('Login');
         var win = this;
         button.onClick = function () {
             if (win.__user) {
@@ -63,9 +89,14 @@
 
     LoginWindow.prototype.setUser = function (user) {
         var facebook = Facebook.getInstance();
-        this.nicknameLabel.setText(facebook.getNickname(user.identifier));
-        this.numberLabel.setText(facebook.getNumberString(user.identifier));
-        this.identifierLabel.setText(user.identifier);
+        var identifier = user.identifier;
+        var address = identifier.address;
+        var number = facebook.getNumberString(user.identifier);
+        var nickname = user.getName();
+        this.address.setText(address);
+        this.address.__ie.title = identifier;
+        this.number.setText(number);
+        this.nickname.setText(nickname);
         this.__user = user;
     };
 

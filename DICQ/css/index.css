@@ -71,74 +71,34 @@ textarea {
  *  Register Window
  */
 
+.registerWindow .profileFieldSet {
+    margin: 20px auto;
+    width: 240px;
+}
+
 .registerWindow .nicknameLabel {
-    position: absolute;
-    text-align: center;
-    display: inline-block;
+    display: block;
     width: 200px;
     height: 20px;
-    left: 60px;
-    top: 80px;
+    margin: 10px;
+    color: dimgray;
 }
 
 .registerWindow .nickname {
-    position: absolute;
     text-align: center;
-    display: inline-block;
+    display: block;
     width: 120px;
     height: 20px;
-    left: 100px;
-    top: 110px;
+    margin: 10px auto;
 }
 
 .registerWindow .OK {
     position: absolute;
     width: 30%;
     height: 30px;
-    bottom: 40px;
+    bottom: 30px;
     left: 35%;
-}
-
-/**
- *  Login Window
- */
-
-.loginWindow span {
-    position: relative;
-    text-align: center;
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.loginWindow .nickname {
-    width: 240px;
-    height: 20px;
-    top: 40px;
-    left: 40px;
-}
-
-.loginWindow .number {
-    width: 240px;
-    height: 20px;
-    top: 40px;
-    left: 40px;
-}
-
-.loginWindow .identifier {
-    width: 240px;
-    height: 20px;
-    top: 40px;
-    left: 40px;
-}
-
-.loginWindow .OK {
-    position: absolute;
-    width: 30%;
-    height: 30px;
-    bottom: 40px;
-    left: 35%;
+    font-weight: bold;
 }
 
 /**

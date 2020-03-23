@@ -11,6 +11,8 @@
     var Label = tui.Label;
     var Input = tui.Input;
     var Button = tui.Button;
+
+    var FieldSet = tui.FieldSet;
     var Window = tui.Window;
 
     var Facebook = dimp.Facebook;
@@ -27,17 +29,22 @@
         Window.call(this, frame);
         this.setId('registerWindow');
         this.setClassName('registerWindow');
-        this.setTitle('Create user account');
+        this.setTitle('Create User Account');
+
+        var basic = new FieldSet();
+        basic.setClassName('profileFieldSet');
+        basic.setCaption('Nickname');
+        this.appendChild(basic);
 
         // nickname
         var nicknameLabel = new Label();
         nicknameLabel.setClassName('nicknameLabel');
         nicknameLabel.setText('Please input your nickname');
-        this.appendChild(nicknameLabel);
+        basic.appendChild(nicknameLabel);
         // value
         var nickname = new Input();
         nickname.setClassName('nickname');
-        this.appendChild(nickname);
+        basic.appendChild(nickname);
 
         // button
         var button = new Button();
