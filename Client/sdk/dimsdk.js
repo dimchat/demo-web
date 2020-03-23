@@ -4469,10 +4469,20 @@ if (typeof DaoKeDao !== "object") {
         var cipher = parse_key.call(this);
         var base64 = cipher.encrypt(plaintext);
         if (base64) {
-            return Base64.decode(base64)
-        } else {
-            throw Error("RSA encrypt error: " + plaintext)
+            var res = Base64.decode(base64);
+            if (res.length === this.getSize()) {
+                return res
+            }
+            var hex = cipher.getKey().encrypt(plaintext);
+            if (hex) {
+                res = Hex.decode(hex);
+                if (res.length === this.getSize()) {
+                    return res
+                }
+                throw Error("Error encrypt result: " + plaintext)
+            }
         }
+        throw Error("RSA encrypt error: " + plaintext)
     };
     PublicKey.register(AsymmetricKey.RSA, RSAPublicKey);
     PublicKey.register("SHA256withRSA", RSAPublicKey);

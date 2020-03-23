@@ -152,6 +152,7 @@
         var iMsg = this.getMessage(indexPath.row);
         // create table cell
         var cell = new TableViewCell();
+        cell.setClassName('msgCell');
 
         // message time
         var time = iMsg.envelope.getTime();

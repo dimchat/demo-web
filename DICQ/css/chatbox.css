@@ -46,7 +46,7 @@
     overflow-y: auto;
 }
 
-.chatWindow .historyView .ts_cell {
+.chatWindow .historyView .msgCell {
     border-bottom: 1px dashed #FFFCF9;
     padding: 8px;
 }
@@ -109,13 +109,13 @@
     right: 0;
 }
 
-.groupChatWindow .membersView .ts_header {
+.groupChatWindow .membersView .ts_table_header {
     padding: 8px;
     border-bottom: 1px solid #727377;
     background-color: #D5D2CF;
 }
 
-.groupChatWindow .membersView .ts_cell {
+.groupChatWindow .membersView .userCell {
     width: 204px;
     border-bottom: 1px dashed #FFFCF9;
     padding: 8px;

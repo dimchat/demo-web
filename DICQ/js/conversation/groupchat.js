@@ -90,6 +90,8 @@
             identifier = this.getParticipant(indexPath.row);
         }
         var cell = new TableViewCell();
+        cell.setClassName('userCell');
+
         var facebook = Facebook.getInstance();
         var name = facebook.getNickname(identifier);
         if (!name) {

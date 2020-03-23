@@ -8,6 +8,8 @@
     var Size = tui.Size;
     var Rect = tui.Rect;
 
+    var FieldSet = tui.FieldSet;
+
     var Label = tui.Label;
     var Input = tui.Input;
     var Button = tui.Button;
@@ -44,27 +46,32 @@
         // identifier.setText(user.identifier);
         // this.appendChild(identifier);
 
+        var basic = new FieldSet();
+        basic.setClassName('profileFieldSet');
+        basic.setCaption('Basic Info');
+        this.appendChild(basic);
+
         // search number
         var numberLabel = new Label();
         numberLabel.setClassName('numberLabel');
         numberLabel.setText('Number:');
-        this.appendChild(numberLabel);
+        basic.appendChild(numberLabel);
         // value
         var number = new Label();
         number.setClassName('number');
         number.setText(facebook.getNumberString(user.identifier));
-        this.appendChild(number);
+        basic.appendChild(number);
 
         // nickname
         var nameLabel = new Label();
         nameLabel.setClassName('nicknameLabel');
         nameLabel.setText('Name:');
-        this.appendChild(nameLabel);
+        basic.appendChild(nameLabel);
         // value
         var nickname = new Input();
         nickname.setClassName('nickname');
         nickname.setValue(user.getName());
-        this.appendChild(nickname);
+        basic.appendChild(nickname);
 
         // button
         var button = new Button();
