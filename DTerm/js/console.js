@@ -72,9 +72,27 @@ $(function() {
 
     });
 
+    var patch_keydown_event = function (ev) {
+        if (ev.which > 0 || ev.type !== 'keydown') {
+            return ev;
+        }
+        var key = ev.key;
+        if (key === 'UIKeyInputLeftArrow') {
+            ev.which = 37;
+        } else if (key === 'UIKeyInputUpArrow') {
+            ev.which = 38;
+        } else if (key === 'UIKeyInputRightArrow') {
+            ev.which = 39;
+        } else if (key === 'UIKeyInputDownArrow') {
+            ev.which = 40;
+        }
+        return ev;
+    };
+
     // 功能键
     $(document).keydown(function(e) {
         // console.log(e.which);
+        e = patch_keydown_event(e);
 
         if (e.which === 32) {       // space
             $left.append('&nbsp;');
