@@ -96,6 +96,10 @@
     color: darkblue;
 }
 
+/**
+ *  Group Chat
+ */
+
 .groupChatWindow .membersView {
     position: absolute;
     margin: 4px;
@@ -127,4 +131,32 @@
 
 .groupChatWindow .membersView .me {
     color: red;
+}
+
+/**
+ *  Personal Chat
+ */
+
+.personalChatWindow .showView {
+    position: absolute;
+    margin: 4px;
+    border-top: 2px solid #727377;
+    border-left: 2px solid #727377;
+    border-right: 2px solid #FFFCF9;
+    border-bottom: 2px solid #FFFCF9;
+    background-color: #E6E3E0;
+    width: 220px;
+    height: 386px;
+    top: 82px;
+    right: 0;
+}
+
+.personalChatWindow .showView .showImage {
+    display: block;
+    width: 160px;
+    height: 160px;
+    margin: 30px auto 20px;
+    -moz-border-radius: 8px;
+    -webkit-border-radius: 8px;
+    border-radius: 8px;
 }

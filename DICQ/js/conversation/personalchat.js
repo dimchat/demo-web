@@ -4,12 +4,28 @@
 
     var ChatWindow = ns.ChatWindow;
 
+    var View = tui.View;
+    var Image = tui.Image;
+
     var Facebook = dimp.Facebook;
 
     var PersonalChatWindow = function () {
         ChatWindow.call(this);
         this.setClassName('personalChatWindow');
         this.setTitle('Secure Chat');
+
+        //
+        //  User Info View
+        //
+        var tray = new View();
+        tray.setClassName('showView');
+
+        var img = new Image();
+        img.setClassName('showImage');
+        tray.appendChild(img);
+        this.showImage = img;
+
+        this.appendChild(tray);
     };
     dimp.Class(PersonalChatWindow, ChatWindow, null);
 
@@ -20,6 +36,7 @@
         var avatar = profile.getProperty('avatar');
         if (avatar) {
             this.avatarImage.setSrc(avatar);
+            this.showImage.setSrc(avatar);
         }
     };
 

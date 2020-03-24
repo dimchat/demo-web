@@ -62,9 +62,16 @@
             return ChatWindow.prototype.titleForHeaderInSection.call(this, section, tableView);
         }
         if (section === 0) {
-            return 'Owner/admin';
+            return 'Owner (administrator)';
         } else {
-            return 'Member(s)';
+            var count = this.getParticipantCount();
+            if (count === 0) {
+                return null;
+            } else if (count === 1) {
+                return 'Member';
+            } else {
+                return count + ' members';
+            }
         }
     };
 
