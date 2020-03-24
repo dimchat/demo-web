@@ -109,7 +109,7 @@
     right: 0;
 }
 
-.groupChatWindow .membersView .ts_table_header {
+.groupChatWindow .membersView .TSTableSectionHeader {
     padding: 8px;
     border-bottom: 1px solid #727377;
     background-color: #D5D2CF;

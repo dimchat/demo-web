@@ -2,15 +2,8 @@
 !function (ns, tui, dimp) {
     'use strict';
 
-    var $ = tui.$;
-
-    var Point = tui.Point;
-    var Size = tui.Size;
-    var Rect = tui.Rect;
-
     var View = tui.View;
     var Label = tui.Label;
-    var Input = tui.Input;
     var Button = tui.Button;
     var Image = tui.Image;
 
@@ -22,21 +15,17 @@
     var Facebook = dimp.Facebook;
 
     var MainListView = function () {
-        View.call(this);
+        TableView.call(this);
 
-        var table = new TableView();
-        table.setClassName('ts_table');
-        table.selectedIndex = 0;
-        table.dataSource = this;
-        table.delegate = this;
-        this.appendChild(table);
-        this.table = table;
+        this.selectedIndex = 0;
+        this.dataSource = this;
+        this.delegate = this;
     };
-    dimp.Class(MainListView, View, [TableViewDataSource, TableViewDelegate]);
+    dimp.Class(MainListView, TableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.layoutSubviews = function () {
         View.prototype.layoutSubviews.call(this);
-        this.table.reloadData();
+        this.reloadData();
     };
 
     //

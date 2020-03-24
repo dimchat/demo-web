@@ -34,7 +34,6 @@ button:focus {
     background-color: #8580A3;
     width: 228px;
     height: 456px;
-    overflow-y: auto;
 }
 
 .mainWindow .mainList .contactsBtn, .mainWindow .mainList .groupsBtn {
