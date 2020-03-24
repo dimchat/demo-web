@@ -10,14 +10,14 @@
     var TableViewCell = tui.TableViewCell;
     var TableViewDataSource = tui.TableViewDataSource;
     var TableViewDelegate = tui.TableViewDelegate;
-    var TableView = tui.TableView;
+    var FixedTableView = tui.FixedTableView;
 
     var Facebook = dimp.Facebook;
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var MainListView = function () {
-        TableView.call(this);
+        FixedTableView.call(this);
 
         this.selectedIndex = 0;
         this.dataSource = this;
@@ -27,7 +27,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, 'ContactsUpdated');
     };
-    dimp.Class(MainListView, TableView, [TableViewDataSource, TableViewDelegate]);
+    dimp.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
@@ -48,25 +48,22 @@
         return 2;
     };
 
+    MainListView.prototype.titleForHeaderInSection = function (section, tableView) {
+        if (section === 0) {
+            return 'Contacts';
+        } else {
+            return 'Groups';
+        }
+    };
+
     MainListView.prototype.viewForHeaderInSection = function (section, tableView) {
         var button = new Button();
-        if (section === 0) {
-            button.setId('contactsBtn');
-            button.setClassName('contactsBtn buttonNormal');
-            button.setText('Contacts');
-            button.onClick = function () {
-                tableView.selectedIndex = 0;
-                tableView.reloadData();
-            };
-        } else {
-            button.setId('groupsBtn');
-            button.setClassName('groupsBtn buttonNormal');
-            button.setText('Groups');
-            button.onClick = function () {
-                tableView.selectedIndex = 1;
-                tableView.reloadData();
-            };
-        }
+        button.setClassName('sectionHeader buttonNormal');
+        button.onClick = function () {
+            tableView.selectedIndex = section;
+            tableView.reloadData();
+        };
+        button.setText(this.titleForHeaderInSection(section, tableView));
         return button;
     };
 

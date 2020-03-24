@@ -212,6 +212,8 @@ if (typeof dicq !== 'object') {
         null
     ];
     var scripts = [
+        'js/views/fixedtable.js',
+
         'js/conversation/chatbox.js',
         'js/conversation/groupchat.js',
         'js/conversation/personalchat.js',

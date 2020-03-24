@@ -34,15 +34,25 @@ button:focus {
     background-color: #8580A3;
     width: 228px;
     height: 456px;
+    overflow-y: hidden;
 }
 
-.mainWindow .mainList .contactsBtn, .mainWindow .mainList .groupsBtn {
+.mainWindow .mainList .sectionHeader {
     position: relative;
     width: 100%;
     height: 32px;
     font-size: 14px;
     font-weight: bold;
     color: darkblue;
+}
+
+.mainWindow .mainList .sectionContent {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    width: 226px;
+    height: 392px;
+    overflow-y: auto;
 }
 
 .mainWindow .mainList .avatar {
