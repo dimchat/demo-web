@@ -2,6 +2,7 @@
 !function (ns, dimp) {
     'use strict';
 
+    var NetworkType = dimp.protocol.NetworkType;
     var ID = dimp.ID;
 
     var Facebook = dimp.Facebook;
@@ -77,6 +78,9 @@
             var group = msg.content.getGroup();
             if (group && !ID.EVERYONE.equals(group)) {
                 group = facebook.getIdentifier(group);
+                // add group ID into contacts list
+                add_group(group);
+
                 name = facebook.getNickname(group);
                 if (name) {
                     group = name;
@@ -85,12 +89,79 @@
                 }
                 res = '[' + group + '] (' + number + ') ' + username + ': ' + text;
             } else {
+                add_sender(sender);
                 res = '(' + number + ') ' + username + ': ' + text;
             }
         } else {
             res = 'Unknown notification: ' + name;
         }
         console.log(res);
+    };
+
+    var add_sender = function (sender) {
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            throw Error('current user not set yet');
+        }
+
+        // check robot
+        if (!NetworkType.Main.equals(sender.getType())) {
+            console.log('ignore robot: ' + sender);
+            return false;
+        }
+
+        return add_contact(sender, user.identifier);
+    };
+
+    var add_group = function (group) {
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            throw Error('current user not set yet');
+        }
+
+        // check members
+        var members = facebook.getMembers(group);
+        if (!members || members.length === 0) {
+            return false;
+        }
+        var identifier = user.identifier;
+        var mine = false;
+        for (var i = 0; i < members.length; ++i) {
+            if (identifier.equals(members[i])) {
+                mine = true;
+                break;
+            }
+        }
+        if (!mine) {
+            // check owner
+            var owner = facebook.getOwner(group);
+            if (!owner || !identifier.equals(owner)) {
+                return false;
+            }
+        }
+        return add_contact(group, identifier);
+    };
+
+    var add_contact = function (contact, user) {
+        var facebook = Facebook.getInstance();
+        var contacts = facebook.loadContacts(user);
+        if (contacts) {
+            for (var j = 0; j < contacts.length; ++j) {
+                if (contact.equals(contacts[j])) {
+                    return true;
+                }
+            }
+            contacts.push(contact);
+        } else {
+            contacts = [contact];
+        }
+        if (facebook.saveContacts(contacts, user)) {
+            var nc = NotificationCenter.getInstance();
+            nc.postNotification('ContactsUpdated', this,
+                {'ID': contact, 'contacts': contacts});
+        }
     };
 
     //

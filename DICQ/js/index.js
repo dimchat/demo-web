@@ -214,6 +214,7 @@ if (typeof dicq !== 'object') {
     var scripts = [
         'js/conversation/chatbox.js',
         'js/conversation/groupchat.js',
+        'js/conversation/personalchat.js',
         'js/conversation/chatroom.js',
 
         'js/controllers/register.js',

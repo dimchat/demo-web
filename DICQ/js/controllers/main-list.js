@@ -14,14 +14,27 @@
 
     var Facebook = dimp.Facebook;
 
+    var NotificationCenter = dimp.stargate.NotificationCenter;
+
     var MainListView = function () {
         TableView.call(this);
 
         this.selectedIndex = 0;
         this.dataSource = this;
         this.delegate = this;
+
+        // notifications
+        var nc = NotificationCenter.getInstance();
+        nc.addObserver(this, 'ContactsUpdated');
     };
     dimp.Class(MainListView, TableView, [TableViewDataSource, TableViewDelegate]);
+
+    MainListView.prototype.onReceiveNotification = function (notification) {
+        var name = notification.name;
+        if (name === 'ContactsUpdated') {
+            this.reloadData();
+        }
+    };
 
     MainListView.prototype.layoutSubviews = function () {
         View.prototype.layoutSubviews.call(this);
@@ -78,7 +91,7 @@
         var list = [];
         var id;
         for (var i = 0; i < contacts.length; ++i) {
-            id = facebook.getInstance(contacts[i]);
+            id = facebook.getIdentifier(contacts[i]);
             if (id && id.isUser()) {
                 list.push(id);
             }
@@ -153,6 +166,19 @@
         cell.appendChild(label);
 
         return cell;
+    };
+
+    MainListView.prototype.didSelectRowAtIndexPath = function (indexPath, tableView) {
+        var clazz;
+        var identifier;
+        if (indexPath.section === 0) {
+            clazz = ns.PersonalChatWindow;
+            identifier = get_contacts()[indexPath.row];
+        } else {
+            clazz = ns.GroupChatWindow;
+            identifier = get_groups()[indexPath.row];
+        }
+        clazz.show(identifier);
     };
 
     ns.MainListView = MainListView;
