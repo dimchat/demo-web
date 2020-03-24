@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 17, 2020
+ * @date      Mar. 24, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1540,7 +1540,8 @@
         }
         if (this.saveMessages(messages, identifier)) {
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(nc.kNotificationMessageReceived, this, iMsg)
+            nc.postNotification(nc.kNotificationMessageReceived, this, iMsg);
+            return true
         } else {
             throw Error("failed to save message: " + iMsg)
         }

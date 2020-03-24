@@ -11,11 +11,6 @@
     };
     dimp.Class(PersonalChatWindow, ChatWindow, null);
 
-    PersonalChatWindow.prototype.reloadData = function () {
-        ChatWindow.prototype.reloadData.call(this);
-        this.membersView.reloadData();
-    };
-
     //
     //  Factory
     //

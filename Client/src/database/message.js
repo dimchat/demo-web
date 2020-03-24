@@ -127,6 +127,7 @@
         if (this.saveMessages(messages, identifier)) {
             var nc = NotificationCenter.getInstance();
             nc.postNotification(nc.kNotificationMessageReceived, this, iMsg);
+            return true;
         } else {
             throw Error('failed to save message: ' + iMsg);
         }
