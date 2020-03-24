@@ -150,3 +150,13 @@ textarea {
     bottom: 40px;
     left: 35%;
 }
+
+.qrCode {
+    position: absolute;
+    padding: 4px;
+    width: 128px;
+    height: 128px;
+    right: 36px;
+    bottom: 36px;
+    background-color: white;
+}

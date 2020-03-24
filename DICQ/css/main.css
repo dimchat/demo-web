@@ -50,7 +50,6 @@ button:focus {
     margin: 0;
     border: 0;
     padding: 0;
-    width: 226px;
     height: 392px;
 }
 
@@ -67,7 +66,7 @@ button:focus {
 .mainWindow .mainList .name {
     display: block;
     text-align: center;
-    margin: 2px 8px 16px;
+    margin: 2px 8px 8px;
     font-weight: bold;
 }
 

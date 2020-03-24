@@ -128,8 +128,8 @@
             identifier = get_groups()[indexPath.row];
             entity = facebook.getGroup(identifier);
         }
-        console.assert(identifier !== number, 'ID not found: ' + indexPath);
-        console.assert(entity !== number, 'ID error: ' + identifier);
+        console.assert(identifier !== null, 'ID not found: ' + indexPath);
+        console.assert(entity !== null, 'ID error: ' + identifier);
         var profile = entity.getProfile();
 
         //
@@ -156,10 +156,10 @@
         //  Name(Number)
         //
         var name = entity.getName();
-        var number = facebook.getNumberString(identifier);
+        // var number = facebook.getNumberString(identifier);
         var label = new Label();
         label.setClassName('name');
-        label.setText(name + ' (' + number + ')');
+        label.setText(name);
         cell.appendChild(label);
 
         return cell;

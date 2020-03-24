@@ -15,7 +15,7 @@
     var Window = tui.Window;
 
     var random_point = function () {
-        var x = 50 + Math.random() * 100;
+        var x = 180 + Math.random() * 100;
         var y = 50 + Math.random() * 100;
         return new Point(Math.round(x), Math.round(y));
     };

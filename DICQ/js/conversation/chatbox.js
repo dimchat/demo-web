@@ -29,7 +29,7 @@
     var MessageTable = dimp.db.MessageTable;
 
     var random_point = function () {
-        var x = 50 + Math.random() * 100;
+        var x = 180 + Math.random() * 100;
         var y = 50 + Math.random() * 100;
         return new Point(Math.round(x), Math.round(y));
     };
@@ -42,11 +42,13 @@
 
         this.__identifier = null;
 
-        // image
-        var image = new Image();
-        image.setClassName('logoImageView');
-        image.setSrc('https://dimchat.github.io/images/icon-57.png');
-        this.appendChild(image);
+        // avatar
+        var avatar = new Image();
+        avatar.setClassName('avatar');
+        avatar.setSrc('https://dimchat.github.io/images/icon-57.png');
+        this.appendChild(avatar);
+        this.avatarImage = avatar;
+
         // identifier
         var identifier = new Label();
         identifier.setClassName('identifierLabel');

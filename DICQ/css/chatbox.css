@@ -1,9 +1,10 @@
 
-.chatWindow .logoImageView {
+.chatWindow .avatar {
     float: left;
-    width: 40px;
-    height: 40px;
-    margin: 4px;
+    width: 42px;
+    height: 42px;
+    margin: 4px 8px;
+    border: 1px solid #e0e0f5;
     background-color: transparent;
     background-image: url(../images/icon-120.png);
     background-repeat: no-repeat;
@@ -16,7 +17,7 @@
 
 .chatWindow .identifierLabel {
     float: left;
-    width: 580px;
+    width: 560px;
     margin: 4px;
 }
 
