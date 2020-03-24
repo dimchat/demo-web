@@ -68,8 +68,7 @@
         msg.setClassName('msgBtn buttonActive');
         msg.setText('Chat Room');
         msg.onClick = function (ev) {
-            var admin = 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7';
-            admin = facebook.getIdentifier(admin);
+            var admin = facebook.getIdentifier('chatroom');
             ns.ChatroomWindow.show(admin);
         };
         this.appendChild(msg);
