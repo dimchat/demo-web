@@ -28,22 +28,17 @@
 !function (ns) {
     'use strict';
 
+    var $ = ns.$;
     var View = ns.View;
 
+    var TableViewCell = ns.TableViewCell;
     var TableView = ns.TableView;
 
     var IndexPath = ns.IndexPath;
 
     var FixedTableView = function (table) {
         TableView.call(this, table);
-
-        this.setScrollX(false);
-        this.setScrollY(true);
-
         this.selectedIndex = 0;
-
-        this.dataSource = null;
-        this.delegate = null;
     };
     FixedTableView.prototype = Object.create(TableView.prototype);
     FixedTableView.prototype.constructor = FixedTableView;
@@ -51,29 +46,56 @@
     FixedTableView.prototype.reloadData = function () {
         // clear table
         this.removeChildren();
+        var dataSource = this.dataSource;
+        var delegate = this.delegate;
 
-        var section_count = this.dataSource.numberOfSections(this);
+        var section_count = dataSource.numberOfSections(this);
         var current_section = this.selectedIndex;
         var header, cell;
         var index, indexPath;
+
         // add sections before
         for (index = 0; index <= current_section; ++index) {
-            header = this.delegate.viewForHeaderInSection(index, this);
+            header = delegate.viewForHeaderInSection(index, this);
             this.appendChild(header);
         }
+
         // add cells in current section
         var tray = new View();
         tray.setClassName('sectionContent');
-        var row_count = this.dataSource.numberOfRowsInSection(current_section, this);
+        tray.setScrollX(false);
+        tray.setScrollY(true);
+        var row_count = dataSource.numberOfRowsInSection(current_section, this);
         for (index = 0; index < row_count; ++index) {
             indexPath = new IndexPath(current_section, index);
             cell = this.cellForRowAtIndexPath(indexPath, this);
+            if (!cell.__ie.onclick) {
+                cell.indexPath = indexPath;
+                cell.__ie.onclick = function (ev) {
+                    // get target table cell
+                    var target = $(ev.target);
+                    while (target) {
+                        if (target instanceof TableViewCell) {
+                            break;
+                        }
+                        target = target.getParent();
+                    }
+                    if (!target) {
+                        throw Error('failed to get event target: ' + ev.target);
+                    }
+                    ev.cancelBubble = true;
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    delegate.didSelectRowAtIndexPath(target.indexPath, this);
+                };
+            }
             tray.appendChild(cell);
         }
         this.appendChild(tray);
+
         // add sections after
         for (index = current_section + 1; index < section_count; ++index) {
-            header = this.delegate.viewForHeaderInSection(index, this);
+            header = delegate.viewForHeaderInSection(index, this);
             this.appendChild(header);
         }
         return this;

@@ -105,7 +105,7 @@
         var list = [];
         var identifier;
         for (var i = 0; i < contacts.length; ++i) {
-            identifier = facebook.getInstance(contacts[i]);
+            identifier = facebook.getIdentifier(contacts[i]);
             if (identifier && identifier.isGroup()) {
                 list.push(identifier);
             }

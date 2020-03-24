@@ -52,7 +52,6 @@ button:focus {
     padding: 0;
     width: 226px;
     height: 392px;
-    overflow-y: auto;
 }
 
 .mainWindow .mainList .avatar {
