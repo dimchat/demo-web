@@ -197,7 +197,9 @@
             // personal chat, get chat box with contact ID
             chat = this.getConversation(receiver);
         }
-        console.assert(chat !== null, 'chat box not found for receipt: ' + receipt);
+        if (!chat) {
+            throw Error('chat box not found for receipt: ' + receipt);
+        }
 
         var target = message_matches_receipt(receipt, chat);
         if (target) {
@@ -217,14 +219,11 @@
                     target.content.setValue('state', 'delivering')
                 }
             } else {
-                console.error('unexpect receipt sender: ' + sender);
-                return false;
+                throw Error('unexpect receipt sender: ' + sender);
             }
             return true;
         }
-
-        console.error('target message not found for receipt: ' + receipt);
-        return false;
+        console.log('target message not found for receipt: ' + receipt);
     };
 
     var message_matches_receipt = function (receipt, conversation) {

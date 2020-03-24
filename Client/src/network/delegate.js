@@ -39,6 +39,7 @@
     };
     ns.Interface(StationDelegate, null);
 
+    // noinspection JSUnusedLocalSymbols
     /**
      *  Send data package to station success
      *
@@ -46,11 +47,10 @@
      * @param server
      */
     StationDelegate.prototype.didSendPackage = function (data, server) {
-        console.assert(data !== null, 'data empty');
-        console.assert(server !== null, 'server empty');
         console.assert(false, 'implement me!');
     };
 
+    // noinspection JSUnusedLocalSymbols
     /**
      *  Failed to send data package to station
      *
@@ -59,9 +59,6 @@
      * @param server
      */
     StationDelegate.prototype.didFailToSendPackage = function (error, data, server) {
-        console.assert(error !== null, 'error empty');
-        console.assert(data !== null, 'data empty');
-        console.assert(server !== null, 'server empty');
         console.assert(false, 'implement me!');
     };
 

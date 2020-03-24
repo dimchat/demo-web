@@ -780,14 +780,9 @@
     var StationDelegate = function() {};
     ns.Interface(StationDelegate, null);
     StationDelegate.prototype.didSendPackage = function(data, server) {
-        console.assert(data !== null, "data empty");
-        console.assert(server !== null, "server empty");
         console.assert(false, "implement me!")
     };
     StationDelegate.prototype.didFailToSendPackage = function(error, data, server) {
-        console.assert(error !== null, "error empty");
-        console.assert(data !== null, "data empty");
-        console.assert(server !== null, "server empty");
         console.assert(false, "implement me!")
     };
     if (typeof ns.network !== "object") {
@@ -867,11 +862,11 @@
     Server.prototype.handshake = function(session) {
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
-            console.log("server state error: " + state);
+            console.error("server state error: " + state);
             return
         }
         if (!this.getStatus().equals(StarStatus.Connected)) {
-            console.log("server state error: " + state);
+            console.error("server state error: " + state);
             return
         }
         var user = this.getCurrentUser();
@@ -892,7 +887,7 @@
     Server.prototype.handshakeAccepted = function(session, success) {
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
-            console.log("server state error: " + state)
+            console.error("server state error: " + state)
         }
         if (success) {
             console.log("handshake accepted for user: " + this.getCurrentUser());
@@ -1038,7 +1033,7 @@
                             }, 1000)
                         } else {
                             if (state.equals(StateMachine.errorState)) {
-                                console.log("Station connection error!");
+                                console.error("Station connection error!");
                                 var nc = NotificationCenter.getInstance();
                                 nc.postNotification(nc.kNotificationStationError, this, null)
                             } else {
@@ -1240,9 +1235,7 @@
             nc.postNotification(nc.kNotificationProfileUpdated, this, profile);
             return true
         } else {
-            var text = "failed to save profile: " + profile.getIdentifier() + " -> " + profile.getValue("data");
-            console.log(text);
-            return false
+            throw Error("failed to save profile: " + profile.getIdentifier() + " -> " + profile.getValue("data"))
         }
     };
     ProfileTable.getInstance = function() {
@@ -1264,10 +1257,7 @@
             var item;
             for (var i = 0; i < list.length; ++i) {
                 item = facebook.getIdentifier(list[i]);
-                if (!item) {
-                    console.error("user ID error", list[i]);
-                    continue
-                }
+                console.assert(item !== null, "user ID error", list[i]);
                 users.push(item)
             }
         }
@@ -1344,18 +1334,12 @@
                 var user = u_list[i];
                 var c_list = map[user];
                 user = facebook.getIdentifier(user);
-                if (!user) {
-                    console.error("user ID error", u_list[i]);
-                    continue
-                }
+                console.assert(user !== null, "user ID error", u_list[i]);
                 var contacts = [];
                 for (var j = 0; j < c_list.length; ++j) {
                     var item = c_list[j];
                     item = facebook.getIdentifier(item);
-                    if (!item) {
-                        console.error("contact ID error", c_list[j]);
-                        continue
-                    }
+                    console.assert(item !== null, "contact ID error", c_list[j]);
                     contacts.push(item)
                 }
                 users[user] = contacts
@@ -1384,9 +1368,7 @@
             });
             return true
         } else {
-            var text = "failed to save contacts: " + user + " -> " + contacts;
-            console.log(text);
-            return false
+            throw Error("failed to save contacts: " + user + " -> " + contacts)
         }
     };
     ContactTable.getInstance = function() {
@@ -1449,9 +1431,7 @@
             });
             return true
         } else {
-            var text = "failed to save members: " + group + " -> " + members;
-            console.log(text);
-            return false
+            throw Error("failed to save members: " + group + " -> " + members)
         }
     };
     GroupTable.getInstance = function() {
@@ -1763,7 +1743,7 @@
     };
     Facebook.prototype.saveMeta = function(meta, identifier) {
         if (!this.cacheMeta(meta, identifier)) {
-            console.log("meta not match ID: " + identifier);
+            console.error("meta not match ID: " + identifier);
             return false
         }
         var db = MetaTable.getInstance();
@@ -1906,7 +1886,7 @@
             group = group.identifier
         }
         if (!members || members.length < 1) {
-            console.log("members should not be empty: " + group);
+            console.error("members should not be empty: " + group);
             return false
         }
         if (!this.cacheMembers(members, group)) {
@@ -2071,7 +2051,9 @@
         } else {
             chat = this.getConversation(receiver)
         }
-        console.assert(chat !== null, "chat box not found for receipt: " + receipt);
+        if (!chat) {
+            throw Error("chat box not found for receipt: " + receipt)
+        }
         var target = message_matches_receipt(receipt, chat);
         if (target) {
             var text = receipt.getMessage();
@@ -2089,14 +2071,12 @@
                         target.content.setValue("state", "delivering")
                     }
                 } else {
-                    console.error("unexpect receipt sender: " + sender);
-                    return false
+                    throw Error("unexpect receipt sender: " + sender)
                 }
             }
             return true
         }
-        console.error("target message not found for receipt: " + receipt);
-        return false
+        console.log("target message not found for receipt: " + receipt)
     };
     var message_matches_receipt = function(receipt, conversation) {
         var iMsg;
@@ -2142,15 +2122,17 @@
     var BlockCommand = ns.protocol.BlockCommand;
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
+    var QueryCommand = ns.protocol.group.QueryCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
     var Facebook = ns.Facebook;
     var KeyStore = ns.KeyStore;
     var Messenger = ns.Messenger;
-    var MessageTable = ns.db.MessageTable;
+    var Amanuensis = ns.Amanuensis;
     var s_messenger = null;
     Messenger.getInstance = function() {
         if (!s_messenger) {
@@ -2255,16 +2237,11 @@
                 delete key["reused"]
             }
         }
-        var db = MessageTable.getInstance();
-        if (group) {
-            return db.insertMessage(iMsg, group)
+        if (content instanceof QueryCommand) {
+            return true
         }
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
-        var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
-        if (facebook.getPrivateKeyForSignature(receiver)) {
-            return db.insertMessage(iMsg, sender)
-        }
-        return db.insertMessage(iMsg, receiver)
+        var clerk = Amanuensis.getInstance();
+        return clerk.saveMessage(iMsg)
     };
     Messenger.prototype.suspendMessage = function(msg) {
         if (msg instanceof InstantMessage) {} else {

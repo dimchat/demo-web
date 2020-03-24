@@ -24,19 +24,13 @@
                 var c_list = map[user];
                 // user ID
                 user = facebook.getIdentifier(user);
-                if (!user) {
-                    console.error('user ID error', u_list[i]);
-                    continue;
-                }
+                console.assert(user !== null, 'user ID error', u_list[i]);
                 // user contacts
                 var contacts = [];
                 for (var j = 0; j < c_list.length; ++j) {
                     var item = c_list[j];
                     item = facebook.getIdentifier(item);
-                    if (!item) {
-                        console.error('contact ID error', c_list[j]);
-                        continue;
-                    }
+                    console.assert(item !== null, 'contact ID error', c_list[j]);
                     contacts.push(item);
                 }
                 // got contacts for one user
@@ -67,9 +61,7 @@
                 {'user': user, 'contacts': contacts});
             return true;
         } else {
-            var text = 'failed to save contacts: ' + user + ' -> ' + contacts;
-            console.log(text);
-            return false;
+            throw Error('failed to save contacts: ' + user + ' -> ' + contacts);
         }
     };
 

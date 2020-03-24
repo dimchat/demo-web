@@ -20,10 +20,7 @@
             var item;
             for (var i = 0; i < list.length; ++i) {
                 item = facebook.getIdentifier(list[i]);
-                if (!item) {
-                    console.error('user ID error', list[i]);
-                    continue;
-                }
+                console.assert(item !== null, 'user ID error', list[i]);
                 users.push(item);
             }
         }

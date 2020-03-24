@@ -65,9 +65,7 @@
                 {'group': group, 'members': members});
             return true;
         } else {
-            var text = 'failed to save members: ' + group + ' -> ' + members;
-            console.log(text);
-            return false;
+            throw Error('failed to save members: ' + group + ' -> ' + members);
         }
     };
 

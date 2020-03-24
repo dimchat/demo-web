@@ -54,11 +54,9 @@
             nc.postNotification(nc.kNotificationProfileUpdated, this, profile);
             return true;
         } else {
-            var text = 'failed to save profile: '
+            throw Error('failed to save profile: '
                 + profile.getIdentifier() + ' -> '
-                + profile.getValue('data');
-            console.log(text);
-            return false;
+                + profile.getValue('data'));
         }
     };
 

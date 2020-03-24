@@ -19,9 +19,11 @@
 
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
 
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
+    var QueryCommand = ns.protocol.group.QueryCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
 
     var InstantMessage = ns.InstantMessage;
@@ -32,7 +34,7 @@
 
     var Messenger = ns.Messenger;
 
-    var MessageTable = ns.db.MessageTable;
+    var Amanuensis = ns.Amanuensis;
 
     var s_messenger = null;
     Messenger.getInstance = function () {
@@ -200,25 +202,13 @@
                 delete key['reused'];
             }
         }
+        if (content instanceof QueryCommand) {
+            // FIXME: same query command sent to different members?
+            return true;
+        }
 
-        var db = MessageTable.getInstance();
-        // save instant message into database
-        if (group) {
-            return db.insertMessage(iMsg, group);
-        }
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
-        var receiver = facebook.getIdentifier(iMsg.envelope.receiver);
-        // if (sender.equals(receiver)) {
-        //     console.log('loop message: ' + iMsg.getMap(false));
-        //     return true;
-        // }
-        if (facebook.getPrivateKeyForSignature(receiver)) {
-            // if (facebook.getPrivateKeyForSignature(sender)) {
-            //     throw Error('loop message: ' + iMsg.getMap(false));
-            // }
-            return db.insertMessage(iMsg, sender);
-        }
-        return db.insertMessage(iMsg, receiver);
+        var clerk = Amanuensis.getInstance();
+        return clerk.saveMessage(iMsg);
     };
 
     // Override

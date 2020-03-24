@@ -154,7 +154,7 @@
     // Override
     Facebook.prototype.saveMeta = function(meta, identifier) {
         if (!this.cacheMeta(meta, identifier)) {
-            console.log('meta not match ID: ' + identifier);
+            console.error('meta not match ID: ' + identifier);
             return false;
         }
         var db = MetaTable.getInstance();
@@ -330,7 +330,7 @@
             group = group.identifier;
         }
         if (!members || members.length < 1) {
-            console.log('members should not be empty: ' + group);
+            console.error('members should not be empty: ' + group);
             return false;
         }
         if (!this.cacheMembers(members, group)) {

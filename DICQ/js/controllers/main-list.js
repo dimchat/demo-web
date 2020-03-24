@@ -12,6 +12,7 @@
     var TableViewDelegate = tui.TableViewDelegate;
     var FixedTableView = tui.FixedTableView;
 
+    var NetworkType = dimp.protocol.NetworkType;
     var Facebook = dimp.Facebook;
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
@@ -45,14 +46,16 @@
     //  TableViewDataSource/TableViewDelegate
     //
     MainListView.prototype.numberOfSections = function (tableView) {
-        return 2;
+        return 3;
     };
 
     MainListView.prototype.titleForHeaderInSection = function (section, tableView) {
         if (section === 0) {
             return 'Contacts';
-        } else {
+        } else if (section === 1) {
             return 'Groups';
+        } else {
+            return 'Robots';
         }
     };
 
@@ -72,9 +75,11 @@
             return 0;
         }
         if (section === 0) {
-            return get_contacts().length;
-        } else {
+            return get_persons().length;
+        } else if (section === 1) {
             return get_groups().length;
+        } else {
+            return get_robots().length;
         }
     };
 
@@ -82,14 +87,33 @@
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.identifier);
-        if (!contacts) {
+        if (contacts) {
+            return contacts;
+        } else {
             return [];
         }
+    };
+    var get_persons = function () {
+        var facebook = Facebook.getInstance();
+        var contacts = get_contacts();
         var list = [];
         var id;
         for (var i = 0; i < contacts.length; ++i) {
             id = facebook.getIdentifier(contacts[i]);
-            if (id && id.isUser()) {
+            if (id && NetworkType.Main.equals(id.getType())) {
+                list.push(id);
+            }
+        }
+        return list;
+    };
+    var get_robots = function () {
+        var facebook = Facebook.getInstance();
+        var contacts = get_contacts();
+        var list = [];
+        var id;
+        for (var i = 0; i < contacts.length; ++i) {
+            id = facebook.getIdentifier(contacts[i]);
+            if (id && NetworkType.Robot.equals(id.getType())) {
                 list.push(id);
             }
         }
@@ -97,11 +121,7 @@
     };
     var get_groups = function () {
         var facebook = Facebook.getInstance();
-        var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.identifier);
-        if (!contacts) {
-            return [];
-        }
+        var contacts = get_contacts();
         var list = [];
         var identifier;
         for (var i = 0; i < contacts.length; ++i) {
@@ -121,15 +141,17 @@
         var entity;
         if (indexPath.section === 0) {
             cell.setClassName('contactCell');
-            identifier = get_contacts()[indexPath.row];
+            identifier = get_persons()[indexPath.row];
             entity = facebook.getUser(identifier);
-        } else {
+        } else if (indexPath.section === 1) {
             cell.setClassName('groupCell');
             identifier = get_groups()[indexPath.row];
             entity = facebook.getGroup(identifier);
+        } else {
+            cell.setClassName('robotCell');
+            identifier = get_robots()[indexPath.row];
+            entity = facebook.getUser(identifier);
         }
-        console.assert(identifier !== null, 'ID not found: ' + indexPath);
-        console.assert(entity !== null, 'ID error: ' + identifier);
         var profile = entity.getProfile();
 
         //
@@ -170,10 +192,13 @@
         var identifier;
         if (indexPath.section === 0) {
             clazz = ns.PersonalChatWindow;
-            identifier = get_contacts()[indexPath.row];
-        } else {
+            identifier = get_persons()[indexPath.row];
+        } else if (indexPath.section === 1) {
             clazz = ns.GroupChatWindow;
             identifier = get_groups()[indexPath.row];
+        } else {
+            clazz = ns.PersonalChatWindow;
+            identifier = get_robots()[indexPath.row];
         }
         clazz.show(identifier);
     };

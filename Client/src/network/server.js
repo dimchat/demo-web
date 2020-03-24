@@ -118,13 +118,13 @@
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
             // FIXME: sometimes the connection state will be reset
-            console.log('server state error: ' + state);
+            console.error('server state error: ' + state);
             return;
         }
         // check connection status == 'Connected'
         if (!this.getStatus().equals(StarStatus.Connected)) {
             // FIXME: sometimes the connection will be lost while handshaking
-            console.log('server state error: ' + state);
+            console.error('server state error: ' + state);
             return;
         }
         var user = this.getCurrentUser();
@@ -152,7 +152,7 @@
         var state = this.getCurrentState();
         if (!state.equals(StateMachine.handshakingState)) {
             // FIXME: sometimes the connection state will be reset
-            console.log('server state error: ' + state);
+            console.error('server state error: ' + state);
             // return;
         }
         if (success) {
@@ -346,7 +346,7 @@
                 carry_on.call(srv);
             }, 1000);
         } else if (state.equals(StateMachine.errorState)) {
-            console.log('Station connection error!');
+            console.error('Station connection error!');
             var nc = NotificationCenter.getInstance();
             nc.postNotification(nc.kNotificationStationError, this, null);
         } else if (state.equals(StateMachine.stoppedState)) {
