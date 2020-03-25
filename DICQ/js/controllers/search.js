@@ -194,6 +194,11 @@
         return cell;
     };
 
+    SearchResultWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+        var identifier = this.getUser(indexPath.row);
+        ns.UserWindow.show(identifier);
+    };
+
     //
     //  Factory
     //

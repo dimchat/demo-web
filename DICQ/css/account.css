@@ -65,3 +65,70 @@
     left: 35%;
     font-weight: bold;
 }
+
+/**
+ *  Contact Window
+ */
+
+.userWindow span {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin: 2px;
+    padding: 2px;
+}
+
+.userWindow .profileFieldSet {
+    margin: 20px auto;
+    width: 240px;
+}
+
+.userWindow .addressLabel {
+    text-align: right;
+    width: 60px;
+    height: 20px;
+    color: gray;
+}
+
+.userWindow .address {
+    width: 160px;
+    height: 20px;
+}
+
+.userWindow .numberLabel {
+    text-align: right;
+    width: 60px;
+    height: 20px;
+    color: gray;
+}
+
+.userWindow .number {
+    width: 100px;
+    height: 20px;
+}
+
+.userWindow .nicknameLabel {
+    text-align: right;
+    width: 60px;
+    height: 20px;
+    color: gray;
+}
+
+.userWindow .nickname {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    padding: 0;
+    text-align: center;
+}
+
+.userWindow .OK {
+    position: absolute;
+    width: 30%;
+    height: 30px;
+    bottom: 16px;
+    left: 35%;
+    font-weight: bold;
+}

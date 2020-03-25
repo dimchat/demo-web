@@ -112,6 +112,16 @@
         return cell;
     };
 
+    GroupChatWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+        var identifier;
+        if (indexPath.section === 0) {
+            identifier = this.getAdministrator(indexPath.row);
+        } else {
+            identifier = this.getParticipant(indexPath.row);
+        }
+        ns.UserWindow.show(identifier);
+    };
+
     ns.GroupChatWindow = GroupChatWindow;
 
 }(dicq, tarsier.ui, DIMP);

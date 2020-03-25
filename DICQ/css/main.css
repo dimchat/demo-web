@@ -53,14 +53,23 @@ button:focus {
     height: 360px;
 }
 
-.mainWindow .mainList .avatar {
+.mainWindow .mainList .avatarBtn {
     display: block;
     width: 64px;
     height: 64px;
     margin: 16px auto 2px;
     -moz-border-radius: 8px;
-    -webkit-border-radius: 4px;
+    -webkit-border-radius: 8px;
     border-radius: 8px;
+}
+
+.mainWindow .mainList .avatarImg {
+    width: 64px;
+    height: 64px;
+    margin: -8px;
+    border: 0;
+    padding: 0;
+    background-color: lightgray;
 }
 
 .mainWindow .mainList .name {

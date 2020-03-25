@@ -228,6 +228,8 @@ if (typeof dicq !== 'object') {
         'js/controllers/main-list.js',
         'js/controllers/account.js',
         'js/controllers/search.js',
+        'js/controllers/user.js',
+
         'js/controllers/about.js',
 
         'js/connect.js',

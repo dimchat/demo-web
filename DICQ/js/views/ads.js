@@ -29,7 +29,7 @@
     AdView.prototype.setId = function (id) {
         View.prototype.setId.call(this, id);
         // TODO: fetch ad content with id
-        this.setText(id);
+        this.setText(id + ' placeholder');
     };
 
     //-------- namespace --------

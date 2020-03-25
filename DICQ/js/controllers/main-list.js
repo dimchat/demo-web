@@ -154,6 +154,19 @@
         }
         var profile = entity.getProfile();
 
+        var button = new Button();
+        button.setClassName('avatarBtn');
+        button.onClick = function (ev) {
+            if (indexPath.section === 0) {
+                ns.PersonalChatWindow.show(identifier);
+            } else if (indexPath.section === 1) {
+                ns.GroupChatWindow.show(identifier);
+            } else {
+                ns.PersonalChatWindow.show(identifier);
+            }
+        };
+        cell.appendChild(button);
+
         //
         //  Avatar
         //
@@ -168,11 +181,11 @@
             image = 'https://dimchat.github.io/images/icon-512.png';
         }
         var img = new Image();
-        img.setClassName('avatar');
+        img.setClassName('avatarImg');
         if (image) {
             img.setSrc(image);
         }
-        cell.appendChild(img);
+        button.setImage(img);
 
         //
         //  Name(Number)
@@ -185,22 +198,6 @@
         cell.appendChild(label);
 
         return cell;
-    };
-
-    MainListView.prototype.didSelectRowAtIndexPath = function (indexPath, tableView) {
-        var clazz;
-        var identifier;
-        if (indexPath.section === 0) {
-            clazz = ns.PersonalChatWindow;
-            identifier = get_persons()[indexPath.row];
-        } else if (indexPath.section === 1) {
-            clazz = ns.GroupChatWindow;
-            identifier = get_groups()[indexPath.row];
-        } else {
-            clazz = ns.PersonalChatWindow;
-            identifier = get_robots()[indexPath.row];
-        }
-        clazz.show(identifier);
     };
 
     ns.MainListView = MainListView;
