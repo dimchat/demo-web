@@ -91,7 +91,7 @@ button:focus {
     bottom: 72px;
     font-size: 14px;
     font-weight: bold;
-    color: gray;
+    color: darkblue;
 }
 .mainWindow .browserBtn {
     position: absolute;

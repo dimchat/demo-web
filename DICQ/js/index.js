@@ -205,13 +205,16 @@ if (typeof dicq !== 'object') {
 
     var stylesheets = [
         'css/index.css',
+        'css/ads.css',
         'css/login.css',
         'css/main.css',
         'css/account.css',
         'css/chatbox.css',
+        'css/search.css',
         null
     ];
     var scripts = [
+        'js/views/ads.js',
         'js/views/fixedtable.js',
 
         'js/conversation/chatbox.js',
@@ -224,6 +227,7 @@ if (typeof dicq !== 'object') {
         'js/controllers/main.js',
         'js/controllers/main-list.js',
         'js/controllers/account.js',
+        'js/controllers/search.js',
         'js/controllers/about.js',
 
         'js/connect.js',

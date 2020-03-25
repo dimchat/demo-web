@@ -4,8 +4,6 @@
 
     var $ = tui.$;
 
-    var Point = tui.Point;
-    var Size = tui.Size;
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -18,14 +16,8 @@
     var Facebook = dimp.Facebook;
     var Register = dimp.extensions.Register;
 
-    var random_point = function () {
-        var x = 180 + Math.random() * 100;
-        var y = 50 + Math.random() * 100;
-        return new Point(Math.round(x), Math.round(y));
-    };
-
     var RegisterWindow = function () {
-        var frame = new Rect(random_point(), new Size(320, 240));
+        var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
         this.setId('registerWindow');
         this.setClassName('registerWindow');
@@ -79,6 +71,9 @@
         } else {
             box = new RegisterWindow();
             $(document.body).appendChild(box);
+            // adjust position
+            var point = tui.getCenterPosition(box.getSize());
+            box.setOrigin(point);
             box.layoutSubviews();
         }
         box.floatToTop();

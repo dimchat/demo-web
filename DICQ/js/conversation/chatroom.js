@@ -124,10 +124,13 @@
                 this.historyView.reloadData();
                 this.historyView.scrollToBottom();
             } else if (msg.content instanceof SearchCommand) {
-                // process group members updated notification
-                update_users(msg.content);
-                // reload online users
-                this.membersView.reloadData();
+                var command = msg.content.getCommand();
+                if (command === SearchCommand.ONLINE_USERS) {
+                    // process chatroom users updated notification
+                    update_users(msg.content);
+                    // reload online users
+                    this.membersView.reloadData();
+                }
             }
         }
     };

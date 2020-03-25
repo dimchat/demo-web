@@ -1,0 +1,65 @@
+
+.searchWindow .searchFieldSet {
+    position: absolute;
+    width: 240px;
+    height: 220px;
+    top: 60px;
+    right: 20px;
+}
+
+.searchWindow .keywordsLabel {
+    position: relative;
+    margin: 10px;
+    top: 20px;
+}
+
+.searchWindow .keywords {
+    position: relative;
+    top: 20px;
+}
+
+.searchWindow .OK {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    bottom: 20px;
+    left: 190px;
+    font-weight: bold;
+}
+
+.searchResultWindow .OK {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    bottom: 20px;
+    left: 190px;
+    font-weight: bold;
+}
+
+/**
+ *  Search Results
+ */
+
+.searchResultWindow .resultFieldSet {
+    position: absolute;
+    width: 252px;
+    height: 220px;
+    top: 60px;
+    right: 20px;
+    padding-right: 0;
+}
+
+.searchResultWindow .searchResult {
+    width: 100%;
+    height: 100%;
+}
+
+.searchResultWindow .userCell {
+    width: 100%;
+    height: 20px;
+    border-bottom: 1px dashed #FFFCF9;
+    padding: 8px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}

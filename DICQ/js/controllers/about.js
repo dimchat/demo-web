@@ -4,8 +4,6 @@
 
     var $ = tui.$;
 
-    var Point = tui.Point;
-    var Size = tui.Size;
     var Rect = tui.Rect;
 
     var Image = tui.Image;
@@ -14,14 +12,8 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
-    var random_point = function () {
-        var x = 180 + Math.random() * 100;
-        var y = 50 + Math.random() * 100;
-        return new Point(Math.round(x), Math.round(y));
-    };
-
     var AboutWindow = function () {
-        var frame = new Rect(random_point(), new Size(240, 360));
+        var frame = new Rect(0, 0, 240, 360);
         Window.call(this, frame);
         this.setId('aboutWindow');
         this.setClassName('aboutWindow');
@@ -65,6 +57,9 @@
         } else {
             box = new AboutWindow();
             $(document.body).appendChild(box);
+            // adjust position
+            var point = tui.getRandomPosition(box.getSize());
+            box.setOrigin(point);
             box.layoutSubviews();
         }
         box.floatToTop();

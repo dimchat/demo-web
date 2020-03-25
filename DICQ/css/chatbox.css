@@ -120,7 +120,7 @@
     background-color: #D5D2CF;
 }
 
-.groupChatWindow .membersView .userCell {
+.groupChatWindow .membersView .memberCell {
     width: 204px;
     border-bottom: 1px dashed #FFFCF9;
     padding: 8px;

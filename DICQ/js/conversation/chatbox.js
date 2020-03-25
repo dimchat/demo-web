@@ -4,8 +4,6 @@
 
     var $ = tui.$;
 
-    var Point = tui.Point;
-    var Size = tui.Size;
     var Rect = tui.Rect;
 
     var Label = tui.Label;
@@ -28,14 +26,8 @@
 
     var MessageTable = dimp.db.MessageTable;
 
-    var random_point = function () {
-        var x = 180 + Math.random() * 100;
-        var y = 50 + Math.random() * 100;
-        return new Point(Math.round(x), Math.round(y));
-    };
-
     var ChatWindow = function () {
-        var frame = new Rect(random_point(), new Size(640, 480));
+        var frame = new Rect(0, 0, 640, 480);
         Window.call(this, frame);
         this.setClassName('chatWindow');
         this.setTitle('Chat');
@@ -273,7 +265,8 @@
             var item;
             for (var i = 0; i < elements.length; ++i) {
                 item = $(elements[i]);
-                if (identifier.equals(item.__identifier)) {
+                if (item instanceof clazz &&
+                    identifier.equals(item.__identifier)) {
                     box = item;
                 }
             }
@@ -281,6 +274,9 @@
         if (box === null) {
             box = new clazz();
             $(document.body).appendChild(box);
+            // adjust position
+            var point = tui.getRandomPosition(box.getSize());
+            box.setOrigin(point);
             box.setIdentifier(identifier);
             box.layoutSubviews();
         }

@@ -2,6 +2,7 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var AdView = ns.AdView;
     var ChatWindow = ns.ChatWindow;
 
     var View = tui.View;
@@ -24,6 +25,14 @@
         img.setClassName('showImage');
         tray.appendChild(img);
         this.showImage = img;
+
+        //
+        //  Advertisement
+        //
+        var ads = new AdView();
+        ads.setId('chatAd');
+        ads.setClassName('chatAd');
+        tray.appendChild(ads);
 
         this.appendChild(tray);
     };

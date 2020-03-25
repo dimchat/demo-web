@@ -6,7 +6,6 @@
 
     var Rect = tui.Rect;
 
-    var View = tui.View;
     var Button = tui.Button;
     var Window = tui.Window;
 
@@ -56,6 +55,9 @@
         search.setId('searchBtn');
         search.setClassName('searchBtn buttonActive');
         search.setText('Search');
+        search.onClick = function (ev) {
+            ns.SearchWindow.show();
+        };
         this.appendChild(search);
 
         var browser = new Button();

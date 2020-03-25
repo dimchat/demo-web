@@ -2,6 +2,9 @@
 !function (ns, tui) {
     'use strict';
 
+    var Size = tui.Size;
+    var Point = tui.Point;
+
     var $ = tui.$;
     var Image = tui.Image;
 
@@ -16,6 +19,35 @@
     img.setClassName('qrCode');
     img.setSrc(data);
     $(document.body).appendChild(img);
+
+    //
+    //  Patch for position
+    //
+    var center_position = function (boxSize, winSize) {
+        if (!winSize) {
+            winSize = new Size(window.innerWidth, window.innerHeight);
+            if (winSize.width < 1 || winSize.height < 1) {
+                winSize = $(document.body).getSize();
+            }
+        }
+        var x = (winSize.width - boxSize.width) >> 1;
+        var y = (winSize.height - boxSize.height) >> 1;
+        return new Point(x, y);
+    };
+    var random_position = function (boxSize, winSize) {
+        var center = center_position(boxSize, winSize);
+        var dw = boxSize.width >> 2;
+        var dh = boxSize.height >> 2;
+        var dx = Math.round(Math.random() * dw) - (dw >> 1);
+        var dy = Math.round(Math.random() * dh) - (dh >> 1);
+        var x = center.x + dx;
+        var y = center.y + dy;
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        return new Point(x, y);
+    };
+    tui.getCenterPosition = center_position;
+    tui.getRandomPosition = random_position;
 
 }(dicq, tarsier.ui);
 

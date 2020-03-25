@@ -1,0 +1,29 @@
+
+.ads {
+    border-top: 1px solid #727377;
+    border-left: 1px solid #727377;
+    border-right: 1px solid #FFFCF9;
+    border-bottom: 1px solid #FFFCF9;
+}
+
+.chatAd {
+    width: 200px;
+    height: 160px;
+    margin: 0 auto;
+}
+
+.searchAd {
+    position: absolute;
+    width: 140px;
+    height: 280px;
+    bottom: 20px;
+    left: 20px;
+}
+
+.searchResultAd {
+    position: absolute;
+    width: 140px;
+    height: 280px;
+    bottom: 20px;
+    left: 20px;
+}
