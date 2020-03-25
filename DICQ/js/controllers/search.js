@@ -196,7 +196,12 @@
 
     SearchResultWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
         var identifier = this.getUser(indexPath.row);
-        ns.UserWindow.show(identifier);
+        var facebook = Facebook.getInstance();
+        if (facebook.getPrivateKeyForSignature(identifier)) {
+            ns.AccountWindow.show(identifier);
+        } else {
+            ns.UserWindow.show(identifier);
+        }
     };
 
     //

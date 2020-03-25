@@ -81,6 +81,7 @@
         var facebook = Facebook.getInstance();
         this.__identifier = identifier;
         this.address.setText(identifier.address);
+        this.address.__ie.title = identifier;
         this.number.setText(facebook.getNumberString(identifier));
         this.nickname.setText(facebook.getNickname(identifier));
         // check contacts

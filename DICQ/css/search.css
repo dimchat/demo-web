@@ -15,6 +15,7 @@
 
 .searchWindow .keywords {
     position: relative;
+    width: 120px;
     top: 20px;
 }
 

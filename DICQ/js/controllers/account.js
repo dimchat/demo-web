@@ -22,10 +22,9 @@
         Window.call(this, frame);
         this.setId('accountWindow');
         this.setClassName('accountWindow');
-        this.setTitle('Modify User Info');
-        // current user
-        var facebook = Facebook.getInstance();
-        var user = facebook.getCurrentUser();
+        this.setTitle('Modify My Account Info');
+
+        this.__identifier = null;
 
         var basic = new FieldSet();
         basic.setClassName('profileFieldSet');
@@ -40,9 +39,8 @@
         // value
         var address = new Label();
         address.setClassName('address');
-        address.setText(user.identifier.address);
-        address.__ie.title = user.identifier;
         basic.appendChild(address);
+        this.address = address;
 
         // search number
         var numberLabel = new Label();
@@ -52,8 +50,8 @@
         // value
         var number = new Label();
         number.setClassName('number');
-        number.setText(facebook.getNumberString(user.identifier));
         basic.appendChild(number);
+        this.number = number;
 
         // nickname
         var nameLabel = new Label();
@@ -63,8 +61,8 @@
         // value
         var nickname = new Input();
         nickname.setClassName('nickname');
-        nickname.setValue(user.getName());
         basic.appendChild(nickname);
+        this.nickname = nickname;
 
         // button
         var button = new Button();
@@ -73,13 +71,25 @@
         var win = this;
         button.onClick = function (ev) {
             win.submit({
-                'ID': user.identifier,
+                'ID': win.__identifier,
                 'nickname': nickname.getValue()
             });
         };
         this.appendChild(button);
     };
     dimp.Class(AccountWindow, Window, null);
+
+    AccountWindow.prototype.setIdentifier = function (identifier) {
+        if (!identifier || !identifier.isUser()) {
+            throw TypeError('ID error: ' + identifier);
+        }
+        var facebook = Facebook.getInstance();
+        this.__identifier = identifier;
+        this.address.setText(identifier.address);
+        this.address.__ie.title = identifier;
+        this.number.setText(facebook.getNumberString(identifier));
+        this.nickname.setValue(facebook.getNickname(identifier));
+    };
 
     AccountWindow.prototype.submit = function (info) {
         var nickname = info['nickname'];
@@ -112,16 +122,33 @@
         this.remove();
     };
 
-    AccountWindow.show = function () {
-        var box = document.getElementById('accountWindow');
-        if (box) {
-            box = $(box);
-        } else {
+    AccountWindow.show = function (identifier) {
+        if (!identifier) {
+            var facebook = Facebook.getInstance();
+            var user = facebook.getCurrentUser();
+            if (!user) {
+                throw Error('Current user not found');
+            }
+            identifier = user.identifier;
+        }
+        var box = null;
+        var elements = document.getElementsByClassName('accountWindow');
+        if (elements) {
+            var item;
+            for (var i = 0; i < elements.length; ++i) {
+                item = $(elements[i]);
+                if (identifier.equals(item.__identifier)) {
+                    box = item;
+                }
+            }
+        }
+        if (!box) {
             box = new AccountWindow();
             $(document.body).appendChild(box);
             // adjust position
             var point = tui.getRandomPosition(box.getSize());
             box.setOrigin(point);
+            box.setIdentifier(identifier);
             box.layoutSubviews();
         }
         box.floatToTop();
