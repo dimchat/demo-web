@@ -185,7 +185,7 @@
         if (image) {
             img.setSrc(image);
         }
-        button.setImage(img);
+        button.appendChild(img);
 
         //
         //  Name(Number)
