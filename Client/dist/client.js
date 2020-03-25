@@ -403,8 +403,8 @@
         },
         getInviteCommandText: function(cmd, commander) {
             var addedList = cmd.getValue("added");
-            if (!addedList || addedList.length === 0) {
-                return null
+            if (!addedList) {
+                addedList = []
             }
             var names = [];
             for (var i = 0; i < addedList.length; ++i) {
@@ -416,8 +416,8 @@
         },
         getExpelCommandText: function(cmd, commander) {
             var removedList = cmd.getValue("removed");
-            if (!removedList || removedList.length === 0) {
-                return null
+            if (!removedList) {
+                removedList = []
             }
             var names = [];
             for (var i = 0; i < removedList.length; ++i) {
