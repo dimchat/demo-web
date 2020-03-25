@@ -56,6 +56,9 @@
 
     var ID = dimp.ID;
 
+    var Command = dimp.protocol.Command;
+    var MessageBuilder = dimp.cpu.MessageBuilder;
+
     var Facebook = dimp.Facebook;
     var Messenger = dimp.Messenger;
 
@@ -124,9 +127,15 @@
             if (!username) {
                 username = sender.name;
             }
+            var content = msg.content;
+            var text;
+            if (content instanceof Command) {
+                text = MessageBuilder.getCommandText(content, sender);
+            } else {
+                text = MessageBuilder.getContentText(content, sender);
+            }
             var number = facebook.getNumberString(sender);
-            var text = msg.content.getValue('text');
-            var group = msg.content.getGroup();
+            var group = content.getGroup();
             if (group && !ID.EVERYONE.equals(group)) {
                 group = facebook.getIdentifier(group);
                 // add group ID into contacts list

@@ -12,19 +12,22 @@
     var Image = tui.Image;
     var Window = tui.Window;
 
-    var TextContent = dimp.protocol.TextContent;
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
-    var StarStatus = dimp.stargate.StarStatus;
-
     var TableViewCell = tui.TableViewCell;
     var TableViewDataSource = tui.TableViewDataSource;
     var TableViewDelegate = tui.TableViewDelegate;
     var TableView = tui.TableView;
 
+    var TextContent = dimp.protocol.TextContent;
+    var Command = dimp.protocol.Command;
+    var MessageBuilder = dimp.cpu.MessageBuilder;
+
+    var StarStatus = dimp.stargate.StarStatus;
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var MessageTable = dimp.db.MessageTable;
+
+    var Facebook = dimp.Facebook;
+    var Messenger = dimp.Messenger;
 
     var ChatWindow = function () {
         var frame = new Rect(0, 0, 640, 480);
@@ -169,7 +172,13 @@
         cell.appendChild(nameView);
 
         // message content
-        var text = iMsg.content.getValue('text');
+        var content = iMsg.content;
+        var text;
+        if (content instanceof Command) {
+            text = MessageBuilder.getCommandText(content, sender);
+        } else {
+            text = MessageBuilder.getContentText(content, sender);
+        }
         var textView = new Label();
         textView.setClassName('content');
         textView.setText(text);
