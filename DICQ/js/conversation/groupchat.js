@@ -113,6 +113,9 @@
     };
 
     GroupChatWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+        if (tableView !== this.membersView) {
+            return ChatWindow.prototype.didSelectRowAtIndexPath.call(this, indexPath, tableView);
+        }
         var identifier;
         if (indexPath.section === 0) {
             identifier = this.getAdministrator(indexPath.row);
