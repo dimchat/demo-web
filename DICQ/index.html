@@ -21,8 +21,9 @@
     };
 </script>
 <script>
-    var base = window.location.href.replace('index.html', '');
-    var url = base + 'connect.js';
+    var url = window.location.href;
+    url = url.substring(0, url.indexOf('index.html'));
+    url = url + 'connect.js';
 
     !function (w, d, t, l) {
 
