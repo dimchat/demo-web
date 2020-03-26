@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-<!--    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0" />-->
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="DIMP Client" />
     <meta name="author" content="Albert Moky" />
     <title>DICQ 2020 - DIM demo</title>
@@ -22,9 +22,9 @@
 </script>
 <script>
     var base = window.location.href.replace('index.html', '');
-    var conn_js = base + 'connect.js';
+    var url = base + 'connect.js';
 
-    !function (w, d, t, c) {
+    !function (w, d, t, l) {
 
         var b = 'http://terminal.dim.chat/',
             j = function (u,b) {w[t].importJS(u,b)},
@@ -34,7 +34,7 @@
                 var _ = this.readyState;
                 if (!_ || _ === 'loaded' || _ === 'complete') {
                     j(b + 'DICQ/js/index.js', function () {
-                        j(c);
+                        dicq.loader.importJS(l);
                     });
                 }
             };
@@ -42,10 +42,9 @@
         (typeof x[e] == 'undefined') ? x.onload = f: x[e] = f;
         d.getElementsByTagName('HEAD')[0].appendChild(x);
 
-    }(window, document, 'tarsier', conn_js);
+    }(window, document, 'tarsier', url);
 
-    // javascript:!function(w,d,t,c){var b="http://terminal.dim.chat/",j=function(u,b){w[t].importJS(u,b)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var _=this.readyState;if(!_||_==="loaded"||_==="complete"){j(b+"DICQ/js/index.js",function(){j(c)})}};x.src=b+"Tarsier/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier","http://terminal.dim.chat/DICQ/connect.js");
+    // javascript:!function(w,d,t,l){var b="http://terminal.dim.chat/",j=function(u,b){w[t].importJS(u,b)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var _=this.readyState;if(!_||_==="loaded"||_==="complete"){j(b+"DICQ/js/index.js",function(){dicq.loader.importJS(l)})}};x.src=b+"Tarsier/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier","http://terminal.dim.chat/DICQ/connect.js");
 </script>
-
 </body>
 </html>

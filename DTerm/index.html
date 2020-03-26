@@ -10,27 +10,39 @@
 </head>
 <body>
 <script>
+    window.onerror = function (msg, url, line, column, error) {
+        if (window['Bubble']) {
+            var bubble = new Bubble();
+            bubble.showText(msg);
+        } else {
+            var text = url + '[' + line + ']: ' + msg;
+            alert(text);
+        }
+    };
+</script>
+<script>
     var base = window.location.href.replace('index.html', '');
     var url = base + 'js/index.js';
 
     !function (w, d, t, l) {
 
-        var c = function () {w[t].importJS(l)},
+        var b = 'http://terminal.dim.chat/',
+            j = function (u,b) {w[t].importJS(u,b)},
             e = 'onreadystatechange',
             x = d.createElement('SCRIPT'),
             f = function() {
-                var s = this.readyState;
-                if (!s || s === 'loaded' || s === 'complete') {
-                    c(l);
+                var _ = this.readyState;
+                if (!_ || _ === 'loaded' || _ === 'complete') {
+                    j(l);
                 }
             };
-        x.src = 'http://moky.github.io/Tarsier/build/tarsier.min.js';
+        x.src = b + 'Tarsier/tarsier.min.js';
         (typeof x[e] == 'undefined') ? x.onload = f: x[e] = f;
         d.getElementsByTagName('HEAD')[0].appendChild(x);
 
     }(window, document, 'tarsier', url);
 
-    // javascript:!function(w,d,t,l){var c=function(){w[t].importJS(l)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var s=this.readyState;if(s==null||s=="loaded"||s=="complete"){c(l)}};x.src="http://moky.github.io/Tarsier/build/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier","http://dimchat.github.io/apps/DTerm/js/index.js");
+    // javascript:!function(w,d,t,l){var b="http://terminal.dim.chat/",j=function(u,b){w[t].importJS(u,b)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var _=this.readyState;if(!_||_==="loaded"||_==="complete"){j(l)}};x.src=b+"Tarsier/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier","http://terminal.dim.chat/DTerm/js/index.js");
 </script>
 </body>
 </html>
