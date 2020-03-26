@@ -30,8 +30,8 @@
         //  Advertisement
         //
         var ads = new AdView();
-        ads.setId('chatAd');
         ads.setClassName('chatAd');
+        ads.showAd('chatAd');
         tray.appendChild(ads);
 
         this.appendChild(tray);

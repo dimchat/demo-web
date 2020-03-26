@@ -18,7 +18,6 @@
         //  Members View
         //
         var table = new TableView();
-        table.setId('membersView');
         table.setClassName('membersView');
         table.dataSource = this;
         table.delegate = this;

@@ -15,7 +15,6 @@
     var AboutWindow = function () {
         var frame = new Rect(0, 0, 240, 360);
         Window.call(this, frame);
-        this.setId('aboutWindow');
         this.setClassName('aboutWindow');
         this.setTitle('About DICQ');
         // banner

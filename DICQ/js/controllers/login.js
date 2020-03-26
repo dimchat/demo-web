@@ -19,7 +19,6 @@
     var LoginWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
-        this.setId('loginWindow');
         this.setClassName('loginWindow');
         this.setTitle('Login DIM station');
 

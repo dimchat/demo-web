@@ -17,7 +17,6 @@
     var UserWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
-        this.setId('userWindow');
         this.setClassName('userWindow');
         this.setTitle('User Info');
 

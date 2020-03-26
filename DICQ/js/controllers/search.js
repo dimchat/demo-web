@@ -20,7 +20,6 @@
     var SearchWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
         Window.call(this, frame);
-        this.setId('searchWindow');
         this.setClassName('searchWindow');
         this.setTitle('Search');
 
@@ -28,8 +27,8 @@
         //  Advertisement
         //
         var ads = new AdView();
-        ads.setId('searchAd');
         ads.setClassName('searchAd');
+        ads.showAd('searchAd');
         this.appendChild(ads);
 
         var fieldSet = new FieldSet();
@@ -110,7 +109,6 @@
     var SearchResultWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
         Window.call(this, frame);
-        this.setId('searchResultWindow');
         this.setClassName('searchResultWindow');
         this.setTitle('Search Results');
 
@@ -118,8 +116,8 @@
         //  Advertisement
         //
         var ads = new AdView();
-        ads.setId('searchResultAd');
         ads.setClassName('searchResultAd');
+        ads.showAd('searchResultAd');
         this.appendChild(ads);
 
         // search result
@@ -131,7 +129,6 @@
 
         // search result
         var table = new TableView();
-        table.setId('searchResult');
         table.setClassName('searchResult');
         table.dataSource = this;
         table.delegate = this;

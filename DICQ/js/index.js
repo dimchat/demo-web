@@ -263,4 +263,6 @@ if (typeof dicq !== 'object') {
         loader.importJS(scripts[j]);
     }
 
+    dicq.loader = loader;
+
 }(dicq);

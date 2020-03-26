@@ -20,7 +20,6 @@
     var AccountWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
-        this.setId('accountWindow');
         this.setClassName('accountWindow');
         this.setTitle('Modify My Account Info');
 

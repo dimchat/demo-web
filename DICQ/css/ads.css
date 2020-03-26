@@ -27,3 +27,49 @@
     bottom: 20px;
     left: 20px;
 }
+
+/**
+ *  404 gy
+ */
+
+.ads .gyLogo {
+    display: block;
+    width: 120px;
+    margin: 8px auto;
+}
+
+.ads .gyLoading {
+    display: block;
+    margin: 8px;
+    color: gray;
+}
+
+.ads .lostChild {
+    width: 132px;
+    height: 272px;
+    padding: 4px;
+}
+
+.ads .lostChild span {
+    font-size: small;
+}
+
+.ads .childPhoto {
+    display: block;
+    width: 100px;
+    margin: 8px auto;
+}
+
+.ads .childName {
+    display: block;
+    text-align: center;
+}
+
+.ads .label {
+    color: gray;
+    margin: 2px;
+}
+
+.ads .value {
+    display: block;
+}

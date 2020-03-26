@@ -19,7 +19,6 @@
     var RegisterWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
-        this.setId('registerWindow');
         this.setClassName('registerWindow');
         this.setTitle('Create User Account');
 
