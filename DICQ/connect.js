@@ -33,13 +33,6 @@
     // host = '124.156.108.150'; // hk
     var port = 9394;
 
-    if (typeof window['dims_host'] === 'string') {
-        host = window['dims_host'];
-        if (typeof window['dims_port'] === 'number') {
-            port = window['dims_port'];
-        }
-    }
-
     var server = new Server(sid, host, port);
     facebook.cacheUser(server);
     // server.stationDelegate = app;

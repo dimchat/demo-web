@@ -22,29 +22,29 @@
 </script>
 <script>
     var base = window.location.href.replace('index.html', '');
-    var index_js = base + 'js/index.js';
     var conn_js = base + 'connect.js';
 
-    !function (w, d, t, i, c) {
+    !function (w, d, t, c) {
 
-        var j = function (u,b) {w[t].importJS(u,b)},
+        var b = 'http://terminal.dim.chat/',
+            j = function (u,b) {w[t].importJS(u,b)},
             e = 'onreadystatechange',
             x = d.createElement('SCRIPT'),
             f = function() {
                 var _ = this.readyState;
                 if (!_ || _ === 'loaded' || _ === 'complete') {
-                    j(i, function () {
+                    j(b + 'DICQ/js/index.js', function () {
                         j(c);
                     });
                 }
             };
-        x.src = 'http://terminal.dim.chat/Tarsier/tarsier.min.js';
+        x.src = b + 'Tarsier/tarsier.min.js';
         (typeof x[e] == 'undefined') ? x.onload = f: x[e] = f;
         d.getElementsByTagName('HEAD')[0].appendChild(x);
 
-    }(window, document, 'tarsier', index_js, conn_js);
+    }(window, document, 'tarsier', conn_js);
 
-    // javascript:!function(w,d,t,i,c){var j=function(u,b){w[t].importJS(u,b)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var _=this.readyState;if(!_||_==="loaded"||_==="complete"){j(i,function(){j(c)})}};x.src="http://terminal.dim.chat/Tarsier/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier",index_js,conn_js);
+    // javascript:!function(w,d,t,c){var b="http://terminal.dim.chat/",j=function(u,b){w[t].importJS(u,b)},e="onreadystatechange",x=d.createElement("SCRIPT"),f=function(){var _=this.readyState;if(!_||_==="loaded"||_==="complete"){j(b+"DICQ/js/index.js",function(){j(c)})}};x.src=b+"Tarsier/tarsier.min.js";(typeof x[e]=="undefined")?x.onload=f:x[e]=f;d.getElementsByTagName("HEAD")[0].appendChild(x)}(window,document,"tarsier","http://terminal.dim.chat/DICQ/connect.js");
 </script>
 
 </body>
