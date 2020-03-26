@@ -193,13 +193,13 @@ if (typeof dicq !== 'object') {
     }
 
     var tarsier_ui = [
-        // 'http://moky.github.io/Tarsier/build/tarsier-ui.js',
+        // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
         'http://terminal.dim.chat/Tarsier/tarsier-ui.js',
         null
     ];
     if (release) {
         tarsier_ui = [
-            // 'http://moky.github.io/Tarsier/build/tarsier-ui.min.js',
+            // 'https://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             'http://terminal.dim.chat/Tarsier/tarsier-ui.min.js',
             null
         ];

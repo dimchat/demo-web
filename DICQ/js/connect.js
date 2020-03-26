@@ -27,9 +27,15 @@
     meta = Meta.getInstance(meta);
     facebook.saveMeta(meta, sid);
 
-    // var host = '127.0.0.1';
-    var host = '134.175.87.98'; // gz
+    var host = '127.0.0.1';
     var port = 9394;
+
+    if (typeof window['dims_host'] === 'string') {
+        host = window['dims_host'];
+        if (typeof window['dims_port'] === 'number') {
+            port = window['dims_port'];
+        }
+    }
 
     var server = new Server(sid, host, port);
     facebook.cacheUser(server);
