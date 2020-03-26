@@ -4053,6 +4053,16 @@ if (typeof DaoKeDao !== "object") {
     ns.core.register("Transceiver")
 }(DIMP);
 ! function(ns) {
+    if (typeof String.prototype.repeat !== "function") {
+        String.prototype.repeat = function(count) {
+            var string = "";
+            for (var i = 0; i < count; ++i) {
+                string += this
+            }
+            return string
+        }
+    }
+
     function base(ALPHABET) {
         if (ALPHABET.length >= 255) {
             throw new TypeError("Alphabet too long")
