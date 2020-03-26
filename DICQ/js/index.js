@@ -234,7 +234,6 @@ if (typeof dicq !== 'object') {
 
         'js/controllers/about.js',
 
-        'js/connect.js',
         'js/app.js',
         null
     ];
