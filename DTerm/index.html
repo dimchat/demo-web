@@ -21,9 +21,9 @@
     };
 </script>
 <script>
-    var url = window.location.href;
-    url = url.substring(0, url.indexOf('index.html'));
-    url = url + 'js/index.js';
+    var base = window.location.href;
+    base = base.substring(0, base.indexOf('index.html'));
+    var url = base + 'js/index.js';
 
     !function (w, d, t, l) {
 

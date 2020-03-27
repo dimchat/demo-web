@@ -89,6 +89,7 @@
     'use strict';
 
     var AdView = ns.AdView;
+    var UserTableViewCell = ns.UserTableViewCell;
 
     var Rect = tui.Rect;
 
@@ -96,7 +97,6 @@
     var FieldSet = tui.FieldSet;
     var Button = tui.Button;
 
-    var TableViewCell = tui.TableViewCell;
     var TableViewDataSource = tui.TableViewDataSource;
     var TableViewDelegate = tui.TableViewDelegate;
     var TableView = tui.TableView;
@@ -178,27 +178,10 @@
 
     SearchResultWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
         var identifier = this.getUser(indexPath.row);
-        var cell = new TableViewCell();
+        var cell = new UserTableViewCell();
         cell.setClassName('userCell');
-
-        var facebook = Facebook.getInstance();
-        var name = facebook.getNickname(identifier);
-        if (!name) {
-            name = identifier.name;
-        }
-        var number = facebook.getNumberString(identifier);
-        cell.setText(name + ' (' + number + ')');
+        cell.setIdentifier(identifier);
         return cell;
-    };
-
-    SearchResultWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
-        var identifier = this.getUser(indexPath.row);
-        var facebook = Facebook.getInstance();
-        if (facebook.getPrivateKeyForSignature(identifier)) {
-            ns.AccountWindow.show(identifier);
-        } else {
-            ns.UserWindow.show(identifier);
-        }
     };
 
     //

@@ -46,7 +46,7 @@ button:focus {
     color: darkblue;
 }
 
-.mainWindow .mainList .sectionContent {
+.mainWindow .mainList .TSTableSectionContent {
     margin: 0;
     border: 0;
     padding: 0;

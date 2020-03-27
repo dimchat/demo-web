@@ -46,6 +46,8 @@
     FixedTableView.prototype.reloadData = function () {
         // clear table
         this.removeChildren();
+
+        var tableView = this;
         var dataSource = this.dataSource;
         var delegate = this.delegate;
 
@@ -62,16 +64,16 @@
 
         // add cells in current section
         var tray = new View();
-        tray.setClassName('sectionContent');
+        tray.setClassName('TSTableSectionContent');
         tray.setScrollX(false);
         tray.setScrollY(true);
         var row_count = dataSource.numberOfRowsInSection(current_section, this);
         for (index = 0; index < row_count; ++index) {
             indexPath = new IndexPath(current_section, index);
             cell = this.cellForRowAtIndexPath(indexPath, this);
-            if (!cell.__ie.onclick) {
+            if (typeof cell.onClick !== 'function') {
                 cell.indexPath = indexPath;
-                cell.__ie.onclick = function (ev) {
+                cell.onClick = function (ev) {
                     // get target table cell
                     var target = $(ev.target);
                     while (target) {
@@ -80,13 +82,7 @@
                         }
                         target = target.getParent();
                     }
-                    if (!target) {
-                        throw Error('failed to get event target: ' + ev.target);
-                    }
-                    ev.cancelBubble = true;
-                    ev.stopPropagation();
-                    ev.preventDefault();
-                    delegate.didSelectRowAtIndexPath(target.indexPath, this);
+                    delegate.didSelectRowAtIndexPath(target.indexPath, tableView);
                 };
             }
             tray.appendChild(cell);

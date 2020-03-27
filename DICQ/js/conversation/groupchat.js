@@ -3,8 +3,8 @@
     'use strict';
 
     var ChatWindow = ns.ChatWindow;
+    var UserTableViewCell = ns.UserTableViewCell;
 
-    var TableViewCell = tui.TableViewCell;
     var TableView = tui.TableView;
 
     var Facebook = dimp.Facebook;
@@ -95,38 +95,10 @@
         } else {
             identifier = this.getParticipant(indexPath.row);
         }
-        var cell = new TableViewCell();
+        var cell = new UserTableViewCell();
         cell.setClassName('memberCell');
-
-        var facebook = Facebook.getInstance();
-        var name = facebook.getNickname(identifier);
-        if (!name) {
-            name = identifier.name;
-        }
-        var number = facebook.getNumberString(identifier);
-        cell.setText(name + ' (' + number + ')');
-        if (facebook.getPrivateKeyForSignature(identifier)) {
-            cell.setClassName('me');
-        }
+        cell.setIdentifier(identifier);
         return cell;
-    };
-
-    GroupChatWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
-        if (tableView !== this.membersView) {
-            return ChatWindow.prototype.didSelectRowAtIndexPath.call(this, indexPath, tableView);
-        }
-        var identifier;
-        if (indexPath.section === 0) {
-            identifier = this.getAdministrator(indexPath.row);
-        } else {
-            identifier = this.getParticipant(indexPath.row);
-        }
-        var facebook = Facebook.getInstance();
-        if (facebook.getPrivateKeyForSignature(identifier)) {
-            ns.AccountWindow.show(identifier);
-        } else {
-            ns.UserWindow.show(identifier);
-        }
     };
 
     ns.GroupChatWindow = GroupChatWindow;
