@@ -220,6 +220,9 @@
     //
 
     ChatWindow.prototype.sendText = function (text) {
+        if (!text) {
+            return ;
+        }
         var content = new TextContent(text);
         this.sendContent(content);
     };

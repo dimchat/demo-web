@@ -70,6 +70,9 @@
     //  Send message
     //
     ChatroomWindow.prototype.sendText = function (text) {
+        if (!text) {
+            return ;
+        }
         var messenger = Messenger.getInstance();
         var server = messenger.server;
         var user = server.currentUser;
