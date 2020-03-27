@@ -40,7 +40,7 @@
         // avatar
         var avatar = new Image();
         avatar.setClassName('avatar');
-        avatar.setSrc('https://dimchat.github.io/images/icon-57.png');
+        avatar.setSrc('http://terminal.dim.chat/DICQ/images/icon-57.png');
         this.appendChild(avatar);
         this.avatarImage = avatar;
 

@@ -178,7 +178,7 @@
             image = null;
         }
         if (!image) {
-            image = 'https://dimchat.github.io/images/icon-512.png';
+            image = 'http://terminal.dim.chat/DICQ/images/icon-512.png';
         }
         var img = new Image();
         img.setClassName('avatarImg');
