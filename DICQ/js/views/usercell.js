@@ -5,6 +5,8 @@
 !function (ns, tui, dimp) {
     'use strict';
 
+    var Label = tui.Label;
+    var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
     var Facebook = dimp.Facebook;
@@ -18,17 +20,39 @@
 
     UserTableViewCell.prototype.setIdentifier = function (identifier) {
         var facebook = Facebook.getInstance();
-
-        var name = facebook.getNickname(identifier);
-        if (!name) {
-            name = identifier.name;
-        }
-        var number = facebook.getNumberString(identifier);
-        this.setText(name + ' [' + number + ']');
-
         if (facebook.getPrivateKeyForSignature(identifier)) {
             this.setClassName('me');
         }
+
+        // avatar
+        var avatarImage = new Image();
+        avatarImage.setClassName('avatar');
+        var profile = facebook.getProfile(identifier);
+        if (profile) {
+            var url = profile.getProperty('avatar');
+            if (url) {
+                avatarImage.setSrc(url);
+            }
+        }
+        this.appendChild(avatarImage);
+
+        // name
+        var nameLabel = new Label();
+        nameLabel.setClassName('name');
+        var nickname = facebook.getNickname(identifier);
+        if (!nickname) {
+            nickname = identifier.name;
+        }
+        nameLabel.setText(nickname);
+        this.appendChild(nameLabel);
+
+        // number
+        var numberLabel = new Label();
+        numberLabel.setClassName('number');
+        var number = facebook.getNumberString(identifier);
+        numberLabel.setText(' (' + number + ')');
+        this.appendChild(numberLabel);
+
         // OK
         this.__identifier = identifier;
         return this;

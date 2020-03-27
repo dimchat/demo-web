@@ -129,6 +129,14 @@
     overflow: hidden;
 }
 
+.groupChatWindow .membersView .memberCell .avatar {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    background-size: 100% 100%;
+}
+
 .groupChatWindow .membersView .me {
     color: red;
 }

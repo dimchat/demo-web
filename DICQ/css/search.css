@@ -51,18 +51,33 @@
 }
 
 .searchResultWindow .searchResult {
-    width: 100%;
-    height: 100%;
+    width: 252px;
+    height: 216px;
 }
 
 .searchResultWindow .userCell {
-    width: 100%;
-    height: 20px;
+    width: 234px;
     border-bottom: 1px dashed #FFFCF9;
     padding: 8px;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.searchResultWindow .userCell .avatar {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #e0e0f5;
+    background-color: transparent;
+    background-image: url(../images/icon-120.png);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -moz-background-size: 100% 100%;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
 }
 
 .searchResultWindow .me {
