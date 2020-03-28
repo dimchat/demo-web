@@ -220,6 +220,7 @@ if (typeof dicq !== 'object') {
     var scripts = [
         'js/views/ads.js',
         'js/views/fixedtable.js',
+        'js/views/maincell.js',
         'js/views/usercell.js',
 
         'js/conversation/chatbox.js',

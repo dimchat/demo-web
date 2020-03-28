@@ -2,12 +2,11 @@
 !function (ns, tui, dimp) {
     'use strict';
 
-    var View = tui.View;
-    var Label = tui.Label;
-    var Button = tui.Button;
-    var Image = tui.Image;
+    var MainTableViewCell = ns.MainTableViewCell;
 
-    var TableViewCell = tui.TableViewCell;
+    var View = tui.View;
+    var Button = tui.Button;
+
     var TableViewDataSource = tui.TableViewDataSource;
     var TableViewDelegate = tui.TableViewDelegate;
     var FixedTableView = tui.FixedTableView;
@@ -139,69 +138,22 @@
     };
 
     MainListView.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
-        var cell = new TableViewCell();
-        var facebook = Facebook.getInstance();
-
+        var clazz;
         var identifier;
-        var entity;
         if (indexPath.section === 0) {
-            cell.setClassName('contactCell');
+            clazz = 'contactCell';
             identifier = s_persons[indexPath.row];
-            entity = facebook.getUser(identifier);
         } else if (indexPath.section === 1) {
-            cell.setClassName('groupCell');
+            clazz = 'groupCell';
             identifier = s_groups[indexPath.row];
-            entity = facebook.getGroup(identifier);
         } else {
-            cell.setClassName('robotCell');
+            clazz = 'robotCell';
             identifier = s_robots[indexPath.row];
-            entity = facebook.getUser(identifier);
         }
-        var profile = entity.getProfile();
 
-        var button = new Button();
-        button.setClassName('avatarBtn');
-        button.onClick = function (ev) {
-            if (indexPath.section === 0) {
-                ns.PersonalChatWindow.show(identifier);
-            } else if (indexPath.section === 1) {
-                ns.GroupChatWindow.show(identifier);
-            } else {
-                ns.PersonalChatWindow.show(identifier);
-            }
-        };
-        cell.appendChild(button);
-
-        //
-        //  Avatar
-        //
-        var image;
-        if (identifier.isUser()) {
-            image = profile.getProperty('avatar');
-        } else {
-            // TODO: build group logo
-            image = null;
-        }
-        if (!image) {
-            image = 'http://terminal.dim.chat/DICQ/images/icon-512.png';
-        }
-        var img = new Image();
-        img.setClassName('avatarImg');
-        if (image) {
-            img.setSrc(image);
-        }
-        button.appendChild(img);
-
-        //
-        //  Name(Number)
-        //
-        var name = entity.getName();
-        // var number = facebook.getNumberString(identifier);
-        var label = new Label();
-        label.setClassName('name');
-        label.setText(name);
-        cell.appendChild(label);
-
+        var cell = new MainTableViewCell();
+        cell.setClassName(clazz);
+        cell.setIdentifier(identifier);
         return cell;
     };
 
