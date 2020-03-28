@@ -17,6 +17,8 @@
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
+    var MessageTable = dimp.db.MessageTable;
+
     var MainListView = function () {
         FixedTableView.call(this);
 
@@ -27,12 +29,16 @@
         // notifications
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, 'ContactsUpdated');
+        nc.addObserver(this, nc.kNotificationMessageReceived);
     };
     dimp.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
+        var nc = NotificationCenter.getInstance();
         var name = notification.name;
         if (name === 'ContactsUpdated') {
+            this.reloadData();
+        } else if (name === nc.kNotificationMessageReceived) {
             this.reloadData();
         }
     };
@@ -40,6 +46,55 @@
     MainListView.prototype.layoutSubviews = function () {
         View.prototype.layoutSubviews.call(this);
         this.reloadData();
+    };
+
+    var s_persons = [];
+    var s_groups = [];
+    var s_robots = [];
+
+    MainListView.prototype.reloadData = function () {
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        var contacts = facebook.getContacts(user.identifier);
+        // 1. fetch contacts
+        var persons = [];
+        var groups = [];
+        var robots = [];
+        if (contacts) {
+            var id;
+            for (var i = 0; i < contacts.length; ++i) {
+                id = facebook.getIdentifier(contacts[i]);
+                if (!id) {
+                    console.error('ID error: ' + contacts[i]);
+                    continue;
+                }
+                if (NetworkType.Robot.equals(id.getType())) {
+                    robots.push(id);
+                } else if (id.isUser()) {
+                    persons.push(id);
+                } else if (id.isGroup()) {
+                    groups.push(id);
+                }
+            }
+        }
+        // 2. sort by message time
+        s_persons = persons.sort(compare_time);
+        s_groups = groups.sort(compare_time);
+        s_robots = robots.sort(compare_time);
+        // 3. refresh table view
+        FixedTableView.prototype.reloadData.call(this);
+    };
+    var compare_time = function (id1, id2) {
+        return last_time(id2) - last_time(id1);
+    };
+    var last_time = function (identifier) {
+        var db = MessageTable.getInstance();
+        var cnt = db.getMessageCount(identifier);
+        if (cnt < 1) {
+            return 0;
+        }
+        var msg = db.getMessage(cnt-1, identifier);
+        return msg.envelope.time;
     };
 
     //
@@ -75,62 +130,12 @@
             return 0;
         }
         if (section === 0) {
-            return get_persons().length;
+            return s_persons.length;
         } else if (section === 1) {
-            return get_groups().length;
+            return s_groups.length;
         } else {
-            return get_robots().length;
+            return s_robots.length;
         }
-    };
-
-    var get_contacts = function () {
-        var facebook = Facebook.getInstance();
-        var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.identifier);
-        if (contacts) {
-            return contacts;
-        } else {
-            return [];
-        }
-    };
-    var get_persons = function () {
-        var facebook = Facebook.getInstance();
-        var contacts = get_contacts();
-        var list = [];
-        var id;
-        for (var i = 0; i < contacts.length; ++i) {
-            id = facebook.getIdentifier(contacts[i]);
-            if (id && NetworkType.Main.equals(id.getType())) {
-                list.push(id);
-            }
-        }
-        return list;
-    };
-    var get_robots = function () {
-        var facebook = Facebook.getInstance();
-        var contacts = get_contacts();
-        var list = [];
-        var id;
-        for (var i = 0; i < contacts.length; ++i) {
-            id = facebook.getIdentifier(contacts[i]);
-            if (id && NetworkType.Robot.equals(id.getType())) {
-                list.push(id);
-            }
-        }
-        return list;
-    };
-    var get_groups = function () {
-        var facebook = Facebook.getInstance();
-        var contacts = get_contacts();
-        var list = [];
-        var identifier;
-        for (var i = 0; i < contacts.length; ++i) {
-            identifier = facebook.getIdentifier(contacts[i]);
-            if (identifier && identifier.isGroup()) {
-                list.push(identifier);
-            }
-        }
-        return list;
     };
 
     MainListView.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
@@ -141,15 +146,15 @@
         var entity;
         if (indexPath.section === 0) {
             cell.setClassName('contactCell');
-            identifier = get_persons()[indexPath.row];
+            identifier = s_persons[indexPath.row];
             entity = facebook.getUser(identifier);
         } else if (indexPath.section === 1) {
             cell.setClassName('groupCell');
-            identifier = get_groups()[indexPath.row];
+            identifier = s_groups[indexPath.row];
             entity = facebook.getGroup(identifier);
         } else {
             cell.setClassName('robotCell');
-            identifier = get_robots()[indexPath.row];
+            identifier = s_robots[indexPath.row];
             entity = facebook.getUser(identifier);
         }
         var profile = entity.getProfile();
