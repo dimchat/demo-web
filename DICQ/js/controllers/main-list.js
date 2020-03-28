@@ -69,6 +69,8 @@
                 }
                 if (NetworkType.Robot.equals(id.getType())) {
                     robots.push(id);
+                } else if (NetworkType.Station.equals(id.getType())) {
+                    robots.push(id);
                 } else if (id.isUser()) {
                     persons.push(id);
                 } else if (id.isGroup()) {
