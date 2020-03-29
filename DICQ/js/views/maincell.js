@@ -70,7 +70,7 @@
             image = null;
         }
         if (!image) {
-            image = 'http://terminal.dim.chat/DICQ/images/icon-512.png';
+            image = 'http://apps.dim.chat/DICQ/images/icon-512.png';
         }
         if (image) {
             this.avatarImage.setSrc(image);
