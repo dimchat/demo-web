@@ -184,7 +184,8 @@
         textView.setText(text);
         cell.appendChild(textView);
 
-        if (facebook.getPrivateKeyForSignature(sender)) {
+        var user = facebook.getCurrentUser();
+        if (user.identifier.equals(sender)) {
             cell.setClassName('sent');
         } else {
             cell.setClassName('received');

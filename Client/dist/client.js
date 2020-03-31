@@ -1995,7 +1995,8 @@
             if (group) {
                 chat = this.getConversation(group)
             } else {
-                if (facebook.getPrivateKeyForSignature(sender)) {
+                var user = facebook.getCurrentUser();
+                if (user.identifier.equals(sender)) {
                     chat = this.getConversation(receiver)
                 } else {
                     chat = this.getConversation(sender)
