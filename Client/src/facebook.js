@@ -281,7 +281,7 @@
         if (member instanceof User) {
             member = member.identifier;
         }
-        var list = this.loadMembers(group);
+        var list = this.getMembers(group);
         if (list) {
             if (list.indexOf(member) >= 0) {
                 return false;
@@ -298,7 +298,7 @@
             member = member.identifier;
         }
         var index = -1;
-        var list = this.loadMembers(group);
+        var list = this.getMembers(group);
         if (list) {
             index = list.indexOf(member);
         }
@@ -326,43 +326,28 @@
         return db.saveMembers(members, group);
     };
 
-    // Override
-    Facebook.prototype.loadMembers = function (group) {
-        if (group instanceof Group) {
-            group = group.identifier;
-        }
-        // load members of group from database
-        var db = GroupTable.getInstance();
-        var list = db.loadMembers(group);
-        if (list) {
-            return list;
-        } else {
-            return [];
-        }
-    };
-
     //
     //  UserDataSource
     //
 
-    Facebook.prototype.getPrivateKeyForSignature = function (identifier) {
+    Facebook.prototype.getPrivateKeyForSignature = function (user) {
         var db = PrivateTable.getInstance();
-        var key = db.loadPrivateKey(identifier);
+        var key = db.loadPrivateKey(user);
         if (key) {
             return key;
         }
         // try immortals
-        return this.immortals.getPrivateKeyForSignature(identifier);
+        return this.immortals.getPrivateKeyForSignature(user);
     };
 
-    Facebook.prototype.getPrivateKeysForDecryption = function(identifier) {
+    Facebook.prototype.getPrivateKeysForDecryption = function(user) {
         var db = PrivateTable.getInstance();
-        var key = db.loadPrivateKey(identifier);
+        var key = db.loadPrivateKey(user);
         if (key) {
             return [key];
         }
         // try immortals
-        return this.immortals.getPrivateKeysForDecryption(identifier);
+        return this.immortals.getPrivateKeysForDecryption(user);
     };
 
     //
@@ -382,6 +367,20 @@
     //     // TODO: get from database
     //     return getOwner.call(this, group);
     // };
+
+    Facebook.prototype.getMembers = function (group) {
+        if (group instanceof Group) {
+            group = group.identifier;
+        }
+        // load members of group from database
+        var db = GroupTable.getInstance();
+        var list = db.loadMembers(group);
+        if (list) {
+            return list;
+        } else {
+            return [];
+        }
+    };
 
     //-------- namespace --------
     ns.Facebook = Facebook;
