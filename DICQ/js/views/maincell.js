@@ -59,15 +59,16 @@
         if (facebook.getPrivateKeyForSignature(identifier)) {
             this.setClassName('me');
         }
-        var profile = facebook.getProfile(identifier);
 
         // avatar
-        var image;
+        var image = null;
         if (identifier.isUser()) {
-            image = profile.getProperty('avatar');
+            var profile = facebook.getProfile(identifier);
+            if (profile) {
+                image = profile.getProperty('avatar');
+            }
         } else {
             // TODO: build group logo
-            image = null;
         }
         if (!image) {
             image = 'http://apps.dim.chat/DICQ/images/icon-512.png';
