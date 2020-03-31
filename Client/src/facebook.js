@@ -221,7 +221,7 @@
         if (contact instanceof User) {
             contact = contact.identifier;
         }
-        var list = this.loadContacts(user);
+        var list = this.getContacts(user);
         if (list) {
             if (list.indexOf(contact) >= 0) {
                 return false;
@@ -238,7 +238,7 @@
             contact = contact.identifier;
         }
         var index = -1;
-        var list = this.loadContacts(user);
+        var list = this.getContacts(user);
         if (list) {
             index = list.indexOf(contact);
         }
@@ -249,7 +249,6 @@
         return this.saveContacts(list, user);
     };
 
-    // Override
     Facebook.prototype.saveContacts = function (contacts, user) {
         if (user instanceof User) {
             user = user.identifier;
@@ -260,21 +259,6 @@
         // save contacts of user into database
         var db = ContactTable.getInstance();
         return db.saveContacts(contacts, user);
-    };
-
-    // Override
-    Facebook.prototype.loadContacts = function (user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
-        // load contacts of user from database
-        var db = ContactTable.getInstance();
-        var list = db.loadContacts(user);
-        if (list) {
-            return list;
-        } else {
-            return [];
-        }
     };
 
     Facebook.prototype.addMember = function (member, group) {
@@ -330,6 +314,22 @@
     //  UserDataSource
     //
 
+    // Override
+    Facebook.prototype.getContacts = function (user) {
+        if (user instanceof User) {
+            user = user.identifier;
+        }
+        // load contacts of user from database
+        var db = ContactTable.getInstance();
+        var list = db.loadContacts(user);
+        if (list) {
+            return list;
+        } else {
+            return [];
+        }
+    };
+
+    // Override
     Facebook.prototype.getPrivateKeyForSignature = function (user) {
         var db = PrivateTable.getInstance();
         var key = db.loadPrivateKey(user);
@@ -340,6 +340,7 @@
         return this.immortals.getPrivateKeyForSignature(user);
     };
 
+    // Override
     Facebook.prototype.getPrivateKeysForDecryption = function(user) {
         var db = PrivateTable.getInstance();
         var key = db.loadPrivateKey(user);
@@ -368,6 +369,7 @@
     //     return getOwner.call(this, group);
     // };
 
+    // Override
     Facebook.prototype.getMembers = function (group) {
         if (group instanceof Group) {
             group = group.identifier;
