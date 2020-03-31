@@ -127,24 +127,9 @@
     //  Private Key
     //
 
-    // Override
     Facebook.prototype.savePrivateKey = function (key, identifier) {
-        if (!this.cachePrivateKey(key, identifier)) {
-            // private key not match meta.key
-            return false;
-        }
         var db = PrivateTable.getInstance();
         return db.savePrivateKey(key, identifier);
-    };
-    // Override
-    Facebook.prototype.loadPrivateKey = function (identifier) {
-        var db = PrivateTable.getInstance();
-        var key = db.loadPrivateKey(identifier);
-        if (!key && NetworkType.Main.equals(identifier.getType())) {
-            // try immortals
-            key = this.immortals.getPrivateKeyForSignature(identifier);
-        }
-        return key;
     };
 
     //
@@ -354,6 +339,30 @@
         } else {
             return [];
         }
+    };
+
+    //
+    //  UserDataSource
+    //
+
+    Facebook.prototype.getPrivateKeyForSignature = function (identifier) {
+        var db = PrivateTable.getInstance();
+        var key = db.loadPrivateKey(identifier);
+        if (key) {
+            return key;
+        }
+        // try immortals
+        return this.immortals.getPrivateKeyForSignature(identifier);
+    };
+
+    Facebook.prototype.getPrivateKeysForDecryption = function(identifier) {
+        var db = PrivateTable.getInstance();
+        var key = db.loadPrivateKey(identifier);
+        if (key) {
+            return [key];
+        }
+        // try immortals
+        return this.immortals.getPrivateKeysForDecryption(identifier);
     };
 
     //

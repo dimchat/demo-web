@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 20, 2020
+ * @date      Mar. 31, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -97,6 +97,9 @@ if (typeof DIMP !== "object") {
 }(DIMP);
 ! function(ns) {
     var conforms = function(object, protocol) {
+        if (!object) {
+            return false
+        }
         if (object instanceof protocol) {
             return true
         }
@@ -2061,7 +2064,7 @@ if (typeof MingKeMing !== "object") {
             return key
         }
         key = meta_key.call(this);
-        if (key && ns.Interface.conforms(key, EncryptKey)) {
+        if (ns.Interface.conforms(key, EncryptKey)) {
             return key
         }
         throw Error("failed to get encrypt key for user: " + this.identifier)
@@ -3663,14 +3666,13 @@ if (typeof DaoKeDao !== "object") {
 }(DIMP);
 ! function(ns) {
     var ID = ns.ID;
-    var User = ns.User;
-    var Group = ns.Group;
+    var EncryptKey = ns.crypto.EncryptKey;
+    var VerifyKey = ns.crypto.VerifyKey;
     var EntityDelegate = ns.EntityDelegate;
     var UserDataSource = ns.UserDataSource;
     var GroupDataSource = ns.GroupDataSource;
     var Barrack = function() {
         this.idMap = {};
-        this.metaMap = {};
         this.userMap = {};
         this.groupMap = {}
     };
@@ -3691,17 +3693,12 @@ if (typeof DaoKeDao !== "object") {
     Barrack.prototype.reduceMemory = function() {
         var finger = 0;
         finger = thanos(this.idMap, finger);
-        finger = thanos(this.metaMap, finger);
         finger = thanos(this.userMap, finger);
         finger = thanos(this.groupMap, finger);
         return finger >> 1
     };
     Barrack.prototype.cacheIdentifier = function(identifier) {
         this.idMap[identifier.toString()] = identifier;
-        return true
-    };
-    Barrack.prototype.cacheMeta = function(meta, identifier) {
-        this.metaMap[identifier] = meta;
         return true
     };
     Barrack.prototype.cacheUser = function(user) {
@@ -3719,13 +3716,16 @@ if (typeof DaoKeDao !== "object") {
         return true
     };
     Barrack.prototype.createIdentifier = function(string) {
-        return ID.getInstance(string)
+        console.assert(false, "implement me!");
+        return null
     };
     Barrack.prototype.createUser = function(identifier) {
-        return new User(identifier)
+        console.assert(false, "implement me!");
+        return null
     };
     Barrack.prototype.createGroup = function(identifier) {
-        return new Group(identifier)
+        console.assert(false, "implement me!");
+        return null
     };
     Barrack.prototype.getIdentifier = function(string) {
         if (!string || string instanceof ID) {
@@ -3763,14 +3763,38 @@ if (typeof DaoKeDao !== "object") {
         }
         return null
     };
-    Barrack.prototype.getMeta = function(identifier) {
-        return this.metaMap[identifier]
-    };
     Barrack.prototype.getPublicKeyForEncryption = function(identifier) {
+        var profile = this.getProfile(identifier);
+        if (profile) {
+            var key = profile.getKey();
+            if (key) {
+                return key
+            }
+        }
+        var meta = this.getMeta(identifier);
+        if (meta) {
+            if (ns.Interface.conforms(meta.key, EncryptKey)) {
+                return meta.key
+            }
+        }
         return null
     };
     Barrack.prototype.getPublicKeysForVerification = function(identifier) {
-        return null
+        var keys = [];
+        var profile = this.getProfile(identifier);
+        if (profile) {
+            var key = profile.getKey();
+            if (ns.Interface.conforms(key, VerifyKey)) {
+                keys.push(key)
+            }
+        }
+        var meta = this.getMeta(identifier);
+        if (meta) {
+            if (meta.key) {
+                keys.push(meta.key)
+            }
+        }
+        return keys
     };
     Barrack.prototype.getFounder = function(identifier) {
         if (identifier.isBroadcast()) {
@@ -4015,13 +4039,15 @@ if (typeof DaoKeDao !== "object") {
             return null
         }
         var content = this.deserializeContent(plaintext, sMsg);
-        var sender = this.entityDelegate.getIdentifier(sMsg.envelope.sender);
-        var group = overt_group(content, this.entityDelegate);
-        if (group) {
-            this.cipherKeyDelegate.cacheCipherKey(sender, group, key)
-        } else {
-            var receiver = this.entityDelegate.getIdentifier(sMsg.envelope.receiver);
-            this.cipherKeyDelegate.cacheCipherKey(sender, receiver, key)
+        if (!is_broadcast_msg.call(this, sMsg)) {
+            var sender = this.entityDelegate.getIdentifier(sMsg.envelope.sender);
+            var group = overt_group(content, this.entityDelegate);
+            if (group) {
+                this.cipherKeyDelegate.cacheCipherKey(sender, group, key)
+            } else {
+                var receiver = this.entityDelegate.getIdentifier(sMsg.envelope.receiver);
+                this.cipherKeyDelegate.cacheCipherKey(sender, receiver, key)
+            }
         }
         return content
     };
@@ -5792,8 +5818,8 @@ if (typeof DaoKeDao !== "object") {
     ns.register("KeyStore")
 }(DIMP);
 ! function(ns) {
-    var DecryptKey = ns.crypto.DecryptKey;
     var NetworkType = ns.protocol.NetworkType;
+    var ID = ns.ID;
     var Profile = ns.Profile;
     var User = ns.User;
     var Robot = ns.Robot;
@@ -5805,11 +5831,7 @@ if (typeof DaoKeDao !== "object") {
     var Barrack = ns.core.Barrack;
     var Facebook = function() {
         Barrack.call(this);
-        this.ans = null;
-        this.profileMap = {};
-        this.privateKeyMap = {};
-        this.contactsMap = {};
-        this.membersMap = {}
+        this.ans = null
     };
     ns.Class(Facebook, Barrack, null);
     Facebook.prototype.ansGet = function(name) {
@@ -5821,22 +5843,10 @@ if (typeof DaoKeDao !== "object") {
     Facebook.prototype.verifyMeta = function(meta, identifier) {
         return meta.matches(identifier)
     };
-    Facebook.prototype.cacheMeta = function(meta, identifier) {
-        if (!this.verifyMeta(meta, identifier)) {
-            return false
-        }
-        return Barrack.prototype.cacheMeta.call(this, meta, identifier)
-    };
     Facebook.prototype.saveMeta = function(meta, identifier) {
         console.assert(false, "implement me!");
         return false
     };
-    Facebook.prototype.loadMeta = function(identifier) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    var EXPIRES_KEY = "expires";
-    Facebook.prototype.EXPIRES = 3600;
     Facebook.prototype.verifyProfile = function(profile, identifier) {
         if (identifier) {
             if (!profile || !identifier.equals(profile.getIdentifier())) {
@@ -5884,90 +5894,13 @@ if (typeof DaoKeDao !== "object") {
         }
         return meta && profile.verify(meta.key)
     };
-    Facebook.prototype.cacheProfile = function(profile, identifier) {
-        if (!profile) {
-            delete this.profileMap[identifier];
-            return false
-        }
-        if (!this.verifyProfile(profile, identifier)) {
-            return false
-        }
-        if (!identifier) {
-            identifier = profile.getIdentifier();
-            identifier = this.getIdentifier(identifier);
-            if (!identifier) {
-                throw Error("profile ID error: " + profile)
-            }
-        }
-        this.profileMap[identifier] = profile;
-        return true
-    };
     Facebook.prototype.saveProfile = function(profile, identifier) {
         console.assert(false, "implement me!");
         return false
     };
-    Facebook.prototype.loadProfile = function(identifier) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    Facebook.prototype.verifyPrivateKey = function(key, identifier) {
-        var meta = this.getMeta(identifier);
-        if (meta) {
-            return meta.key.matches(key)
-        } else {
-            throw Error("failed to get meta for user: " + identifier)
-        }
-    };
-    Facebook.prototype.cachePrivateKey = function(key, identifier) {
-        if (!key) {
-            delete this.privateKeyMap[identifier];
-            return false
-        }
-        if (!this.verifyPrivateKey(key, identifier)) {
-            return false
-        }
-        this.privateKeyMap[identifier] = key;
-        return true
-    };
-    Facebook.prototype.savePrivateKey = function(key, identifier) {
-        console.assert(false, "implement me!");
-        return false
-    };
-    Facebook.prototype.loadPrivateKey = function(identifier) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    Facebook.prototype.cacheContacts = function(contacts, identifier) {
-        if (!contacts) {
-            delete this.contactsMap[identifier];
-            return false
-        }
-        this.contactsMap[identifier] = contacts;
-        return true
-    };
-    Facebook.prototype.saveContacts = function(contacts, identifier) {
-        console.assert(false, "implement me!");
-        return false
-    };
-    Facebook.prototype.loadContacts = function(identifier) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    Facebook.prototype.cacheMembers = function(members, identifier) {
-        if (!members) {
-            delete this.membersMap[identifier];
-            return false
-        }
-        this.membersMap[identifier] = members;
-        return true
-    };
     Facebook.prototype.saveMembers = function(members, identifier) {
         console.assert(false, "implement me!");
         return false
-    };
-    Facebook.prototype.loadMembers = function(identifier) {
-        console.assert(false, "implement me!");
-        return null
     };
     Facebook.prototype.getLocalUsers = function() {
         console.assert(false, "implement me!");
@@ -5985,7 +5918,7 @@ if (typeof DaoKeDao !== "object") {
         if (identifier) {
             return identifier
         }
-        return Barrack.prototype.createIdentifier.call(this, string)
+        return ID.getInstance(string)
     };
     Facebook.prototype.createUser = function(identifier) {
         if (identifier.isBroadcast()) {
@@ -6019,71 +5952,6 @@ if (typeof DaoKeDao !== "object") {
         }
         throw TypeError("Unsupported group type: " + type)
     };
-    Facebook.prototype.getMeta = function(identifier) {
-        var meta = Barrack.prototype.getMeta.call(this, identifier);
-        if (meta) {
-            return meta
-        }
-        meta = this.loadMeta(identifier);
-        if (meta) {
-            Barrack.prototype.cacheMeta.call(this, meta, identifier)
-        }
-        return meta
-    };
-    Facebook.prototype.getProfile = function(identifier) {
-        var profile = this.profileMap[identifier];
-        if (profile) {
-            var now = new Date();
-            var timestamp = now.getTime() / 1000 + this.EXPIRES;
-            var expires = profile.getValue(EXPIRES_KEY);
-            if (!expires) {
-                profile.setValue(EXPIRES_KEY, timestamp);
-                return profile
-            } else {
-                if (expires < timestamp) {
-                    return profile
-                }
-            }
-        }
-        profile = this.loadProfile(identifier);
-        if (profile instanceof Profile) {
-            profile.setValue(EXPIRES_KEY, null)
-        } else {
-            profile = new Profile(identifier)
-        }
-        this.profileMap[identifier] = profile;
-        return profile
-    };
-    Facebook.prototype.getContacts = function(identifier) {
-        var contacts = this.contactsMap[identifier];
-        if (contacts) {
-            return contacts
-        }
-        contacts = this.loadContacts(identifier);
-        if (contacts) {
-            this.cacheContacts(contacts, identifier)
-        }
-        return contacts
-    };
-    Facebook.prototype.getPrivateKeyForSignature = function(identifier) {
-        var key = this.privateKeyMap[identifier];
-        if (key) {
-            return key
-        }
-        key = this.loadPrivateKey(identifier);
-        if (key) {
-            this.privateKeyMap[identifier] = key
-        }
-        return key
-    };
-    Facebook.prototype.getPrivateKeysForDecryption = function(identifier) {
-        var keys = [];
-        var sKey = this.getPrivateKeyForSignature(identifier);
-        if (sKey && ns.Interface.conforms(sKey, DecryptKey)) {
-            keys.push(sKey)
-        }
-        return keys
-    };
     Facebook.prototype.getFounder = function(identifier) {
         var founder = Barrack.prototype.getFounder.call(this, identifier);
         if (founder) {
@@ -6115,20 +5983,6 @@ if (typeof DaoKeDao !== "object") {
             return this.getFounder(identifier)
         }
         return null
-    };
-    Facebook.prototype.getMembers = function(identifier) {
-        var members = Barrack.prototype.getMembers.call(this, identifier);
-        if (!members) {
-            members = this.membersMap[identifier]
-        }
-        if (members) {
-            return members
-        }
-        members = this.loadMembers(identifier);
-        if (members) {
-            this.cacheMembers(members, identifier)
-        }
-        return members
     };
     Facebook.prototype.isFounder = function(member, group) {
         var gMeta = this.getMeta(group);
@@ -6179,6 +6033,7 @@ if (typeof DaoKeDao !== "object") {
 }(DIMP);
 ! function(ns) {
     var SymmetricKey = ns.crypto.SymmetricKey;
+    var EncryptKey = ns.crypto.EncryptKey;
     var Meta = ns.Meta;
     var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
@@ -6296,15 +6151,30 @@ if (typeof DaoKeDao !== "object") {
         }
         return Transceiver.prototype.encryptContent.call(this, content, pwd, iMsg)
     };
+    var is_broadcast_msg = function(msg) {
+        var receiver;
+        if (msg instanceof InstantMessage) {
+            receiver = msg.content.getGroup()
+        } else {
+            receiver = msg.envelope.getGroup()
+        }
+        if (!receiver) {
+            receiver = msg.envelope.receiver
+        }
+        receiver = this.entityDelegate.getIdentifier(receiver);
+        return receiver && receiver.isBroadcast()
+    };
     Messenger.prototype.encryptKey = function(pwd, receiver, iMsg) {
-        var facebook = this.getFacebook();
-        receiver = facebook.getIdentifier(receiver);
-        var key = facebook.getPublicKeyForEncryption(receiver);
-        if (!key) {
-            var meta = facebook.getMeta(receiver);
-            if (!meta) {
-                this.suspendMessage(iMsg);
-                return null
+        if (!is_broadcast_msg.call(this, iMsg)) {
+            var facebook = this.getFacebook();
+            receiver = facebook.getIdentifier(receiver);
+            var key = facebook.getPublicKeyForEncryption(receiver);
+            if (!key) {
+                var meta = facebook.getMeta(receiver);
+                if (!meta || !ns.Interface.conforms(meta.key, EncryptKey)) {
+                    this.suspendMessage(iMsg);
+                    return null
+                }
             }
         }
         return Transceiver.prototype.encryptKey.call(this, pwd, receiver, iMsg)
