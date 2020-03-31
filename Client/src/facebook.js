@@ -123,30 +123,114 @@
         return string;
     };
 
-    //
-    //  Private Key
-    //
-
     Facebook.prototype.savePrivateKey = function (key, identifier) {
         var db = PrivateTable.getInstance();
         return db.savePrivateKey(key, identifier);
     };
 
-    //
-    //  Meta
-    //
-
     // Override
     Facebook.prototype.saveMeta = function(meta, identifier) {
-        if (!this.cacheMeta(meta, identifier)) {
-            console.error('meta not match ID: ' + identifier);
+        if (!this.verifyMeta(meta, identifier)) {
+            // meta not match ID
             return false;
         }
         var db = MetaTable.getInstance();
         return db.saveMeta(meta, identifier);
     };
+
     // Override
-    Facebook.prototype.loadMeta = function(identifier) {
+    Facebook.prototype.saveProfile = function(profile, identifier) {
+        if (!this.verifyProfile(profile, identifier)) {
+            // profile's signature not match
+            return false;
+        }
+        if (!identifier) {
+            identifier = profile.getIdentifier();
+            identifier = this.getIdentifier(identifier);
+        }
+        var db = ProfileTable.getInstance();
+        return db.saveProfile(profile, identifier);
+    };
+
+    //
+    //  Relationship
+    //
+
+    Facebook.prototype.addContact = function(contact, user) {
+        var list = this.getContacts(user);
+        if (list) {
+            if (list.indexOf(contact) >= 0) {
+                return false;
+            }
+            list.push(contact);
+        } else {
+            list = [contact];
+        }
+        return this.saveContacts(list, user);
+    };
+
+    Facebook.prototype.removeContact = function(contact, user) {
+        var index = -1;
+        var list = this.getContacts(user);
+        if (list) {
+            index = list.indexOf(contact);
+        }
+        if (index < 0) {
+            return false;
+        }
+        list.splice(index, 1);
+        return this.saveContacts(list, user);
+    };
+
+    Facebook.prototype.saveContacts = function (contacts, user) {
+        // save contacts of user into database
+        var db = ContactTable.getInstance();
+        return db.saveContacts(contacts, user);
+    };
+
+    Facebook.prototype.addMember = function (member, group) {
+        var list = this.getMembers(group);
+        if (list) {
+            if (list.indexOf(member) >= 0) {
+                return false;
+            }
+            list.push(member);
+        } else {
+            list = [member];
+        }
+        return this.saveMembers(list, group);
+    };
+
+    Facebook.prototype.removeMember = function (member, group) {
+        var index = -1;
+        var list = this.getMembers(group);
+        if (list) {
+            index = list.indexOf(member);
+        }
+        if (index < 0) {
+            return false;
+        }
+        list = list.splice(index, 1);
+        return this.saveMembers(list, group);
+    };
+
+    // Override
+    Facebook.prototype.saveMembers = function (members, group) {
+        if (!members || members.length < 1) {
+            console.error('members should not be empty: ' + group);
+            return false;
+        }
+        // save members of group into database
+        var db = GroupTable.getInstance();
+        return db.saveMembers(members, group);
+    };
+
+    //
+    //  EntityDataSource
+    //
+
+    // Override
+    Facebook.prototype.getMeta = function(identifier) {
         if (identifier.isBroadcast()) {
             // broadcast ID has not meta
             return null;
@@ -169,28 +253,11 @@
         return meta;
     };
 
-    //
-    //  Profile
-    //
+    Facebook.prototype.EXPIRES = 3600;
+    var EXPIRES_KEY = 'expires';
 
     // Override
-    Facebook.prototype.saveProfile = function(profile, identifier) {
-        if (!identifier) {
-            identifier = profile.getIdentifier();
-            identifier = this.getIdentifier(identifier);
-            if (!identifier) {
-                throw Error('profile ID error: ' + identifier);
-            }
-        }
-        if (!this.cacheProfile(profile, identifier)) {
-            // profile's signature not match
-            return false;
-        }
-        var db = ProfileTable.getInstance();
-        return db.saveProfile(profile, identifier);
-    };
-    // Override
-    Facebook.prototype.loadProfile = function(identifier) {
+    Facebook.prototype.getProfile = function(identifier) {
         // try from database
         var db = ProfileTable.getInstance();
         var profile = db.loadProfile(identifier);
@@ -198,7 +265,17 @@
             // is empty?
             var names = profile.allPropertyNames();
             if (names && names.length > 0) {
-                return profile;
+                // check expired time
+                var now = new Date();
+                var timestamp = now.getTime() / 1000;
+                var expires = profile.getValue(EXPIRES_KEY);
+                if (!expires) {
+                    // set expired time
+                    profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES);
+                } else if (expires > timestamp) {
+                    // not expired yet
+                    return profile;
+                }
             }
         }
         // try from immortals
@@ -214,111 +291,11 @@
     };
 
     //
-    //  Relationship
-    //
-
-    Facebook.prototype.addContact = function(contact, user) {
-        if (contact instanceof User) {
-            contact = contact.identifier;
-        }
-        var list = this.getContacts(user);
-        if (list) {
-            if (list.indexOf(contact) >= 0) {
-                return false;
-            }
-            list.push(contact);
-        } else {
-            list = [contact];
-        }
-        return this.saveContacts(list, user);
-    };
-
-    Facebook.prototype.removeContact = function(contact, user) {
-        if (contact instanceof User) {
-            contact = contact.identifier;
-        }
-        var index = -1;
-        var list = this.getContacts(user);
-        if (list) {
-            index = list.indexOf(contact);
-        }
-        if (index < 0) {
-            return false;
-        }
-        list.splice(index, 1);
-        return this.saveContacts(list, user);
-    };
-
-    Facebook.prototype.saveContacts = function (contacts, user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
-        if (!this.cacheContacts(contacts, user)) {
-            return false;
-        }
-        // save contacts of user into database
-        var db = ContactTable.getInstance();
-        return db.saveContacts(contacts, user);
-    };
-
-    Facebook.prototype.addMember = function (member, group) {
-        if (member instanceof User) {
-            member = member.identifier;
-        }
-        var list = this.getMembers(group);
-        if (list) {
-            if (list.indexOf(member) >= 0) {
-                return false;
-            }
-            list.push(member);
-        } else {
-            list = [member];
-        }
-        return this.saveMembers(list, group);
-    };
-
-    Facebook.prototype.removeMember = function (member, group) {
-        if (member instanceof User) {
-            member = member.identifier;
-        }
-        var index = -1;
-        var list = this.getMembers(group);
-        if (list) {
-            index = list.indexOf(member);
-        }
-        if (index < 0) {
-            return false;
-        }
-        list = list.splice(index, 1);
-        return this.saveMembers(list, group);
-    };
-
-    // Override
-    Facebook.prototype.saveMembers = function (members, group) {
-        if (group instanceof Group) {
-            group = group.identifier;
-        }
-        if (!members || members.length < 1) {
-            console.error('members should not be empty: ' + group);
-            return false;
-        }
-        if (!this.cacheMembers(members, group)) {
-            return false;
-        }
-        // save members of group into database
-        var db = GroupTable.getInstance();
-        return db.saveMembers(members, group);
-    };
-
-    //
     //  UserDataSource
     //
 
     // Override
     Facebook.prototype.getContacts = function (user) {
-        if (user instanceof User) {
-            user = user.identifier;
-        }
         // load contacts of user from database
         var db = ContactTable.getInstance();
         var list = db.loadContacts(user);
@@ -371,9 +348,6 @@
 
     // Override
     Facebook.prototype.getMembers = function (group) {
-        if (group instanceof Group) {
-            group = group.identifier;
-        }
         // load members of group from database
         var db = GroupTable.getInstance();
         var list = db.loadMembers(group);

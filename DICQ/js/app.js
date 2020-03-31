@@ -204,7 +204,7 @@
 
     var add_contact = function (contact, user) {
         var facebook = Facebook.getInstance();
-        var contacts = facebook.loadContacts(user);
+        var contacts = facebook.getContacts(user);
         if (contacts) {
             for (var j = 0; j < contacts.length; ++j) {
                 if (contact.equals(contacts[j])) {

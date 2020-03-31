@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 24, 2020
+ * @date      Mar. 31, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1727,29 +1727,88 @@
         return string
     };
     Facebook.prototype.savePrivateKey = function(key, identifier) {
-        if (!this.cachePrivateKey(key, identifier)) {
-            return false
-        }
         var db = PrivateTable.getInstance();
         return db.savePrivateKey(key, identifier)
     };
-    Facebook.prototype.loadPrivateKey = function(identifier) {
-        var db = PrivateTable.getInstance();
-        var key = db.loadPrivateKey(identifier);
-        if (!key && NetworkType.Main.equals(identifier.getType())) {
-            key = this.immortals.getPrivateKeyForSignature(identifier)
-        }
-        return key
-    };
     Facebook.prototype.saveMeta = function(meta, identifier) {
-        if (!this.cacheMeta(meta, identifier)) {
-            console.error("meta not match ID: " + identifier);
+        if (!this.verifyMeta(meta, identifier)) {
             return false
         }
         var db = MetaTable.getInstance();
         return db.saveMeta(meta, identifier)
     };
-    Facebook.prototype.loadMeta = function(identifier) {
+    Facebook.prototype.saveProfile = function(profile, identifier) {
+        if (!this.verifyProfile(profile, identifier)) {
+            return false
+        }
+        if (!identifier) {
+            identifier = profile.getIdentifier();
+            identifier = this.getIdentifier(identifier)
+        }
+        var db = ProfileTable.getInstance();
+        return db.saveProfile(profile, identifier)
+    };
+    Facebook.prototype.addContact = function(contact, user) {
+        var list = this.getContacts(user);
+        if (list) {
+            if (list.indexOf(contact) >= 0) {
+                return false
+            }
+            list.push(contact)
+        } else {
+            list = [contact]
+        }
+        return this.saveContacts(list, user)
+    };
+    Facebook.prototype.removeContact = function(contact, user) {
+        var index = -1;
+        var list = this.getContacts(user);
+        if (list) {
+            index = list.indexOf(contact)
+        }
+        if (index < 0) {
+            return false
+        }
+        list.splice(index, 1);
+        return this.saveContacts(list, user)
+    };
+    Facebook.prototype.saveContacts = function(contacts, user) {
+        var db = ContactTable.getInstance();
+        return db.saveContacts(contacts, user)
+    };
+    Facebook.prototype.addMember = function(member, group) {
+        var list = this.getMembers(group);
+        if (list) {
+            if (list.indexOf(member) >= 0) {
+                return false
+            }
+            list.push(member)
+        } else {
+            list = [member]
+        }
+        return this.saveMembers(list, group)
+    };
+    Facebook.prototype.removeMember = function(member, group) {
+        var index = -1;
+        var list = this.getMembers(group);
+        if (list) {
+            index = list.indexOf(member)
+        }
+        if (index < 0) {
+            return false
+        }
+        list = list.splice(index, 1);
+        return this.saveMembers(list, group)
+    };
+    Facebook.prototype.saveMembers = function(members, group) {
+        if (!members || members.length < 1) {
+            console.error("members should not be empty: " + group);
+            return false
+        }
+        var db = GroupTable.getInstance();
+        return db.saveMembers(members, group)
+    };
+    Facebook.prototype.getMeta = function(identifier) {
         if (identifier.isBroadcast()) {
             return null
         }
@@ -1767,27 +1826,24 @@
         Messenger.getInstance().queryMeta(identifier);
         return meta
     };
-    Facebook.prototype.saveProfile = function(profile, identifier) {
-        if (!identifier) {
-            identifier = profile.getIdentifier();
-            identifier = this.getIdentifier(identifier);
-            if (!identifier) {
-                throw Error("profile ID error: " + identifier)
-            }
-        }
-        if (!this.cacheProfile(profile, identifier)) {
-            return false
-        }
-        var db = ProfileTable.getInstance();
-        return db.saveProfile(profile, identifier)
-    };
-    Facebook.prototype.loadProfile = function(identifier) {
+    Facebook.prototype.EXPIRES = 3600;
+    var EXPIRES_KEY = "expires";
+    Facebook.prototype.getProfile = function(identifier) {
         var db = ProfileTable.getInstance();
         var profile = db.loadProfile(identifier);
         if (profile) {
             var names = profile.allPropertyNames();
             if (names && names.length > 0) {
-                return profile
+                var now = new Date();
+                var timestamp = now.getTime() / 1000;
+                var expires = profile.getValue(EXPIRES_KEY);
+                if (!expires) {
+                    profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES)
+                } else {
+                    if (expires > timestamp) {
+                        return profile
+                    }
+                }
             }
         }
         if (NetworkType.Main.equals(identifier.getType())) {
@@ -1799,50 +1855,7 @@
         Messenger.getInstance().queryProfile(identifier);
         return profile
     };
-    Facebook.prototype.addContact = function(contact, user) {
-        if (contact instanceof User) {
-            contact = contact.identifier
-        }
-        var list = this.loadContacts(user);
-        if (list) {
-            if (list.indexOf(contact) >= 0) {
-                return false
-            }
-            list.push(contact)
-        } else {
-            list = [contact]
-        }
-        return this.saveContacts(list, user)
-    };
-    Facebook.prototype.removeContact = function(contact, user) {
-        if (contact instanceof User) {
-            contact = contact.identifier
-        }
-        var index = -1;
-        var list = this.loadContacts(user);
-        if (list) {
-            index = list.indexOf(contact)
-        }
-        if (index < 0) {
-            return false
-        }
-        list.splice(index, 1);
-        return this.saveContacts(list, user)
-    };
-    Facebook.prototype.saveContacts = function(contacts, user) {
-        if (user instanceof User) {
-            user = user.identifier
-        }
-        if (!this.cacheContacts(contacts, user)) {
-            return false
-        }
-        var db = ContactTable.getInstance();
-        return db.saveContacts(contacts, user)
-    };
-    Facebook.prototype.loadContacts = function(user) {
-        if (user instanceof User) {
-            user = user.identifier
-        }
+    Facebook.prototype.getContacts = function(user) {
         var db = ContactTable.getInstance();
         var list = db.loadContacts(user);
         if (list) {
@@ -1851,54 +1864,23 @@
             return []
         }
     };
-    Facebook.prototype.addMember = function(member, group) {
-        if (member instanceof User) {
-            member = member.identifier
+    Facebook.prototype.getPrivateKeyForSignature = function(user) {
+        var db = PrivateTable.getInstance();
+        var key = db.loadPrivateKey(user);
+        if (key) {
+            return key
         }
-        var list = this.loadMembers(group);
-        if (list) {
-            if (list.indexOf(member) >= 0) {
-                return false
-            }
-            list.push(member)
-        } else {
-            list = [member]
-        }
-        return this.saveMembers(list, group)
+        return this.immortals.getPrivateKeyForSignature(user)
     };
-    Facebook.prototype.removeMember = function(member, group) {
-        if (member instanceof User) {
-            member = member.identifier
+    Facebook.prototype.getPrivateKeysForDecryption = function(user) {
+        var db = PrivateTable.getInstance();
+        var key = db.loadPrivateKey(user);
+        if (key) {
+            return [key]
         }
-        var index = -1;
-        var list = this.loadMembers(group);
-        if (list) {
-            index = list.indexOf(member)
-        }
-        if (index < 0) {
-            return false
-        }
-        list = list.splice(index, 1);
-        return this.saveMembers(list, group)
+        return this.immortals.getPrivateKeysForDecryption(user)
     };
-    Facebook.prototype.saveMembers = function(members, group) {
-        if (group instanceof Group) {
-            group = group.identifier
-        }
-        if (!members || members.length < 1) {
-            console.error("members should not be empty: " + group);
-            return false
-        }
-        if (!this.cacheMembers(members, group)) {
-            return false
-        }
-        var db = GroupTable.getInstance();
-        return db.saveMembers(members, group)
-    };
-    Facebook.prototype.loadMembers = function(group) {
-        if (group instanceof Group) {
-            group = group.identifier
-        }
+    Facebook.prototype.getMembers = function(group) {
         var db = GroupTable.getInstance();
         var list = db.loadMembers(group);
         if (list) {
