@@ -143,14 +143,14 @@
         return sMsg;
     };
 
-    var encryptKey = Messenger.prototype.encryptKey;
+    var serializeKey = Messenger.prototype.serializeKey;
     // Override
-    Messenger.prototype.encryptKey = function(pwd, receiver, iMsg) {
+    Messenger.prototype.serializeKey = function(pwd, iMsg) {
         if (pwd['reused']) {
             // no need to encrypt reused key again
             return null;
         }
-        return encryptKey.call(this, pwd, receiver, iMsg);
+        return serializeKey.call(this, pwd, iMsg);
     };
 
     //
