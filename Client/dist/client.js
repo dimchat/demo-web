@@ -2173,6 +2173,50 @@
             }
         }
     };
+    var serializeMessage = Messenger.prototype.serializeMessage;
+    Messenger.prototype.serializeMessage = function(rMsg) {
+        attachKeyDigest.call(this, rMsg);
+        return serializeMessage.call(this, rMsg)
+    };
+    var attachKeyDigest = function(rMsg) {
+        if (!rMsg.delegate) {
+            rMsg.delegate = this
+        }
+        if (rMsg.getKey()) {
+            return
+        }
+        var keys = rMsg.getKeys();
+        if (!keys) {
+            keys = {}
+        } else {
+            if (keys["digest"]) {
+                return
+            }
+        }
+        var key;
+        var facebook = this.getFacebook();
+        var sender = rMsg.envelope.sender;
+        var group = rMsg.envelope.getGroup();
+        if (group) {
+            sender = facebook.getIdentifier(sender);
+            group = facebook.getIdentifier(group);
+            key = this.cipherKeyDelegate.getCipherKey(sender, group)
+        } else {
+            sender = facebook.getIdentifier(sender);
+            var receiver = rMsg.envelope.receiver;
+            receiver = facebook.getIdentifier(receiver);
+            key = this.cipherKeyDelegate.getCipherKey(sender, receiver)
+        }
+        var data = key.getData();
+        if (!data || data.length < 8) {
+            return
+        }
+        var part = data.subarray(data.length - 4);
+        var digest = ns.digest.SHA256.digest(part);
+        var base64 = ns.format.Base64.encode(digest);
+        keys["digest"] = base64.substring(base64.length - 8);
+        rMsg.setValue("keys", keys)
+    };
     var encryptMessage = Messenger.prototype.encryptMessage;
     Messenger.prototype.encryptMessage = function(iMsg) {
         var sMsg = encryptMessage.call(this, iMsg);
