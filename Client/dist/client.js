@@ -2217,6 +2217,13 @@
         keys["digest"] = base64.substring(base64.length - 8);
         rMsg.setValue("keys", keys)
     };
+    var deserializeMessage = Messenger.prototype.deserializeMessage;
+    Messenger.prototype.deserializeMessage = function(data) {
+        if (!data) {
+            return null
+        }
+        return deserializeMessage.call(this, data)
+    };
     var encryptMessage = Messenger.prototype.encryptMessage;
     Messenger.prototype.encryptMessage = function(iMsg) {
         var sMsg = encryptMessage.call(this, iMsg);

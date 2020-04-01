@@ -3979,15 +3979,6 @@ if (typeof DaoKeDao !== "object") {
         }
         return sMsg.decrypt()
     };
-    Transceiver.prototype.serializeMessage = function(rMsg) {
-        var json = ns.format.JSON.encode(rMsg);
-        return ns.type.String.from(json).getBytes("UTF-8")
-    };
-    Transceiver.prototype.deserializeMessage = function(data) {
-        var str = new ns.type.String(data, "UTF-8");
-        var dict = ns.format.JSON.decode(str.toString());
-        return ReliableMessage.getInstance(dict)
-    };
     Transceiver.prototype.serializeContent = function(content, pwd, iMsg) {
         var json = ns.format.JSON.encode(content);
         return ns.type.String.from(json).getBytes("UTF-8")
@@ -6160,11 +6151,14 @@ if (typeof DaoKeDao !== "object") {
         }
         return Transceiver.prototype.decryptMessage.call(this, msg)
     };
+    Messenger.prototype.serializeMessage = function(rMsg) {
+        var json = ns.format.JSON.encode(rMsg);
+        return ns.type.String.from(json).getBytes("UTF-8")
+    };
     Messenger.prototype.deserializeMessage = function(data) {
-        if (!data) {
-            return null
-        }
-        return Transceiver.prototype.deserializeMessage.call(this, data)
+        var str = new ns.type.String(data, "UTF-8");
+        var dict = ns.format.JSON.decode(str.toString());
+        return ReliableMessage.getInstance(dict)
     };
     Messenger.prototype.serializeContent = function(content, pwd, iMsg) {
         var key = SymmetricKey.getInstance(pwd);

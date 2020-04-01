@@ -170,6 +170,14 @@
         rMsg.setValue('keys', keys);
     };
 
+    var deserializeMessage = Messenger.prototype.deserializeMessage;
+    Messenger.prototype.deserializeMessage = function (data) {
+        if (!data) {
+            return null;
+        }
+        return deserializeMessage.call(this, data);
+    };
+
     //
     //  Reuse message key
     //
