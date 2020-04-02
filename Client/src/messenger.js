@@ -160,10 +160,10 @@
         }
         // get key data
         var data = key.getData();
-        if (!data || data.length < 8) {
+        if (!data || data.length < 6) {
             return;
         }
-        var part = data.subarray(data.length-4);
+        var part = data.subarray(data.length-6);
         var digest = ns.digest.SHA256.digest(part);
         var base64 = ns.format.Base64.encode(digest);
         keys['digest'] = base64.substring(base64.length - 8);
