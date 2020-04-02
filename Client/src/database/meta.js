@@ -39,14 +39,20 @@
         this.metas = null; // ID => Array<Meta>
     };
 
-    MetaTable.prototype.loadMeta = function (identifier) {
+    MetaTable.prototype.getMeta = function (identifier) {
         if (!this.metas) {
             this.metas = load_metas();
         }
-        return this.metas[identifier];
+        var meta = this.metas[identifier];
+        if (!meta) {
+            // TODO: place an empty meta for cache
+        }
+        return meta;
     };
     MetaTable.prototype.saveMeta = function (meta, identifier) {
-        this.loadMeta(identifier);
+        if (!this.metas) {
+            this.metas = load_metas();
+        }
         if (this.metas[identifier]) {
             console.log('meta already exists: ' + identifier);
             return true;

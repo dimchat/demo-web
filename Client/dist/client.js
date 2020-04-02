@@ -1112,14 +1112,18 @@
     var MetaTable = function() {
         this.metas = null
     };
-    MetaTable.prototype.loadMeta = function(identifier) {
+    MetaTable.prototype.getMeta = function(identifier) {
         if (!this.metas) {
             this.metas = load_metas()
         }
-        return this.metas[identifier]
+        var meta = this.metas[identifier];
+        if (!meta) {}
+        return meta
     };
     MetaTable.prototype.saveMeta = function(meta, identifier) {
-        this.loadMeta(identifier);
+        if (!this.metas) {
+            this.metas = load_metas()
+        }
         if (this.metas[identifier]) {
             console.log("meta already exists: " + identifier);
             return true
@@ -1220,14 +1224,31 @@
     var ProfileTable = function() {
         this.profiles = null
     };
-    ProfileTable.prototype.loadProfile = function(identifier) {
+    ProfileTable.prototype.getProfile = function(identifier) {
         if (!this.profiles) {
             this.profiles = load_profiles()
         }
-        return this.profiles[identifier]
+        var profile = this.profiles[identifier];
+        if (!profile) {
+            profile = new Profile(identifier);
+            this.profiles[identifier] = profile
+        }
+        return profile
     };
     ProfileTable.prototype.saveProfile = function(profile, identifier) {
-        this.loadProfile(identifier);
+        if (!this.profiles) {
+            this.profiles = load_profiles()
+        }
+        if (identifier) {
+            if (!identifier.equals(profile.getIdentifier())) {
+                throw Error("profile ID not match: " + identifier + ", " + profile)
+            }
+        } else {
+            identifier = profile.getIdentifier();
+            if (!identifier) {
+                throw Error("profile ID error: " + profile)
+            }
+        }
         this.profiles[identifier] = profile;
         console.log("saving profile for " + identifier);
         var nc = NotificationCenter.getInstance();
@@ -1813,13 +1834,16 @@
             return null
         }
         var db = MetaTable.getInstance();
-        var meta = db.loadMeta(identifier);
+        var meta = db.getMeta(identifier);
         if (meta) {
-            return meta
+            if (meta.key) {
+                return meta
+            }
         }
         if (NetworkType.Main.equals(identifier.getType())) {
             meta = this.immortals.getMeta(identifier);
             if (meta) {
+                db.saveMeta(meta, identifier);
                 return meta
             }
         }
@@ -1830,26 +1854,27 @@
     var EXPIRES_KEY = "expires";
     Facebook.prototype.getProfile = function(identifier) {
         var db = ProfileTable.getInstance();
-        var profile = db.loadProfile(identifier);
+        var profile = db.getProfile(identifier);
         if (profile) {
-            var names = profile.allPropertyNames();
-            if (names && names.length > 0) {
-                var now = new Date();
-                var timestamp = now.getTime() / 1000;
-                var expires = profile.getValue(EXPIRES_KEY);
-                if (!expires) {
-                    profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES);
+            var now = new Date();
+            var timestamp = now.getTime() / 1000;
+            var expires = profile[EXPIRES_KEY];
+            if (!expires) {
+                profile[EXPIRES_KEY] = timestamp + this.EXPIRES;
+                var names = profile.allPropertyNames();
+                if (names && names.length > 0) {
                     return profile
-                } else {
-                    if (expires > timestamp) {
-                        return profile
-                    }
+                }
+            } else {
+                if (expires > timestamp) {
+                    return profile
                 }
             }
         }
         if (NetworkType.Main.equals(identifier.getType())) {
             var tai = this.immortals.getProfile(identifier);
             if (tai) {
+                db.saveProfile(tai);
                 return tai
             }
         }

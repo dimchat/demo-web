@@ -237,14 +237,18 @@
         }
         // try from database
         var db = MetaTable.getInstance();
-        var meta = db.loadMeta(identifier);
+        var meta = db.getMeta(identifier);
         if (meta) {
-            return meta;
+            // is empty?
+            if (meta.key) {
+                return meta;
+            }
         }
         // try from immortals
         if (NetworkType.Main.equals(identifier.getType())) {
             meta = this.immortals.getMeta(identifier);
             if (meta) {
+                db.saveMeta(meta, identifier);
                 return meta;
             }
         }
@@ -260,29 +264,30 @@
     Facebook.prototype.getProfile = function(identifier) {
         // try from database
         var db = ProfileTable.getInstance();
-        var profile = db.loadProfile(identifier);
+        var profile = db.getProfile(identifier);
         if (profile) {
-            // is empty?
-            var names = profile.allPropertyNames();
-            if (names && names.length > 0) {
-                // check expired time
-                var now = new Date();
-                var timestamp = now.getTime() / 1000;
-                var expires = profile.getValue(EXPIRES_KEY);
-                if (!expires) {
-                    // set expired time
-                    profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES);
-                    return profile;
-                } else if (expires > timestamp) {
-                    // not expired yet
+            // check expired time
+            var now = new Date();
+            var timestamp = now.getTime() / 1000;
+            var expires = profile[EXPIRES_KEY];
+            if (!expires) {
+                // set expired time
+                profile[EXPIRES_KEY] = timestamp + this.EXPIRES;
+                // is empty?
+                var names = profile.allPropertyNames();
+                if (names && names.length > 0) {
                     return profile;
                 }
+            } else if (expires > timestamp) {
+                // not expired yet
+                return profile;
             }
         }
         // try from immortals
         if (NetworkType.Main.equals(identifier.getType())) {
             var tai = this.immortals.getProfile(identifier);
             if (tai) {
+                db.saveProfile(tai);
                 return tai;
             }
         }

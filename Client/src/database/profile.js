@@ -39,14 +39,32 @@
         this.profiles = null;
     };
 
-    ProfileTable.prototype.loadProfile = function (identifier) {
+    ProfileTable.prototype.getProfile = function (identifier) {
         if (!this.profiles) {
             this.profiles = load_profiles();
         }
-        return this.profiles[identifier];
+        var profile = this.profiles[identifier];
+        if (!profile) {
+            // place an empty profile for cache
+            profile = new Profile(identifier);
+            this.profiles[identifier] = profile;
+        }
+        return profile;
     };
     ProfileTable.prototype.saveProfile = function (profile, identifier) {
-        this.loadProfile(identifier);
+        if (!this.profiles) {
+            this.profiles = load_profiles();
+        }
+        if (identifier) {
+            if (!identifier.equals(profile.getIdentifier())) {
+                throw Error('profile ID not match: ' + identifier + ', ' + profile);
+            }
+        } else {
+            identifier = profile.getIdentifier();
+            if (!identifier) {
+                throw Error('profile ID error: ' + profile);
+            }
+        }
         this.profiles[identifier] = profile;
         console.log('saving profile for ' + identifier);
         var nc = NotificationCenter.getInstance();
