@@ -2267,7 +2267,11 @@
     var serializeKey = Messenger.prototype.serializeKey;
     Messenger.prototype.serializeKey = function(pwd, iMsg) {
         if (pwd["reused"]) {
-            return null
+            var receiver = iMsg.envelope.receiver;
+            receiver = this.getFacebook().getIdentifier(receiver);
+            if (receiver.isGroup()) {
+                return null
+            }
         }
         return serializeKey.call(this, pwd, iMsg)
     };

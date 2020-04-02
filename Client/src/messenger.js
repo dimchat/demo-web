@@ -206,8 +206,12 @@
     // Override
     Messenger.prototype.serializeKey = function(pwd, iMsg) {
         if (pwd['reused']) {
-            // no need to encrypt reused key again
-            return null;
+            var receiver = iMsg.envelope.receiver;
+            receiver = this.getFacebook().getIdentifier(receiver);
+            if (receiver.isGroup()) {
+                // reuse key for grouped message
+                return null;
+            }
         }
         return serializeKey.call(this, pwd, iMsg);
     };
