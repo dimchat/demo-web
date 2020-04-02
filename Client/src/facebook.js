@@ -272,7 +272,7 @@
                 if (!expires) {
                     // set expired time
                     profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES);
-                    return profile
+                    return profile;
                 } else if (expires > timestamp) {
                     // not expired yet
                     return profile;
