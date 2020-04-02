@@ -1839,6 +1839,7 @@
                 var expires = profile.getValue(EXPIRES_KEY);
                 if (!expires) {
                     profile.setValue(EXPIRES_KEY, timestamp + this.EXPIRES)
+                    return profile
                 } else {
                     if (expires > timestamp) {
                         return profile
