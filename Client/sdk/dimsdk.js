@@ -5491,8 +5491,6 @@ if (typeof DaoKeDao !== "object") {
 ! function(ns) {
     var TextContent = ns.protocol.TextContent;
     var GroupCommand = ns.protocol.GroupCommand;
-    var InviteCommand = ns.protocol.group.InviteCommand;
-    var ResetCommand = ns.protocol.group.ResetCommand;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
     var QueryCommandProcessor = function(messenger) {
         GroupCommandProcessor.call(this, messenger)
@@ -5517,9 +5515,9 @@ if (typeof DaoKeDao !== "object") {
         }
         var user = facebook.getCurrentUser();
         if (facebook.isOwner(user.identifier, group)) {
-            return new ResetCommand(group, members)
+            return GroupCommand.reset(group, members)
         } else {
-            return new InviteCommand(group, members)
+            return GroupCommand.invite(group, members)
         }
     };
     GroupCommandProcessor.register(GroupCommand.QUERY, QueryCommandProcessor);
