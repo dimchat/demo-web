@@ -251,7 +251,7 @@
                     messenger.queryGroupInfo(receiver, ass);
                     alert('Querying group members.');
                 } else {
-                    alert('Group members not found.');
+                    alert('Group assistant not found.');
                 }
                 return false;
             }

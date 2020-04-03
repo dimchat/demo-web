@@ -8,7 +8,6 @@
     var NetworkType = ns.protocol.NetworkType;
 
     var User = ns.User;
-    var Group = ns.Group;
 
     var AddressNameService = ns.AddressNameService;
     var Immortals = ns.Immortals;

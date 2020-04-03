@@ -8,6 +8,316 @@
  * @license   {@link https://mit-license.org | MIT License}
  */;
 ! function(ns) {
+    var Command = ns.protocol.Command;
+    var SearchCommand = function(info) {
+        var keywords = null;
+        if (!info) {
+            info = SearchCommand.ONLINE_USERS
+        } else {
+            if (typeof info === "string") {
+                if (info !== SearchCommand.SEARCH && info !== SearchCommand.ONLINE_USERS) {
+                    keywords = info;
+                    info = SearchCommand.SEARCH
+                }
+            }
+        }
+        Command.call(this, info);
+        if (keywords) {
+            this.setKeywords(keywords)
+        }
+    };
+    ns.Class(SearchCommand, Command, null);
+    SearchCommand.SEARCH = "search";
+    SearchCommand.ONLINE_USERS = "users";
+    SearchCommand.prototype.setKeywords = function(keywords) {
+        this.setValue("keywords", keywords)
+    };
+    SearchCommand.prototype.getUsers = function() {
+        return this.getValue("users")
+    };
+    SearchCommand.prototype.getResults = function() {
+        return this.getValue("results")
+    };
+    Command.register(SearchCommand.SEARCH, SearchCommand);
+    Command.register(SearchCommand.ONLINE_USERS, SearchCommand);
+    ns.protocol.SearchCommand = SearchCommand
+}(DIMP);
+! function(ns) {
+    var Data = ns.type.Data;
+    var Base64 = ns.format.Base64;
+    var SHA256 = ns.digest.SHA256;
+    var SymmetricKey = ns.crypto.SymmetricKey;
+    var Password = {
+        KEY_SIZE: 32,
+        BLOCK_SIZE: 16,
+        generate: function(string) {
+            var data = ns.type.String.from(string).getBytes("UTF-8");
+            var digest = SHA256.digest(data);
+            var len = Password.KEY_SIZE - data.length;
+            if (len > 0) {
+                var merged = new Data(Password.KEY_SIZE);
+                merged.push(digest.subarray(0, len));
+                merged.push(data);
+                data = merged.getBytes(false)
+            } else {
+                if (len < 0) {
+                    data = digest
+                }
+            }
+            var pos = Password.KEY_SIZE - Password.BLOCK_SIZE;
+            var iv = digest.subarray(pos);
+            var key = {
+                "algorithm": SymmetricKey.AES,
+                "data": Base64.encode(data),
+                "iv": Base64.encode(iv)
+            };
+            return SymmetricKey.getInstance(key)
+        }
+    };
+    if (typeof ns.extensions !== "object") {
+        ns.extensions = {}
+    }
+    ns.extensions.Password = Password
+}(DIMP);
+! function(ns) {
+    var AsymmetricKey = ns.crypto.AsymmetricKey;
+    var PrivateKey = ns.crypto.PrivateKey;
+    var NetworkType = ns.protocol.NetworkType;
+    var MetaType = ns.protocol.MetaType;
+    var Meta = ns.Meta;
+    var Profile = ns.Profile;
+    var MetaCommand = ns.protocol.MetaCommand;
+    var ProfileCommand = ns.protocol.ProfileCommand;
+    var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
+    var Register = function(type) {
+        if (type) {
+            this.network = type
+        } else {
+            this.network = NetworkType.Main
+        }
+        this.privateKey = null
+    };
+    Register.prototype.createUser = function(name, avatar) {
+        var key = this.generatePrivateKey();
+        var meta = this.generateMeta("web-demo");
+        var identifier = this.generateIdentifier(meta, NetworkType.Main);
+        var profile = this.createProfile(identifier, {
+            name: name,
+            avatar: avatar
+        });
+        var facebook = Facebook.getInstance();
+        facebook.saveMeta(meta, identifier);
+        facebook.savePrivateKey(key, identifier);
+        facebook.saveProfile(profile);
+        return facebook.getUser(identifier)
+    };
+    Register.prototype.createGroup = function(name, founder) {
+        var facebook = Facebook.getInstance();
+        this.privateKey = facebook.getPrivateKeyForSignature(founder);
+        var meta = this.generateMeta("group");
+        var identifier = this.generateIdentifier(meta, NetworkType.Polylogue);
+        var profile = this.createProfile(identifier, {
+            name: name
+        });
+        facebook.saveMeta(meta, identifier);
+        facebook.saveProfile(profile);
+        return facebook.getGroup(identifier)
+    };
+    Register.prototype.generatePrivateKey = function(algorithm) {
+        if (!algorithm) {
+            algorithm = AsymmetricKey.RSA
+        }
+        this.privateKey = PrivateKey.generate(algorithm);
+        return this.privateKey
+    };
+    Register.prototype.generateMeta = function(seed) {
+        if (!seed) {
+            seed = "anonymous"
+        }
+        return Meta.generate(MetaType.Default, this.privateKey, seed)
+    };
+    Register.prototype.generateIdentifier = function(meta, type) {
+        if (!type) {
+            type = this.network
+        }
+        return meta.generateIdentifier(type)
+    };
+    Register.prototype.createProfile = function(identifier, properties) {
+        var profile = Profile.getInstance({
+            "ID": identifier
+        });
+        if (properties) {
+            var keys = Object.keys(properties);
+            var name, value;
+            for (var i = 0; i < keys.length; ++i) {
+                name = keys[i];
+                value = properties[name];
+                if (name && value) {
+                    profile.setProperty(name, value)
+                }
+            }
+        }
+        profile.sign(this.privateKey);
+        return profile
+    };
+    Register.prototype.upload = function(identifier, meta, profile) {
+        var cmd;
+        if (profile) {
+            cmd = ProfileCommand.response(identifier, profile, meta)
+        } else {
+            if (meta) {
+                cmd = MetaCommand.response(identifier, meta)
+            }
+        }
+        return Messenger.getInstance().sendCommand(cmd)
+    };
+    if (typeof ns.extensions !== "object") {
+        ns.extensions = {}
+    }
+    ns.extensions.Register = Register
+}(DIMP);
+! function(ns) {
+    var MetaCommand = ns.protocol.MetaCommand;
+    var ProfileCommand = ns.protocol.ProfileCommand;
+    var GroupCommand = ns.protocol.GroupCommand;
+    var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
+    var GroupManager = function(group) {
+        this.group = group
+    };
+    GroupManager.prototype.send = function(content) {
+        var messenger = Messenger.getInstance();
+        var facebook = Facebook.getInstance();
+        var gid = content.getGroup();
+        if (gid) {
+            if (!this.group.equals(gid)) {
+                throw Error("group ID not match: " + this.group + ", " + gid)
+            }
+        } else {
+            content.setGroup(this.group)
+        }
+        var members = facebook.getMembers(this.group);
+        if (!members || members.length === 0) {
+            var assistants = facebook.getAssistants(this.group);
+            if (!assistants || assistants.length === 0) {
+                throw Error("failed to get assistants for group: " + this.group)
+            }
+            messenger.queryGroupInfo(this.group, assistants);
+            return false
+        }
+        return messenger.sendContent(content, this.group, null, false)
+    };
+    var send_group_command = function(content, members) {
+        var messenger = Messenger.getInstance();
+        var ok = true;
+        for (var i = 0; i < members.length; ++i) {
+            if (!messenger.sendContent(content, members[i], null, false)) {
+                ok = false
+            }
+        }
+        return ok
+    };
+    GroupManager.prototype.invite = function(newMembers) {
+        var facebook = Facebook.getInstance();
+        var owner = facebook.getOwner(this.group);
+        var assistants = facebook.getAssistants(this.group);
+        var members = facebook.getMembers(this.group);
+        var cmd;
+        var meta = facebook.getMeta(this.group);
+        var profile = facebook.getProfile(this.group);
+        if (profile) {
+            cmd = ProfileCommand.response(this.group, profile, meta)
+        } else {
+            cmd = MetaCommand.response(this.group, meta)
+        }
+        send_group_command(cmd, newMembers);
+        cmd = GroupCommand.invite(this.group, newMembers);
+        send_group_command(cmd, members);
+        send_group_command(cmd, assistants);
+        if (owner && members.indexOf(owner) < 0) {
+            send_group_command(cmd, [owner])
+        }
+        this.addMembers(newMembers);
+        members = facebook.getMembers(this.group);
+        cmd = GroupCommand.invite(this.group, members);
+        send_group_command(cmd, newMembers);
+        return true
+    };
+    GroupManager.prototype.expel = function(outMembers) {
+        var messenger = Messenger.getInstance();
+        var facebook = Facebook.getInstance();
+        var owner = facebook.getOwner(this.group);
+        var assistants = facebook.getAssistants(this.group);
+        var members = facebook.getMembers(this.group);
+        var cmd;
+        var i;
+        for (i = 0; i < assistants.length; ++i) {
+            if (outMembers.indexOf(assistants[i]) >= 0) {
+                throw Error("Cannot expel group assistant: " + assistants[i])
+            }
+        }
+        if (outMembers.indexOf(owner) >= 0) {
+            throw Error("Cannot expel group owner: " + assistants[i])
+        }
+        cmd = GroupCommand.expel(this.group, outMembers);
+        send_group_command(cmd, members);
+        send_group_command(cmd, assistants);
+        if (owner && members.indexOf(owner) < 0) {
+            send_group_command(cmd, [owner])
+        }
+        return this.removeMembers(outMembers)
+    };
+    GroupManager.prototype.addMembers = function(newMembers) {
+        var facebook = Facebook.getInstance();
+        var members = facebook.getMembers(this.group);
+        var count = 0;
+        var member;
+        for (var i = 0; i < newMembers.length; ++i) {
+            member = newMembers[i];
+            if (members.indexOf(member) >= 0) {
+                continue
+            }
+            members.push(member);
+            ++count
+        }
+        if (count === 0) {
+            return false
+        }
+        return facebook.saveMembers(members, this.group)
+    };
+    GroupManager.prototype.removeMembers = function(outMembers) {
+        var facebook = Facebook.getInstance();
+        var members = facebook.getMembers(this.group);
+        var count = 0;
+        var member;
+        for (var i = 0; i < outMembers.length; ++i) {
+            member = outMembers[i];
+            if (members.indexOf(member) < 0) {
+                continue
+            }
+            members.push(member);
+            ++count
+        }
+        if (count === 0) {
+            return false
+        }
+        return facebook.saveMembers(members, this.group)
+    };
+    GroupManager.prototype.addMember = function(member) {
+        var facebook = Facebook.getInstance();
+        return facebook.addMember(member, this.group)
+    };
+    GroupManager.prototype.removeMember = function(member) {
+        var facebook = Facebook.getInstance();
+        return facebook.removeMember(member, this.group)
+    };
+    if (typeof ns.extensions !== "object") {
+        ns.extensions = {}
+    }
+    ns.extensions.GroupManager = GroupManager
+}(DIMP);
+! function(ns) {
     var NotificationCenter = ns.stargate.NotificationCenter;
     var nc = NotificationCenter.getInstance();
     nc.kNotificationStationConnecting = "StationConnecting";
@@ -117,176 +427,6 @@
         return this.delegate.withdrawMessage(iMsg, this.getIdentifier())
     };
     ns.Conversation = Conversation
-}(DIMP);
-! function(ns) {
-    var AsymmetricKey = ns.crypto.AsymmetricKey;
-    var PrivateKey = ns.crypto.PrivateKey;
-    var NetworkType = ns.protocol.NetworkType;
-    var MetaType = ns.protocol.MetaType;
-    var Meta = ns.Meta;
-    var Profile = ns.Profile;
-    var MetaCommand = ns.protocol.MetaCommand;
-    var ProfileCommand = ns.protocol.ProfileCommand;
-    var Facebook = ns.Facebook;
-    var Messenger = ns.Messenger;
-    var Register = function(type) {
-        if (type) {
-            this.network = type
-        } else {
-            this.network = NetworkType.Main
-        }
-        this.privateKey = null
-    };
-    Register.prototype.createUser = function(name, avatar) {
-        var key = this.generatePrivateKey();
-        var meta = this.generateMeta("web-demo");
-        var identifier = this.generateIdentifier(meta, NetworkType.Main);
-        var profile = this.createProfile(identifier, {
-            name: name,
-            avatar: avatar
-        });
-        var facebook = Facebook.getInstance();
-        facebook.saveMeta(meta, identifier);
-        facebook.savePrivateKey(key, identifier);
-        facebook.saveProfile(profile);
-        return facebook.getUser(identifier)
-    };
-    Register.prototype.createGroup = function(name, founder) {
-        var facebook = Facebook.getInstance();
-        this.privateKey = facebook.getPrivateKeyForSignature(founder);
-        var meta = this.generateMeta("group");
-        var identifier = this.generateIdentifier(meta, NetworkType.Polylogue);
-        var profile = this.createProfile(identifier, {
-            name: name
-        });
-        facebook.saveMeta(meta, identifier);
-        facebook.saveProfile(profile);
-        return facebook.getGroup(identifier)
-    };
-    Register.prototype.generatePrivateKey = function(algorithm) {
-        if (!algorithm) {
-            algorithm = AsymmetricKey.RSA
-        }
-        this.privateKey = PrivateKey.generate(algorithm);
-        return this.privateKey
-    };
-    Register.prototype.generateMeta = function(seed) {
-        if (!seed) {
-            seed = "anonymous"
-        }
-        return Meta.generate(MetaType.Default, this.privateKey, seed)
-    };
-    Register.prototype.generateIdentifier = function(meta, type) {
-        if (!type) {
-            type = this.network
-        }
-        return meta.generateIdentifier(type)
-    };
-    Register.prototype.createProfile = function(identifier, properties) {
-        var profile = Profile.getInstance({
-            "ID": identifier
-        });
-        if (properties) {
-            var keys = Object.keys(properties);
-            var name, value;
-            for (var i = 0; i < keys.length; ++i) {
-                name = keys[i];
-                value = properties[name];
-                if (name && value) {
-                    profile.setProperty(name, value)
-                }
-            }
-        }
-        profile.sign(this.privateKey);
-        return profile
-    };
-    Register.prototype.upload = function(identifier, meta, profile) {
-        var cmd;
-        if (profile) {
-            cmd = ProfileCommand.response(identifier, profile, meta)
-        } else {
-            if (meta) {
-                cmd = MetaCommand.response(identifier, meta)
-            }
-        }
-        return Messenger.getInstance().sendCommand(cmd)
-    };
-    if (typeof ns.extensions !== "object") {
-        ns.extensions = {}
-    }
-    ns.extensions.Register = Register
-}(DIMP);
-! function(ns) {
-    var Data = ns.type.Data;
-    var Base64 = ns.format.Base64;
-    var SHA256 = ns.digest.SHA256;
-    var SymmetricKey = ns.crypto.SymmetricKey;
-    var Password = {
-        KEY_SIZE: 32,
-        BLOCK_SIZE: 16,
-        generate: function(string) {
-            var data = ns.type.String.from(string).getBytes("UTF-8");
-            var digest = SHA256.digest(data);
-            var len = Password.KEY_SIZE - data.length;
-            if (len > 0) {
-                var merged = new Data(Password.KEY_SIZE);
-                merged.push(digest.subarray(0, len));
-                merged.push(data);
-                data = merged.getBytes(false)
-            } else {
-                if (len < 0) {
-                    data = digest
-                }
-            }
-            var pos = Password.KEY_SIZE - Password.BLOCK_SIZE;
-            var iv = digest.subarray(pos);
-            var key = {
-                "algorithm": SymmetricKey.AES,
-                "data": Base64.encode(data),
-                "iv": Base64.encode(iv)
-            };
-            return SymmetricKey.getInstance(key)
-        }
-    };
-    if (typeof ns.extensions !== "object") {
-        ns.extensions = {}
-    }
-    ns.extensions.Password = Password
-}(DIMP);
-! function(ns) {
-    var Command = ns.protocol.Command;
-    var SearchCommand = function(info) {
-        var keywords = null;
-        if (!info) {
-            info = SearchCommand.ONLINE_USERS
-        } else {
-            if (typeof info === "string") {
-                if (info !== SearchCommand.SEARCH && info !== SearchCommand.ONLINE_USERS) {
-                    keywords = info;
-                    info = SearchCommand.SEARCH
-                }
-            }
-        }
-        Command.call(this, info);
-        if (keywords) {
-            this.setKeywords(keywords)
-        }
-    };
-    ns.Class(SearchCommand, Command, null);
-    SearchCommand.SEARCH = "search";
-    SearchCommand.ONLINE_USERS = "users";
-    SearchCommand.prototype.setKeywords = function(keywords) {
-        this.setValue("keywords", keywords)
-    };
-    SearchCommand.prototype.getUsers = function() {
-        return this.getValue("users")
-    };
-    SearchCommand.prototype.getResults = function() {
-        return this.getValue("results")
-    };
-    Command.register(SearchCommand.SEARCH, SearchCommand);
-    Command.register(SearchCommand.ONLINE_USERS, SearchCommand);
-    ns.protocol.SearchCommand = SearchCommand
 }(DIMP);
 ! function(ns) {
     var ContentType = ns.protocol.ContentType;
@@ -1651,7 +1791,6 @@
 ! function(ns) {
     var NetworkType = ns.protocol.NetworkType;
     var User = ns.User;
-    var Group = ns.Group;
     var AddressNameService = ns.AddressNameService;
     var Immortals = ns.Immortals;
     var PrivateTable = ns.db.PrivateTable;
@@ -2355,10 +2494,13 @@
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
+        var ok = true;
         for (var i = 0; i < contacts.length; ++i) {
-            this.sendContent(cmd, contacts[i], null, false)
+            if (!this.sendContent(cmd, contacts[i], null, false)) {
+                ok = false
+            }
         }
-        return true
+        return ok
     };
     Messenger.prototype.sendProfile = function(profile, receiver) {
         var facebook = this.getFacebook();
@@ -2366,7 +2508,19 @@
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendContent(cmd, receiver, null, false)
+        var members;
+        if (receiver instanceof Array) {
+            members = receiver
+        } else {
+            members = [receiver]
+        }
+        var ok = true;
+        for (var i = 0; i < members.length; ++i) {
+            if (!this.sendContent(cmd, members[i], null, false)) {
+                ok = false
+            }
+        }
+        return ok
     };
     Messenger.prototype.postProfile = function(profile) {
         if (!this.server) {

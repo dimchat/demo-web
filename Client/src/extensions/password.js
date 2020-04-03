@@ -42,6 +42,9 @@
 
     var SymmetricKey = ns.crypto.SymmetricKey;
 
+    /**
+     *  This is for generating symmetric key with a text string
+     */
     var Password = {
 
         KEY_SIZE: 32,

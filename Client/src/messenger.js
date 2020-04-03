@@ -371,10 +371,13 @@
         var meta = facebook.getMeta(identifier);
         // pack and send profile to every contact
         var cmd = ProfileCommand.response(identifier, profile, meta);
+        var ok = true;
         for (var i = 0; i < contacts.length; ++i) {
-            this.sendContent(cmd, contacts[i], null, false);
+            if (!this.sendContent(cmd, contacts[i], null, false)) {
+                ok = false;
+            }
         }
-        return true;
+        return ok;
     };
 
     Messenger.prototype.sendProfile = function (profile, receiver) {
@@ -383,7 +386,19 @@
         identifier = facebook.getIdentifier(identifier);
         var meta = facebook.getMeta(identifier);
         var cmd = ProfileCommand.response(identifier, profile, meta);
-        return this.sendContent(cmd, receiver, null, false);
+        var members;
+        if (receiver instanceof Array) {
+            members = receiver;
+        } else {
+            members = [receiver];
+        }
+        var ok = true;
+        for (var i = 0; i < members.length; ++i) {
+            if (!this.sendContent(cmd, members[i], null, false)) {
+                ok = false;
+            }
+        }
+        return ok;
     };
 
     /**

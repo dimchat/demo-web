@@ -1,10 +1,5 @@
 ;
 // license: https://mit-license.org
-//
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
-//
-//                               Written in 2020 by Moky <albert.moky@gmail.com>
-//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -31,6 +26,8 @@
 //
 
 //! require <dimp.js>
+//! require 'facebook.js'
+//! require 'messenger.js'
 
 !function (ns) {
     'use strict';
@@ -49,6 +46,9 @@
     var Facebook = ns.Facebook;
     var Messenger = ns.Messenger;
 
+    /**
+     *  This is for generating user account, or creating group
+     */
     var Register = function (type) {
         if (type) {
             this.network = type;
