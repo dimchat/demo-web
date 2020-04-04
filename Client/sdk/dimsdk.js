@@ -3995,13 +3995,13 @@ if (typeof DaoKeDao !== "object") {
         return ns.format.Base64.encode(data)
     };
     Transceiver.prototype.serializeKey = function(pwd, iMsg) {
+        if (is_broadcast_msg.call(this, iMsg)) {
+            return null
+        }
         var json = ns.format.JSON.encode(pwd);
         return ns.type.String.from(json).getBytes("UTF-8")
     };
     Transceiver.prototype.encryptKey = function(data, receiver, iMsg) {
-        if (is_broadcast_msg.call(this, iMsg)) {
-            return null
-        }
         receiver = this.entityDelegate.getIdentifier(receiver);
         var contact = this.entityDelegate.getUser(receiver);
         return contact.encrypt(data)
@@ -6171,30 +6171,15 @@ if (typeof DaoKeDao !== "object") {
         }
         return Transceiver.prototype.serializeContent.call(this, content, key, iMsg)
     };
-    var is_broadcast_msg = function(msg) {
-        var receiver;
-        if (msg instanceof InstantMessage) {
-            receiver = msg.content.getGroup()
-        } else {
-            receiver = msg.envelope.getGroup()
-        }
-        if (!receiver) {
-            receiver = msg.envelope.receiver
-        }
-        receiver = this.entityDelegate.getIdentifier(receiver);
-        return receiver && receiver.isBroadcast()
-    };
     Messenger.prototype.encryptKey = function(data, receiver, iMsg) {
-        if (!is_broadcast_msg.call(this, iMsg)) {
-            var facebook = this.getFacebook();
-            receiver = facebook.getIdentifier(receiver);
-            var key = facebook.getPublicKeyForEncryption(receiver);
-            if (!key) {
-                var meta = facebook.getMeta(receiver);
-                if (!meta || !ns.Interface.conforms(meta.key, EncryptKey)) {
-                    this.suspendMessage(iMsg);
-                    return null
-                }
+        var facebook = this.getFacebook();
+        receiver = facebook.getIdentifier(receiver);
+        var key = facebook.getPublicKeyForEncryption(receiver);
+        if (!key) {
+            var meta = facebook.getMeta(receiver);
+            if (!meta || !ns.Interface.conforms(meta.key, EncryptKey)) {
+                this.suspendMessage(iMsg);
+                return null
             }
         }
         return Transceiver.prototype.encryptKey.call(this, data, receiver, iMsg)

@@ -151,8 +151,8 @@
             clazz = ChatroomWindow;
         }
         var box = GroupChatWindow.show(admin, clazz);
-        query_history(admin);
         start_query_users(admin);
+        query_history(admin);
         return box;
     };
 
