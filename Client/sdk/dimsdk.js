@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 1, 2020
+ * @date      Apr. 4, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -605,9 +605,13 @@ if (typeof DIMP !== "object") {
         encode: function(string) {
             var len = string.length;
             var array = new Data(len);
-            var c;
+            var c, l;
             for (var i = 0; i < len; ++i) {
                 c = string.charCodeAt(i);
+                if (55296 <= c && c <= 56319) {
+                    l = string.charCodeAt(++i);
+                    c = ((c - 55296) << 10) + 65536 + l - 56320
+                }
                 if (c <= 0) {
                     break
                 } else {
@@ -618,9 +622,16 @@ if (typeof DIMP !== "object") {
                             array.push(192 | ((c >> 6) & 31));
                             array.push(128 | ((c >> 0) & 63))
                         } else {
-                            array.push(224 | ((c >> 12) & 15));
-                            array.push(128 | ((c >> 6) & 63));
-                            array.push(128 | ((c >> 0) & 63))
+                            if (c < 65536) {
+                                array.push(224 | ((c >> 12) & 15));
+                                array.push(128 | ((c >> 6) & 63));
+                                array.push(128 | ((c >> 0) & 63))
+                            } else {
+                                array.push(240 | ((c >> 18) & 7));
+                                array.push(128 | ((c >> 12) & 63));
+                                array.push(128 | ((c >> 6) & 63));
+                                array.push(128 | ((c >> 0) & 63))
+                            }
                         }
                     }
                 }
@@ -630,7 +641,7 @@ if (typeof DIMP !== "object") {
         decode: function(array) {
             var string = "";
             var len = array.length;
-            var c, c2, c3;
+            var c, c2, c3, c4;
             for (var i = 0; i < len; ++i) {
                 c = array[i];
                 switch (c >> 4) {
@@ -643,9 +654,21 @@ if (typeof DIMP !== "object") {
                         c2 = array[++i];
                         c3 = array[++i];
                         c = ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63);
+                        break;
+                    case 15:
+                        c2 = array[++i];
+                        c3 = array[++i];
+                        c4 = array[++i];
+                        c = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63);
                         break
                 }
-                string += String.fromCharCode(c)
+                if (c < 65536) {
+                    string += String.fromCharCode(c)
+                } else {
+                    c -= 65536;
+                    string += String.fromCharCode((c >> 10) + 55296);
+                    string += String.fromCharCode((c & 1023) + 56320)
+                }
             }
             return string
         }
