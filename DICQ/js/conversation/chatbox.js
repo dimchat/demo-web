@@ -12,14 +12,11 @@
     var Image = tui.Image;
     var Window = tui.Window;
 
-    var TableViewCell = tui.TableViewCell;
     var TableViewDataSource = tui.TableViewDataSource;
     var TableViewDelegate = tui.TableViewDelegate;
     var TableView = tui.TableView;
 
     var TextContent = dimp.protocol.TextContent;
-    var Command = dimp.protocol.Command;
-    var MessageBuilder = dimp.cpu.MessageBuilder;
 
     var StarStatus = dimp.stargate.StarStatus;
     var NotificationCenter = dimp.stargate.NotificationCenter;
@@ -148,72 +145,10 @@
         }
         var iMsg = this.getMessage(indexPath.row);
         // create table cell
-        var cell = new TableViewCell();
+        var cell = new ns.MessageCell();
         cell.setClassName('msgCell');
-
-        // message time
-        var time = iMsg.envelope.getTime();
-        var timeView = new Label();
-        timeView.setClassName('time');
-        timeView.setText(time_string(time));
-        cell.appendChild(timeView);
-
-        // name & number
-        var facebook = Facebook.getInstance();
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
-        var name = facebook.getNickname(sender);
-        if (!name) {
-            name = sender.name;
-        }
-        var number = facebook.getNumberString(sender);
-        var nameView = new Label();
-        nameView.setClassName('name');
-        nameView.setText(name + ' (' + number + ')');
-        cell.appendChild(nameView);
-
-        // message content
-        var content = iMsg.content;
-        var text;
-        if (content instanceof Command) {
-            text = MessageBuilder.getCommandText(content, sender);
-        } else {
-            text = MessageBuilder.getContentText(content, sender);
-        }
-        var textView = new Label();
-        textView.setClassName('content');
-        textView.setText(text);
-        cell.appendChild(textView);
-
-        var user = facebook.getCurrentUser();
-        if (user.identifier.equals(sender)) {
-            cell.setClassName('sent');
-        } else {
-            cell.setClassName('received');
-        }
+        cell.setMessage(iMsg);
         return cell;
-    };
-
-    var time_string = function (time) {
-        if (time instanceof Date) {
-            var year = time.getFullYear();
-            var month = time.getMonth() + 1;
-            var date = time.getDate();
-            var hours = time.getHours();
-            var minutes = time.getMinutes();
-            var seconds = time.getSeconds();
-
-            if (month < 10) month = '0' + month;
-            if (date < 10) date = '0' + date;
-            if (hours < 10) hours = '0' + hours;
-            if (minutes < 10) minutes = '0' + minutes;
-            if (seconds < 10) seconds = '0' + seconds;
-
-            var ts = year + '-' + month + '-' + date;
-            ts += ' ' + hours + ':' + minutes + ':' + seconds;
-            return ts;
-        } else {
-            return '';
-        }
     };
 
     //

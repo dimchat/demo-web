@@ -222,6 +222,7 @@ if (typeof dicq !== 'object') {
         'js/views/fixedtable.js',
         'js/views/maincell.js',
         'js/views/usercell.js',
+        'js/views/msgcell.js',
 
         'js/conversation/chatbox.js',
         'js/conversation/groupchat.js',
