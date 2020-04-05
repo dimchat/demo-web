@@ -112,16 +112,21 @@
         facebook.saveProfile(profile);
         return facebook.getUser(identifier)
     };
-    Register.prototype.createGroup = function(name, founder) {
+    Register.prototype.createGroup = function(founder, name, seed) {
+        if (!seed) {
+            var r = Math.ceil(Math.random() * 999990000) + 10000;
+            seed = "Group-" + r
+        }
         var facebook = Facebook.getInstance();
         this.privateKey = facebook.getPrivateKeyForSignature(founder);
-        var meta = this.generateMeta("group");
+        var meta = this.generateMeta(seed);
         var identifier = this.generateIdentifier(meta, NetworkType.Polylogue);
         var profile = this.createProfile(identifier, {
             name: name
         });
         facebook.saveMeta(meta, identifier);
         facebook.saveProfile(profile);
+        facebook.addMember(founder, identifier);
         return facebook.getGroup(identifier)
     };
     Register.prototype.generatePrivateKey = function(algorithm) {

@@ -61,8 +61,8 @@
     /**
      *  Generate user account
      *
-     * @param name - nickname
-     * @param avatar - URL
+     * @param {String} name - nickname
+     * @param {String} avatar - URL
      * @returns {User}
      */
     Register.prototype.createUser = function (name, avatar) {
@@ -87,16 +87,21 @@
     /**
      *  Generate group account
      *
-     * @param name - group name
-     * @param founder - founder ID
+     * @param {ID} founder - founder ID
+     * @param {String} name - group name
+     * @param {String} seed - group ID.seed
      * @returns {Group}
      */
-    Register.prototype.createGroup = function (name, founder) {
+    Register.prototype.createGroup = function (founder, name, seed) {
+        if (!seed) {
+            var r = Math.ceil(Math.random() * 999990000) + 10000; // 10,000 ~ 999,999,999
+            seed = 'Group-' + r;
+        }
         var facebook = Facebook.getInstance();
         // 1. get private key
         this.privateKey = facebook.getPrivateKeyForSignature(founder);
         // 2. generate meta
-        var meta = this.generateMeta("group");
+        var meta = this.generateMeta(seed);
         // 3. generate ID
         var identifier = this.generateIdentifier(meta, NetworkType.Polylogue);
         // 4. generate profile
@@ -105,7 +110,9 @@
         //    don't forget to upload them onto the DIM station
         facebook.saveMeta(meta, identifier);
         facebook.saveProfile(profile);
-        // 6. create group
+        // 6. add founder as first member
+        facebook.addMember(founder, identifier);
+        // 7. create group
         return facebook.getGroup(identifier);
     };
 
