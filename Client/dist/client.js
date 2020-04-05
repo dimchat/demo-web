@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 1, 2020
+ * @date      Apr. 5, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -227,6 +227,12 @@
         var meta = facebook.getMeta(this.group);
         var profile = facebook.getProfile(this.group);
         if (profile) {
+            var data = profile.getValue("data");
+            if (!data || data.length === 0) {
+                profile = null
+            }
+        }
+        if (profile) {
             cmd = ProfileCommand.response(this.group, profile, meta)
         } else {
             cmd = MetaCommand.response(this.group, meta)
@@ -245,7 +251,6 @@
         return true
     };
     GroupManager.prototype.expel = function(outMembers) {
-        var messenger = Messenger.getInstance();
         var facebook = Facebook.getInstance();
         var owner = facebook.getOwner(this.group);
         var assistants = facebook.getAssistants(this.group);
@@ -267,6 +272,29 @@
             send_group_command(cmd, [owner])
         }
         return this.removeMembers(outMembers)
+    };
+    GroupManager.prototype.quit = function(me) {
+        var facebook = Facebook.getInstance();
+        var owner = facebook.getOwner(this.group);
+        var assistants = facebook.getAssistants(this.group);
+        var members = facebook.getMembers(this.group);
+        var cmd;
+        var i;
+        for (i = 0; i < assistants.length; ++i) {
+            if (me.equals(assistants[i]) >= 0) {
+                throw Error("Group assistant cannot quit: " + assistants[i])
+            }
+        }
+        if (me.equals(owner) >= 0) {
+            throw Error("Group owner cannot quit: " + assistants[i])
+        }
+        cmd = GroupCommand.quit(this.group);
+        send_group_command(cmd, members);
+        send_group_command(cmd, assistants);
+        if (owner && members.indexOf(owner) < 0) {
+            send_group_command(cmd, [owner])
+        }
+        return this.removeMember(me)
     };
     GroupManager.prototype.addMembers = function(newMembers) {
         var facebook = Facebook.getInstance();

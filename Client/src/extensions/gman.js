@@ -112,6 +112,13 @@
         var meta = facebook.getMeta(this.group);
         var profile = facebook.getProfile(this.group);
         if (profile) {
+            var data = profile.getValue("data");
+            if (!data || data.length === 0) {
+                // empty profile
+                profile = null;
+            }
+        }
+        if (profile) {
             cmd = ProfileCommand.response(this.group, profile, meta);
         } else {
             cmd = MetaCommand.response(this.group, meta);
@@ -144,7 +151,6 @@
      * @returns {boolean} true on success
      */
     GroupManager.prototype.expel = function (outMembers) {
-        var messenger = Messenger.getInstance();
         var facebook = Facebook.getInstance();
 
         var owner = facebook.getOwner(this.group);
@@ -174,6 +180,45 @@
 
         // 2. update local storage
         return this.removeMembers(outMembers);
+    };
+
+    /**
+     *  Quit from this group
+     *  (only group member can do this)
+     *
+     * @param {ID|*} me - my ID
+     * @return {boolean} true on success
+     */
+    GroupManager.prototype.quit = function (me) {
+        var facebook = Facebook.getInstance();
+
+        var owner = facebook.getOwner(this.group);
+        var assistants = facebook.getAssistants(this.group);
+        var members = facebook.getMembers(this.group);
+
+        var cmd;
+        var i;
+
+        // 0. check members list
+        for (i = 0; i < assistants.length; ++i) {
+            if (me.equals(assistants[i]) >= 0) {
+                throw Error('Group assistant cannot quit: ' + assistants[i]);
+            }
+        }
+        if (me.equals(owner) >= 0) {
+            throw Error('Group owner cannot quit: ' + assistants[i]);
+        }
+
+        // 1. send 'quit' command to all members
+        cmd = GroupCommand.quit(this.group);
+        send_group_command(cmd, members); // send to existed members
+        send_group_command(cmd, assistants); // send to assistants
+        if (owner && members.indexOf(owner) < 0) {
+            send_group_command(cmd, [owner]); // send to owner
+        }
+
+        // 2. update local storage
+        return this.removeMember(me);
     };
 
     //
