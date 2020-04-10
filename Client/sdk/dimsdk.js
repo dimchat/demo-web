@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 4, 2020
+ * @date      Apr. 10, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -600,94 +600,22 @@ if (typeof DIMP !== "object") {
     ns.type.register("Data")
 }(DIMP);
 ! function(ns) {
-    var Data = ns.type.Data;
-    var UTF8 = {
-        encode: function(string) {
-            var len = string.length;
-            var array = new Data(len);
-            var c, l;
-            for (var i = 0; i < len; ++i) {
-                c = string.charCodeAt(i);
-                if (55296 <= c && c <= 56319) {
-                    l = string.charCodeAt(++i);
-                    c = ((c - 55296) << 10) + 65536 + l - 56320
-                }
-                if (c <= 0) {
-                    break
-                } else {
-                    if (c < 128) {
-                        array.push(c)
-                    } else {
-                        if (c < 2048) {
-                            array.push(192 | ((c >> 6) & 31));
-                            array.push(128 | ((c >> 0) & 63))
-                        } else {
-                            if (c < 65536) {
-                                array.push(224 | ((c >> 12) & 15));
-                                array.push(128 | ((c >> 6) & 63));
-                                array.push(128 | ((c >> 0) & 63))
-                            } else {
-                                array.push(240 | ((c >> 18) & 7));
-                                array.push(128 | ((c >> 12) & 63));
-                                array.push(128 | ((c >> 6) & 63));
-                                array.push(128 | ((c >> 0) & 63))
-                            }
-                        }
-                    }
-                }
-            }
-            return array.getBytes(false)
-        },
-        decode: function(array) {
-            var string = "";
-            var len = array.length;
-            var c, c2, c3, c4;
-            for (var i = 0; i < len; ++i) {
-                c = array[i];
-                switch (c >> 4) {
-                    case 12:
-                    case 13:
-                        c2 = array[++i];
-                        c = ((c & 31) << 6) | (c2 & 63);
-                        break;
-                    case 14:
-                        c2 = array[++i];
-                        c3 = array[++i];
-                        c = ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63);
-                        break;
-                    case 15:
-                        c2 = array[++i];
-                        c3 = array[++i];
-                        c4 = array[++i];
-                        c = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63);
-                        break
-                }
-                if (c < 65536) {
-                    string += String.fromCharCode(c)
-                } else {
-                    c -= 65536;
-                    string += String.fromCharCode((c >> 10) + 55296);
-                    string += String.fromCharCode((c & 1023) + 56320)
-                }
-            }
-            return string
-        }
-    };
-    var str = function(value, charset) {
+    var str = function(value) {
         if (!value) {
             value = ""
         } else {
             if (value instanceof str) {
                 value = value.valueOf()
             } else {
-                if (typeof value !== "string") {
-                    if (!(value instanceof Uint8Array)) {
-                        value = new Uint8Array(value)
-                    }
-                    if (!charset || charset === "UTF-8") {
-                        value = UTF8.decode(value)
+                if (value instanceof Uint8Array) {
+                    if (arguments.length === 1 || arguments[1] === "UTF-8") {
+                        value = ns.format.UTF8.decode(value)
                     } else {
-                        throw Error("only UTF-8 now")
+                        throw Error("unknown charset: " + arguments[1])
+                    }
+                } else {
+                    if (typeof value !== "string") {
+                        throw Error("string value error: " + value)
                     }
                 }
             }
@@ -698,7 +626,7 @@ if (typeof DIMP !== "object") {
     ns.Class(str, ns.type.Object, null);
     str.prototype.getBytes = function(charset) {
         if (!charset || charset === "UTF-8") {
-            return UTF8.encode(this.string)
+            return ns.format.UTF8.encode(this.string)
         }
         throw Error("unknown charset: " + charset)
     };
@@ -751,7 +679,11 @@ if (typeof DIMP !== "object") {
         if (array instanceof Array) {
             array = new Uint8Array(array)
         }
-        return new str(array, null)
+        if (arguments.length === 1) {
+            return new str(array)
+        } else {
+            return new str(array, arguments[1])
+        }
     };
     ns.type.String = str;
     ns.type.register("String")
@@ -983,116 +915,147 @@ if (typeof DIMP !== "object") {
         console.assert(false, "Base58 decode not implemented");
         return null
     };
-    var C = function(lib) {
-        this.coder = lib
+    var Lib = function(coder) {
+        this.coder = coder
     };
-    ns.Class(C, ns.type.Object, [coder]);
-    C.prototype.encode = function(data) {
+    ns.Class(Lib, ns.type.Object, [coder]);
+    Lib.prototype.encode = function(data) {
         return this.coder.encode(data)
     };
-    C.prototype.decode = function(string) {
+    Lib.prototype.decode = function(string) {
         return this.coder.decode(string)
     };
     ns.format.BaseCoder = coder;
-    ns.format.Hex = new C(new hex());
-    ns.format.Base58 = new C(new base58());
-    ns.format.Base64 = new C(new base64());
+    ns.format.Hex = new Lib(new hex());
+    ns.format.Base58 = new Lib(new base58());
+    ns.format.Base64 = new Lib(new base64());
     ns.format.register("BaseCoder");
     ns.format.register("Hex");
     ns.format.register("Base58");
     ns.format.register("Base64")
 }(DIMP);
 ! function(ns) {
+    var utf8_encode = function(string) {
+        var len = string.length;
+        var array = new ns.type.Data(len);
+        var c, l;
+        for (var i = 0; i < len; ++i) {
+            c = string.charCodeAt(i);
+            if (55296 <= c && c <= 56319) {
+                l = string.charCodeAt(++i);
+                c = ((c - 55296) << 10) + 65536 + l - 56320
+            }
+            if (c <= 0) {
+                break
+            } else {
+                if (c < 128) {
+                    array.push(c)
+                } else {
+                    if (c < 2048) {
+                        array.push(192 | ((c >> 6) & 31));
+                        array.push(128 | ((c >> 0) & 63))
+                    } else {
+                        if (c < 65536) {
+                            array.push(224 | ((c >> 12) & 15));
+                            array.push(128 | ((c >> 6) & 63));
+                            array.push(128 | ((c >> 0) & 63))
+                        } else {
+                            array.push(240 | ((c >> 18) & 7));
+                            array.push(128 | ((c >> 12) & 63));
+                            array.push(128 | ((c >> 6) & 63));
+                            array.push(128 | ((c >> 0) & 63))
+                        }
+                    }
+                }
+            }
+        }
+        return array.getBytes(false)
+    };
+    var utf8_decode = function(array) {
+        var string = "";
+        var len = array.length;
+        var c, c2, c3, c4;
+        for (var i = 0; i < len; ++i) {
+            c = array[i];
+            switch (c >> 4) {
+                case 12:
+                case 13:
+                    c2 = array[++i];
+                    c = ((c & 31) << 6) | (c2 & 63);
+                    break;
+                case 14:
+                    c2 = array[++i];
+                    c3 = array[++i];
+                    c = ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63);
+                    break;
+                case 15:
+                    c2 = array[++i];
+                    c3 = array[++i];
+                    c4 = array[++i];
+                    c = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63);
+                    break
+            }
+            if (c < 65536) {
+                string += String.fromCharCode(c)
+            } else {
+                c -= 65536;
+                string += String.fromCharCode((c >> 10) + 55296);
+                string += String.fromCharCode((c & 1023) + 56320)
+            }
+        }
+        return string
+    };
     var parser = function() {};
     ns.Interface(parser, null);
-    parser.prototype.encode = function(container) {
+    parser.prototype.encode = function(object) {
         console.assert(false, "implement me!");
         return null
     };
-    parser.prototype.decode = function(string) {
+    parser.prototype.decode = function(data) {
         console.assert(false, "implement me!");
         return null
     };
     var json = function() {};
     ns.Class(json, ns.type.Object, [parser]);
     json.prototype.encode = function(container) {
-        return JSON.stringify(container)
+        var string = JSON.stringify(container);
+        if (!string) {
+            throw TypeError("failed to encode JSON object: " + container)
+        }
+        return ns.format.UTF8.encode(string)
     };
-    json.prototype.decode = function(string) {
+    json.prototype.decode = function(json) {
+        var string;
+        if (typeof json === "string") {
+            string = json
+        } else {
+            string = ns.format.UTF8.decode(json)
+        }
+        if (!string) {
+            throw TypeError("failed to decode JSON data: " + json)
+        }
         return JSON.parse(string)
     };
-    var P = function(lib) {
-        this.parser = lib
+    var utf8 = function() {};
+    ns.Class(utf8, ns.type.Object, [parser]);
+    utf8.prototype.encode = utf8_encode;
+    utf8.prototype.decode = utf8_decode;
+    var Lib = function(parser) {
+        this.parser = parser
     };
-    ns.Class(P, ns.type.Object, [parser]);
-    P.prototype.encode = function(container) {
-        return this.parser.encode(container)
+    ns.Class(Lib, ns.type.Object, [parser]);
+    Lib.prototype.encode = function(object) {
+        return this.parser.encode(object)
     };
-    P.prototype.decode = function(string) {
-        return this.parser.decode(string)
+    Lib.prototype.decode = function(data) {
+        return this.parser.decode(data)
     };
     ns.format.DataParser = parser;
-    ns.format.JSON = new P(new json());
+    ns.format.JSON = new Lib(new json());
+    ns.format.UTF8 = new Lib(new utf8());
     ns.format.register("DataParser");
-    ns.format.register("JSON")
-}(DIMP);
-! function(ns) {
-    var parser = function() {};
-    ns.Interface(parser, null);
-    parser.prototype.encodePublicKey = function(key) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.encodePrivateKey = function(key) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.decodePublicKey = function(pem) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.decodePrivateKey = function(pem) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    var pem = function() {};
-    ns.Class(pem, ns.type.Object, [parser]);
-    pem.prototype.encodePublicKey = function(key) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.encodePrivateKey = function(key) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.decodePublicKey = function(pem) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.decodePrivateKey = function(pem) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    var P = function(lib) {
-        this.parser = lib
-    };
-    ns.Class(P, ns.type.Object, [parser]);
-    P.prototype.encodePublicKey = function(key) {
-        return this.parser.encodePublicKey(key)
-    };
-    P.prototype.encodePrivateKey = function(key) {
-        return this.parser.encodePrivateKey(key)
-    };
-    P.prototype.decodePublicKey = function(pem) {
-        return this.parser.decodePublicKey(pem)
-    };
-    P.prototype.decodePrivateKey = function(pem) {
-        return this.parser.decodePrivateKey(pem)
-    };
-    ns.format.KeyParser = parser;
-    ns.format.PEM = new P(new pem());
-    ns.format.register("KeyParser");
-    ns.format.register("PEM")
+    ns.format.register("JSON");
+    ns.format.register("UTF8")
 }(DIMP);
 ! function(ns) {
     var hash = function() {};
@@ -1119,17 +1082,17 @@ if (typeof DIMP !== "object") {
         console.assert(false, "RIPEMD160 not implemented");
         return null
     };
-    var H = function(lib) {
-        this.hash = lib
+    var Lib = function(hash) {
+        this.hash = hash
     };
-    ns.Class(H, ns.type.Object, [hash]);
-    H.prototype.digest = function(data) {
+    ns.Class(Lib, ns.type.Object, [hash]);
+    Lib.prototype.digest = function(data) {
         return this.hash.digest(data)
     };
     ns.digest.Hash = hash;
-    ns.digest.MD5 = new H(new md5());
-    ns.digest.SHA256 = new H(new sha256());
-    ns.digest.RIPEMD160 = new H(new ripemd160());
+    ns.digest.MD5 = new Lib(new md5());
+    ns.digest.SHA256 = new Lib(new sha256());
+    ns.digest.RIPEMD160 = new Lib(new ripemd160());
     ns.digest.register("Hash");
     ns.digest.register("MD5");
     ns.digest.register("SHA256");
@@ -1193,11 +1156,11 @@ if (typeof DIMP !== "object") {
     ns.crypto.register("VerifyKey")
 }(DIMP);
 ! function(ns) {
+    var UTF8 = ns.format.UTF8;
     var CryptographyKey = ns.crypto.CryptographyKey;
     var EncryptKey = ns.crypto.EncryptKey;
     var DecryptKey = ns.crypto.DecryptKey;
-    var promise = "Moky loves May Lee forever!";
-    promise = ns.type.String.from(promise).getBytes(null);
+    var promise = UTF8.encode("Moky loves May Lee forever!");
     var SymmetricKey = function(key) {
         CryptographyKey.call(this, key)
     };
@@ -1248,11 +1211,11 @@ if (typeof DIMP !== "object") {
     ns.crypto.register("AsymmetricKey")
 }(DIMP);
 ! function(ns) {
+    var UTF8 = ns.format.UTF8;
     var CryptographyKey = ns.crypto.CryptographyKey;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var VerifyKey = ns.crypto.VerifyKey;
-    var promise = "Moky loves May Lee forever!";
-    promise = ns.type.String.from(promise).getBytes(null);
+    var promise = UTF8.encode("Moky loves May Lee forever!");
     var PublicKey = function(key) {
         AsymmetricKey.call(this, key)
     };
@@ -1580,6 +1543,7 @@ if (typeof MingKeMing !== "object") {
     var Dictionary = ns.type.Dictionary;
     var PublicKey = ns.crypto.PublicKey;
     var Base64 = ns.format.Base64;
+    var UTF8 = ns.format.UTF8;
     var MetaType = ns.protocol.MetaType;
     var NetworkType = ns.protocol.NetworkType;
     var Address = ns.Address;
@@ -1626,7 +1590,7 @@ if (typeof MingKeMing !== "object") {
                     if (!this.seed || !this.fingerprint) {
                         this.status = -1
                     } else {
-                        var data = ns.type.String.from(this.seed).getBytes();
+                        var data = UTF8.encode(this.seed);
                         var signature = this.fingerprint;
                         if (this.key.verify(data, signature)) {
                             this.status = 1
@@ -1646,7 +1610,7 @@ if (typeof MingKeMing !== "object") {
             return true
         }
         if (this.hasSeed()) {
-            var data = ns.type.String.from(this.seed).getBytes();
+            var data = UTF8.encode(this.seed);
             var signature = this.fingerprint;
             return publicKey.verify(data, signature)
         } else {
@@ -1698,7 +1662,7 @@ if (typeof MingKeMing !== "object") {
             "key": privateKey.getPublicKey()
         };
         if (MetaType.hasSeed(version)) {
-            var data = ns.type.String.from(seed).getBytes();
+            var data = UTF8.encode(seed);
             var fingerprint = privateKey.sign(data);
             meta["seed"] = seed;
             meta["fingerprint"] = Base64.encode(fingerprint)
@@ -1776,6 +1740,7 @@ if (typeof MingKeMing !== "object") {
     var Dictionary = ns.type.Dictionary;
     var Base64 = ns.format.Base64;
     var JSON = ns.format.JSON;
+    var UTF8 = ns.format.UTF8;
     var PublicKey = ns.crypto.PublicKey;
     var ID = ns.ID;
     var Profile = function(info) {
@@ -1806,7 +1771,7 @@ if (typeof MingKeMing !== "object") {
         if (!this.data) {
             var string = this.getValue("data");
             if (string) {
-                this.data = ns.type.String.from(string).getBytes()
+                this.data = UTF8.encode(string)
             }
         }
         return this.data
@@ -1885,10 +1850,9 @@ if (typeof MingKeMing !== "object") {
             return this.signature
         }
         this.status = 1;
-        var string = JSON.encode(this.getProperties());
-        this.data = ns.type.String.from(string).getBytes();
+        this.data = JSON.encode(this.getProperties());
         this.signature = privateKey.sign(this.data);
-        this.setValue("data", string);
+        this.setValue("data", UTF8.decode(this.data));
         this.setValue("signature", Base64.encode(this.signature));
         return this.signature
     };
@@ -2500,47 +2464,49 @@ if (typeof DaoKeDao !== "object") {
         return new InstantMessage(msg)
     };
     InstantMessage.prototype.encrypt = function(password, members) {
-        var msg;
         if (members && members.length > 0) {
-            msg = encrypt_keys.call(this, password, members)
+            return encrypt_group_message.call(this, password, members)
         } else {
-            msg = encrypt_key.call(this, password)
+            return encrypt_message.call(this, password)
         }
+    };
+    var encrypt_message = function(password) {
+        var msg = prepare_data.call(this, password);
+        var key = this.delegate.serializeKey(password, this);
+        if (!key) {
+            return new ns.SecureMessage(msg)
+        }
+        var receiver = this.envelope.receiver;
+        var data = this.delegate.encryptKey(key, receiver, this);
+        if (!data) {
+            return null
+        }
+        msg["key"] = this.delegate.encodeKey(data, this);
         return new ns.SecureMessage(msg)
     };
-    var encrypt_key = function(password) {
+    var encrypt_group_message = function(password, members) {
         var msg = prepare_data.call(this, password);
         var key = this.delegate.serializeKey(password, this);
-        if (key) {
-            var receiver = this.envelope.receiver;
-            var data = this.delegate.encryptKey(key, receiver, this);
-            if (data) {
-                msg["key"] = this.delegate.encodeKey(data, this)
-            }
+        if (!key) {
+            return new ns.SecureMessage(msg)
         }
-        return msg
-    };
-    var encrypt_keys = function(password, members) {
-        var msg = prepare_data.call(this, password);
-        var key = this.delegate.serializeKey(password, this);
-        if (key) {
-            var keys = {};
-            var keys_length = 0;
-            var member;
-            var data;
-            for (var i = 0; i < members.length; ++i) {
-                member = members[i];
-                data = this.delegate.encryptKey(key, member, this);
-                if (data) {
-                    keys[member] = this.delegate.encodeKey(data, this);
-                    keys_length += 1
-                }
+        var keys = {};
+        var count = 0;
+        var member;
+        var data;
+        for (var i = 0; i < members.length; ++i) {
+            member = members[i];
+            data = this.delegate.encryptKey(key, member, this);
+            if (!data) {
+                continue
             }
-            if (keys_length > 0) {
-                msg["keys"] = keys
-            }
+            keys[member] = this.delegate.encodeKey(data, this);
+            ++count
         }
-        return msg
+        if (count > 0) {
+            msg["keys"] = keys
+        }
+        return new ns.SecureMessage(msg)
     };
     var prepare_data = function(password) {
         var data = this.delegate.serializeContent(this.content, password, this);
@@ -2595,21 +2561,35 @@ if (typeof DaoKeDao !== "object") {
     };
     SecureMessage.prototype.decrypt = function() {
         var sender = this.envelope.sender;
-        var receiver = this.envelope.receiver;
+        var receiver;
         var group = this.envelope.getGroup();
-        var key = this.getKey();
-        var password;
         if (group) {
-            key = this.delegate.decryptKey(key, sender, group, this);
-            password = this.delegate.deserializeKey(key, sender, group, this)
+            receiver = group
         } else {
-            key = this.delegate.decryptKey(key, sender, receiver, this);
-            password = this.delegate.deserializeKey(key, sender, receiver, this)
+            receiver = this.envelope.receiver
         }
-        var data = this.delegate.decryptContent(this.getData(), password, this);
+        var key = this.getKey();
+        if (key) {
+            key = this.delegate.decryptKey(key, sender, receiver, this);
+            if (!key) {
+                throw Error("failed to decrypt key in msg: " + this)
+            }
+        }
+        var password = this.delegate.deserializeKey(key, sender, receiver, this);
+        if (!password) {
+            throw Error("failed to get msg key: " + sender + " -> " + receiver + ", " + key)
+        }
+        var data = this.getData();
+        if (!data) {
+            throw Error("failed to decode content data: " + this)
+        }
+        data = this.delegate.decryptContent(data, password, this);
+        if (!data) {
+            throw Error("failed to decrypt data with key: " + password)
+        }
         var content = this.delegate.deserializeContent(data, password, this);
         if (!content) {
-            throw Error("failed to decrypt message data: " + this)
+            throw Error("failed to deserialize content: " + data)
         }
         var msg = this.getMap(true);
         delete msg["key"];
@@ -2703,7 +2683,13 @@ if (typeof DaoKeDao !== "object") {
     ReliableMessage.prototype.verify = function() {
         var sender = this.envelope.sender;
         var data = this.getData();
+        if (!data) {
+            throw Error("failed to decode content data: " + this)
+        }
         var signature = this.getSignature();
+        if (!signature) {
+            throw Error("failed to decode message signature: " + this)
+        }
         if (this.delegate.verifyDataSignature(data, signature, sender, this)) {
             var msg = this.getMap(true);
             delete msg["signature"];
@@ -3978,6 +3964,9 @@ if (typeof DaoKeDao !== "object") {
         } else {
             sMsg = iMsg.encrypt(password, null)
         }
+        if (!sMsg) {
+            return null
+        }
         if (group && !receiver.equals(group)) {
             sMsg.envelope.setGroup(group)
         }
@@ -3989,6 +3978,13 @@ if (typeof DaoKeDao !== "object") {
             sMsg.delegate = this
         }
         return sMsg.sign()
+    };
+    Transceiver.prototype.serializeMessage = function(rMsg) {
+        return ns.format.JSON.encode(rMsg)
+    };
+    Transceiver.prototype.deserializeMessage = function(data) {
+        var dict = ns.format.JSON.decode(data);
+        return ReliableMessage.getInstance(dict)
     };
     Transceiver.prototype.verifyMessage = function(rMsg) {
         if (!rMsg.delegate) {
@@ -4003,8 +3999,7 @@ if (typeof DaoKeDao !== "object") {
         return sMsg.decrypt()
     };
     Transceiver.prototype.serializeContent = function(content, pwd, iMsg) {
-        var json = ns.format.JSON.encode(content);
-        return ns.type.String.from(json).getBytes("UTF-8")
+        return ns.format.JSON.encode(content)
     };
     Transceiver.prototype.encryptContent = function(data, pwd, iMsg) {
         var key = SymmetricKey.getInstance(pwd);
@@ -4012,8 +4007,7 @@ if (typeof DaoKeDao !== "object") {
     };
     Transceiver.prototype.encodeData = function(data, iMsg) {
         if (is_broadcast_msg.call(this, iMsg)) {
-            var str = new ns.type.String(data, "UTF-8");
-            return str.toString()
+            return ns.format.UTF8.decode(data)
         }
         return ns.format.Base64.encode(data)
     };
@@ -4021,8 +4015,7 @@ if (typeof DaoKeDao !== "object") {
         if (is_broadcast_msg.call(this, iMsg)) {
             return null
         }
-        var json = ns.format.JSON.encode(pwd);
-        return ns.type.String.from(json).getBytes("UTF-8")
+        return ns.format.JSON.encode(pwd)
     };
     Transceiver.prototype.encryptKey = function(data, receiver, iMsg) {
         receiver = this.entityDelegate.getIdentifier(receiver);
@@ -4036,22 +4029,14 @@ if (typeof DaoKeDao !== "object") {
         return ns.format.Base64.decode(key)
     };
     Transceiver.prototype.decryptKey = function(data, sender, receiver, sMsg) {
-        if (!data) {
-            return null
-        }
         var identifier = sMsg.envelope.receiver;
         identifier = this.entityDelegate.getIdentifier(identifier);
         var user = this.entityDelegate.getUser(identifier);
-        var plaintext = user.decrypt(data);
-        if (!plaintext) {
-            throw Error("failed to decrypt key in msg: " + sMsg)
-        }
-        return plaintext
+        return user.decrypt(data)
     };
     Transceiver.prototype.deserializeKey = function(data, sender, receiver, sMsg) {
         if (data) {
-            var str = new ns.type.String(data, "UTF-8");
-            var dict = ns.format.JSON.decode(str.toString());
+            var dict = ns.format.JSON.decode(data);
             return SymmetricKey.getInstance(dict)
         } else {
             sender = this.entityDelegate.getIdentifier(sender);
@@ -4061,24 +4046,19 @@ if (typeof DaoKeDao !== "object") {
     };
     Transceiver.prototype.decodeData = function(data, sMsg) {
         if (is_broadcast_msg.call(this, sMsg)) {
-            return ns.type.String.from(data).getBytes("UTF-8")
+            return ns.format.UTF8.encode(data)
         }
         return ns.format.Base64.decode(data)
     };
     Transceiver.prototype.decryptContent = function(data, pwd, sMsg) {
         var key = SymmetricKey.getInstance(pwd);
         if (!key) {
-            return null
+            throw Error("irregular symmetric key: " + pwd)
         }
-        var plaintext = key.decrypt(data);
-        if (!plaintext) {
-            throw Error("failed to decrypt data: " + pwd)
-        }
-        return plaintext
+        return key.decrypt(data)
     };
     Transceiver.prototype.deserializeContent = function(data, pwd, sMsg) {
-        var str = new ns.type.String(data, "UTF-8");
-        var dict = ns.format.JSON.decode(str.toString());
+        var dict = ns.format.JSON.decode(data);
         var content = Content.getInstance(dict);
         if (!is_broadcast_msg.call(this, sMsg)) {
             var key = SymmetricKey.getInstance(pwd);
@@ -4096,11 +4076,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.signData = function(data, sender, sMsg) {
         sender = this.entityDelegate.getIdentifier(sender);
         var user = this.entityDelegate.getUser(sender);
-        if (user) {
-            return user.sign(data)
-        } else {
-            throw Error("failed to get sign key for sender: " + sMsg)
-        }
+        return user.sign(data)
     };
     Transceiver.prototype.encodeSignature = function(signature, sMsg) {
         return ns.format.Base64.encode(signature)
@@ -4111,11 +4087,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.verifyDataSignature = function(data, signature, sender, rMsg) {
         sender = this.entityDelegate.getIdentifier(sender);
         var contact = this.entityDelegate.getUser(sender);
-        if (contact) {
-            return contact.verify(data, signature)
-        } else {
-            throw Error("failed to get verify key for sender: " + rMsg)
-        }
+        return contact.verify(data, signature)
     };
     ns.core.Transceiver = Transceiver;
     ns.core.register("Transceiver")
@@ -4377,9 +4349,8 @@ if (typeof DaoKeDao !== "object") {
             return Base64.decode(pem)
         }
     };
-    var KeyParser = ns.format.KeyParser;
     var pem = function() {};
-    ns.Class(pem, ns.type.Object, [KeyParser]);
+    ns.Class(pem, ns.type.Object, null);
     pem.prototype.encodePublicKey = function(key) {
         return encode_public(key)
     };
@@ -4392,7 +4363,7 @@ if (typeof DaoKeDao !== "object") {
     pem.prototype.decodePrivateKey = function(pem) {
         return decode_rsa_private(pem)
     };
-    ns.format.PEM.parser = new pem()
+    ns.format.PEM = new pem()
 }(DIMP);
 ! function(ns) {
     var SymmetricKey = ns.crypto.SymmetricKey;
@@ -4542,8 +4513,7 @@ if (typeof DaoKeDao !== "object") {
         return cipher.verify(data, signature, CryptoJS.SHA256)
     };
     RSAPublicKey.prototype.encrypt = function(plaintext) {
-        var str = new ns.type.String(plaintext, "UTF-8");
-        plaintext = str.toString();
+        plaintext = ns.format.UTF8.decode(plaintext);
         var cipher = parse_key.call(this);
         var base64 = cipher.encrypt(plaintext);
         if (base64) {
@@ -4648,7 +4618,7 @@ if (typeof DaoKeDao !== "object") {
         var cipher = parse_key.call(this);
         var string = cipher.decrypt(data);
         if (string) {
-            return ns.type.String.from(string).getBytes("UTF-8")
+            return ns.format.UTF8.encode(string)
         } else {
             throw Error("RSA decrypt error: " + data)
         }
@@ -4987,8 +4957,7 @@ if (typeof DaoKeDao !== "object") {
         if (!this.password) {
             var key = this.getKey();
             key = privateKey.decrypt(key);
-            var json = new ns.type.String(key, "UTF-8");
-            var dict = ns.format.JSON.decode(json);
+            var dict = ns.format.JSON.decode(key);
             this.password = SymmetricKey.getInstance(dict)
         }
         return this.password
@@ -6172,15 +6141,6 @@ if (typeof DaoKeDao !== "object") {
         }
         return Transceiver.prototype.decryptMessage.call(this, msg)
     };
-    Messenger.prototype.serializeMessage = function(rMsg) {
-        var json = ns.format.JSON.encode(rMsg);
-        return ns.type.String.from(json).getBytes("UTF-8")
-    };
-    Messenger.prototype.deserializeMessage = function(data) {
-        var str = new ns.type.String(data, "UTF-8");
-        var dict = ns.format.JSON.decode(str.toString());
-        return ReliableMessage.getInstance(dict)
-    };
     Messenger.prototype.serializeContent = function(content, pwd, iMsg) {
         var key = SymmetricKey.getInstance(pwd);
         if (content instanceof FileContent) {
@@ -6211,7 +6171,7 @@ if (typeof DaoKeDao !== "object") {
         var key = SymmetricKey.getInstance(pwd);
         var content = Transceiver.prototype.deserializeContent.call(this, data, pwd, sMsg);
         if (!content) {
-            throw Error("failed to decrypt message content: " + sMsg)
+            throw Error("failed to deserialize message content: " + sMsg)
         }
         if (content instanceof FileContent) {
             var iMsg = InstantMessage.newMessage(content, sMsg.envelope);
@@ -6633,7 +6593,8 @@ if (typeof StarGate !== "object") {
     Storage.prototype.saveJSON = function(container, path) {
         var json = null;
         if (container) {
-            json = DIMP.format.JSON.encode(container)
+            json = DIMP.format.JSON.encode(container);
+            json = DIMP.format.UTF8.decode(json)
         }
         return this.saveText(json, path)
     };
