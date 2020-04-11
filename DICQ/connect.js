@@ -74,7 +74,7 @@
 
         'station', 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW',
 
-        'chatroom', 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7',
+        'chatroom', 'chatroom-admin@2PpG1A6LuConRMyZuV8TNJGbaSQ28Ke7ogH',
 
         'assistant', 'assistant@4WBSiDzg9cpZGPqFrQ4bHcq4U5z9QAQLHS',
         'xiaoxiao', 'xiaoxiao@2PhVByg7PhEtYPNzW5ALk9ygf6wop1gTccp',
