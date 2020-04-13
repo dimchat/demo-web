@@ -118,7 +118,10 @@
         cmd.setValue('text', text);
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
+        nc.postNotification(nc.kNotificationMessageReceived, this, {
+            'envelope': msg.envelope,
+            'content': cmd
+        });
         return null;
     };
 

@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 5, 2020
+ * @date      Apr. 12, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -751,7 +751,10 @@
         }
         cmd.setValue("text", text);
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
+        nc.postNotification(nc.kNotificationMessageReceived, this, {
+            "envelope": msg.envelope,
+            "content": cmd
+        });
         return null
     };
     CommandProcessor.register(SearchCommand.SEARCH, SearchCommandProcessor);
@@ -2303,11 +2306,11 @@
     var BlockCommand = ns.protocol.BlockCommand;
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
-    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
+    var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
     var Facebook = ns.Facebook;
@@ -2484,22 +2487,23 @@
             if (msg instanceof ReliableMessage) {}
         }
     };
-    var process = Messenger.prototype.processInstantMessage;
-    Messenger.prototype.processInstantMessage = function(msg) {
-        var content = msg.content;
-        var sender = msg.envelope.sender;
-        sender = this.getFacebook().getIdentifier(sender);
+    var process = Messenger.prototype.processContent;
+    Messenger.prototype.processContent = function(content, sender, rMsg) {
         if (check_group.call(this, content, sender)) {
-            this.suspendMessage(msg);
+            this.suspendMessage(rMsg);
             return null
         }
-        var iMsg = process.call(this, msg);
-        if (!iMsg) {
+        var res = process.call(this, content, sender, rMsg);
+        if (!res) {
             return null
         }
-        if (iMsg.content instanceof HandshakeCommand) {
-            return iMsg
+        if (res instanceof HandshakeCommand) {
+            return res
         }
+        var receiver = this.getFacebook().getIdentifier(rMsg.envelope.receiver);
+        var user = this.select(receiver);
+        var env = Envelope.newEnvelope(user.identifier, sender, 0);
+        var iMsg = InstantMessage.newMessage(res, env);
         this.sendMessage(iMsg, null, false);
         return null
     };
