@@ -39,12 +39,22 @@
     };
     ns.Interface(StationDelegate, null);
 
+    /**
+     *  Received a new data package from the station
+     *
+     * @param {Uint8Array} data - data package received
+     * @param {Station} server - current station
+     */
+    StationDelegate.prototype.onReceivePackage = function (data, server) {
+        console.assert(false, 'implement me!');
+    };
+
     // noinspection JSUnusedLocalSymbols
     /**
      *  Send data package to station success
      *
-     * @param data
-     * @param server
+     * @param {Uint8Array} data - data package received
+     * @param {Station} server - current station
      */
     StationDelegate.prototype.didSendPackage = function (data, server) {
         console.assert(false, 'implement me!');
@@ -54,11 +64,21 @@
     /**
      *  Failed to send data package to station
      *
-     * @param error
-     * @param data
-     * @param server
+     * @param {Error} error
+     * @param {Uint8Array} data - data package received
+     * @param {Station} server - current station
      */
     StationDelegate.prototype.didFailToSendPackage = function (error, data, server) {
+        console.assert(false, 'implement me!');
+    };
+
+    /**
+     *  Callback for handshake accepted
+     *
+     * @param {String} session - new session key
+     * @param {Station} server - current station
+     */
+    StationDelegate.prototype.onHandshakeAccepted = function (session, server) {
         console.assert(false, 'implement me!');
     };
 

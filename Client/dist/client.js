@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 12, 2020
+ * @date      Apr. 18, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -356,7 +356,6 @@
     nc.kNotificationStationConnecting = "StationConnecting";
     nc.kNotificationStationConnected = "StationConnected";
     nc.kNotificationStationError = "StationError";
-    nc.kNotificationHandshakeAccepted = "HandshakeAccepted";
     nc.kNotificationMetaAccepted = "MetaAccepted";
     nc.kNotificationProfileUpdated = "ProfileUpdated";
     nc.kNotificationMessageReceived = "MessageReceived"
@@ -955,10 +954,16 @@
 ! function(ns) {
     var StationDelegate = function() {};
     ns.Interface(StationDelegate, null);
+    StationDelegate.prototype.onReceivePackage = function(data, server) {
+        console.assert(false, "implement me!")
+    };
     StationDelegate.prototype.didSendPackage = function(data, server) {
         console.assert(false, "implement me!")
     };
     StationDelegate.prototype.didFailToSendPackage = function(error, data, server) {
+        console.assert(false, "implement me!")
+    };
+    StationDelegate.prototype.onHandshakeAccepted = function(session, server) {
         console.assert(false, "implement me!")
     };
     if (typeof ns.network !== "object") {
@@ -1068,10 +1073,7 @@
         if (success) {
             console.log("handshake accepted for user: " + this.getCurrentUser());
             this.session = session;
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(nc.kNotificationHandshakeAccepted, this, {
-                session: session
-            })
+            this.stationDelegate.onHandshakeAccepted(session, this)
         } else {
             console.log("handshake again with session: " + session)
         }
@@ -1140,13 +1142,7 @@
         this.fsm.resume()
     };
     Server.prototype.onReceived = function(data, star) {
-        if (!data || data.length === 0) {
-            return
-        }
-        var response = this.messenger.onReceivePackage(data);
-        if (response) {
-            this.send(response)
-        }
+        this.stationDelegate.onReceivePackage(data, this)
     };
     Server.prototype.onStatusChanged = function(status, star) {
         this.fsm.tick()
@@ -1230,6 +1226,75 @@
         ns.network = {}
     }
     ns.network.Server = Server
+}(DIMP);
+! function(ns) {
+    var StationDelegate = ns.network.StationDelegate;
+    var LoginCommand = ns.protocol.LoginCommand;
+    var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
+    var Terminal = function() {
+        this.__server = null;
+        this.__users = null
+    };
+    ns.Class(Terminal, null, [StationDelegate]);
+    Terminal.prototype.getUserAgent = function() {
+        return navigator.userAgent
+    };
+    Terminal.prototype.getCurrentServer = function() {
+        return this.__server
+    };
+    Terminal.prototype.setCurrentServer = function(server) {
+        var messenger = Messenger.getInstance();
+        messenger.server = server;
+        messenger.setContext("server", server);
+        server.stationDelegate = this;
+        this.__server = server
+    };
+    Terminal.prototype.getCurrentUser = function() {
+        if (!this.__server) {
+            return null
+        }
+        return this.__server.getCurrentUser()
+    };
+    Terminal.prototype.setCurrentUser = function(user) {
+        if (!this.__server) {
+            throw Error("cannot set current user before station connected")
+        }
+        this.__server.setCurrentUser(user)
+    };
+    Terminal.prototype.onReceivePackage = function(data, server) {
+        if (!data || data.length === 0) {
+            return
+        }
+        var messenger = Messenger.getInstance();
+        var response = messenger.processPackage(data);
+        if (response) {
+            server.star.send(response)
+        }
+    };
+    Terminal.prototype.didSendPackage = function(data, server) {};
+    Terminal.prototype.didFailToSendPackage = function(error, data, server) {};
+    Terminal.prototype.onHandshakeAccepted = function(session, server) {
+        var messenger = Messenger.getInstance();
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        var profile = user.getProfile();
+        if (profile) {
+            messenger.postProfile(profile)
+        }
+        var contacts = user.getContacts();
+        if (contacts != null && contacts.length > 0) {
+            messenger.postContacts(contacts)
+        }
+        var login = new LoginCommand(user.identifier);
+        login.setAgent(this.getUserAgent());
+        login.setStation(server);
+        messenger.broadcastContent(login)
+    };
+    if (typeof ns.network !== "object") {
+        ns.network = {}
+    }
+    ns.network.Terminal = Terminal
 }(DIMP);
 ! function(ns) {
     var LocalStorage = ns.stargate.LocalStorage;
@@ -2408,6 +2473,9 @@
             receiver = facebook.getIdentifier(receiver);
             key = this.cipherKeyDelegate.getCipherKey(sender, receiver)
         }
+        if (key instanceof ns.plugins.PlainKey) {
+            return
+        }
         var data = key.getData();
         if (!data || data.length < 6) {
             return
@@ -2515,7 +2583,7 @@
     };
     Messenger.prototype.broadcastContent = function(content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE, null, false)
+        return this.sendContent(content, ID.EVERYONE, null, false)
     };
     Messenger.prototype.broadcastProfile = function(profile) {
         var user = this.server.getCurrentUser();

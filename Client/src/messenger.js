@@ -159,6 +159,9 @@
             receiver = facebook.getIdentifier(receiver);
             key = this.cipherKeyDelegate.getCipherKey(sender, receiver)
         }
+        if (key instanceof ns.plugins.PlainKey) {
+            return;
+        }
         // get key data
         var data = key.getData();
         if (!data || data.length < 6) {
@@ -351,7 +354,7 @@
      */
     Messenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE, null, false);
+        return this.sendContent(content, ID.EVERYONE, null, false);
     };
 
     /**
