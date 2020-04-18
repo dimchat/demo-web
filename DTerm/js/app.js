@@ -12,24 +12,25 @@
     var Messenger = dimp.Messenger;
 
     var StationDelegate = dimp.network.StationDelegate;
+    var Terminal = dimp.network.Terminal;
 
     var Register = dimp.extensions.Register;
 
     var NotificationCenter = dimp.stargate.NotificationCenter;
 
     var Application = function () {
+        Terminal.call(this);
         this.bubble = new Bubble();
         // notifications
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, nc.kNotificationStationConnecting);
         nc.addObserver(this, nc.kNotificationStationConnected);
         nc.addObserver(this, nc.kNotificationStationError);
-        nc.addObserver(this, nc.kNotificationHandshakeAccepted);
         nc.addObserver(this, nc.kNotificationMetaAccepted);
         nc.addObserver(this, nc.kNotificationProfileUpdated);
         nc.addObserver(this, nc.kNotificationMessageReceived);
     };
-    dimp.Class(Application, null, [StationDelegate]);
+    dimp.Class(Application, Terminal, [StationDelegate]);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -87,26 +88,6 @@
             res = auto_login.call(this);
         } else if (name === nc.kNotificationStationError) {
             this.write('Connection error.');
-        } else if (name === nc.kNotificationHandshakeAccepted) {
-            this.write('Handshake accepted!');
-            identifier = facebook.getIdentifier('chatroom');
-            if (identifier) {
-                profile = facebook.getProfile(identifier);
-                if (profile) {
-                    var user = facebook.getCurrentUser();
-                    if (user && user.getProfile()) {
-                        messenger.sendProfile(user.getProfile(), identifier);
-                    }
-                    res = this.doCall(identifier);
-                    if (res.indexOf('You are talking') === 0) {
-                        res = this.doShow('history')
-                    }
-                } else {
-                    res = this.doProfile('chatroom');
-                }
-            } else {
-                res = this.doCall('station');
-            }
         } else if (name === nc.kNotificationMetaAccepted) {
             identifier = notification.userInfo['ID'];
             this.tips('[Meta saved] ID: ' + identifier);
@@ -170,6 +151,34 @@
         console.assert(data !== null, 'data empty');
         console.assert(server !== null, 'server empty');
         this.write('Failed to send message, please check connection. error: ' + error);
+    };
+    Application.prototype.onHandshakeAccepted = function (session, server) {
+        Terminal.prototype.onHandshakeAccepted.call(this, session, server);
+        this.write('Handshake accepted!');
+        var res;
+        var messenger = Messenger.getInstance();
+        var facebook = Facebook.getInstance();
+        var identifier = facebook.getIdentifier('chatroom');
+        if (identifier) {
+            var profile = facebook.getProfile(identifier);
+            if (profile) {
+                var user = facebook.getCurrentUser();
+                if (user && user.getProfile()) {
+                    messenger.sendProfile(user.getProfile(), identifier);
+                }
+                res = this.doCall(identifier);
+                if (res.indexOf('You are talking') === 0) {
+                    res = this.doShow('history')
+                }
+            } else {
+                res = this.doProfile('chatroom');
+            }
+        } else {
+            res = this.doCall('station');
+        }
+        if (res) {
+            this.write(res);
+        }
     };
 
     ns.Application = Application;
