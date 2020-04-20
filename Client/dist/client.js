@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 18, 2020
+ * @date      Apr. 20, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -516,6 +516,7 @@
     var QuitCommand = ns.protocol.group.QuitCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
+    var LoginCommand = ns.protocol.LoginCommand;
     var getFacebook = function() {
         return ns.Facebook.getInstance()
     };
@@ -548,6 +549,9 @@
         getCommandText: function(cmd, commander) {
             if (cmd instanceof GroupCommand) {
                 return this.getGroupCommandText(cmd, commander)
+            }
+            if (cmd instanceof LoginCommand) {
+                return this.getLoginCommandText(cmd, commander)
             }
             return "Current version doesn't support this command: " + cmd.getCommand()
         },
@@ -632,7 +636,32 @@
             return text
         }
     };
+    MessageBuilder.getLoginCommandText = function(cmd, commander) {
+        var identifier = cmd.getIdentifier();
+        var station = cmd.getStation();
+        if (station) {
+            var host = station["host"];
+            var port = station["port"];
+            station = "(" + host + ":" + port + ") " + getUsername(station["ID"])
+        }
+        var text = getUsername(identifier) + " login: " + station;
+        cmd.setValue("text", text);
+        return text
+    };
     ns.cpu.MessageBuilder = MessageBuilder
+}(DIMP);
+! function(ns) {
+    var Command = ns.protocol.Command;
+    var CommandProcessor = ns.cpu.CommandProcessor;
+    var ReceiptCommandProcessor = function(messenger) {
+        CommandProcessor.call(this, messenger)
+    };
+    ns.Class(ReceiptCommandProcessor, CommandProcessor, null);
+    ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
+        return null
+    };
+    CommandProcessor.register(Command.RECEIPT, ReceiptCommandProcessor);
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor
 }(DIMP);
 ! function(ns) {
     var Command = ns.protocol.Command;
@@ -670,15 +699,15 @@
 ! function(ns) {
     var Command = ns.protocol.Command;
     var CommandProcessor = ns.cpu.CommandProcessor;
-    var ReceiptCommandProcessor = function(messenger) {
+    var LoginCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.Class(ReceiptCommandProcessor, CommandProcessor, null);
-    ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
+    ns.Class(LoginCommandProcessor, CommandProcessor, null);
+    LoginCommandProcessor.prototype.process = function(cmd, sender, msg) {
         return null
     };
-    CommandProcessor.register(Command.RECEIPT, ReceiptCommandProcessor);
-    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor
+    CommandProcessor.register(Command.LOGIN, LoginCommandProcessor);
+    ns.cpu.LoginCommandProcessor = LoginCommandProcessor
 }(DIMP);
 ! function(ns) {
     var Meta = ns.Meta;

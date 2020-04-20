@@ -52,6 +52,7 @@
     };
     ns.Class(Terminal, null, [StationDelegate]);
 
+    // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36"
     Terminal.prototype.getUserAgent = function () {
         return navigator.userAgent;
     };
