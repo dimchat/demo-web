@@ -91,7 +91,7 @@
         var messenger = Messenger.getInstance();
         var response = messenger.processPackage(data);
         if (response) {
-            server.star.send(response);
+            server.send(response);
         }
     };
     Terminal.prototype.didSendPackage = function (data, server) {
