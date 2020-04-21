@@ -27,11 +27,16 @@
     meta = Meta.getInstance(meta);
     facebook.saveMeta(meta, sid);
 
-    var host;
-    // host = '127.0.0.1';
-    host = '134.175.87.98'; // gz
-    // host = '124.156.108.150'; // hk
-    var port = 9394;
+    var host = $_GET['host'];
+    if (!host) {
+        // host = '127.0.0.1';
+        host = '134.175.87.98'; // gz
+        // host = '124.156.108.150'; // hk
+    }
+    var port = $_GET['port'];
+    if (!port) {
+        port = 9394;
+    }
 
     var server = new Server(sid, host, port);
     facebook.cacheUser(server);
@@ -91,6 +96,25 @@
     for (var i = 0; i < test_names.length; i += 2) {
         force_ans(test_names[i], test_names[i+1]);
     }
+
+    // assistants
+    var assistants = [
+        'assistant@2PpB6iscuBjA15oTjAsiswoX9qis5V3c1Dq',  // dev
+        'assistant@4WBSiDzg9cpZGPqFrQ4bHcq4U5z9QAQLHS',   // desktop.dim.chat
+        null
+    ];
+    facebook.assistants = [];
+    for (var k = 0; k < assistants.length; ++k) {
+        var id = assistants[k];
+        if (!id) {
+            continue;
+        }
+        facebook.assistants.push(facebook.getIdentifier(id));
+    }
+
+    facebook.getAssistants = function () {
+        return this.assistants;
+    };
 
 }(DIMP);
 

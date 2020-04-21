@@ -149,11 +149,37 @@ if (typeof dicq !== 'object') {
 !function (ns) {
     'use strict';
 
-    var release = true;
-    if (ns['DEBUG']) {
-        release = false;
+    ns.$_GET = {};
+
+    // query_string
+    var string = window.location.href.split('#')[0];
+    var pos = string.indexOf('?');
+    if (pos > 0) {
+        string = string.substring(pos+1);
+    } else {
+        string = '';
     }
-    if (window.location.href.indexOf('?debug') > 0) {
+
+    var array = string.split('&');
+    var pair, k, v;
+    for (var i = 0; i < array.length; ++i) {
+        pair = array[i].split('=');
+        k = pair[0];
+        if (pair.length > 1) {
+            v = pair[1];
+        } else {
+            v = null;
+        }
+        $_GET[k] = v;
+    }
+
+}(window);
+
+!function (ns) {
+    'use strict';
+
+    var release = true;
+    if ($_GET['debug']) {
         release = false;
     }
 
