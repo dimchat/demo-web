@@ -20,7 +20,7 @@
         // banner
         var banner = new Image();
         banner.setClassName('banner');
-        banner.setSrc('http://apps.dim.chat/DICQ/images/icon-512.png');
+        banner.setSrc('http://desktop.dim.chat/images/icon-512.png');
         this.appendChild(banner);
         // link
         var link = new Link();

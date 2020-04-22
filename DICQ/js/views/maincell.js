@@ -71,7 +71,7 @@
             // TODO: build group logo
         }
         if (!image) {
-            image = 'http://apps.dim.chat/DICQ/images/icon-512.png';
+            image = 'http://desktop.dim.chat/images/icon-512.png';
         }
         if (image) {
             this.avatarImage.setSrc(image);
