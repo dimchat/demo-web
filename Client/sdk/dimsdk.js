@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 4, 2020
+ * @date      Apr. 18, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -600,94 +600,22 @@ if (typeof DIMP !== "object") {
     ns.type.register("Data")
 }(DIMP);
 ! function(ns) {
-    var Data = ns.type.Data;
-    var UTF8 = {
-        encode: function(string) {
-            var len = string.length;
-            var array = new Data(len);
-            var c, l;
-            for (var i = 0; i < len; ++i) {
-                c = string.charCodeAt(i);
-                if (55296 <= c && c <= 56319) {
-                    l = string.charCodeAt(++i);
-                    c = ((c - 55296) << 10) + 65536 + l - 56320
-                }
-                if (c <= 0) {
-                    break
-                } else {
-                    if (c < 128) {
-                        array.push(c)
-                    } else {
-                        if (c < 2048) {
-                            array.push(192 | ((c >> 6) & 31));
-                            array.push(128 | ((c >> 0) & 63))
-                        } else {
-                            if (c < 65536) {
-                                array.push(224 | ((c >> 12) & 15));
-                                array.push(128 | ((c >> 6) & 63));
-                                array.push(128 | ((c >> 0) & 63))
-                            } else {
-                                array.push(240 | ((c >> 18) & 7));
-                                array.push(128 | ((c >> 12) & 63));
-                                array.push(128 | ((c >> 6) & 63));
-                                array.push(128 | ((c >> 0) & 63))
-                            }
-                        }
-                    }
-                }
-            }
-            return array.getBytes(false)
-        },
-        decode: function(array) {
-            var string = "";
-            var len = array.length;
-            var c, c2, c3, c4;
-            for (var i = 0; i < len; ++i) {
-                c = array[i];
-                switch (c >> 4) {
-                    case 12:
-                    case 13:
-                        c2 = array[++i];
-                        c = ((c & 31) << 6) | (c2 & 63);
-                        break;
-                    case 14:
-                        c2 = array[++i];
-                        c3 = array[++i];
-                        c = ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63);
-                        break;
-                    case 15:
-                        c2 = array[++i];
-                        c3 = array[++i];
-                        c4 = array[++i];
-                        c = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63);
-                        break
-                }
-                if (c < 65536) {
-                    string += String.fromCharCode(c)
-                } else {
-                    c -= 65536;
-                    string += String.fromCharCode((c >> 10) + 55296);
-                    string += String.fromCharCode((c & 1023) + 56320)
-                }
-            }
-            return string
-        }
-    };
-    var str = function(value, charset) {
+    var str = function(value) {
         if (!value) {
             value = ""
         } else {
             if (value instanceof str) {
                 value = value.valueOf()
             } else {
-                if (typeof value !== "string") {
-                    if (!(value instanceof Uint8Array)) {
-                        value = new Uint8Array(value)
-                    }
-                    if (!charset || charset === "UTF-8") {
-                        value = UTF8.decode(value)
+                if (value instanceof Uint8Array) {
+                    if (arguments.length === 1 || arguments[1] === "UTF-8") {
+                        value = ns.format.UTF8.decode(value)
                     } else {
-                        throw Error("only UTF-8 now")
+                        throw Error("unknown charset: " + arguments[1])
+                    }
+                } else {
+                    if (typeof value !== "string") {
+                        throw Error("string value error: " + value)
                     }
                 }
             }
@@ -698,7 +626,7 @@ if (typeof DIMP !== "object") {
     ns.Class(str, ns.type.Object, null);
     str.prototype.getBytes = function(charset) {
         if (!charset || charset === "UTF-8") {
-            return UTF8.encode(this.string)
+            return ns.format.UTF8.encode(this.string)
         }
         throw Error("unknown charset: " + charset)
     };
@@ -751,7 +679,11 @@ if (typeof DIMP !== "object") {
         if (array instanceof Array) {
             array = new Uint8Array(array)
         }
-        return new str(array, null)
+        if (arguments.length === 1) {
+            return new str(array)
+        } else {
+            return new str(array, arguments[1])
+        }
     };
     ns.type.String = str;
     ns.type.register("String")
@@ -983,116 +915,147 @@ if (typeof DIMP !== "object") {
         console.assert(false, "Base58 decode not implemented");
         return null
     };
-    var C = function(lib) {
-        this.coder = lib
+    var Lib = function(coder) {
+        this.coder = coder
     };
-    ns.Class(C, ns.type.Object, [coder]);
-    C.prototype.encode = function(data) {
+    ns.Class(Lib, ns.type.Object, [coder]);
+    Lib.prototype.encode = function(data) {
         return this.coder.encode(data)
     };
-    C.prototype.decode = function(string) {
+    Lib.prototype.decode = function(string) {
         return this.coder.decode(string)
     };
     ns.format.BaseCoder = coder;
-    ns.format.Hex = new C(new hex());
-    ns.format.Base58 = new C(new base58());
-    ns.format.Base64 = new C(new base64());
+    ns.format.Hex = new Lib(new hex());
+    ns.format.Base58 = new Lib(new base58());
+    ns.format.Base64 = new Lib(new base64());
     ns.format.register("BaseCoder");
     ns.format.register("Hex");
     ns.format.register("Base58");
     ns.format.register("Base64")
 }(DIMP);
 ! function(ns) {
+    var utf8_encode = function(string) {
+        var len = string.length;
+        var array = new ns.type.Data(len);
+        var c, l;
+        for (var i = 0; i < len; ++i) {
+            c = string.charCodeAt(i);
+            if (55296 <= c && c <= 56319) {
+                l = string.charCodeAt(++i);
+                c = ((c - 55296) << 10) + 65536 + l - 56320
+            }
+            if (c <= 0) {
+                break
+            } else {
+                if (c < 128) {
+                    array.push(c)
+                } else {
+                    if (c < 2048) {
+                        array.push(192 | ((c >> 6) & 31));
+                        array.push(128 | ((c >> 0) & 63))
+                    } else {
+                        if (c < 65536) {
+                            array.push(224 | ((c >> 12) & 15));
+                            array.push(128 | ((c >> 6) & 63));
+                            array.push(128 | ((c >> 0) & 63))
+                        } else {
+                            array.push(240 | ((c >> 18) & 7));
+                            array.push(128 | ((c >> 12) & 63));
+                            array.push(128 | ((c >> 6) & 63));
+                            array.push(128 | ((c >> 0) & 63))
+                        }
+                    }
+                }
+            }
+        }
+        return array.getBytes(false)
+    };
+    var utf8_decode = function(array) {
+        var string = "";
+        var len = array.length;
+        var c, c2, c3, c4;
+        for (var i = 0; i < len; ++i) {
+            c = array[i];
+            switch (c >> 4) {
+                case 12:
+                case 13:
+                    c2 = array[++i];
+                    c = ((c & 31) << 6) | (c2 & 63);
+                    break;
+                case 14:
+                    c2 = array[++i];
+                    c3 = array[++i];
+                    c = ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63);
+                    break;
+                case 15:
+                    c2 = array[++i];
+                    c3 = array[++i];
+                    c4 = array[++i];
+                    c = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63);
+                    break
+            }
+            if (c < 65536) {
+                string += String.fromCharCode(c)
+            } else {
+                c -= 65536;
+                string += String.fromCharCode((c >> 10) + 55296);
+                string += String.fromCharCode((c & 1023) + 56320)
+            }
+        }
+        return string
+    };
     var parser = function() {};
     ns.Interface(parser, null);
-    parser.prototype.encode = function(container) {
+    parser.prototype.encode = function(object) {
         console.assert(false, "implement me!");
         return null
     };
-    parser.prototype.decode = function(string) {
+    parser.prototype.decode = function(data) {
         console.assert(false, "implement me!");
         return null
     };
     var json = function() {};
     ns.Class(json, ns.type.Object, [parser]);
     json.prototype.encode = function(container) {
-        return JSON.stringify(container)
+        var string = JSON.stringify(container);
+        if (!string) {
+            throw TypeError("failed to encode JSON object: " + container)
+        }
+        return ns.format.UTF8.encode(string)
     };
-    json.prototype.decode = function(string) {
+    json.prototype.decode = function(json) {
+        var string;
+        if (typeof json === "string") {
+            string = json
+        } else {
+            string = ns.format.UTF8.decode(json)
+        }
+        if (!string) {
+            throw TypeError("failed to decode JSON data: " + json)
+        }
         return JSON.parse(string)
     };
-    var P = function(lib) {
-        this.parser = lib
+    var utf8 = function() {};
+    ns.Class(utf8, ns.type.Object, [parser]);
+    utf8.prototype.encode = utf8_encode;
+    utf8.prototype.decode = utf8_decode;
+    var Lib = function(parser) {
+        this.parser = parser
     };
-    ns.Class(P, ns.type.Object, [parser]);
-    P.prototype.encode = function(container) {
-        return this.parser.encode(container)
+    ns.Class(Lib, ns.type.Object, [parser]);
+    Lib.prototype.encode = function(object) {
+        return this.parser.encode(object)
     };
-    P.prototype.decode = function(string) {
-        return this.parser.decode(string)
+    Lib.prototype.decode = function(data) {
+        return this.parser.decode(data)
     };
     ns.format.DataParser = parser;
-    ns.format.JSON = new P(new json());
+    ns.format.JSON = new Lib(new json());
+    ns.format.UTF8 = new Lib(new utf8());
     ns.format.register("DataParser");
-    ns.format.register("JSON")
-}(DIMP);
-! function(ns) {
-    var parser = function() {};
-    ns.Interface(parser, null);
-    parser.prototype.encodePublicKey = function(key) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.encodePrivateKey = function(key) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.decodePublicKey = function(pem) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    parser.prototype.decodePrivateKey = function(pem) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    var pem = function() {};
-    ns.Class(pem, ns.type.Object, [parser]);
-    pem.prototype.encodePublicKey = function(key) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.encodePrivateKey = function(key) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.decodePublicKey = function(pem) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    pem.prototype.decodePrivateKey = function(pem) {
-        console.assert(false, "PEM parser not implemented");
-        return null
-    };
-    var P = function(lib) {
-        this.parser = lib
-    };
-    ns.Class(P, ns.type.Object, [parser]);
-    P.prototype.encodePublicKey = function(key) {
-        return this.parser.encodePublicKey(key)
-    };
-    P.prototype.encodePrivateKey = function(key) {
-        return this.parser.encodePrivateKey(key)
-    };
-    P.prototype.decodePublicKey = function(pem) {
-        return this.parser.decodePublicKey(pem)
-    };
-    P.prototype.decodePrivateKey = function(pem) {
-        return this.parser.decodePrivateKey(pem)
-    };
-    ns.format.KeyParser = parser;
-    ns.format.PEM = new P(new pem());
-    ns.format.register("KeyParser");
-    ns.format.register("PEM")
+    ns.format.register("JSON");
+    ns.format.register("UTF8")
 }(DIMP);
 ! function(ns) {
     var hash = function() {};
@@ -1119,17 +1082,17 @@ if (typeof DIMP !== "object") {
         console.assert(false, "RIPEMD160 not implemented");
         return null
     };
-    var H = function(lib) {
-        this.hash = lib
+    var Lib = function(hash) {
+        this.hash = hash
     };
-    ns.Class(H, ns.type.Object, [hash]);
-    H.prototype.digest = function(data) {
+    ns.Class(Lib, ns.type.Object, [hash]);
+    Lib.prototype.digest = function(data) {
         return this.hash.digest(data)
     };
     ns.digest.Hash = hash;
-    ns.digest.MD5 = new H(new md5());
-    ns.digest.SHA256 = new H(new sha256());
-    ns.digest.RIPEMD160 = new H(new ripemd160());
+    ns.digest.MD5 = new Lib(new md5());
+    ns.digest.SHA256 = new Lib(new sha256());
+    ns.digest.RIPEMD160 = new Lib(new ripemd160());
     ns.digest.register("Hash");
     ns.digest.register("MD5");
     ns.digest.register("SHA256");
@@ -1193,11 +1156,11 @@ if (typeof DIMP !== "object") {
     ns.crypto.register("VerifyKey")
 }(DIMP);
 ! function(ns) {
+    var UTF8 = ns.format.UTF8;
     var CryptographyKey = ns.crypto.CryptographyKey;
     var EncryptKey = ns.crypto.EncryptKey;
     var DecryptKey = ns.crypto.DecryptKey;
-    var promise = "Moky loves May Lee forever!";
-    promise = ns.type.String.from(promise).getBytes(null);
+    var promise = UTF8.encode("Moky loves May Lee forever!");
     var SymmetricKey = function(key) {
         CryptographyKey.call(this, key)
     };
@@ -1248,11 +1211,11 @@ if (typeof DIMP !== "object") {
     ns.crypto.register("AsymmetricKey")
 }(DIMP);
 ! function(ns) {
+    var UTF8 = ns.format.UTF8;
     var CryptographyKey = ns.crypto.CryptographyKey;
     var AsymmetricKey = ns.crypto.AsymmetricKey;
     var VerifyKey = ns.crypto.VerifyKey;
-    var promise = "Moky loves May Lee forever!";
-    promise = ns.type.String.from(promise).getBytes(null);
+    var promise = UTF8.encode("Moky loves May Lee forever!");
     var PublicKey = function(key) {
         AsymmetricKey.call(this, key)
     };
@@ -1580,6 +1543,7 @@ if (typeof MingKeMing !== "object") {
     var Dictionary = ns.type.Dictionary;
     var PublicKey = ns.crypto.PublicKey;
     var Base64 = ns.format.Base64;
+    var UTF8 = ns.format.UTF8;
     var MetaType = ns.protocol.MetaType;
     var NetworkType = ns.protocol.NetworkType;
     var Address = ns.Address;
@@ -1626,7 +1590,7 @@ if (typeof MingKeMing !== "object") {
                     if (!this.seed || !this.fingerprint) {
                         this.status = -1
                     } else {
-                        var data = ns.type.String.from(this.seed).getBytes();
+                        var data = UTF8.encode(this.seed);
                         var signature = this.fingerprint;
                         if (this.key.verify(data, signature)) {
                             this.status = 1
@@ -1646,7 +1610,7 @@ if (typeof MingKeMing !== "object") {
             return true
         }
         if (this.hasSeed()) {
-            var data = ns.type.String.from(this.seed).getBytes();
+            var data = UTF8.encode(this.seed);
             var signature = this.fingerprint;
             return publicKey.verify(data, signature)
         } else {
@@ -1698,7 +1662,7 @@ if (typeof MingKeMing !== "object") {
             "key": privateKey.getPublicKey()
         };
         if (MetaType.hasSeed(version)) {
-            var data = ns.type.String.from(seed).getBytes();
+            var data = UTF8.encode(seed);
             var fingerprint = privateKey.sign(data);
             meta["seed"] = seed;
             meta["fingerprint"] = Base64.encode(fingerprint)
@@ -1776,6 +1740,7 @@ if (typeof MingKeMing !== "object") {
     var Dictionary = ns.type.Dictionary;
     var Base64 = ns.format.Base64;
     var JSON = ns.format.JSON;
+    var UTF8 = ns.format.UTF8;
     var PublicKey = ns.crypto.PublicKey;
     var ID = ns.ID;
     var Profile = function(info) {
@@ -1806,7 +1771,7 @@ if (typeof MingKeMing !== "object") {
         if (!this.data) {
             var string = this.getValue("data");
             if (string) {
-                this.data = ns.type.String.from(string).getBytes()
+                this.data = UTF8.encode(string)
             }
         }
         return this.data
@@ -1885,10 +1850,9 @@ if (typeof MingKeMing !== "object") {
             return this.signature
         }
         this.status = 1;
-        var string = JSON.encode(this.getProperties());
-        this.data = ns.type.String.from(string).getBytes();
+        this.data = JSON.encode(this.getProperties());
         this.signature = privateKey.sign(this.data);
-        this.setValue("data", string);
+        this.setValue("data", UTF8.decode(this.data));
         this.setValue("signature", Base64.encode(this.signature));
         return this.signature
     };
@@ -2500,47 +2464,49 @@ if (typeof DaoKeDao !== "object") {
         return new InstantMessage(msg)
     };
     InstantMessage.prototype.encrypt = function(password, members) {
-        var msg;
         if (members && members.length > 0) {
-            msg = encrypt_keys.call(this, password, members)
+            return encrypt_group_message.call(this, password, members)
         } else {
-            msg = encrypt_key.call(this, password)
+            return encrypt_message.call(this, password)
         }
+    };
+    var encrypt_message = function(password) {
+        var msg = prepare_data.call(this, password);
+        var key = this.delegate.serializeKey(password, this);
+        if (!key) {
+            return new ns.SecureMessage(msg)
+        }
+        var receiver = this.envelope.receiver;
+        var data = this.delegate.encryptKey(key, receiver, this);
+        if (!data) {
+            return null
+        }
+        msg["key"] = this.delegate.encodeKey(data, this);
         return new ns.SecureMessage(msg)
     };
-    var encrypt_key = function(password) {
+    var encrypt_group_message = function(password, members) {
         var msg = prepare_data.call(this, password);
         var key = this.delegate.serializeKey(password, this);
-        if (key) {
-            var receiver = this.envelope.receiver;
-            var data = this.delegate.encryptKey(key, receiver, this);
-            if (data) {
-                msg["key"] = this.delegate.encodeKey(data, this)
-            }
+        if (!key) {
+            return new ns.SecureMessage(msg)
         }
-        return msg
-    };
-    var encrypt_keys = function(password, members) {
-        var msg = prepare_data.call(this, password);
-        var key = this.delegate.serializeKey(password, this);
-        if (key) {
-            var keys = {};
-            var keys_length = 0;
-            var member;
-            var data;
-            for (var i = 0; i < members.length; ++i) {
-                member = members[i];
-                data = this.delegate.encryptKey(key, member, this);
-                if (data) {
-                    keys[member] = this.delegate.encodeKey(data, this);
-                    keys_length += 1
-                }
+        var keys = {};
+        var count = 0;
+        var member;
+        var data;
+        for (var i = 0; i < members.length; ++i) {
+            member = members[i];
+            data = this.delegate.encryptKey(key, member, this);
+            if (!data) {
+                continue
             }
-            if (keys_length > 0) {
-                msg["keys"] = keys
-            }
+            keys[member] = this.delegate.encodeKey(data, this);
+            ++count
         }
-        return msg
+        if (count > 0) {
+            msg["keys"] = keys
+        }
+        return new ns.SecureMessage(msg)
     };
     var prepare_data = function(password) {
         var data = this.delegate.serializeContent(this.content, password, this);
@@ -2595,21 +2561,35 @@ if (typeof DaoKeDao !== "object") {
     };
     SecureMessage.prototype.decrypt = function() {
         var sender = this.envelope.sender;
-        var receiver = this.envelope.receiver;
+        var receiver;
         var group = this.envelope.getGroup();
-        var key = this.getKey();
-        var password;
         if (group) {
-            key = this.delegate.decryptKey(key, sender, group, this);
-            password = this.delegate.deserializeKey(key, sender, group, this)
+            receiver = group
         } else {
-            key = this.delegate.decryptKey(key, sender, receiver, this);
-            password = this.delegate.deserializeKey(key, sender, receiver, this)
+            receiver = this.envelope.receiver
         }
-        var data = this.delegate.decryptContent(this.getData(), password, this);
+        var key = this.getKey();
+        if (key) {
+            key = this.delegate.decryptKey(key, sender, receiver, this);
+            if (!key) {
+                throw Error("failed to decrypt key in msg: " + this)
+            }
+        }
+        var password = this.delegate.deserializeKey(key, sender, receiver, this);
+        if (!password) {
+            throw Error("failed to get msg key: " + sender + " -> " + receiver + ", " + key)
+        }
+        var data = this.getData();
+        if (!data) {
+            throw Error("failed to decode content data: " + this)
+        }
+        data = this.delegate.decryptContent(data, password, this);
+        if (!data) {
+            throw Error("failed to decrypt data with key: " + password)
+        }
         var content = this.delegate.deserializeContent(data, password, this);
         if (!content) {
-            throw Error("failed to decrypt message data: " + this)
+            throw Error("failed to deserialize content: " + data)
         }
         var msg = this.getMap(true);
         delete msg["key"];
@@ -2703,7 +2683,13 @@ if (typeof DaoKeDao !== "object") {
     ReliableMessage.prototype.verify = function() {
         var sender = this.envelope.sender;
         var data = this.getData();
+        if (!data) {
+            throw Error("failed to decode content data: " + this)
+        }
         var signature = this.getSignature();
+        if (!signature) {
+            throw Error("failed to decode message signature: " + this)
+        }
         if (this.delegate.verifyDataSignature(data, signature, sender, this)) {
             var msg = this.getMap(true);
             delete msg["signature"];
@@ -3050,10 +3036,11 @@ if (typeof DaoKeDao !== "object") {
     Command.prototype.setCommand = function(name) {
         this.setValue("command", name)
     };
-    Command.HANDSHAKE = "handshake";
-    Command.RECEIPT = "receipt";
     Command.META = "meta";
     Command.PROFILE = "profile";
+    Command.RECEIPT = "receipt";
+    Command.HANDSHAKE = "handshake";
+    Command.LOGIN = "login";
     var command_classes = {};
     Command.register = function(name, clazz) {
         command_classes[name] = clazz
@@ -3200,86 +3187,6 @@ if (typeof DaoKeDao !== "object") {
     Command.register(Command.PROFILE, ProfileCommand);
     ns.protocol.ProfileCommand = ProfileCommand;
     ns.protocol.register("ProfileCommand")
-}(DIMP);
-! function(ns) {
-    var HandshakeState = ns.type.Enum(null, {
-        INIT: 0,
-        START: 1,
-        AGAIN: 2,
-        RESTART: 3,
-        SUCCESS: 4
-    });
-    var Command = ns.protocol.Command;
-    var HandshakeCommand = function(info) {
-        var message = null;
-        if (!info) {
-            info = Command.HANDSHAKE
-        } else {
-            if (typeof info === "string") {
-                message = info;
-                info = Command.HANDSHAKE
-            }
-        }
-        Command.call(this, info);
-        if (message) {
-            this.setMessage(message)
-        }
-    };
-    ns.Class(HandshakeCommand, Command, null);
-    HandshakeCommand.prototype.getMessage = function() {
-        return this.getValue("message")
-    };
-    HandshakeCommand.prototype.setMessage = function(text) {
-        this.setValue("message", text)
-    };
-    HandshakeCommand.prototype.getSessionKey = function() {
-        return this.getValue("session")
-    };
-    HandshakeCommand.prototype.setSessionKey = function(session) {
-        this.setValue("session", session)
-    };
-    HandshakeCommand.prototype.getState = function() {
-        var text = this.getMessage();
-        var session = this.getSessionKey();
-        if (!text) {
-            return HandshakeState.INIT
-        }
-        if (text === "DIM?") {
-            return HandshakeState.AGAIN
-        }
-        if (text === "DIM!" || text === "OK!") {
-            return HandshakeState.SUCCESS
-        }
-        if (session) {
-            return HandshakeState.RESTART
-        } else {
-            return HandshakeState.START
-        }
-    };
-    var handshake = function(text, session) {
-        var cmd = new HandshakeCommand(text);
-        if (session) {
-            cmd.setSessionKey(session)
-        }
-        return cmd
-    };
-    HandshakeCommand.start = function() {
-        return handshake("Hello world!")
-    };
-    HandshakeCommand.restart = function(session) {
-        return handshake("Hello world!", session)
-    };
-    HandshakeCommand.again = function(session) {
-        return handshake("DIM?", session)
-    };
-    HandshakeCommand.success = function() {
-        return handshake("DIM!")
-    };
-    Command.register(Command.HANDSHAKE, HandshakeCommand);
-    ns.protocol.HandshakeCommand = HandshakeCommand;
-    ns.protocol.HandshakeState = HandshakeState;
-    ns.protocol.register("HandshakeCommand");
-    ns.protocol.register("HandshakeState")
 }(DIMP);
 ! function(ns) {
     var Content = ns.Content;
@@ -3978,6 +3885,9 @@ if (typeof DaoKeDao !== "object") {
         } else {
             sMsg = iMsg.encrypt(password, null)
         }
+        if (!sMsg) {
+            return null
+        }
         if (group && !receiver.equals(group)) {
             sMsg.envelope.setGroup(group)
         }
@@ -3989,6 +3899,13 @@ if (typeof DaoKeDao !== "object") {
             sMsg.delegate = this
         }
         return sMsg.sign()
+    };
+    Transceiver.prototype.serializeMessage = function(rMsg) {
+        return ns.format.JSON.encode(rMsg)
+    };
+    Transceiver.prototype.deserializeMessage = function(data) {
+        var dict = ns.format.JSON.decode(data);
+        return ReliableMessage.getInstance(dict)
     };
     Transceiver.prototype.verifyMessage = function(rMsg) {
         if (!rMsg.delegate) {
@@ -4003,8 +3920,7 @@ if (typeof DaoKeDao !== "object") {
         return sMsg.decrypt()
     };
     Transceiver.prototype.serializeContent = function(content, pwd, iMsg) {
-        var json = ns.format.JSON.encode(content);
-        return ns.type.String.from(json).getBytes("UTF-8")
+        return ns.format.JSON.encode(content)
     };
     Transceiver.prototype.encryptContent = function(data, pwd, iMsg) {
         var key = SymmetricKey.getInstance(pwd);
@@ -4012,8 +3928,7 @@ if (typeof DaoKeDao !== "object") {
     };
     Transceiver.prototype.encodeData = function(data, iMsg) {
         if (is_broadcast_msg.call(this, iMsg)) {
-            var str = new ns.type.String(data, "UTF-8");
-            return str.toString()
+            return ns.format.UTF8.decode(data)
         }
         return ns.format.Base64.encode(data)
     };
@@ -4021,8 +3936,7 @@ if (typeof DaoKeDao !== "object") {
         if (is_broadcast_msg.call(this, iMsg)) {
             return null
         }
-        var json = ns.format.JSON.encode(pwd);
-        return ns.type.String.from(json).getBytes("UTF-8")
+        return ns.format.JSON.encode(pwd)
     };
     Transceiver.prototype.encryptKey = function(data, receiver, iMsg) {
         receiver = this.entityDelegate.getIdentifier(receiver);
@@ -4036,22 +3950,14 @@ if (typeof DaoKeDao !== "object") {
         return ns.format.Base64.decode(key)
     };
     Transceiver.prototype.decryptKey = function(data, sender, receiver, sMsg) {
-        if (!data) {
-            return null
-        }
         var identifier = sMsg.envelope.receiver;
         identifier = this.entityDelegate.getIdentifier(identifier);
         var user = this.entityDelegate.getUser(identifier);
-        var plaintext = user.decrypt(data);
-        if (!plaintext) {
-            throw Error("failed to decrypt key in msg: " + sMsg)
-        }
-        return plaintext
+        return user.decrypt(data)
     };
     Transceiver.prototype.deserializeKey = function(data, sender, receiver, sMsg) {
         if (data) {
-            var str = new ns.type.String(data, "UTF-8");
-            var dict = ns.format.JSON.decode(str.toString());
+            var dict = ns.format.JSON.decode(data);
             return SymmetricKey.getInstance(dict)
         } else {
             sender = this.entityDelegate.getIdentifier(sender);
@@ -4061,24 +3967,19 @@ if (typeof DaoKeDao !== "object") {
     };
     Transceiver.prototype.decodeData = function(data, sMsg) {
         if (is_broadcast_msg.call(this, sMsg)) {
-            return ns.type.String.from(data).getBytes("UTF-8")
+            return ns.format.UTF8.encode(data)
         }
         return ns.format.Base64.decode(data)
     };
     Transceiver.prototype.decryptContent = function(data, pwd, sMsg) {
         var key = SymmetricKey.getInstance(pwd);
         if (!key) {
-            return null
+            throw Error("irregular symmetric key: " + pwd)
         }
-        var plaintext = key.decrypt(data);
-        if (!plaintext) {
-            throw Error("failed to decrypt data: " + pwd)
-        }
-        return plaintext
+        return key.decrypt(data)
     };
     Transceiver.prototype.deserializeContent = function(data, pwd, sMsg) {
-        var str = new ns.type.String(data, "UTF-8");
-        var dict = ns.format.JSON.decode(str.toString());
+        var dict = ns.format.JSON.decode(data);
         var content = Content.getInstance(dict);
         if (!is_broadcast_msg.call(this, sMsg)) {
             var key = SymmetricKey.getInstance(pwd);
@@ -4096,11 +3997,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.signData = function(data, sender, sMsg) {
         sender = this.entityDelegate.getIdentifier(sender);
         var user = this.entityDelegate.getUser(sender);
-        if (user) {
-            return user.sign(data)
-        } else {
-            throw Error("failed to get sign key for sender: " + sMsg)
-        }
+        return user.sign(data)
     };
     Transceiver.prototype.encodeSignature = function(signature, sMsg) {
         return ns.format.Base64.encode(signature)
@@ -4111,11 +4008,7 @@ if (typeof DaoKeDao !== "object") {
     Transceiver.prototype.verifyDataSignature = function(data, signature, sender, rMsg) {
         sender = this.entityDelegate.getIdentifier(sender);
         var contact = this.entityDelegate.getUser(sender);
-        if (contact) {
-            return contact.verify(data, signature)
-        } else {
-            throw Error("failed to get verify key for sender: " + rMsg)
-        }
+        return contact.verify(data, signature)
     };
     ns.core.Transceiver = Transceiver;
     ns.core.register("Transceiver")
@@ -4377,9 +4270,8 @@ if (typeof DaoKeDao !== "object") {
             return Base64.decode(pem)
         }
     };
-    var KeyParser = ns.format.KeyParser;
     var pem = function() {};
-    ns.Class(pem, ns.type.Object, [KeyParser]);
+    ns.Class(pem, ns.type.Object, null);
     pem.prototype.encodePublicKey = function(key) {
         return encode_public(key)
     };
@@ -4392,7 +4284,7 @@ if (typeof DaoKeDao !== "object") {
     pem.prototype.decodePrivateKey = function(pem) {
         return decode_rsa_private(pem)
     };
-    ns.format.PEM.parser = new pem()
+    ns.format.PEM = new pem()
 }(DIMP);
 ! function(ns) {
     var SymmetricKey = ns.crypto.SymmetricKey;
@@ -4542,8 +4434,7 @@ if (typeof DaoKeDao !== "object") {
         return cipher.verify(data, signature, CryptoJS.SHA256)
     };
     RSAPublicKey.prototype.encrypt = function(plaintext) {
-        var str = new ns.type.String(plaintext, "UTF-8");
-        plaintext = str.toString();
+        plaintext = ns.format.UTF8.decode(plaintext);
         var cipher = parse_key.call(this);
         var base64 = cipher.encrypt(plaintext);
         if (base64) {
@@ -4648,7 +4539,7 @@ if (typeof DaoKeDao !== "object") {
         var cipher = parse_key.call(this);
         var string = cipher.decrypt(data);
         if (string) {
-            return ns.type.String.from(string).getBytes("UTF-8")
+            return ns.format.UTF8.encode(string)
         } else {
             throw Error("RSA decrypt error: " + data)
         }
@@ -4828,6 +4719,200 @@ if (typeof DaoKeDao !== "object") {
     ns.protocol.register("ReceiptCommand")
 }(DIMP);
 ! function(ns) {
+    var HandshakeState = ns.type.Enum(null, {
+        INIT: 0,
+        START: 1,
+        AGAIN: 2,
+        RESTART: 3,
+        SUCCESS: 4
+    });
+    var Command = ns.protocol.Command;
+    var HandshakeCommand = function(info) {
+        var message = null;
+        if (!info) {
+            info = Command.HANDSHAKE
+        } else {
+            if (typeof info === "string") {
+                message = info;
+                info = Command.HANDSHAKE
+            }
+        }
+        Command.call(this, info);
+        if (message) {
+            this.setMessage(message)
+        }
+    };
+    ns.Class(HandshakeCommand, Command, null);
+    HandshakeCommand.prototype.getMessage = function() {
+        return this.getValue("message")
+    };
+    HandshakeCommand.prototype.setMessage = function(text) {
+        this.setValue("message", text)
+    };
+    HandshakeCommand.prototype.getSessionKey = function() {
+        return this.getValue("session")
+    };
+    HandshakeCommand.prototype.setSessionKey = function(session) {
+        this.setValue("session", session)
+    };
+    HandshakeCommand.prototype.getState = function() {
+        var text = this.getMessage();
+        var session = this.getSessionKey();
+        if (!text) {
+            return HandshakeState.INIT
+        }
+        if (text === "DIM?") {
+            return HandshakeState.AGAIN
+        }
+        if (text === "DIM!" || text === "OK!") {
+            return HandshakeState.SUCCESS
+        }
+        if (session) {
+            return HandshakeState.RESTART
+        } else {
+            return HandshakeState.START
+        }
+    };
+    var handshake = function(text, session) {
+        var cmd = new HandshakeCommand(text);
+        if (session) {
+            cmd.setSessionKey(session)
+        }
+        return cmd
+    };
+    HandshakeCommand.start = function() {
+        return handshake("Hello world!")
+    };
+    HandshakeCommand.restart = function(session) {
+        return handshake("Hello world!", session)
+    };
+    HandshakeCommand.again = function(session) {
+        return handshake("DIM?", session)
+    };
+    HandshakeCommand.success = function() {
+        return handshake("DIM!")
+    };
+    Command.register(Command.HANDSHAKE, HandshakeCommand);
+    ns.protocol.HandshakeCommand = HandshakeCommand;
+    ns.protocol.HandshakeState = HandshakeState;
+    ns.protocol.register("HandshakeCommand");
+    ns.protocol.register("HandshakeState")
+}(DIMP);
+! function(ns) {
+    var Dictionary = ns.type.Dictionary;
+    var ID = ns.ID;
+    var Command = ns.protocol.Command;
+    var LoginCommand = function(info) {
+        var identifier = null;
+        var time = null;
+        if (!info) {
+            time = new Date();
+            info = Command.LOGIN
+        } else {
+            if (info instanceof ID) {
+                identifier = info;
+                time = new Date();
+                info = Command.LOGIN
+            }
+        }
+        Command.call(this, info);
+        if (identifier) {
+            this.setIdentifier(identifier)
+        }
+        if (time) {
+            this.setTime(time)
+        }
+    };
+    ns.Class(LoginCommand, Command, null);
+    LoginCommand.prototype.getTime = function() {
+        var time = this.getValue("time");
+        if (time) {
+            return new Date(time * 1000)
+        } else {
+            return null
+        }
+    };
+    LoginCommand.prototype.setTime = function(time) {
+        if (!time) {
+            time = new Date()
+        }
+        if (time instanceof Date) {
+            this.setValue("time", time.getTime() / 1000)
+        } else {
+            if (typeof time === "number") {
+                this.setValue("time", time)
+            } else {
+                throw TypeError("time error: " + time)
+            }
+        }
+    };
+    LoginCommand.prototype.getIdentifier = function() {
+        return this.getValue("ID")
+    };
+    LoginCommand.prototype.setIdentifier = function(identifier) {
+        this.setValue("ID", identifier)
+    };
+    LoginCommand.prototype.getDevice = function() {
+        return this.getValue("device")
+    };
+    LoginCommand.prototype.setDevice = function(device) {
+        this.setValue("device", device)
+    };
+    LoginCommand.prototype.getAgent = function() {
+        return this.getValue("agent")
+    };
+    LoginCommand.prototype.setAgent = function(UA) {
+        this.setValue("agent", UA)
+    };
+    LoginCommand.prototype.getStation = function() {
+        return this.getValue("station")
+    };
+    LoginCommand.prototype.setStation = function(station) {
+        var info;
+        if (station instanceof ns.Station) {
+            info = {
+                "host": station.host,
+                "port": station.port,
+                "ID": station.identifier
+            }
+        } else {
+            if (station instanceof Dictionary) {
+                info = station.getMap(false)
+            } else {
+                info = station
+            }
+        }
+        this.setValue("station", info)
+    };
+    LoginCommand.prototype.getProvider = function() {
+        return this.getValue("provider")
+    };
+    LoginCommand.prototype.setProvider = function(provider) {
+        var info;
+        if (provider instanceof ns.ServiceProvider) {
+            info = {
+                "ID": provider.identifier
+            }
+        } else {
+            if (provider instanceof ID) {
+                info = {
+                    "ID": provider
+                }
+            } else {
+                if (provider instanceof Dictionary) {
+                    info = provider.getMap(false)
+                } else {
+                    info = provider
+                }
+            }
+        }
+        this.setValue("provider", info)
+    };
+    Command.register(Command.LOGIN, LoginCommand);
+    ns.protocol.LoginCommand = LoginCommand;
+    ns.protocol.register("LoginCommand")
+}(DIMP);
+! function(ns) {
     var Command = ns.protocol.Command;
     var MuteCommand = function(info) {
         var list = null;
@@ -4987,8 +5072,7 @@ if (typeof DaoKeDao !== "object") {
         if (!this.password) {
             var key = this.getKey();
             key = privateKey.decrypt(key);
-            var json = new ns.type.String(key, "UTF-8");
-            var dict = ns.format.JSON.decode(json);
+            var dict = ns.format.JSON.decode(key);
             this.password = SymmetricKey.getInstance(dict)
         }
         return this.password
@@ -5018,9 +5102,9 @@ if (typeof DaoKeDao !== "object") {
     ContentProcessor.prototype.getFacebook = function() {
         return this.messenger.getFacebook()
     };
-    ContentProcessor.prototype.process = function(content, sender, iMsg) {
+    ContentProcessor.prototype.process = function(content, sender, msg) {
         var cpu = this.getCPU(content.type);
-        return cpu.process(content, sender, iMsg)
+        return cpu.process(content, sender, msg)
     };
     ContentProcessor.prototype.getCPU = function(type) {
         var value;
@@ -5073,9 +5157,9 @@ if (typeof DaoKeDao !== "object") {
         this.commandProcessors = {}
     };
     ns.Class(CommandProcessor, ContentProcessor, null);
-    CommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    CommandProcessor.prototype.process = function(cmd, sender, msg) {
         var cpu = this.getCPU(cmd.getCommand());
-        return cpu.process(cmd, sender, iMsg)
+        return cpu.process(cmd, sender, msg)
     };
     CommandProcessor.prototype.getCPU = function(command) {
         var cpu = this.commandProcessors[command];
@@ -5114,7 +5198,7 @@ if (typeof DaoKeDao !== "object") {
         ContentProcessor.call(this, messenger)
     };
     ns.Class(DefaultContentProcessor, ContentProcessor, null);
-    DefaultContentProcessor.prototype.process = function(content, sender, iMsg) {
+    DefaultContentProcessor.prototype.process = function(content, sender, msg) {
         var type = content.type.toString();
         var text = "Content (type: " + type + ") not support yet!";
         var res = new TextContent(text);
@@ -5135,7 +5219,7 @@ if (typeof DaoKeDao !== "object") {
         CommandProcessor.call(this, messenger)
     };
     ns.Class(DefaultCommandProcessor, CommandProcessor, null);
-    DefaultCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    DefaultCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var name = cmd.getCommand();
         var text = "Command (name: " + name + ") not support yet!";
         var res = new TextContent(text);
@@ -5157,12 +5241,12 @@ if (typeof DaoKeDao !== "object") {
         ContentProcessor.call(this, messenger)
     };
     ns.Class(ForwardContentProcessor, ContentProcessor, null);
-    ForwardContentProcessor.prototype.process = function(content, sender, iMsg) {
-        var rMsg = content.getMessage();
+    ForwardContentProcessor.prototype.process = function(content, sender, msg) {
+        var secret = content.getMessage();
         var messenger = this.messenger;
-        rMsg = messenger.processReliableMessage(rMsg);
-        if (rMsg) {
-            return new ForwardContent(rMsg)
+        secret = messenger.processMessage(secret);
+        if (secret) {
+            return new ForwardContent(secret)
         }
         return null
     };
@@ -5199,7 +5283,7 @@ if (typeof DaoKeDao !== "object") {
         }
         return new ReceiptCommand("Meta received: " + identifier)
     };
-    MetaCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    MetaCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var identifier = cmd.getIdentifier();
         identifier = facebook.getIdentifier(identifier);
@@ -5252,7 +5336,7 @@ if (typeof DaoKeDao !== "object") {
         }
         return new ReceiptCommand("Profile received: " + identifier)
     };
-    ProfileCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    ProfileCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var identifier = cmd.getIdentifier();
         identifier = facebook.getIdentifier(identifier);
@@ -5277,7 +5361,7 @@ if (typeof DaoKeDao !== "object") {
         this.gpu = null
     };
     ns.Class(HistoryCommandProcessor, CommandProcessor, null);
-    HistoryCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    HistoryCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var cpu;
         if (cmd.getGroup()) {
             if (!this.gpu) {
@@ -5288,7 +5372,7 @@ if (typeof DaoKeDao !== "object") {
             var name = cmd.getCommand();
             cpu = this.getCPU(name)
         }
-        return cpu.process(cmd, sender, iMsg)
+        return cpu.process(cmd, sender, msg)
     };
     HistoryCommandProcessor.register = function(command, clazz) {
         CommandProcessor.register.call(this, command, clazz)
@@ -5347,10 +5431,10 @@ if (typeof DaoKeDao !== "object") {
         var owner = facebook.getOwner(group);
         return !owner
     };
-    GroupCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    GroupCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var name = cmd.getCommand();
         var cpu = this.getCPU(name);
-        return cpu.process(cmd, sender, iMsg)
+        return cpu.process(cmd, sender, msg)
     };
     GroupCommandProcessor.register = function(command, clazz) {
         HistoryCommandProcessor.register.call(this, command, clazz)
@@ -5403,12 +5487,12 @@ if (typeof DaoKeDao !== "object") {
         }
         return null
     };
-    InviteCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    InviteCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var group = cmd.getGroup();
         group = facebook.getIdentifier(group);
         if (this.isEmpty(group)) {
-            return reset.call(this, cmd, sender, iMsg)
+            return reset.call(this, cmd, sender, msg)
         }
         if (!facebook.existsMember(sender, group)) {
             if (!facebook.existsAssistant(sender, group)) {
@@ -5422,7 +5506,7 @@ if (typeof DaoKeDao !== "object") {
             throw Error("Invite command error: " + cmd)
         }
         if (is_reset.call(this, inviteList, sender, group)) {
-            return reset.call(this, cmd, sender, iMsg)
+            return reset.call(this, cmd, sender, msg)
         }
         var added = invite.call(this, inviteList, group);
         if (added) {
@@ -5441,13 +5525,13 @@ if (typeof DaoKeDao !== "object") {
         GroupCommandProcessor.call(this, messenger)
     };
     ns.Class(ExpelCommandProcessor, GroupCommandProcessor, null);
-    ExpelCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    ExpelCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var group = cmd.getGroup();
         group = facebook.getIdentifier(group);
         if (!facebook.isOwner(sender, group)) {
             if (!facebook.existsAssistant(sender, group)) {
-                throw Error("sender is not the owner/admin of group: " + iMsg)
+                throw Error(sender + " is not the owner/admin of group: " + group)
             }
         }
         var expelList = this.getMembers(cmd);
@@ -5486,7 +5570,7 @@ if (typeof DaoKeDao !== "object") {
         GroupCommandProcessor.call(this, messenger)
     };
     ns.Class(QuitCommandProcessor, GroupCommandProcessor, null);
-    QuitCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    QuitCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var group = cmd.getGroup();
         group = facebook.getIdentifier(group);
@@ -5501,7 +5585,7 @@ if (typeof DaoKeDao !== "object") {
             throw Error("Group members not found: " + group)
         }
         if (members.indexOf(sender) < 0) {
-            throw Error("sender is not a member of group: " + iMsg)
+            throw Error(sender + " is not a member of group: " + group)
         }
         ns.type.Arrays.remove(members, sender);
         facebook.saveMembers(members, group);
@@ -5519,14 +5603,14 @@ if (typeof DaoKeDao !== "object") {
         GroupCommandProcessor.call(this, messenger)
     };
     ns.Class(QueryCommandProcessor, GroupCommandProcessor, null);
-    QueryCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    QueryCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var group = cmd.getGroup();
         group = facebook.getIdentifier(group);
         if (!facebook.existsMember(sender, group)) {
             if (!facebook.existsAssistant(sender, group)) {
                 if (!facebook.isOwner(sender, group)) {
-                    throw Error("sender is not a member/assistant of group: " + iMsg)
+                    throw Error(sender + " is not a member/assistant of group: " + group)
                 }
             }
         }
@@ -5605,7 +5689,7 @@ if (typeof DaoKeDao !== "object") {
         }
         return result
     };
-    ResetCommandProcessor.prototype.process = function(cmd, sender, iMsg) {
+    ResetCommandProcessor.prototype.process = function(cmd, sender, msg) {
         var facebook = this.getFacebook();
         var group = cmd.getGroup();
         group = facebook.getIdentifier(group);
@@ -5618,7 +5702,7 @@ if (typeof DaoKeDao !== "object") {
         }
         if (!facebook.isOwner(sender, group)) {
             if (!facebook.existsAssistant(sender, group)) {
-                throw Error("sender is not the owner/admin of group: " + iMsg)
+                throw Error(sender + " is not the owner/admin of group: " + group)
             }
         }
         var result = reset.call(this, newMembers, group);
@@ -5792,16 +5876,6 @@ if (typeof DaoKeDao !== "object") {
     };
     ns.CompletionHandler = CompletionHandler;
     ns.register("CompletionHandler")
-}(DIMP);
-! function(ns) {
-    var ConnectionDelegate = function() {};
-    ns.Interface(ConnectionDelegate, null);
-    ConnectionDelegate.prototype.onReceivePackage = function(data) {
-        console.assert(false, "implement me!");
-        return null
-    };
-    ns.ConnectionDelegate = ConnectionDelegate;
-    ns.register("ConnectionDelegate")
 }(DIMP);
 ! function(ns) {
     var MessengerDelegate = function() {};
@@ -6081,7 +6155,6 @@ if (typeof DaoKeDao !== "object") {
     var FileContent = ns.protocol.FileContent;
     var ContentProcessor = ns.cpu.ContentProcessor;
     var CompletionHandler = ns.CompletionHandler;
-    var ConnectionDelegate = ns.ConnectionDelegate;
     var Transceiver = ns.core.Transceiver;
     var Facebook = ns.Facebook;
     var Messenger = function() {
@@ -6090,7 +6163,7 @@ if (typeof DaoKeDao !== "object") {
         this.cpu = new ContentProcessor(this);
         this.delegate = null
     };
-    ns.Class(Messenger, Transceiver, [ConnectionDelegate]);
+    ns.Class(Messenger, Transceiver, null);
     Messenger.prototype.getContext = function(key) {
         return this.context[key]
     };
@@ -6108,7 +6181,7 @@ if (typeof DaoKeDao !== "object") {
         }
         return facebook
     };
-    var select = function(receiver) {
+    Messenger.prototype.select = function(receiver) {
         var facebook = this.getFacebook();
         var users = facebook.getLocalUsers();
         if (!users || users.length === 0) {
@@ -6137,7 +6210,7 @@ if (typeof DaoKeDao !== "object") {
         var facebook = this.getFacebook();
         var receiver = msg.envelope.receiver;
         receiver = facebook.getIdentifier(receiver);
-        var user = select.call(this, receiver);
+        var user = this.select(receiver);
         if (!user) {
             msg = null
         } else {
@@ -6172,15 +6245,6 @@ if (typeof DaoKeDao !== "object") {
         }
         return Transceiver.prototype.decryptMessage.call(this, msg)
     };
-    Messenger.prototype.serializeMessage = function(rMsg) {
-        var json = ns.format.JSON.encode(rMsg);
-        return ns.type.String.from(json).getBytes("UTF-8")
-    };
-    Messenger.prototype.deserializeMessage = function(data) {
-        var str = new ns.type.String(data, "UTF-8");
-        var dict = ns.format.JSON.decode(str.toString());
-        return ReliableMessage.getInstance(dict)
-    };
     Messenger.prototype.serializeContent = function(content, pwd, iMsg) {
         var key = SymmetricKey.getInstance(pwd);
         if (content instanceof FileContent) {
@@ -6211,7 +6275,7 @@ if (typeof DaoKeDao !== "object") {
         var key = SymmetricKey.getInstance(pwd);
         var content = Transceiver.prototype.deserializeContent.call(this, data, pwd, sMsg);
         if (!content) {
-            throw Error("failed to decrypt message content: " + sMsg)
+            throw Error("failed to deserialize message content: " + sMsg)
         }
         if (content instanceof FileContent) {
             var iMsg = InstantMessage.newMessage(content, sMsg.envelope);
@@ -6289,45 +6353,45 @@ if (typeof DaoKeDao !== "object") {
         console.assert(false, "implement me!");
         return false
     };
-    Messenger.prototype.onReceivePackage = function(data) {
+    Messenger.prototype.processPackage = function(data) {
         var rMsg = this.deserializeMessage(data);
         if (!rMsg) {
             return null
         }
-        rMsg = this.processReliableMessage(rMsg);
+        rMsg = this.processMessage(rMsg);
         if (!rMsg) {
             return null
         }
         return this.serializeMessage(rMsg)
     };
-    Messenger.prototype.processReliableMessage = function(rMsg) {
+    Messenger.prototype.processMessage = function(rMsg) {
         var sMsg = this.verifyMessage(rMsg);
         if (!sMsg) {
             return null
         }
-        sMsg = this.processSecureMessage(sMsg);
+        sMsg = processSecure.call(this, sMsg, rMsg);
         if (!sMsg) {
             return null
         }
         return this.signMessage(sMsg)
     };
-    Messenger.prototype.processSecureMessage = function(sMsg) {
+    var processSecure = function(sMsg, rMsg) {
         var iMsg = this.decryptMessage(sMsg);
         if (!iMsg) {
             return null
         }
-        iMsg = this.processInstantMessage(iMsg);
+        iMsg = processInstant.call(this, iMsg, rMsg);
         if (!iMsg) {
             return null
         }
         return this.encryptMessage(iMsg)
     };
-    Messenger.prototype.processInstantMessage = function(iMsg) {
+    var processInstant = function(iMsg, rMsg) {
         var facebook = this.getFacebook();
         var content = iMsg.content;
         var env = iMsg.envelope;
         var sender = facebook.getIdentifier(env.sender);
-        var res = this.cpu.process(content, sender, iMsg);
+        var res = this.processContent(content, sender, rMsg);
         if (!this.saveMessage(iMsg)) {
             return null
         }
@@ -6335,9 +6399,12 @@ if (typeof DaoKeDao !== "object") {
             return null
         }
         var receiver = facebook.getIdentifier(env.receiver);
-        var user = select.call(this, receiver);
+        var user = this.select(receiver);
         env = Envelope.newEnvelope(user.identifier, sender, 0);
         return InstantMessage.newMessage(res, env)
+    };
+    Messenger.prototype.processContent = function(content, sender, rMsg) {
+        return this.cpu.process(content, sender, rMsg)
     };
     ns.Messenger = Messenger;
     ns.register("Messenger")
@@ -6633,7 +6700,8 @@ if (typeof StarGate !== "object") {
     Storage.prototype.saveJSON = function(container, path) {
         var json = null;
         if (container) {
-            json = DIMP.format.JSON.encode(container)
+            json = DIMP.format.JSON.encode(container);
+            json = DIMP.format.UTF8.decode(json)
         }
         return this.saveText(json, path)
     };

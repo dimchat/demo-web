@@ -35,57 +35,30 @@
 !function (ns) {
     'use strict';
 
-    var StationDelegate = function () {
-    };
-    ns.Interface(StationDelegate, null);
+    var Command = ns.protocol.Command;
+
+    var CommandProcessor = ns.cpu.CommandProcessor;
 
     /**
-     *  Received a new data package from the station
-     *
-     * @param {Uint8Array} data - data package received
-     * @param {Station} server - current station
+     *  Login Command Processor
      */
-    StationDelegate.prototype.onReceivePackage = function (data, server) {
-        console.assert(false, 'implement me!');
+    var LoginCommandProcessor = function (messenger) {
+        CommandProcessor.call(this, messenger);
+    };
+    ns.Class(LoginCommandProcessor, CommandProcessor, null);
+
+    //
+    //  Main
+    //
+    LoginCommandProcessor.prototype.process = function (cmd, sender, msg) {
+        // no need to response login command
+        return null;
     };
 
-    // noinspection JSUnusedLocalSymbols
-    /**
-     *  Send data package to station success
-     *
-     * @param {Uint8Array} data - data package received
-     * @param {Station} server - current station
-     */
-    StationDelegate.prototype.didSendPackage = function (data, server) {
-        console.assert(false, 'implement me!');
-    };
-
-    // noinspection JSUnusedLocalSymbols
-    /**
-     *  Failed to send data package to station
-     *
-     * @param {Error} error
-     * @param {Uint8Array} data - data package received
-     * @param {Station} server - current station
-     */
-    StationDelegate.prototype.didFailToSendPackage = function (error, data, server) {
-        console.assert(false, 'implement me!');
-    };
-
-    /**
-     *  Callback for handshake accepted
-     *
-     * @param {String} session - new session key
-     * @param {Station} server - current station
-     */
-    StationDelegate.prototype.onHandshakeAccepted = function (session, server) {
-        console.assert(false, 'implement me!');
-    };
+    //-------- register --------
+    CommandProcessor.register(Command.LOGIN, LoginCommandProcessor);
 
     //-------- namespace --------
-    if (typeof ns.network !== 'object') {
-        ns.network = {};
-    }
-    ns.network.StationDelegate = StationDelegate;
+    ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
 
 }(DIMP);

@@ -19,13 +19,14 @@
 
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
-    var ReceiptCommand = ns.protocol.ReceiptCommand;
+    // var ReceiptCommand = ns.protocol.ReceiptCommand;
 
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
 
+    var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
 
@@ -158,6 +159,9 @@
             receiver = facebook.getIdentifier(receiver);
             key = this.cipherKeyDelegate.getCipherKey(sender, receiver)
         }
+        if (key instanceof ns.plugins.PlainKey) {
+            return;
+        }
         // get key data
         var data = key.getData();
         if (!data || data.length < 6) {
@@ -286,28 +290,26 @@
     };
 
     // Override
-    var process = Messenger.prototype.processInstantMessage;
-    Messenger.prototype.processInstantMessage = function (msg) {
-        var content = msg.content;
-        var sender = msg.envelope.sender;
-        sender = this.getFacebook().getIdentifier(sender);
+    var process = Messenger.prototype.processContent;
+    Messenger.prototype.processContent = function (content, sender, rMsg) {
+
         if (check_group.call(this, content, sender)) {
             // save this message in a queue to wait group meta response
-            this.suspendMessage(msg);
+            this.suspendMessage(rMsg);
             return null;
         }
 
-        var iMsg = process.call(this, msg);
-        if (!iMsg) {
+        var res = process.call(this, content, sender, rMsg);
+        if (!res) {
             // respond nothing
             return null;
         }
-        if (iMsg.content instanceof HandshakeCommand) {
+        if (res instanceof HandshakeCommand) {
             // urgent command
-            return iMsg;
+            return res;
         }
         // if (iMsg.content instanceof ReceiptCommand) {
-        //     var receiver = msg.envelope.sender;
+        //     var receiver = rMsg.envelope.sender;
         //     receiver = this.getFacebook().getIdentifier(receiver);
         //     if (NetworkType.Station.equals(receiver.getType())) {
         //         // no need to respond receipt to station
@@ -315,6 +317,12 @@
         //     }
         // }
 
+        // check receiver
+        var receiver = this.getFacebook().getIdentifier(rMsg.envelope.receiver);
+        var user = this.select(receiver);
+        // pack message
+        var env = Envelope.newEnvelope(user.identifier, sender, 0);
+        var iMsg = InstantMessage.newMessage(res, env);
         // normal response
         this.sendMessage(iMsg, null, false);
         // DON'T respond to station directly
@@ -346,7 +354,7 @@
      */
     Messenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE, null, false);
+        return this.sendContent(content, ID.EVERYONE, null, false);
     };
 
     /**

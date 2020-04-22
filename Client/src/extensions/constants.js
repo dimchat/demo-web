@@ -11,7 +11,6 @@
     nc.kNotificationStationConnecting = 'StationConnecting';
     nc.kNotificationStationConnected  = 'StationConnected';
     nc.kNotificationStationError      = 'StationError';
-    nc.kNotificationHandshakeAccepted = 'HandshakeAccepted';
     nc.kNotificationMetaAccepted      = 'MetaAccepted';
     nc.kNotificationProfileUpdated    = 'ProfileUpdated';
     nc.kNotificationMessageReceived   = 'MessageReceived';

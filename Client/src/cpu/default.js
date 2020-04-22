@@ -115,6 +115,8 @@
     var ResetCommand = ns.protocol.group.ResetCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
 
+    var LoginCommand = ns.protocol.LoginCommand;
+
     var getFacebook = function () {
         return ns.Facebook.getInstance();
     };
@@ -167,6 +169,10 @@
             // if (cmd instanceof HistoryCommand) {
             //     // TODO: process history command
             // }
+
+            if (cmd instanceof LoginCommand) {
+                return this.getLoginCommandText(cmd, commander);
+            }
             return 'Current version doesn\'t support this command: ' + cmd.getCommand();
         },
 
@@ -259,6 +265,20 @@
             cmd.setValue('text', text);
             return text;
         }
+    };
+
+    // noinspection JSUnusedLocalSymbols
+    MessageBuilder.getLoginCommandText = function (cmd, commander) {
+        var identifier = cmd.getIdentifier();
+        var station = cmd.getStation();
+        if (station) {
+            var host = station['host'];
+            var port = station['port'];
+            station = '(' + host + ':' + port + ') ' + getUsername(station['ID']);
+        }
+        var text = getUsername(identifier) + ' login: ' + station;
+        cmd.setValue('text', text);
+        return text;
     };
 
     //-------- namespace --------

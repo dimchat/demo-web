@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 5, 2020
+ * @date      Apr. 20, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -356,7 +356,6 @@
     nc.kNotificationStationConnecting = "StationConnecting";
     nc.kNotificationStationConnected = "StationConnected";
     nc.kNotificationStationError = "StationError";
-    nc.kNotificationHandshakeAccepted = "HandshakeAccepted";
     nc.kNotificationMetaAccepted = "MetaAccepted";
     nc.kNotificationProfileUpdated = "ProfileUpdated";
     nc.kNotificationMessageReceived = "MessageReceived"
@@ -517,6 +516,7 @@
     var QuitCommand = ns.protocol.group.QuitCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
+    var LoginCommand = ns.protocol.LoginCommand;
     var getFacebook = function() {
         return ns.Facebook.getInstance()
     };
@@ -549,6 +549,9 @@
         getCommandText: function(cmd, commander) {
             if (cmd instanceof GroupCommand) {
                 return this.getGroupCommandText(cmd, commander)
+            }
+            if (cmd instanceof LoginCommand) {
+                return this.getLoginCommandText(cmd, commander)
             }
             return "Current version doesn't support this command: " + cmd.getCommand()
         },
@@ -633,7 +636,32 @@
             return text
         }
     };
+    MessageBuilder.getLoginCommandText = function(cmd, commander) {
+        var identifier = cmd.getIdentifier();
+        var station = cmd.getStation();
+        if (station) {
+            var host = station["host"];
+            var port = station["port"];
+            station = "(" + host + ":" + port + ") " + getUsername(station["ID"])
+        }
+        var text = getUsername(identifier) + " login: " + station;
+        cmd.setValue("text", text);
+        return text
+    };
     ns.cpu.MessageBuilder = MessageBuilder
+}(DIMP);
+! function(ns) {
+    var Command = ns.protocol.Command;
+    var CommandProcessor = ns.cpu.CommandProcessor;
+    var ReceiptCommandProcessor = function(messenger) {
+        CommandProcessor.call(this, messenger)
+    };
+    ns.Class(ReceiptCommandProcessor, CommandProcessor, null);
+    ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
+        return null
+    };
+    CommandProcessor.register(Command.RECEIPT, ReceiptCommandProcessor);
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor
 }(DIMP);
 ! function(ns) {
     var Command = ns.protocol.Command;
@@ -671,15 +699,15 @@
 ! function(ns) {
     var Command = ns.protocol.Command;
     var CommandProcessor = ns.cpu.CommandProcessor;
-    var ReceiptCommandProcessor = function(messenger) {
+    var LoginCommandProcessor = function(messenger) {
         CommandProcessor.call(this, messenger)
     };
-    ns.Class(ReceiptCommandProcessor, CommandProcessor, null);
-    ReceiptCommandProcessor.prototype.process = function(cmd, sender, msg) {
+    ns.Class(LoginCommandProcessor, CommandProcessor, null);
+    LoginCommandProcessor.prototype.process = function(cmd, sender, msg) {
         return null
     };
-    CommandProcessor.register(Command.RECEIPT, ReceiptCommandProcessor);
-    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor
+    CommandProcessor.register(Command.LOGIN, LoginCommandProcessor);
+    ns.cpu.LoginCommandProcessor = LoginCommandProcessor
 }(DIMP);
 ! function(ns) {
     var Meta = ns.Meta;
@@ -751,7 +779,10 @@
         }
         cmd.setValue("text", text);
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(nc.kNotificationMessageReceived, this, msg);
+        nc.postNotification(nc.kNotificationMessageReceived, this, {
+            "envelope": msg.envelope,
+            "content": cmd
+        });
         return null
     };
     CommandProcessor.register(SearchCommand.SEARCH, SearchCommandProcessor);
@@ -952,10 +983,16 @@
 ! function(ns) {
     var StationDelegate = function() {};
     ns.Interface(StationDelegate, null);
+    StationDelegate.prototype.onReceivePackage = function(data, server) {
+        console.assert(false, "implement me!")
+    };
     StationDelegate.prototype.didSendPackage = function(data, server) {
         console.assert(false, "implement me!")
     };
     StationDelegate.prototype.didFailToSendPackage = function(error, data, server) {
+        console.assert(false, "implement me!")
+    };
+    StationDelegate.prototype.onHandshakeAccepted = function(session, server) {
         console.assert(false, "implement me!")
     };
     if (typeof ns.network !== "object") {
@@ -1065,10 +1102,7 @@
         if (success) {
             console.log("handshake accepted for user: " + this.getCurrentUser());
             this.session = session;
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(nc.kNotificationHandshakeAccepted, this, {
-                session: session
-            })
+            this.stationDelegate.onHandshakeAccepted(session, this)
         } else {
             console.log("handshake again with session: " + session)
         }
@@ -1137,13 +1171,7 @@
         this.fsm.resume()
     };
     Server.prototype.onReceived = function(data, star) {
-        if (!data || data.length === 0) {
-            return
-        }
-        var response = this.messenger.onReceivePackage(data);
-        if (response) {
-            this.send(response)
-        }
+        this.stationDelegate.onReceivePackage(data, this)
     };
     Server.prototype.onStatusChanged = function(status, star) {
         this.fsm.tick()
@@ -1227,6 +1255,75 @@
         ns.network = {}
     }
     ns.network.Server = Server
+}(DIMP);
+! function(ns) {
+    var StationDelegate = ns.network.StationDelegate;
+    var LoginCommand = ns.protocol.LoginCommand;
+    var Facebook = ns.Facebook;
+    var Messenger = ns.Messenger;
+    var Terminal = function() {
+        this.__server = null;
+        this.__users = null
+    };
+    ns.Class(Terminal, null, [StationDelegate]);
+    Terminal.prototype.getUserAgent = function() {
+        return navigator.userAgent
+    };
+    Terminal.prototype.getCurrentServer = function() {
+        return this.__server
+    };
+    Terminal.prototype.setCurrentServer = function(server) {
+        var messenger = Messenger.getInstance();
+        messenger.server = server;
+        messenger.setContext("server", server);
+        server.stationDelegate = this;
+        this.__server = server
+    };
+    Terminal.prototype.getCurrentUser = function() {
+        if (!this.__server) {
+            return null
+        }
+        return this.__server.getCurrentUser()
+    };
+    Terminal.prototype.setCurrentUser = function(user) {
+        if (!this.__server) {
+            throw Error("cannot set current user before station connected")
+        }
+        this.__server.setCurrentUser(user)
+    };
+    Terminal.prototype.onReceivePackage = function(data, server) {
+        if (!data || data.length === 0) {
+            return
+        }
+        var messenger = Messenger.getInstance();
+        var response = messenger.processPackage(data);
+        if (response) {
+            server.send(response)
+        }
+    };
+    Terminal.prototype.didSendPackage = function(data, server) {};
+    Terminal.prototype.didFailToSendPackage = function(error, data, server) {};
+    Terminal.prototype.onHandshakeAccepted = function(session, server) {
+        var messenger = Messenger.getInstance();
+        var facebook = Facebook.getInstance();
+        var user = facebook.getCurrentUser();
+        var profile = user.getProfile();
+        if (profile) {
+            messenger.postProfile(profile)
+        }
+        var contacts = user.getContacts();
+        if (contacts != null && contacts.length > 0) {
+            messenger.postContacts(contacts)
+        }
+        var login = new LoginCommand(user.identifier);
+        login.setAgent(this.getUserAgent());
+        login.setStation(server);
+        messenger.broadcastContent(login)
+    };
+    if (typeof ns.network !== "object") {
+        ns.network = {}
+    }
+    ns.network.Terminal = Terminal
 }(DIMP);
 ! function(ns) {
     var LocalStorage = ns.stargate.LocalStorage;
@@ -2303,11 +2400,11 @@
     var BlockCommand = ns.protocol.BlockCommand;
     var SearchCommand = ns.protocol.SearchCommand;
     var StorageCommand = ns.protocol.StorageCommand;
-    var ReceiptCommand = ns.protocol.ReceiptCommand;
     var GroupCommand = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
     var QueryCommand = ns.protocol.group.QueryCommand;
     var ResetCommand = ns.protocol.group.ResetCommand;
+    var Envelope = ns.Envelope;
     var InstantMessage = ns.InstantMessage;
     var ReliableMessage = ns.ReliableMessage;
     var Facebook = ns.Facebook;
@@ -2405,6 +2502,9 @@
             receiver = facebook.getIdentifier(receiver);
             key = this.cipherKeyDelegate.getCipherKey(sender, receiver)
         }
+        if (key instanceof ns.plugins.PlainKey) {
+            return
+        }
         var data = key.getData();
         if (!data || data.length < 6) {
             return
@@ -2484,22 +2584,23 @@
             if (msg instanceof ReliableMessage) {}
         }
     };
-    var process = Messenger.prototype.processInstantMessage;
-    Messenger.prototype.processInstantMessage = function(msg) {
-        var content = msg.content;
-        var sender = msg.envelope.sender;
-        sender = this.getFacebook().getIdentifier(sender);
+    var process = Messenger.prototype.processContent;
+    Messenger.prototype.processContent = function(content, sender, rMsg) {
         if (check_group.call(this, content, sender)) {
-            this.suspendMessage(msg);
+            this.suspendMessage(rMsg);
             return null
         }
-        var iMsg = process.call(this, msg);
-        if (!iMsg) {
+        var res = process.call(this, content, sender, rMsg);
+        if (!res) {
             return null
         }
-        if (iMsg.content instanceof HandshakeCommand) {
-            return iMsg
+        if (res instanceof HandshakeCommand) {
+            return res
         }
+        var receiver = this.getFacebook().getIdentifier(rMsg.envelope.receiver);
+        var user = this.select(receiver);
+        var env = Envelope.newEnvelope(user.identifier, sender, 0);
+        var iMsg = InstantMessage.newMessage(res, env);
         this.sendMessage(iMsg, null, false);
         return null
     };
@@ -2511,7 +2612,7 @@
     };
     Messenger.prototype.broadcastContent = function(content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.ANYONE, null, false)
+        return this.sendContent(content, ID.EVERYONE, null, false)
     };
     Messenger.prototype.broadcastProfile = function(profile) {
         var user = this.server.getCurrentUser();

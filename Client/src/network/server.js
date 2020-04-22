@@ -72,7 +72,7 @@
         this.fsm = fsm;
         this.star = null; // Star
         this.stationDelegate = null; // StationDelegate
-        this.messenger = null; // ConnectionDelegate
+        this.messenger = null;
 
         this.session = null; // session key
         this.currentUser = null; // User
@@ -158,10 +158,8 @@
         if (success) {
             console.log('handshake accepted for user: ' + this.getCurrentUser());
             this.session = session;
-            // TODO: broadcast profile to DIM network
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(nc.kNotificationHandshakeAccepted,
-                this, {session: session});
+            // call client
+            this.stationDelegate.onHandshakeAccepted(session, this);
         } else {
             console.log('handshake again with session: ' + session);
         }
@@ -247,13 +245,7 @@
     //
 
     Server.prototype.onReceived = function (data, star) {
-        if (!data || data.length === 0) {
-            return;
-        }
-        var response = this.messenger.onReceivePackage(data);
-        if (response) {
-            this.send(response);
-        }
+        this.stationDelegate.onReceivePackage(data, this);
     };
 
     Server.prototype.onStatusChanged = function (status, star) {
