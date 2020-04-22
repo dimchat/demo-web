@@ -31,9 +31,9 @@
 
         'station', 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW',
 
-        'chatroom', 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7',
+        'chatroom', 'chatroom-admin@2PpG1A6LuConRMyZuV8TNJGbaSQ28Ke7ogH',
 
-        'assistant', 'assistant@2PpB6iscuBjA15oTjAsiswoX9qis5V3c1Dq',
+        'assistant', 'assistant@4WBSiDzg9cpZGPqFrQ4bHcq4U5z9QAQLHS',
         'xiaoxiao', 'xiaoxiao@2PhVByg7PhEtYPNzW5ALk9ygf6wop1gTccp',
         'lingling', 'lingling@2PemMVAvxpuVZw2SYwwo11iBBEBb7gCvDHa',
 
@@ -78,20 +78,20 @@
     var facebook = dimp.Facebook.getInstance();
     var messenger = dimp.Messenger.getInstance();
 
-    var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
+    var sid = 'gsp-s003@x2oNDzjDWbJMNDpCfKkU7dnHyJerd447Jh';
     sid = facebook.getIdentifier(sid);
 
     var meta = {
         "version": 1,
-        "seed": "gsp-s002",
+        "seed": "gsp-s003",
         "key": {
             "algorithm": "RSA",
-            "data": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDACQ1bmv8V3xSCvVDWy+6P4pOl\n46MkIdKEqZ3Z+kvIrpStO/y5DZMWzTRx1z1Ateibc+QCUREaLvKqECycyRNPO+aD\n04rT5WxZfSuHxf+PxajDQ1rcwImc0JR/PbkUIgD5kb2JrsSfTaEObsrhxKlgimey\nOG9bwcmSud6HzPkWZQIDAQAB\n-----END PUBLIC KEY-----",
+            "data": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC0nyRrAvwudsACDvufoyqQLtTV\nDaLQEzx92n1jmOswisUeNA53Fwso16zCKIADUm4Qtw2LuhYRnrKguJff2+tSG0kc\nCEwHhkDF8jY7ADgabtladbrIN9TEx3TOEvxlBU/LG5hirx8zruvNLpMqVgBP1kd6\nd5pf3uMcV9IUhIxYbwIDAQAB\n-----END PUBLIC KEY-----",
             "mode": "ECB",
             "padding": "PKCS1",
             "digest": "SHA256"
         },
-        "fingerprint": "Z1HI27oXMvY5oOpA1HaD+6d4t8/tlGty5XU+6+CIkeij5m8xS1C4vRJm3qaLTxSRsnwX6mMgkvxMAu6FfvDWe4/cisWAWt8E+aC7BrgESVanQyglWZLx0OSWDmV1jrE9Y0xAA3HlgxIoMdi3sQ4giV0NxeJHUymGenC+EsbtiUU="
+        "fingerprint": "VGgVWWSzzkYEgYM14F6pCcxJj5jmZ5cepvmJC8i4gXNWWeG4V5/BQTKMhLX7hX1g3sikpWAkRgMFKttHGrIyEeDqGDtim1axVi70j9WZoPxKydbmCVtagxffJX2M9r4Et5e49I0jPHu+/2m9ep9QHTgKMyKjIfGSjLkZRGxWa0Y="
     };
     meta = Meta.getInstance(meta);
     facebook.saveMeta(meta, sid);
@@ -99,7 +99,7 @@
     var host = $_GET['host'];
     if (!host) {
         // host = '127.0.0.1';
-        host = '134.175.87.98';   // gz
+        host = '203.195.224.155';   // gz2
         // host = '124.156.108.150'; // hk
     }
     var port = $_GET['port'];
