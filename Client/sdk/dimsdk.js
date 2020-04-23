@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 18, 2020
+ * @date      Apr. 23, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -5944,16 +5944,9 @@ if (typeof DaoKeDao !== "object") {
     var ServiceProvider = ns.ServiceProvider;
     var Barrack = ns.core.Barrack;
     var Facebook = function() {
-        Barrack.call(this);
-        this.ans = null
+        Barrack.call(this)
     };
     ns.Class(Facebook, Barrack, null);
-    Facebook.prototype.ansGet = function(name) {
-        if (!this.ans) {
-            return null
-        }
-        return this.ans.getIdentifier(name)
-    };
     Facebook.prototype.verifyMeta = function(meta, identifier) {
         return meta.matches(identifier)
     };
@@ -6028,10 +6021,6 @@ if (typeof DaoKeDao !== "object") {
         return users[0]
     };
     Facebook.prototype.createIdentifier = function(string) {
-        var identifier = this.ansGet(string);
-        if (identifier) {
-            return identifier
-        }
         return ID.getInstance(string)
     };
     Facebook.prototype.createUser = function(identifier) {
@@ -6129,10 +6118,7 @@ if (typeof DaoKeDao !== "object") {
         }
     };
     Facebook.prototype.getAssistants = function(group) {
-        var identifier = this.ansGet("assistant");
-        if (identifier) {
-            return [identifier]
-        }
+        console.assert(false, "implement me!");
         return null
     };
     Facebook.prototype.existsAssistant = function(user, group) {
@@ -6311,6 +6297,9 @@ if (typeof DaoKeDao !== "object") {
         var receiver = iMsg.envelope.receiver;
         receiver = facebook.getIdentifier(receiver);
         var sMsg = this.encryptMessage(iMsg);
+        if (!sMsg) {
+            return false
+        }
         var rMsg = this.signMessage(sMsg);
         var ok = true;
         if (split && receiver.isGroup()) {

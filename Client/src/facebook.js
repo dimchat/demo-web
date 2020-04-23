@@ -81,6 +81,23 @@
         return db.removeUser(user);
     };
 
+    Facebook.prototype.ansGet = function (name) {
+        if (!this.ans) {
+            return null;
+        }
+        return this.ans.getIdentifier(name);
+    };
+
+    var createIdentifier = Facebook.prototype.createIdentifier;
+    Facebook.prototype.createIdentifier = function (string) {
+        // try ANS record
+        var identifier = this.ansGet(string);
+        if (identifier) {
+            return identifier;
+        }
+        return createIdentifier.call(this, string);
+    };
+
     Facebook.prototype.getUsername = function (identifier) {
         identifier = this.getIdentifier(identifier);
         var username = identifier.name;
@@ -361,6 +378,15 @@
         } else {
             return [];
         }
+    };
+
+    Facebook.prototype.getAssistants = function (group) {
+        // try ANS record
+        var identifier = this.ansGet('assistant');
+        if (identifier) {
+            return [identifier];
+        }
+        return null;
     };
 
     //-------- namespace --------

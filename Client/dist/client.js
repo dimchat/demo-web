@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 20, 2020
+ * @date      Apr. 23, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -1977,6 +1977,20 @@
         var db = UserTable.getInstance();
         return db.removeUser(user)
     };
+    Facebook.prototype.ansGet = function(name) {
+        if (!this.ans) {
+            return null
+        }
+        return this.ans.getIdentifier(name)
+    };
+    var createIdentifier = Facebook.prototype.createIdentifier;
+    Facebook.prototype.createIdentifier = function(string) {
+        var identifier = this.ansGet(string);
+        if (identifier) {
+            return identifier
+        }
+        return createIdentifier.call(this, string)
+    };
     Facebook.prototype.getUsername = function(identifier) {
         identifier = this.getIdentifier(identifier);
         var username = identifier.name;
@@ -2183,6 +2197,13 @@
         } else {
             return []
         }
+    };
+    Facebook.prototype.getAssistants = function(group) {
+        var identifier = this.ansGet("assistant");
+        if (identifier) {
+            return [identifier]
+        }
+        return null
     };
     ns.Facebook = Facebook
 }(DIMP);
