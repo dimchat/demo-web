@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 23, 2020
+ * @date      Apr. 24, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -5647,7 +5647,7 @@ if (typeof DaoKeDao !== "object") {
             var owner = facebook.getOwner(group);
             if (owner && !owner.equals(sender)) {
                 var cmd = GroupCommand.query(group);
-                this.messenger.sendContent(cmd, owner, null, false)
+                this.messenger.sendContent(cmd, owner, null)
             }
         }
         return null
@@ -6274,16 +6274,16 @@ if (typeof DaoKeDao !== "object") {
         }
         return content
     };
-    Messenger.prototype.sendContent = function(content, receiver, callback, split) {
+    Messenger.prototype.sendContent = function(content, receiver, callback) {
         var facebook = this.getFacebook();
         var user = facebook.getCurrentUser();
         var env = Envelope.newEnvelope(user.identifier, receiver, 0);
         var iMsg = InstantMessage.newMessage(content, env);
-        return this.sendMessage(iMsg, callback, split)
+        return this.sendMessage(iMsg, callback)
     };
-    Messenger.prototype.sendMessage = function(msg, callback, split) {
+    Messenger.prototype.sendMessage = function(msg, callback) {
         if (msg instanceof InstantMessage) {
-            return send_instant_message.call(this, msg, callback, split)
+            return send_instant_message.call(this, msg, callback)
         } else {
             if (msg instanceof ReliableMessage) {
                 return send_reliable_message.call(this, msg, callback)
@@ -6292,34 +6292,16 @@ if (typeof DaoKeDao !== "object") {
             }
         }
     };
-    var send_instant_message = function(iMsg, callback, split) {
-        var facebook = this.getFacebook();
-        var receiver = iMsg.envelope.receiver;
-        receiver = facebook.getIdentifier(receiver);
+    var send_instant_message = function(iMsg, callback) {
         var sMsg = this.encryptMessage(iMsg);
         if (!sMsg) {
             return false
         }
         var rMsg = this.signMessage(sMsg);
-        var ok = true;
-        if (split && receiver.isGroup()) {
-            var messages = null;
-            var members = facebook.getMembers(receiver);
-            if (members && members.length > 0) {
-                messages = rMsg.split(members)
-            }
-            if (messages) {
-                for (var i = 0; i < messages.length; ++i) {
-                    if (send_reliable_message.call(this, messages[i], callback)) {
-                        ok = false
-                    }
-                }
-            } else {
-                ok = send_reliable_message.call(this, rMsg, callback)
-            }
-        } else {
-            ok = send_reliable_message.call(this, rMsg, callback)
+        if (!rMsg) {
+            throw Error("failed to sign message: " + sMsg)
         }
+        var ok = send_reliable_message.call(this, rMsg, callback);
         if (!this.saveMessage(iMsg)) {
             return false
         }

@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 23, 2020
+ * @date      Apr. 24, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -211,13 +211,13 @@
             messenger.queryGroupInfo(this.group, assistants);
             return false
         }
-        return messenger.sendContent(content, this.group, null, false)
+        return messenger.sendContent(content, this.group, null)
     };
     var send_group_command = function(content, members) {
         var messenger = Messenger.getInstance();
         var ok = true;
         for (var i = 0; i < members.length; ++i) {
-            if (!messenger.sendContent(content, members[i], null, false)) {
+            if (!messenger.sendContent(content, members[i], null)) {
                 ok = false
             }
         }
@@ -2622,18 +2622,18 @@
         var user = this.select(receiver);
         var env = Envelope.newEnvelope(user.identifier, sender, 0);
         var iMsg = InstantMessage.newMessage(res, env);
-        this.sendMessage(iMsg, null, false);
+        this.sendMessage(iMsg, null);
         return null
     };
     Messenger.prototype.sendCommand = function(cmd) {
         if (!this.server) {
             throw Error("server not connect")
         }
-        return this.sendContent(cmd, this.server.identifier, null, false)
+        return this.sendContent(cmd, this.server.identifier, null)
     };
     Messenger.prototype.broadcastContent = function(content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.EVERYONE, null, false)
+        return this.sendContent(content, ID.EVERYONE, null)
     };
     Messenger.prototype.broadcastProfile = function(profile) {
         var user = this.server.getCurrentUser();
@@ -2651,7 +2651,7 @@
         var cmd = ProfileCommand.response(identifier, profile, meta);
         var ok = true;
         for (var i = 0; i < contacts.length; ++i) {
-            if (!this.sendContent(cmd, contacts[i], null, false)) {
+            if (!this.sendContent(cmd, contacts[i], null)) {
                 ok = false
             }
         }
@@ -2671,7 +2671,7 @@
         }
         var ok = true;
         for (var i = 0; i < members.length; ++i) {
-            if (!this.sendContent(cmd, members[i], null, false)) {
+            if (!this.sendContent(cmd, members[i], null)) {
                 ok = false
             }
         }
@@ -2749,7 +2749,7 @@
         var cmd = GroupCommand.query(group);
         var checking = false;
         for (var i = 0; i < members.length; ++i) {
-            if (this.sendContent(cmd, members[i], null, false)) {
+            if (this.sendContent(cmd, members[i], null)) {
                 checking = true
             }
         }

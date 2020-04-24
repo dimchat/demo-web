@@ -324,7 +324,7 @@
         var env = Envelope.newEnvelope(user.identifier, sender, 0);
         var iMsg = InstantMessage.newMessage(res, env);
         // normal response
-        this.sendMessage(iMsg, null, false);
+        this.sendMessage(iMsg, null);
         // DON'T respond to station directly
         return null;
     };
@@ -343,7 +343,7 @@
         if (!this.server) {
             throw Error('server not connect');
         }
-        return this.sendContent(cmd, this.server.identifier, null, false);
+        return this.sendContent(cmd, this.server.identifier, null);
     };
 
     /**
@@ -354,7 +354,7 @@
      */
     Messenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
-        return this.sendContent(content, ID.EVERYONE, null, false);
+        return this.sendContent(content, ID.EVERYONE, null);
     };
 
     /**
@@ -381,7 +381,7 @@
         var cmd = ProfileCommand.response(identifier, profile, meta);
         var ok = true;
         for (var i = 0; i < contacts.length; ++i) {
-            if (!this.sendContent(cmd, contacts[i], null, false)) {
+            if (!this.sendContent(cmd, contacts[i], null)) {
                 ok = false;
             }
         }
@@ -402,7 +402,7 @@
         }
         var ok = true;
         for (var i = 0; i < members.length; ++i) {
-            if (!this.sendContent(cmd, members[i], null, false)) {
+            if (!this.sendContent(cmd, members[i], null)) {
                 ok = false;
             }
         }
@@ -502,7 +502,7 @@
         var cmd = GroupCommand.query(group);
         var checking = false;
         for (var i = 0; i < members.length; ++i) {
-            if (this.sendContent(cmd, members[i], null, false)) {
+            if (this.sendContent(cmd, members[i], null)) {
                 checking = true;
             }
         }

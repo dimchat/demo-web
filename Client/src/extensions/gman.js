@@ -78,14 +78,14 @@
             return false;
         }
         // let group assistant to split and deliver this message to all members
-        return messenger.sendContent(content, this.group, null, false);
+        return messenger.sendContent(content, this.group, null);
     };
 
     var send_group_command = function (content, members) {
         var messenger = Messenger.getInstance();
         var ok = true;
         for (var i = 0; i < members.length; ++i) {
-            if (!messenger.sendContent(content, members[i], null, false)) {
+            if (!messenger.sendContent(content, members[i], null)) {
                 ok = false;
             }
         }
