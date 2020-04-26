@@ -58,6 +58,21 @@
 .chatWindow .historyView .sent {
     text-align: right;
 }
+.chatWindow .historyView .cmd {
+    color: gray;
+    font-size: small;
+    text-align: center;
+    padding: 8px 64px;
+}
+.chatWindow .historyView .cmd .time {
+    display: inline;
+}
+.chatWindow .historyView .cmd .name {
+    display: none;
+}
+.chatWindow .historyView .cmd .content {
+    display: inline;
+}
 .chatWindow .historyView .name {
     color: darkblue;
     font-size: small;

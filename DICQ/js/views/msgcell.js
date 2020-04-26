@@ -54,15 +54,17 @@
 
         // message content
         var content = iMsg.content;
-        var contentView = null;
+        if (content instanceof Command) {
+            this.setClassName('cmd');
+        }
 
+        var contentView = null;
         if (content instanceof ImageContent) {
             contentView = image_content_view(content, sender);
         }
         if (!contentView) {
             contentView = text_content_view(content, sender);
         }
-
         contentView.setClassName('content');
         this.appendChild(contentView);
 
