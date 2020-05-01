@@ -2,7 +2,7 @@
  *  Tarsier UI Kits (v0.1.0)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Mar. 28, 2020
+ * @date      May. 1, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -216,9 +216,8 @@ if (typeof tarsier.ui !== "object") {
         ev.preventDefault()
     };
     var start = function(point, controller) {
-        var div = controller.__ie;
-        point.x -= div.offsetLeft;
-        point.y -= div.offsetTop;
+        point.x -= controller.getX();
+        point.y -= controller.getY();
         controller.__dp = point;
         controller.floatToTop()
     };
@@ -545,13 +544,13 @@ if (typeof tarsier.ui !== "object") {
     View.prototype.setX = function(left) {
         this.__ie.style.position = "absolute";
         this.__ie.style.left = left + "px";
-        this.__ie.offsetLeft = this.__frame.origin.x = left;
+        this.__frame.origin.x = left;
         return this
     };
     View.prototype.setY = function(top) {
         this.__ie.style.position = "absolute";
         this.__ie.style.top = top + "px";
-        this.__ie.offsetTop = this.__frame.origin.y = top;
+        this.__frame.origin.y = top;
         return this
     };
     View.prototype.setZ = function(zIndex) {
@@ -566,14 +565,14 @@ if (typeof tarsier.ui !== "object") {
     };
     View.prototype.setWidth = function(width) {
         this.__ie.style.width = width + "px";
-        this.__ie.offsetWidth = this.__frame.size.width = width;
+        this.__frame.size.width = width;
         this.__bounds.size.width = width - this.__bounds.origin.x - this.getPaddingRight();
         this.needsLayoutSubviews = true;
         return this
     };
     View.prototype.setHeight = function(height) {
         this.__ie.style.height = height + "px";
-        this.__ie.offsetHeight = this.__frame.size.height = height;
+        this.__frame.size.height = height;
         this.__bounds.size.height = height - this.__bounds.origin.y - this.getPaddingBottom();
         this.needsLayoutSubviews = true;
         return this
