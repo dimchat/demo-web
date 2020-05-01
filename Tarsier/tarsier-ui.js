@@ -1341,6 +1341,7 @@ if (typeof tarsier.ui !== "object") {
         return this
     };
     Window.prototype.onClose = function(ev) {
+        Draggable.disable(this, [this.titleView]);
         return true
     };
     ns.Window = Window
