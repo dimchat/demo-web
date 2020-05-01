@@ -283,6 +283,7 @@ if (typeof tarsier.ui !== "object") {
         var div;
         for (var i = 0; i < dragAreas.length; ++i) {
             div = $(dragAreas[i]).__ie;
+            div.draggable = false;
             div.ondragstart = null;
             div.ondrag = div.ondragover = null;
             div.ondragend = null;
