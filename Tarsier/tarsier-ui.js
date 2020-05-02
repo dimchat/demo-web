@@ -313,7 +313,6 @@ if (typeof tarsier.ui !== "object") {
         this.__ie = div;
         this.__frame = Rect.Zero.clone();
         this.__bounds = Rect.Zero.clone();
-        this.setScroll(false);
         this.needsLayoutSubviews = false
     };
     View.prototype = Object.create(Object.prototype);
