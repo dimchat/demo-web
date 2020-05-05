@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Apr. 24, 2020
+ * @date      May. 5, 2020
  * @copyright (c) 2020 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */
@@ -6549,6 +6549,7 @@ if (typeof StarGate !== "object") {
 }(StarGate);
 ! function(ns) {
     var Notification = ns.Notification;
+    var Observer = ns.Observer;
     var Center = function() {
         this.observerMap = {}
     };
@@ -6586,8 +6587,16 @@ if (typeof StarGate !== "object") {
         if (!observers) {
             return
         }
+        var obs;
         for (var i = 0; i < observers.length; ++i) {
-            observers[i].onReceiveNotification(notification)
+            obs = observers[i];
+            if (DIMP.Interface.conforms(obs, Observer)) {
+                obs.onReceiveNotification(notification)
+            } else {
+                if (typeof obs === "function") {
+                    obs.call(notification)
+                }
+            }
         }
     };
     var s_notification_center = null;
