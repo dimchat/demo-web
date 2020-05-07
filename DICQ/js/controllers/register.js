@@ -52,15 +52,23 @@
     RegisterWindow.prototype.submit = function (nickname) {
         var reg = new Register();
         var user = reg.createUser(nickname);
+        // submit event
+        if (this.onSubmit(user)) {
+            this.remove();
+        }
+    };
+
+    RegisterWindow.prototype.onSubmit = function (user) {
         if (user) {
             var facebook = Facebook.getInstance();
             facebook.setCurrentUser(user);
             // open login window
             ns.Main();
+            return true;
         } else {
             alert('Failed to create user account');
+            return false;
         }
-        this.remove();
     };
 
     RegisterWindow.show = function () {

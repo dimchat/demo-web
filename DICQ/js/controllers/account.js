@@ -109,16 +109,25 @@
         profile.setName(nickname);
         profile.sign(privateKey);
         facebook.saveProfile(profile);
+        // submit event
+        if (this.onSubmit(user)) {
+            this.remove();
+        }
+    };
+
+    AccountWindow.prototype.onSubmit = function (user) {
+        var profile = user.getProfile();
         // post profile
         var messenger = Messenger.getInstance();
         messenger.postProfile(profile);
+        var facebook = Facebook.getInstance();
         var admin = facebook.getIdentifier('chatroom');
         if (admin) {
             messenger.sendProfile(profile, admin);
         }
         var text = 'Nickname updated, profile: ' + profile.getValue('data');
         alert(text);
-        this.remove();
+        return true;
     };
 
     AccountWindow.show = function (identifier) {
