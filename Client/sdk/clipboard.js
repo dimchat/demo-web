@@ -28,7 +28,7 @@
 /**
  *  Patch for window.clipboardData
  */
-!function (ns) {
+(function (ns) {
     'use strict';
 
     if (ns.clipboardData) {
@@ -45,7 +45,7 @@
                 return nav_clipboard.readText();
             } else {
                 // TODO:
-                throw TypeError('Only support text data from clipboard');
+                throw new TypeError('Only support text data from clipboard');
             }
         };
     } else {
@@ -64,7 +64,7 @@
                 nav_clipboard.writeText(data);
             } else {
                 // TODO:
-                throw TypeError('Only support text data to clipboard');
+                throw new TypeError('Only support text data to clipboard');
             }
         };
     } else {
@@ -79,11 +79,11 @@
                 var ok = document.execCommand('Copy');
                 document.body.removeChild(input);
                 if (!ok) {
-                    throw EvalError('Failed to access clipboard!');
+                    throw new EvalError('Failed to access clipboard!');
                 }
             } else {
                 // TODO:
-                throw TypeError('Only support text data to clipboard');
+                throw new TypeError('Only support text data to clipboard');
             }
         };
     }
@@ -114,4 +114,4 @@
         }
     };
 
-}(window);
+})(window);

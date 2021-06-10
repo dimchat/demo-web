@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -25,59 +30,36 @@
 // =============================================================================
 //
 
-/**
- *  Convert host string (IP:port) to/from Base58 string
- */
+//! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var StorageCommand = sdk.protocol.StorageCommand;
+    var CommandProcessor = sdk.cpu.CommandProcessor;
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw new URIError('IP format error');
-                }
-            }
-        } else {
-            // base58
-            var data = sdk.format.Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw new URIError('host error: ' + host);
-            }
+    /**
+     *  Storage Command Processor
+     */
+    var StorageCommandProcessor = function () {
+        CommandProcessor.call(this);
+    };
+    sdk.Class(StorageCommandProcessor, CommandProcessor, null);
+
+    // Override
+    StorageCommandProcessor.prototype.execute = function (cmd, rMsg) {
+        var title = cmd.getTitle();
+        if (title === StorageCommand.CONTACTS) {
+            // process contacts
+        } else if (title === StorageCommand.PRIVATE_KEY) {
+            // process private key
         }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
-    };
-    sdk.Class(Host58, Host, null);
-
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
-    };
-
-    Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+        return null;
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.cpu.StorageCommandProcessor = StorageCommandProcessor;
 
-    ns.network.registers('Host58');
+    ns.cpu.register('StorageCommandProcessor')
 
 })(SECHAT, DIMSDK);

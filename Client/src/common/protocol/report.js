@@ -3,7 +3,7 @@
 // =============================================================================
 // The MIT License (MIT)
 //
-// Copyright (c) 2020 Albert Moky
+// Copyright (c) 2021 Albert Moky
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,58 +26,63 @@
 //
 
 /**
- *  Convert host string (IP:port) to/from Base58 string
+ *  Command message: {
+ *      type : 0x88,
+ *      sn   : 123,
+ *
+ *      command  : "report",
+ *      title    : "online",      // or "offline"
+ *      //---- extra info
+ *      time     : 1234567890,    // timestamp?
+ *  }
  */
+
+//! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var Command = sdk.protocol.Command;
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw new URIError('IP format error');
-                }
-            }
+    /**
+     *  Create report command
+     *
+     *  Usages:
+     *      1. new ReportCommand();
+     *      2. new ReportCommand(title);
+     *      3. new ReportCommand(map);
+     */
+    var ReportCommand = function () {
+        if (arguments.length === 0) {
+            // new ReportCommand();
+            Command.call(this, ReportCommand.REPORT);
+        } else if (typeof arguments[0] === 'string') {
+            // new SearchCommand(keywords);
+            Command.call(this, ReportCommand.REPORT);
+            this.setTitle(arguments[0]);
         } else {
-            // base58
-            var data = sdk.format.Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw new URIError('host error: ' + host);
-            }
+            // new SearchCommand(map);
+            Command.call(this, arguments[0]);
         }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
     };
-    sdk.Class(Host58, Host, null);
+    sdk.Class(ReportCommand, Command, null);
 
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
+    ReportCommand.REPORT = 'report';
+    ReportCommand.ONLINE = 'online';
+    ReportCommand.OFFLINE = 'offline';
+
+    //-------- setter/getter --------
+
+    ReportCommand.prototype.setTitle = function (title) {
+        this.setValue('title', title);
     };
-
-    Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+    ReportCommand.prototype.getTitle = function () {
+        return this.getValue('title');
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.protocol.ReportCommand = ReportCommand;
 
-    ns.network.registers('Host58');
+    ns.protocol.registers('ReportCommand');
 
 })(SECHAT, DIMSDK);

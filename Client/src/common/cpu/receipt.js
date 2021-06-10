@@ -25,59 +25,30 @@
 // =============================================================================
 //
 
-/**
- *  Convert host string (IP:port) to/from Base58 string
- */
+//! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var CommandProcessor = sdk.cpu.CommandProcessor;
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw new URIError('IP format error');
-                }
-            }
-        } else {
-            // base58
-            var data = sdk.format.Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw new URIError('host error: ' + host);
-            }
-        }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
+    /**
+     *  Receipt Command Processor
+     */
+    var ReceiptCommandProcessor = function () {
+        CommandProcessor.call(this);
     };
-    sdk.Class(Host58, Host, null);
+    sdk.Class(ReceiptCommandProcessor, CommandProcessor, null);
 
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
-    };
-
-    Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+    // Override
+    ReceiptCommandProcessor.prototype.execute = function (cmd, rMsg) {
+        // no need to response receipt command
+        return null;
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor;
 
-    ns.network.registers('Host58');
+    ns.cpu.registers('ReceiptCommandProcessor')
 
 })(SECHAT, DIMSDK);

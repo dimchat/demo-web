@@ -3,7 +3,7 @@
 // =============================================================================
 // The MIT License (MIT)
 //
-// Copyright (c) 2020 Albert Moky
+// Copyright (c) 2021 Albert Moky
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,59 +25,45 @@
 // =============================================================================
 //
 
-/**
- *  Convert host string (IP:port) to/from Base58 string
- */
+//! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var MessageTransmitter = sdk.MessageTransmitter;
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw new URIError('IP format error');
-                }
-            }
-        } else {
-            // base58
-            var data = sdk.format.Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw new URIError('host error: ' + host);
-            }
-        }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
+    var CommonTransmitter = function (messenger) {
+        MessageTransmitter.call(this, messenger);
     };
-    sdk.Class(Host58, Host, null);
+    sdk.Class(CommonTransmitter, MessageTransmitter, null);
 
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
-    };
+    CommonTransmitter.prototype.sendInstantMessage = function(iMsg, callback, priority) {
+        var messenger = this.getMessenger();
+        // do the encryption in background thread
+        setTimeout(function () {
+            // Send message (secured + certified) to target station
+            var sMsg = messenger.encryptMessage(iMsg);
+            if (sMsg == null) {
+                // public key not found?
+                return false;
+                //throw new ReferenceError("failed to encrypt message: " + iMsg.getMap());
+            }
+            var rMsg = messenger.signMessage(sMsg);
+            if (rMsg == null) {
+                // TODO: set iMsg.state = error
+                throw new ReferenceError("failed to sign message: " + sMsg.getMap());
+            }
 
-    Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+            var OK = messenger.sendReliableMessage(rMsg, callback, priority);
+            // TODO: if OK, set iMsg.state = sending; else set iMsg.state = waiting
+
+            return messenger.saveMessage(iMsg) && OK;
+        }, 128);
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.CommonTransmitter = CommonTransmitter;
 
-    ns.network.registers('Host58');
+    ns.registers('CommonTransmitter');
 
 })(SECHAT, DIMSDK);

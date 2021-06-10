@@ -3,7 +3,7 @@
 // =============================================================================
 // The MIT License (MIT)
 //
-// Copyright (c) 2020 Albert Moky
+// Copyright (c) 2021 Albert Moky
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,59 +25,57 @@
 // =============================================================================
 //
 
-/**
- *  Convert host string (IP:port) to/from Base58 string
- */
+//! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var MessageQueue = function () {
+        this.__queue = [];  // List[MessageWrapper]
+    };
+    sdk.Class(MessageQueue, null, null);
 
-    var Host58 = function (host) {
-        var ipv;
-        if (/[.:]+/.test(host)) {
-            // try IPv4
-            ipv = IPv4.parse(host);
-            if (!ipv) {
-                // try IPv6
-                ipv = IPv6.parse(host);
-                if (!ipv) {
-                    throw new URIError('IP format error');
-                }
-            }
+    MessageQueue.prototype.append = function (rMsg) {
+        var wrapper = new ns.MessageWrapper(rMsg);
+        this.__queue.push(wrapper);
+        return true;
+    };
+
+    MessageQueue.prototype.shift = function () {
+        if (this.__queue.length > 0) {
+            return this.__queue.shift();
         } else {
-            // base58
-            var data = sdk.format.Base58.decode(host);
-            var count = data.length;
-            if (count === 4 || count === 6) {
-                // IPv4
-                ipv = new IPv4(null, 0, data);
-            } else if (count === 16 || count === 18) {
-                // IPv6
-                ipv = new IPv6(null, 0, data);
-            } else {
-                throw new URIError('host error: ' + host);
+            return null;
+        }
+    };
+
+    MessageQueue.prototype.next = function () {
+        var item;
+        for (var i = 0; i < this.__queue.length; ++i) {
+            item = this.__queue[i];
+            if (item.isVirgin()) {
+                item.mark();  // mark sent
+                return item;
             }
         }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
-        this.ipv = ipv;
-    };
-    sdk.Class(Host58, Host, null);
-
-    Host58.prototype.valueOf = function () {
-        return this.ipv.valueOf();
+        return null;
     };
 
-    Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+    MessageQueue.prototype.eject = function () {
+        var item;
+        for (var i = 0; i < this.__queue.length; ++i) {
+            item = this.__queue[i];
+            if (!item.getMessage() || item.isFailed()) {
+                this.__queue.splice(i, 1)
+                return item;
+            }
+        }
+        return null;
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.MessageQueue = MessageQueue;
 
-    ns.network.registers('Host58');
+    ns.registers('MessageQueue');
 
 })(SECHAT, DIMSDK);

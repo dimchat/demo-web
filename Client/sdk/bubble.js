@@ -25,7 +25,7 @@
 // =============================================================================
 //
 
-!function (ns) {
+(function (ns) {
     'use strict';
 
     var join = function () {
@@ -128,4 +128,4 @@
     //-------- namespace --------
     ns.Bubble = Bubble;
 
-}(window);
+})(window);
