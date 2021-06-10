@@ -279,6 +279,6 @@
     //-------- namespace --------
     ns.GroupManager = GroupManager;
 
-    ns.register('GroupManager');
+    ns.registers('GroupManager');
 
 })(SECHAT, DIMSDK);

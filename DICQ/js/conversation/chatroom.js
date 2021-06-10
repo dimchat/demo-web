@@ -1,27 +1,27 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var ChatWindow = ns.ChatWindow;
     var GroupChatWindow = ns.GroupChatWindow;
 
-    var ID = dimp.ID;
+    var ID = sdk.protocol.ID;
 
-    var ForwardContent = dimp.protocol.ForwardContent;
-    var TextContent = dimp.protocol.TextContent;
+    var ForwardContent = sdk.protocol.ForwardContent;
+    var TextContent = sdk.protocol.TextContent;
 
-    var InstantMessage = dimp.InstantMessage;
-    var Envelope = dimp.Envelope;
-    var Messenger = dimp.Messenger;
+    var InstantMessage = sdk.protocol.InstantMessage;
+    var Envelope = sdk.protocol.Envelope;
+    var Messenger = app.Messenger;
 
-    var MessageTable = dimp.db.MessageTable;
+    var MessageTable = app.db.MessageTable;
 
     var ChatroomWindow = function () {
         GroupChatWindow.call(this);
         this.setClassName('chatroomWindow');
         this.setTitle('Chat Room');
     };
-    dimp.Class(ChatroomWindow, GroupChatWindow, null);
+    sdk.Class(ChatroomWindow, GroupChatWindow, null);
 
     ChatroomWindow.prototype.getMessageCount = function () {
         var db = MessageTable.getInstance();
@@ -91,20 +91,20 @@
 
     ns.ChatroomWindow = ChatroomWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
-    var ID = dimp.ID;
+    var ID = sdk.protocol.ID;
 
-    var TextContent = dimp.protocol.TextContent;
-    var SearchCommand = dimp.protocol.SearchCommand;
+    var TextContent = sdk.protocol.TextContent;
+    var SearchCommand = sdk.protocol.SearchCommand;
 
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
+    var Facebook = app.Facebook;
+    var Messenger = app.Messenger;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;
@@ -120,7 +120,7 @@
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
+        if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
             if (ID.EVERYONE.equals(msg.content.getGroup())) {
                 // reload chat history
@@ -183,11 +183,10 @@
         if (!users) {
             return ;
         }
-        var facebook = Facebook.getInstance();
         online_users = [];
         var item;
         for (var i = 0; i < users.length; ++i) {
-            item = facebook.getIdentifier(users[i]);
+            item = ID.parse(users[i]);
             if (!item) {
                 console.error('user ID error: ' + users[i]);
                 continue;
@@ -223,4 +222,4 @@
         interval = null;
     };
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

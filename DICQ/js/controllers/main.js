@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -9,7 +9,8 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
-    var Facebook = dimp.Facebook;
+    var ID = sdk.protocol.ID;
+    var Facebook = app.Facebook;
     var facebook = Facebook.getInstance();
 
     var MainWindow = function () {
@@ -61,7 +62,7 @@
         msg.setClassName('msgBtn buttonActive');
         msg.setText('Chat Room');
         msg.onClick = function (ev) {
-            var admin = facebook.getIdentifier('chatroom');
+            var admin = ID.parse('chatroom');
             ns.ChatroomWindow.show(admin);
         };
         this.appendChild(msg);
@@ -84,7 +85,7 @@
         };
         this.appendChild(icon);
     };
-    dimp.Class(MainWindow, Window, null);
+    sdk.Class(MainWindow, Window, null);
 
     MainWindow.prototype.onClose = function (ev) {
         var user = facebook.getCurrentUser();
@@ -109,4 +110,4 @@
 
     ns.MainWindow = MainWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

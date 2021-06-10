@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var AdView = ns.AdView;
@@ -15,7 +15,7 @@
     var FieldSet = tui.FieldSet;
     var Window = tui.Window;
 
-    var Messenger = dimp.Messenger;
+    var Messenger = app.Messenger;
 
     var SearchWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
@@ -56,7 +56,7 @@
         };
         this.appendChild(button);
     };
-    dimp.Class(SearchWindow, Window, null);
+    sdk.Class(SearchWindow, Window, null);
 
     SearchWindow.prototype.search = function (keywords) {
         ns.SearchResultWindow.show();
@@ -83,9 +83,9 @@
 
     ns.SearchWindow = SearchWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var AdView = ns.AdView;
@@ -103,8 +103,8 @@
 
     var Window = tui.Window;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
-    var Facebook = dimp.Facebook;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Facebook = app.Facebook;
 
     var SearchResultWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
@@ -146,9 +146,9 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, nc.kNotificationMessageUpdated);
     };
-    dimp.Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate]);
+    sdk.Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate]);
 
     SearchResultWindow.prototype.goBack = function () {
         ns.SearchWindow.show();
@@ -205,22 +205,23 @@
 
     ns.SearchResultWindow = SearchResultWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
+    var ID = sdk.protocol.ID;
     var SearchResultWindow = ns.SearchResultWindow;
 
-    var SearchCommand = dimp.protocol.SearchCommand;
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var SearchCommand = sdk.protocol.SearchCommand;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
+        if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
             if (msg.content instanceof SearchCommand) {
                 var command = msg.content.getCommand();
@@ -252,11 +253,10 @@
         if (!users) {
             return ;
         }
-        var facebook = Facebook.getInstance();
         s_users = [];
         var item;
         for (var i = 0; i < users.length; ++i) {
-            item = facebook.getIdentifier(users[i]);
+            item = ID.parse(users[i]);
             if (!item) {
                 console.error('user ID error: ' + users[i]);
                 continue;
@@ -269,4 +269,4 @@
         }
     };
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

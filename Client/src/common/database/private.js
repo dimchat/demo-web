@@ -51,7 +51,12 @@
          * @return {boolean} false on error
          */
         savePrivateKey: function (user, key, type, sign, decrypt) {
-            return this.save(key, user, type);
+            this.load();
+            this.__keys[get_tag(user, type)] = key.getMap();
+            if (type === this.META) {
+                this.__keys[get_tag(user, null)] = key.getMap();
+            }
+            return this.save();
         },
 
         /**
@@ -61,10 +66,14 @@
          * @return {DecryptKey[]} all keys marked for decryption
          */
         getPrivateKeysForDecryption: function (user) {
+            this.load();
             var keys = [];
             var key0 = this.__keys[get_tag(user, null)];
             var key1 = this.__keys[get_tag(user, this.META)];
             var key2 = this.__keys[get_tag(user, this.VISA)];
+            key0 = PrivateKey.parse(key0);
+            key1 = PrivateKey.parse(key1);
+            key2 = PrivateKey.parse(key2);
             if (key2) {
                 keys.push(key2);
             }
@@ -96,16 +105,18 @@
         getPrivateKeyForVisaSignature: function (user) {
             this.load();
             var key = this.__keys[get_tag(user, this.META)];
-            if (key) {
-                return key;
-            } else {
-                return this.__keys[get_tag(user, null)];
+            if (!key) {
+                key = this.__keys[get_tag(user, null)];
             }
+            return PrivateKey.parse(key);
         },
 
         load: function () {
             if (!this.__keys) {
-                this.__keys = parse(Storage.loadJSON('PrivateTable'));
+                this.__keys = Storage.loadJSON('PrivateTable');
+                if (!this.__keys) {
+                    this.__keys = {};
+                }
             }
         },
         save: function () {
@@ -136,7 +147,7 @@
                 identifier = list[i];
                 key = map[identifier];
                 // identifier = ID.parse(identifier);
-                key = PrivateKey.getInstance(key);
+                key = PrivateKey.parse(key);
                 if (identifier && key) {
                     keys[identifier] = key;
                 }

@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -12,9 +12,9 @@
 
     var Window = tui.Window;
 
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
-    var StarStatus = dimp.stargate.StarStatus;
+    var Facebook = app.Facebook;
+    var Messenger = app.Messenger;
+    var Gate = sdk.stargate.Gate;
 
     var LoginWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -76,7 +76,7 @@
         // current user
         this.__user = number;
     };
-    dimp.Class(LoginWindow, Window, null);
+    sdk.Class(LoginWindow, Window, null);
 
     LoginWindow.prototype.setUser = function (user) {
         var facebook = Facebook.getInstance();
@@ -120,12 +120,12 @@
     var check_connection = function () {
         var server = Messenger.getInstance().server;
         var status = server.getStatus();
-        if (status.equals(StarStatus.Connected)) {
+        if (status.equals(Gate.Status.CONNECTED)) {
             // connected
             return null;
-        } else if (status.equals(StarStatus.Connecting)) {
+        } else if (status.equals(Gate.Status.CONNECTING)) {
             return 'Connecting station ...';
-        } else if (status.equals(StarStatus.Error)) {
+        } else if (status.equals(Gate.Status.ERROR)) {
             return 'Connection error!';
         }
         return 'Connect to a DIM station first.';
@@ -150,4 +150,4 @@
 
     ns.LoginWindow = LoginWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

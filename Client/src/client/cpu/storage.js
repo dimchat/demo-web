@@ -60,6 +60,6 @@
     //-------- namespace --------
     ns.cpu.StorageCommandProcessor = StorageCommandProcessor;
 
-    ns.cpu.register('StorageCommandProcessor')
+    ns.cpu.registers('StorageCommandProcessor')
 
 })(SECHAT, DIMSDK);

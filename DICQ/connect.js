@@ -1,34 +1,31 @@
 
-!function (dimp) {
+!function (app, sdk) {
     'use strict';
 
-    var Immortals = dimp.Immortals;
+    var ID = sdk.protocol.ID;
 
-    var facebook = dimp.Facebook.getInstance();
+    var facebook = app.Facebook.getInstance();
 
-    // patch for search number
-    var getIdentifier = facebook.getIdentifier;
-    facebook.getIdentifier = function (string) {
-        var identifier = getIdentifier.call(this, string);
-        if (identifier && this.ans && !this.ans.getIdentifier(string)) {
-            this.ans.cache(String(identifier.getNumber()), identifier);
-        }
-        return identifier;
-    };
+    // // patch for search number
+    // var getIdentifier = facebook.getIdentifier;
+    // facebook.getIdentifier = function (string) {
+    //     var identifier = getIdentifier.call(this, string);
+    //     if (identifier && this.ans && !this.ans.getIdentifier(string)) {
+    //         this.ans.cache(String(identifier.getNumber()), identifier);
+    //     }
+    //     return identifier;
+    // };
 
     var force_ans = function (name, identifier) {
-        identifier = facebook.getIdentifier(identifier);
-        // cheat the reserved names checking
-        var isReserved = facebook.ans.isReserved;
-        facebook.ans.isReserved = function () {return false;};
-        facebook.ans.save(name, identifier);
-        facebook.ans.isReserved = isReserved;
+        // identifier = ID.parse(identifier);
+        // // cheat the reserved names checking
+        // var isReserved = facebook.ans.isReserved;
+        // facebook.ans.isReserved = function () {return false;};
+        // facebook.ans.save(name, identifier);
+        // facebook.ans.isReserved = isReserved;
     };
 
     var test_names = [
-        'moki', Immortals.MOKI,
-        'hulk', Immortals.HULK,
-
         'station', 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW',
 
         'chatroom', 'chatroom-admin@2Pc5gJrEQYoz9D9TJrL35sA3wvprNdenPi7',
@@ -59,27 +56,28 @@
         if (!id) {
             continue;
         }
-        facebook.assistants.push(facebook.getIdentifier(id));
+        facebook.assistants.push(ID.parse(id));
     }
 
     facebook.getAssistants = function () {
         return this.assistants;
     };
 
-}(DIMP);
+}(SECHAT, DIMSDK);
 
-!function (ns, dimp) {
+!function (ns, app, sdk) {
     'use strict';
 
-    var Meta = dimp.Meta;
+    var ID = sdk.protocol.ID;
+    var Meta = sdk.protocol.Meta;
 
-    var Server = dimp.network.Server;
+    var Server = app.network.Server;
 
-    var facebook = dimp.Facebook.getInstance();
-    var messenger = dimp.Messenger.getInstance();
+    var facebook = app.Facebook.getInstance();
+    var messenger = app.Messenger.getInstance();
 
     var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
-    sid = facebook.getIdentifier(sid);
+    sid = ID.parse(sid);
 
     var meta = {
         "version": 1,
@@ -93,13 +91,13 @@
         },
         "fingerprint": "Z1HI27oXMvY5oOpA1HaD+6d4t8/tlGty5XU+6+CIkeij5m8xS1C4vRJm3qaLTxSRsnwX6mMgkvxMAu6FfvDWe4/cisWAWt8E+aC7BrgESVanQyglWZLx0OSWDmV1jrE9Y0xAA3HlgxIoMdi3sQ4giV0NxeJHUymGenC+EsbtiUU="
     };
-    meta = Meta.getInstance(meta);
+    meta = Meta.parse(meta);
     facebook.saveMeta(meta, sid);
 
     var host = $_GET['host'];
     if (!host) {
-        // host = '127.0.0.1';
-        host = '134.175.87.98';   // gz
+        host = '127.0.0.1';
+        // host = '134.175.87.98';   // gz
         // host = '124.156.108.150'; // hk
     }
     var port = $_GET['port'];
@@ -107,8 +105,8 @@
         port = 9394;
     }
 
-    var app = ns.Application.getInstance();
-    app.reconnect = function () {
+    var application = ns.Application.getInstance();
+    application.reconnect = function () {
         var server = messenger.server;
         if (server) {
             // FIXME: disconnect DIM station
@@ -118,19 +116,19 @@
         }
 
         server = new Server(sid, host, port);
-        facebook.cacheUser(server);
-        // server.stationDelegate = app;
+        facebook.setCurrentUser(server);
+        // server.stationDelegate = application;
 
         messenger.delegate = server;
         messenger.server = server;
         server.messenger = messenger;
         server.start();
 
-        server.stationDelegate = app;
+        server.stationDelegate = application;
     };
     // TODO: when connection lost, call this to reconnect DIM station
-    app.reconnect();
+    application.reconnect();
 
     ns.Main();
 
-}(dicq, DIMP);
+}(dicq, SECHAT, DIMSDK);

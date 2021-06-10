@@ -122,6 +122,6 @@
     //-------- namespace --------
     ns.Conversation = Conversation;
 
-    ns.register('Conversation');
+    ns.registers('Conversation');
 
 })(SECHAT, DIMSDK);

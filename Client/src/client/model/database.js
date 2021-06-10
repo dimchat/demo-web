@@ -7,8 +7,6 @@
     var Entity = sdk.Entity;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationMessageUpdated = ns.kNotificationMessageUpdated;
-
     var get_facebook = function () {
         return ns.Facebook.getInstance();
     };
@@ -158,7 +156,7 @@
 
     var post_updated = function (iMsg, identifier) {
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationMessageUpdated, this, {
+        nc.postNotification(ns.kNotificationMessageUpdated, this, {
             'ID': identifier,
             'msg': iMsg
         });

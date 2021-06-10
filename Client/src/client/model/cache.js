@@ -20,9 +20,6 @@
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationMetaAccepted = ns.kNotificationMetaAccepted;
-    var kNotificationDocumentUpdated = ns.kNotificationDocumentUpdated;
-
     var get_messenger = function () {
         return ns.Messenger.getInstance();
     };
@@ -40,7 +37,7 @@
 
         onReceiveNotification: function (notification) {
             var name = notification.name;
-            if (name !== kNotificationMetaAccepted && name !== kNotificationDocumentUpdated) {
+            if (name !== ns.kNotificationMetaAccepted && name !== ns.kNotificationDocumentUpdated) {
                 return;
             }
             var info = notification.userInfo;
@@ -192,8 +189,8 @@
     };
 
     var nc = NotificationCenter.getInstance();
-    nc.addObserver(MessageDataSource, kNotificationMetaAccepted);
-    nc.addObserver(MessageDataSource, kNotificationDocumentUpdated);
+    nc.addObserver(MessageDataSource, ns.kNotificationMetaAccepted);
+    nc.addObserver(MessageDataSource, ns.kNotificationDocumentUpdated);
 
     ns.MessageDataSource = MessageDataSource;
 

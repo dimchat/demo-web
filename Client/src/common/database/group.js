@@ -47,18 +47,23 @@
 
         getMembers: function (group) {
             this.load()
-            return this.__members[group];
+            var members = this.__members[group.toString()];
+            if (members) {
+                return ID.convert(members);
+            } else {
+                return null;
+            }
         },
 
         addMember: function (member, group) {
             var members = this.getMembers(group);
             if (members) {
-                if (members.indexOf(member) >= 0) {
+                if (members.indexOf(member.toString()) >= 0) {
                     return false;
                 }
-                members.push(member);
+                members.push(member.toString());
             } else {
-                members = [member];
+                members = [member.toString()];
             }
             return this.saveMembers(members, group);
         },
@@ -68,7 +73,7 @@
             if (!members) {
                 return false;
             }
-            var pos = members.indexOf(member);
+            var pos = members.indexOf(member.toString());
             if (pos < 0) {
                 return false;
             }
@@ -78,7 +83,7 @@
 
         saveMembers: function (members, group) {
             this.load()
-            this.__members[group] = members;
+            this.__members[group.toString()] = ID.revert(members);
             console.log('saving members for group', group);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -92,8 +97,8 @@
 
         removeGroup: function (group) {
             this.load();
-            if (this.__members[group]) {
-                delete this.__members[group]
+            if (this.__members[group.toString()]) {
+                delete this.__members[group.toString()]
                 return this.save();
             } else {
                 console.error('group not exists: ' + group);
@@ -103,7 +108,10 @@
 
         load: function () {
             if (!this.__members) {
-                this.__members = parse(Storage.loadJSON('GroupTable'));
+                this.__members = Storage.loadJSON('GroupTable');
+                if (!this.__members) {
+                    this.__members = {};
+                }
             }
         },
         save: function () {

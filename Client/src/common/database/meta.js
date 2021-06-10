@@ -36,17 +36,17 @@
     var Storage = sdk.dos.LocalStorage;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationMetaAccepted = ns.kNotificationMetaAccepted;
-
     ns.db.MetaTable = {
 
         getMeta: function (identifier) {
             this.load();
-            var meta = this.__metas[identifier];
-            if (!meta) {
+            var meta = this.__metas[identifier.toString()];
+            if (meta) {
+                return Meta.parse(meta);
+            } else {
                 // TODO: place an empty meta for cache
+                return null;
             }
-            return meta;
         },
 
         saveMeta: function (meta, identifier) {
@@ -55,15 +55,15 @@
                 return false;
             }
             this.load();
-            if (this.__metas[identifier]) {
+            if (this.__metas[identifier.toString()]) {
                 console.log('meta already exists', identifier);
                 return true;
             }
-            this.__metas[identifier] = meta;
+            this.__metas[identifier.toString()] = meta.getMap();
             console.log('saving meta', identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(kNotificationMetaAccepted, this,
+                nc.postNotification(ns.kNotificationMetaAccepted, this,
                     {'ID': identifier, 'meta': meta});
                 return true;
             } else {
@@ -76,14 +76,17 @@
 
         load: function () {
             if (!this.__metas) {
-                this.__metas = parse(Storage.loadJSON('MetaTable'));
+                this.__metas = Storage.loadJSON('MetaTable');
+                if (!this.__metas) {
+                    this.__metas = {};
+                }
             }
         },
         save: function () {
             return Storage.saveJSON(this.__metas, 'MetaTable');
         },
 
-        __metas: null
+        __metas: null  // ID => Meta
     };
 
     var parse = function (map) {
@@ -95,7 +98,7 @@
                 identifier = list[i];
                 meta = map[identifier];
                 identifier = ID.parse(identifier);
-                meta = Meta.getInstance(meta);
+                meta = Meta.parse(meta);
                 if (identifier && meta) {
                     metas[identifier] = meta;
                 }

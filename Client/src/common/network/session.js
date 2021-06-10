@@ -48,13 +48,13 @@
             this.__messenger = arguments[1];
         } else if (arguments.length === 3) {
             // new BaseSession(host, port, transceiver);
-            this.gate = ns.StarTrek.createGate(arguments[0], arguments[1]);
+            this.gate = ns.network.StarTrek.createGate(arguments[0], arguments[1]);
             this.__messenger = arguments[2];
         } else {
             throw new SyntaxError('session arguments error: ' + arguments);
         }
         this.gate.setDelegate(this);
-        this.__queue = new ns.MessageQueue();
+        this.__queue = new ns.network.MessageQueue();
         this.__active = false;
     };
     sdk.Class(BaseSession, Runner, [Gate.Delegate]);
@@ -183,8 +183,8 @@
     };
 
     //-------- namespace --------
-    ns.BaseSession = BaseSession;
+    ns.network.BaseSession = BaseSession;
 
-    ns.registers('BaseSession');
+    ns.network.registers('BaseSession');
 
 })(SECHAT, DIMSDK);

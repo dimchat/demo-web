@@ -83,8 +83,8 @@
     };
 
     //-------- namespace --------
-    ns.StationDelegate = StationDelegate;
+    ns.network.StationDelegate = StationDelegate;
 
-    ns.register('StationDelegate');
+    ns.network.registers('StationDelegate');
 
 })(SECHAT, DIMSDK);

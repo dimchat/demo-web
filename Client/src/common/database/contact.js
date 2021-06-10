@@ -39,18 +39,23 @@
 
         getContacts: function (user) {
             this.load();
-            return this.__users[user];
+            var contacts = this.__contacts[user.toString()];
+            if (contacts) {
+                return ID.convert(contacts);
+            } else {
+                return null;
+            }
         },
 
         addContact: function (contact, user) {
             var contacts = this.getContacts(user);
             if (contacts) {
-                if (contacts.indexOf(contact) >= 0) {
+                if (contacts.indexOf(contact.toString()) >= 0) {
                     return false;
                 }
-                contacts.push(contact);
+                contacts.push(contact.toString());
             } else {
-                contacts = [contact];
+                contacts = [contact.toString()];
             }
             return this.saveContacts(contacts, user);
         },
@@ -60,7 +65,7 @@
             if (!contacts) {
                 return false;
             }
-            var pos = contacts.indexOf(contact);
+            var pos = contacts.indexOf(contact.toString());
             if (pos < 0) {
                 return false;
             }
@@ -70,7 +75,7 @@
 
         saveContacts: function (contacts, user) {
             this.load();
-            this.__users[user] = contacts;
+            this.__contacts[user.toString()] = ID.revert(contacts);
             console.log('saving contacts for user', user);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -83,15 +88,18 @@
         },
 
         load: function () {
-            if (!this.__users) {
-                this.__users = parse(Storage.loadJSON('ContactTable'));
+            if (!this.__contacts) {
+                this.__contacts = Storage.loadJSON('ContactTable');
+                if (!this.__contacts) {
+                    this.__contacts = {};
+                }
             }
         },
         save: function () {
             return Storage.saveJSON(this.__users, 'ContactTable');
         },
 
-        __users: null  // ID => Array<ID>
+        __contacts: null  // ID => Array<ID>
     };
 
     var parse = function (map) {

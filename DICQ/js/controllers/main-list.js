@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var MainTableViewCell = ns.MainTableViewCell;
@@ -11,12 +11,13 @@
     var TableViewDelegate = tui.TableViewDelegate;
     var FixedTableView = tui.FixedTableView;
 
-    var NetworkType = dimp.protocol.NetworkType;
-    var Facebook = dimp.Facebook;
+    var NetworkType = sdk.protocol.NetworkType;
+    var ID = sdk.protocol.ID;
+    var Facebook = app.Facebook;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var MessageTable = dimp.db.MessageTable;
+    var MessageTable = app.db.MessageTable;
 
     var MainListView = function () {
         FixedTableView.call(this);
@@ -28,16 +29,16 @@
         // notifications
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, 'ContactsUpdated');
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, nc.kNotificationMessageUpdated);
     };
-    dimp.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
+    sdk.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
         if (name === 'ContactsUpdated') {
             this.reloadData();
-        } else if (name === nc.kNotificationMessageReceived) {
+        } else if (name === app.kNotificationMessageUpdated) {
             this.reloadData();
         }
     };
@@ -62,7 +63,7 @@
         if (contacts) {
             var id;
             for (var i = 0; i < contacts.length; ++i) {
-                id = facebook.getIdentifier(contacts[i]);
+                id = ID.parse(contacts[i]);
                 if (!id) {
                     console.error('ID error: ' + contacts[i]);
                     continue;
@@ -161,4 +162,4 @@
 
     ns.MainListView = MainListView;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

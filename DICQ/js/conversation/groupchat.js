@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var ChatWindow = ns.ChatWindow;
@@ -7,7 +7,7 @@
 
     var TableView = tui.TableView;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var GroupChatWindow = function () {
         ChatWindow.call(this);
@@ -24,7 +24,7 @@
         this.appendChild(table);
         this.membersView = table;
     };
-    dimp.Class(GroupChatWindow, ChatWindow, null);
+    sdk.Class(GroupChatWindow, ChatWindow, null);
 
     // group owner or admin
     GroupChatWindow.prototype.getAdministratorCount = function () {
@@ -103,14 +103,14 @@
 
     ns.GroupChatWindow = GroupChatWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var ChatWindow = ns.ChatWindow;
     var GroupChatWindow = ns.GroupChatWindow;
@@ -134,7 +134,7 @@
     GroupChatWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
+        if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
             var content = msg.content;
             var identifier = this.__identifier;
@@ -157,4 +157,4 @@
         return ChatWindow.show(identifier, clazz);
     };
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

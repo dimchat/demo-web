@@ -109,7 +109,7 @@
             // disconnect old server
             set_server.call(this, null);
             // connect new server
-            server = new ns.Server(identifier, host, port);
+            server = new ns.network.Server(identifier, host, port);
             server.setDataSource(facebook);
             server.setDelegate(messenger);
             server.start();
@@ -175,9 +175,9 @@
     // };
 
     //-------- namespace --------
-    ns.Terminal = Terminal;
+    ns.network.Terminal = Terminal;
 
-    ns.register('Terminal');
+    ns.registers('Terminal');
 
 })(SECHAT, DIMSDK);
 
@@ -185,7 +185,7 @@
     'use strict';
 
     var Observer = sdk.lnc.Observer;
-    var Terminal = ns.Terminal;
+    var Terminal = ns.network.Terminal;
 
     var Client = function () {
         Terminal.call(this);
@@ -205,8 +205,8 @@
     };
 
     //-------- namespace --------
-    ns.Client = Client;
+    ns.network.Client = Client;
 
-    ns.register('Client');
+    ns.network.registers('Client');
 
 })(SECHAT, DIMSDK);

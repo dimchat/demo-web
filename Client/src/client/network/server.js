@@ -52,8 +52,8 @@
     var MessengerDelegate = sdk.MessengerDelegate;
     var MessageTransmitter = sdk.MessageTransmitter;
 
-    var ServerState = ns.ServerState;
-    var StateMachine = ns.StateMachine;
+    var ServerState = ns.network.ServerState;
+    var StateMachine = ns.network.StateMachine;
 
     var get_facebook = function () {
         return ns.Facebook.getInstance();
@@ -61,8 +61,6 @@
     var get_messenger = function () {
         return ns.Messenger.getInstance();
     };
-
-    var kNotificationStationError = ns.kNotificationStationError;
 
     /**
      *  DIM Station
@@ -74,7 +72,7 @@
         this.__fsm = new StateMachine(this);
         this.__fsm.start();
 
-        this.__session = new ns.Session(host, port, get_messenger());
+        this.__session = new ns.network.Session(host, port, get_messenger());
         this.__sessionKey = null; // session key
 
         this.__paused = false;
@@ -241,7 +239,7 @@
         var delegate = null;
         if (handler instanceof MessageTransmitter.CompletionHandler) {
             var callback = handler.callback;
-            if (ns.Interface.conforms(callback, Ship.Delegate)) {
+            if (sdk.Interface.conforms(callback, Ship.Delegate)) {
                 delegate = callback;
             }
         }
@@ -288,7 +286,7 @@
             // TODO: send all packages waiting
         } else if (state.equals(ServerState.ERROR)) {
             console.error('Station connection error!');
-            nc.postNotification(kNotificationStationError, this, null);
+            nc.postNotification(ns.kNotificationStationError, this, null);
         }
     };
     Server.prototype.exitState = function (state, machine) {
@@ -299,8 +297,8 @@
     };
 
     //-------- namespace --------
-    ns.Server = Server;
+    ns.network.Server = Server;
 
-    ns.register('Server');
+    ns.network.registers('Server');
 
 })(SECHAT, DIMSDK);

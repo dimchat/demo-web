@@ -7,8 +7,6 @@
     var ID = sdk.protocol.ID;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationServiceProviderUpdated = ns.kNotificationServiceProviderUpdated;
-
     ns.NetworkDatabase = {
 
         /**
@@ -67,7 +65,7 @@
                 return false;
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 'sp': sp,
                 'action': 'add',
                 'station': station,
@@ -81,7 +79,7 @@
                 return false;
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 'sp': sp,
                 'action': 'switch',
                 'station': station,
@@ -94,7 +92,7 @@
                 return false;
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 'sp': sp,
                 'action': 'remove',
                 'station': station,

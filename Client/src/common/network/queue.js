@@ -36,7 +36,7 @@
     sdk.Class(MessageQueue, null, null);
 
     MessageQueue.prototype.append = function (rMsg) {
-        var wrapper = new ns.MessageWrapper(rMsg);
+        var wrapper = new ns.network.MessageWrapper(rMsg);
         this.__queue.push(wrapper);
         return true;
     };
@@ -74,8 +74,8 @@
     };
 
     //-------- namespace --------
-    ns.MessageQueue = MessageQueue;
+    ns.network.MessageQueue = MessageQueue;
 
-    ns.registers('MessageQueue');
+    ns.network.registers('MessageQueue');
 
 })(SECHAT, DIMSDK);

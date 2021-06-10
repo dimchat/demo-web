@@ -38,33 +38,33 @@
 
 }(dicq, tarsier.ui);
 
-!function (ns, dimp) {
+!function (ns, app, sdk) {
     'use strict';
 
-    var ID = dimp.ID;
+    var ID = sdk.protocol.ID;
 
-    var Command = dimp.protocol.Command;
-    var MessageBuilder = dimp.cpu.MessageBuilder;
+    var Command = sdk.protocol.Command;
+    var MessageBuilder = app.cpu.MessageBuilder;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
-    var StationDelegate = dimp.network.StationDelegate;
-    var Terminal = dimp.network.Terminal;
+    var StationDelegate = app.network.StationDelegate;
+    var Terminal = app.network.Terminal;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var Application = function () {
         Terminal.call(this);
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationStationConnecting);
-        nc.addObserver(this, nc.kNotificationStationConnected);
-        nc.addObserver(this, nc.kNotificationStationError);
-        nc.addObserver(this, nc.kNotificationMetaAccepted);
-        nc.addObserver(this, nc.kNotificationProfileUpdated);
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, app.kNotificationStationConnecting);
+        nc.addObserver(this, app.kNotificationStationConnected);
+        nc.addObserver(this, app.kNotificationStationError);
+        nc.addObserver(this, app.kNotificationMetaAccepted);
+        nc.addObserver(this, app.kNotificationDocumentUpdated);
+        nc.addObserver(this, app.kNotificationMessageUpdated);
     };
-    dimp.Class(Application, Terminal, [StationDelegate]);
+    sdk.Class(Application, Terminal, [StationDelegate]);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -91,15 +91,14 @@
         } else if (name === nc.kNotificationMetaAccepted) {
             identifier = notification.userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
-        } else if (name === nc.kNotificationProfileUpdated) {
+        } else if (name === nc.kNotificationDocumentUpdated) {
             profile = notification.userInfo;
             res = '[Profile updated] ID: ' + profile.getIdentifier()
                 + ' -> ' + profile.getValue('data');
-        } else if (name === nc.kNotificationMessageReceived) {
+        } else if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
-            var sender = msg.envelope.sender;
-            sender = facebook.getIdentifier(sender);
-            var username = facebook.getNickname(sender);
+            var sender = msg.getSender();
+            var username = facebook.getName(sender);
             if (!username) {
                 username = sender.name;
             }
@@ -113,7 +112,6 @@
             var number = facebook.getNumberString(sender);
             var group = content.getGroup();
             if (group && !ID.EVERYONE.equals(group)) {
-                group = facebook.getIdentifier(group);
                 // add group ID into contacts list
                 add_group(group);
 
@@ -205,13 +203,13 @@
 
     ns.Application = Application;
 
-}(dicq, DIMP);
+}(dicq, SECHAT, DIMSDK);
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app) {
     'use strict';
 
     var Main = function () {
-        var facebook = dimp.Facebook.getInstance();
+        var facebook = app.Facebook.getInstance();
         var user = facebook.getCurrentUser();
         if (user) {
             // login
@@ -224,4 +222,4 @@
 
     ns.Main = Main;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT);

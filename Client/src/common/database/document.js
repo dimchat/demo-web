@@ -36,19 +36,16 @@
     var Storage = sdk.dos.LocalStorage;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationDocumentUpdated = ns.kNotificationDocumentUpdated;
-
     ns.db.DocumentTable = {
 
         getDocument: function (identifier, type) {
             this.load();
-            var doc = this.__docs[identifier];
-            if (!doc) {
-                // place an empty profile for cache
-                doc = Document.create(identifier);
-                // this.__docs[identifier] = doc;
+            var doc = this.__docs[identifier.toString()];
+            if (doc) {
+                return Document.parse(doc);
+            } else {
+                return null;  //Document.create(identifier);
             }
-            return doc;
         },
 
         saveDocument: function (doc) {
@@ -61,11 +58,11 @@
                 throw new Error('entity ID error: ' + doc);
             }
             this.load();
-            this.__docs[identifier] = doc;
+            this.__docs[identifier.toString()] = doc.getMap();
             console.log('saving document', identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(kNotificationDocumentUpdated, this, doc);
+                nc.postNotification(ns.kNotificationDocumentUpdated, this, doc);
                 return true;
             } else {
                 throw new Error('failed to save profile: '
@@ -77,6 +74,9 @@
         load: function () {
             if (!this.__docs) {
                 this.__docs = parse(Storage.loadJSON('DocumentTable'));
+                if (!this.__docs) {
+                    this.__docs = {};
+                }
             }
         },
         save: function () {

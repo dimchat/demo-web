@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -12,7 +12,7 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var UserWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -71,7 +71,7 @@
         this.appendChild(button);
         this.button = button;
     };
-    dimp.Class(UserWindow, Window, null);
+    sdk.Class(UserWindow, Window, null);
 
     UserWindow.prototype.setIdentifier = function (identifier) {
         if (!identifier || !identifier.isUser()) {
@@ -141,4 +141,4 @@
 
     ns.UserWindow = UserWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

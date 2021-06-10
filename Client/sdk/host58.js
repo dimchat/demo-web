@@ -29,12 +29,12 @@
  *  Convert host string (IP:port) to/from Base58 string
  */
 
-(function (ns, sdk) {
+(function (ns, sys) {
     'use strict';
 
-    var Host = sdk.stargate.Host;
-    var IPv4 = sdk.stargate.IPv4;
-    var IPv6 = sdk.stargate.IPv6;
+    var Host = ns.Host;
+    var IPv4 = ns.IPv4;
+    var IPv6 = ns.IPv6;
 
     var Host58 = function (host) {
         var ipv;
@@ -50,7 +50,7 @@
             }
         } else {
             // base58
-            var data = sdk.format.Base58.decode(host);
+            var data = sys.format.Base58.decode(host);
             var count = data.length;
             if (count === 4 || count === 6) {
                 // IPv4
@@ -65,19 +65,19 @@
         Host.call(this, ipv.ip, ipv.port, ipv.data);
         this.ipv = ipv;
     };
-    sdk.Class(Host58, Host, null);
+    sys.Class(Host58, Host, null);
 
     Host58.prototype.valueOf = function () {
         return this.ipv.valueOf();
     };
 
     Host58.prototype.encode = function (default_port) {
-        return sdk.format.Base58.encode(this.ipv.toArray(default_port));
+        return sys.format.Base58.encode(this.ipv.toArray(default_port));
     };
 
     //-------- namespace --------
-    ns.network.Host58 = Host58;
+    ns.Host58 = Host58;
 
-    ns.network.registers('Host58');
+    ns.registers('Host58');
 
-})(SECHAT, DIMSDK);
+})(StarGate, MONKEY);

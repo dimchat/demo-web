@@ -38,13 +38,13 @@
 
         allUsers: function () {
             this.load();
-            return this.__users;
+            return ID.convert(this.__users);
         },
 
         addUser: function (user) {
             var list = this.allUsers();
             if (list.indexOf(user) < 0) {
-                list.push(user);
+                list.push(user.toString());
                 return this.save();
             } else {
                 console.error('user already exists', user);
@@ -54,7 +54,7 @@
 
         removeUser: function (user) {
             var list = this.allUsers();
-            var index = list.indexOf(user);
+            var index = list.indexOf(user.toString());
             if (index < 0) {
                 console.error('user not exists', user);
                 return true;
@@ -66,7 +66,7 @@
 
         setCurrentUser: function (user) {
             var list = this.allUsers();
-            var index = list.indexOf(user);
+            var index = list.indexOf(user.toString());
             if (index === 0) {
                 // already the first user
                 return true;
@@ -74,14 +74,14 @@
                 // already exists, but not the first user
                 list.splice(index, 1);
             }
-            list.unshift(user);
+            list.unshift(user.toString());
             return this.save();
         },
 
         getCurrentUser: function () {
             var list = this.allUsers();
-            if (list && list.length > 0) {
-                return list[0];
+            if (list.length > 0) {
+                return ID.parse(list[0]);
             } else {
                 return null;
             }
@@ -89,7 +89,10 @@
 
         load: function () {
             if (!this.__users) {
-                this.__users = parse(Storage.loadJSON('UserTable'));
+                this.__users = Storage.loadJSON('UserTable');
+                if (!this.__users) {
+                    this.__users = [];
+                }
             }
         },
         save: function () {

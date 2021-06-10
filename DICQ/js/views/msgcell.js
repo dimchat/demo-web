@@ -2,17 +2,17 @@
 //
 //  Message Cell for Chat history (Table View)
 //
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var Label = tui.Label;
     var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
-    var Command = dimp.protocol.Command;
-    var ImageContent = dimp.protocol.ImageContent;
-    var MessageBuilder = dimp.cpu.MessageBuilder;
-    var Facebook = dimp.Facebook;
+    var Command = sdk.protocol.Command;
+    var ImageContent = sdk.protocol.ImageContent;
+    var MessageBuilder = app.cpu.MessageBuilder;
+    var Facebook = app.Facebook;
 
     var MessageCell = function (cell) {
         TableViewCell.call(this, cell);
@@ -26,7 +26,7 @@
 
         var facebook = Facebook.getInstance();
         var user = facebook.getCurrentUser();
-        var sender = facebook.getIdentifier(iMsg.envelope.sender);
+        var sender = iMsg.getSender();
 
         if (user.identifier.equals(sender)) {
             this.setClassName('sent');
@@ -118,4 +118,4 @@
     //-------- namespace --------
     ns.MessageCell = MessageCell;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

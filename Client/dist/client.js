@@ -69,7 +69,7 @@
         return null
     };
     ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
-    ns.cpu.register("LoginCommandProcessor")
+    ns.cpu.registers("LoginCommandProcessor")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
@@ -77,7 +77,6 @@
     var CommandProcessor = sdk.cpu.CommandProcessor;
     var NotificationCenter = sdk.lnc.NotificationCenter;
     var SearchCommand = ns.protocol.SearchCommand;
-    var kNotificationMessageUpdated = ns.kNotificationMessageUpdated;
     var SearchCommandProcessor = function() {
         CommandProcessor.call(this)
     };
@@ -139,14 +138,14 @@
         }
         cmd.setValue("text", text);
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationMessageUpdated, this, {
+        nc.postNotification(ns.kNotificationMessageUpdated, this, {
             "envelope": rMsg.getEnvelope(),
             "content": cmd
         });
         return null
     };
     ns.cpu.SearchCommandProcessor = SearchCommandProcessor;
-    ns.cpu.register("SearchCommandProcessor")
+    ns.cpu.registers("SearchCommandProcessor")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var StorageCommand = sdk.protocol.StorageCommand;
@@ -163,7 +162,7 @@
         return null
     };
     ns.cpu.StorageCommandProcessor = StorageCommandProcessor;
-    ns.cpu.register("StorageCommandProcessor")
+    ns.cpu.registers("StorageCommandProcessor")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ReceiptCommand = sdk.protocol.ReceiptCommand;
@@ -238,8 +237,6 @@
     var ReportCommand = ns.protocol.ReportCommand;
     var SearchCommand = ns.protocol.SearchCommand;
     var NotificationCenter = sdk.lnc.NotificationCenter;
-    var kNotificationMetaAccepted = ns.kNotificationMetaAccepted;
-    var kNotificationDocumentUpdated = ns.kNotificationDocumentUpdated;
     var get_messenger = function() {
         return ns.Messenger.getInstance()
     };
@@ -249,7 +246,7 @@
     var MessageDataSource = {
         onReceiveNotification: function(notification) {
             var name = notification.name;
-            if (name !== kNotificationMetaAccepted && name !== kNotificationDocumentUpdated) {
+            if (name !== ns.kNotificationMetaAccepted && name !== ns.kNotificationDocumentUpdated) {
                 return
             }
             var info = notification.userInfo;
@@ -362,8 +359,8 @@
         __incoming: {}
     };
     var nc = NotificationCenter.getInstance();
-    nc.addObserver(MessageDataSource, kNotificationMetaAccepted);
-    nc.addObserver(MessageDataSource, kNotificationDocumentUpdated);
+    nc.addObserver(MessageDataSource, ns.kNotificationMetaAccepted);
+    nc.addObserver(MessageDataSource, ns.kNotificationDocumentUpdated);
     ns.MessageDataSource = MessageDataSource
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -493,12 +490,11 @@
         return get_database().saveReceipt(iMsg, this.identifier)
     };
     ns.Conversation = Conversation;
-    ns.register("Conversation")
+    ns.registers("Conversation")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var Entity = sdk.Entity;
     var NotificationCenter = sdk.lnc.NotificationCenter;
-    var kNotificationMessageUpdated = ns.kNotificationMessageUpdated;
     var get_facebook = function() {
         return ns.Facebook.getInstance()
     };
@@ -633,7 +629,7 @@
     };
     var post_updated = function(iMsg, identifier) {
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationMessageUpdated, this, {
+        nc.postNotification(ns.kNotificationMessageUpdated, this, {
             "ID": identifier,
             "msg": iMsg
         })
@@ -642,7 +638,6 @@
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
     var NotificationCenter = sdk.lnc.NotificationCenter;
-    var kNotificationServiceProviderUpdated = ns.kNotificationServiceProviderUpdated;
     ns.NetworkDatabase = {
         allProviders: function() {
             var providers = this.providerTable.getProviders();
@@ -663,7 +658,7 @@
                 return false
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 "sp": sp,
                 "action": "add",
                 "station": station,
@@ -676,7 +671,7 @@
                 return false
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 "sp": sp,
                 "action": "switch",
                 "station": station,
@@ -689,7 +684,7 @@
                 return false
             }
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(kNotificationServiceProviderUpdated, this, {
+            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
                 "sp": sp,
                 "action": "remove",
                 "station": station,
@@ -719,8 +714,8 @@
     StationDelegate.prototype.onHandshakeAccepted = function(session, server) {
         console.assert(false, "implement me!")
     };
-    ns.StationDelegate = StationDelegate;
-    ns.register("StationDelegate")
+    ns.network.StationDelegate = StationDelegate;
+    ns.network.registers("StationDelegate")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var State = sdk.fsm.State;
@@ -762,16 +757,16 @@
         console.assert(machine !== null, "machine empty");
         this.time = null
     };
-    ns.ServerState = ServerState;
-    ns.register("ServerState")
+    ns.network.ServerState = ServerState;
+    ns.network.registers("ServerState")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var Transition = sdk.fsm.Transition;
-    var Machine = sdk.fsm.Machine;
+    var AutoMachine = sdk.fsm.AutoMachine;
     var Gate = sdk.startrek.Gate;
-    var ServerState = ns.ServerState;
+    var ServerState = ns.network.ServerState;
     var StateMachine = function(server) {
-        Machine.call(this, ServerState.DEFAULT);
+        AutoMachine.call(this, ServerState.DEFAULT);
         this.setDelegate(server);
         this.__session = null;
         set_state.call(this, default_state());
@@ -781,7 +776,7 @@
         set_state.call(this, running_state());
         set_state.call(this, error_state())
     };
-    sdk.Class(StateMachine, Machine, null);
+    sdk.Class(StateMachine, AutoMachine, null);
     var set_state = function(state) {
         this.addState(state, state.name)
     };
@@ -792,7 +787,7 @@
         this.__session = session
     };
     StateMachine.prototype.getCurrentState = function() {
-        var state = Machine.prototype.getCurrentState.call(this);
+        var state = AutoMachine.prototype.getCurrentState.call(this);
         if (!state) {
             state = this.getState(ServerState.DEFAULT)
         }
@@ -882,8 +877,8 @@
             return !status.equals(Gate.Status.ERROR)
         }))
     };
-    ns.StateMachine = StateMachine;
-    ns.register("StateMachine")
+    ns.network.StateMachine = StateMachine;
+    ns.network.registers("StateMachine")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
@@ -899,21 +894,20 @@
     var Station = sdk.Station;
     var MessengerDelegate = sdk.MessengerDelegate;
     var MessageTransmitter = sdk.MessageTransmitter;
-    var ServerState = ns.ServerState;
-    var StateMachine = ns.StateMachine;
+    var ServerState = ns.network.ServerState;
+    var StateMachine = ns.network.StateMachine;
     var get_facebook = function() {
         return ns.Facebook.getInstance()
     };
     var get_messenger = function() {
         return ns.Messenger.getInstance()
     };
-    var kNotificationStationError = ns.kNotificationStationError;
     var Server = function(identifier, host, port) {
         Station.call(this, identifier, host, port);
         this.__delegate = null;
         this.__fsm = new StateMachine(this);
         this.__fsm.start();
-        this.__session = new ns.Session(host, port, get_messenger());
+        this.__session = new ns.network.Session(host, port, get_messenger());
         this.__sessionKey = null;
         this.__paused = false;
         this.__currentUser = null
@@ -1032,7 +1026,7 @@
         var delegate = null;
         if (handler instanceof MessageTransmitter.CompletionHandler) {
             var callback = handler.callback;
-            if (ns.Interface.conforms(callback, Ship.Delegate)) {
+            if (sdk.Interface.conforms(callback, Ship.Delegate)) {
                 delegate = callback
             }
         }
@@ -1068,7 +1062,7 @@
             if (state.equals(ServerState.RUNNING)) {} else {
                 if (state.equals(ServerState.ERROR)) {
                     console.error("Station connection error!");
-                    nc.postNotification(kNotificationStationError, this, null)
+                    nc.postNotification(ns.kNotificationStationError, this, null)
                 }
             }
         }
@@ -1076,18 +1070,18 @@
     Server.prototype.exitState = function(state, machine) {};
     Server.prototype.pauseState = function(state, machine) {};
     Server.prototype.resumeState = function(state, machine) {};
-    ns.Server = Server;
-    ns.register("Server")
+    ns.network.Server = Server;
+    ns.network.registers("Server")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var Gate = sdk.startrek.Gate;
     var WSDocker = sdk.stargate.WSDocker;
-    var BaseSession = ns.BaseSession;
+    var BaseSession = ns.network.BaseSession;
     var Session = function(host, port, messenger) {
-        BaseSession.call(host, port, messenger);
+        BaseSession.call(this, host, port, messenger);
         this.__docker = new WSDocker(this.gate)
     };
-    ns.Class(Session, BaseSession, null);
+    sdk.Class(Session, BaseSession, null);
     Session.prototype.setup = function() {
         this.gate.setDocker(this.__docker);
         this.setActive(true);
@@ -1110,13 +1104,13 @@
         BaseSession.prototype.onGateStatusChanged.call(this, gate, oldStatus, newStatus);
         if (newStatus.equals(Gate.Status.CONNECTED)) {
             var delegate = this.getMessenger().getDelegate();
-            if (delegate instanceof ns.Server) {
+            if (delegate instanceof ns.network.Server) {
                 delegate.handshake(null)
             }
         }
     };
-    ns.Session = Session;
-    ns.register("Session")
+    ns.network.Session = Session;
+    ns.network.registers("Session")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var get_facebook = function() {
@@ -1168,7 +1162,7 @@
         var server = this.__server;
         if (is_new_server.call(this, host, port)) {
             set_server.call(this, null);
-            server = new ns.Server(identifier, host, port);
+            server = new ns.network.Server(identifier, host, port);
             server.setDataSource(facebook);
             server.setDelegate(messenger);
             server.start();
@@ -1189,12 +1183,12 @@
     Terminal.prototype.terminate = function() {
         set_server.call(this, null)
     };
-    ns.Terminal = Terminal;
-    ns.register("Terminal")
+    ns.network.Terminal = Terminal;
+    ns.registers("Terminal")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var Observer = sdk.lnc.Observer;
-    var Terminal = ns.Terminal;
+    var Terminal = ns.network.Terminal;
     var Client = function() {
         Terminal.call(this)
     };
@@ -1209,8 +1203,8 @@
         }
         return s_client
     };
-    ns.Client = Client;
-    ns.register("Client")
+    ns.network.Client = Client;
+    ns.network.registers("Client")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
@@ -1547,7 +1541,7 @@
         return count > 0 && facebook.saveMembers(members, group)
     };
     ns.GroupManager = GroupManager;
-    ns.register("GroupManager")
+    ns.registers("GroupManager")
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var SymmetricKey = sdk.crypto.SymmetricKey;
@@ -1889,7 +1883,7 @@
     };
     Register.prototype.createDocument = function(identifier, properties) {
         var doc = Document.parse({
-            "ID": identifier
+            "ID": identifier.toString()
         });
         if (properties) {
             var keys = Object.keys(properties);
@@ -1912,5 +1906,5 @@
         return get_messenger().postDocument(doc, meta)
     };
     ns.Register = Register;
-    ns.register("Register")
+    ns.registers("Register")
 })(SECHAT, DIMSDK);

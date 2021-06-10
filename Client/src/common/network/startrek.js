@@ -30,7 +30,7 @@
 (function (ns, sdk) {
     'use strict';
 
-    var ActiveConnection = sdk.startrek.ActiveConnection;
+    var ActiveConnection = sdk.stargate.ActiveConnection;
     var WSGate = sdk.stargate.WSGate;
 
     var StarTrek = function (connection) {
@@ -57,8 +57,8 @@
     };
 
     //-------- namespace --------
-    ns.StarTrek = StarTrek;
+    ns.network.StarTrek = StarTrek;
 
-    ns.registers('StarTrek');
+    ns.network.registers('StarTrek');
 
 })(SECHAT, DIMSDK);

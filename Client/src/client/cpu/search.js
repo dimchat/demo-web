@@ -43,8 +43,6 @@
 
     var SearchCommand = ns.protocol.SearchCommand;
 
-    var kNotificationMessageUpdated = ns.kNotificationMessageUpdated;
-
     /**
      *  Search Command Processor
      */
@@ -115,7 +113,7 @@
         cmd.setValue('text', text);
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(kNotificationMessageUpdated, this, {
+        nc.postNotification(ns.kNotificationMessageUpdated, this, {
             'envelope': rMsg.getEnvelope(),
             'content': cmd
         });
@@ -125,6 +123,6 @@
     //-------- namespace --------
     ns.cpu.SearchCommandProcessor = SearchCommandProcessor;
 
-    ns.cpu.register('SearchCommandProcessor')
+    ns.cpu.registers('SearchCommandProcessor')
 
 })(SECHAT, DIMSDK);

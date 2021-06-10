@@ -2,7 +2,7 @@
 //
 //  Conversation Cell for Main List (Table View)
 //
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var Label = tui.Label;
@@ -10,10 +10,10 @@
     var Button = tui.Button;
     var TableViewCell = tui.TableViewCell;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
-    var MessageTable = dimp.db.MessageTable;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var MessageTable = app.db.MessageTable;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var MainTableViewCell = function (cell) {
         TableViewCell.call(this, cell);
@@ -63,7 +63,7 @@
         // avatar
         var image = null;
         if (identifier.isUser()) {
-            var profile = facebook.getProfile(identifier);
+            var profile = facebook.getDocument(identifier, '*');
             if (profile) {
                 image = profile.getProperty('avatar');
             }
@@ -95,7 +95,7 @@
     MainTableViewCell.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
+        if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
             check_unread_msg.call(this, msg);
         }
@@ -103,12 +103,12 @@
 
     MainTableViewCell.prototype.onEnter = function () {
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, nc.kNotificationMessageUpdated);
     };
 
     MainTableViewCell.prototype.onExit = function () {
         var nc = NotificationCenter.getInstance();
-        nc.removeObserver(this, nc.kNotificationMessageReceived);
+        nc.removeObserver(this, nc.kNotificationMessageUpdated);
         this.stopDancing();
     };
 
@@ -186,4 +186,4 @@
     //-------- namespace --------
     ns.MainTableViewCell = MainTableViewCell;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

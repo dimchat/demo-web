@@ -50,16 +50,18 @@ if (typeof MONKEY !== "object") {
     var export_one = function(from, to, name) {
         var source = from[name];
         var target = to[name];
-        if (typeof target === "undefined") {
-            to[name] = source
-        } else {
-            if (is_space(source)) {
-                if (!is_space(target)) {
-                    namespacefy(target)
-                }
-                source.exports(target)
+        if (source === target) {} else {
+            if (typeof target === "undefined") {
+                to[name] = source
             } else {
-                export_all(source, target)
+                if (is_space(source)) {
+                    if (!is_space(target)) {
+                        namespacefy(target)
+                    }
+                    source.exports(target)
+                } else {
+                    export_all(source, target)
+                }
             }
         }
     };
@@ -3044,7 +3046,7 @@ if (typeof MingKeMing !== "object") {
     var ID = ns.protocol.ID;
     var Document = ns.protocol.Document;
     var Visa = ns.protocol.Visa;
-    var BaseDocument = ns.BaseDocument;
+    var BaseDocument = ns.mkm.BaseDocument;
     var BaseVisa = function() {
         if (arguments.length === 3) {
             BaseDocument.call(this, arguments[0], arguments[1], arguments[2])
@@ -3125,15 +3127,15 @@ if (typeof MingKeMing !== "object") {
     ns.mkm.registers("BaseBulletin")
 })(MingKeMing);
 if (typeof DaoKeDao !== "object") {
-    DaoKeDao = new MONKEY.Namespace()
+    DaoKeDao = new MingKeMing.Namespace()
 }
 (function(ns, base) {
     base.exports(ns);
     if (typeof ns.protocol !== "object") {
-        ns.protocol = new MONKEY.Namespace()
+        ns.protocol = new ns.Namespace()
     }
     if (typeof ns.dkd !== "object") {
-        ns.dkd = new MONKEY.Namespace()
+        ns.dkd = new ns.Namespace()
     }
     ns.registers("protocol");
     ns.registers("dkd")
@@ -7671,7 +7673,6 @@ if (typeof DIMSDK !== "object") {
     ns.cpu.registers("ContentProcessor")
 })(DIMSDK);
 (function(ns) {
-    var ContentType = ns.protocol.ContentType;
     var TextContent = ns.protocol.TextContent;
     var Command = ns.protocol.Command;
     var GroupCommand = ns.protocol.GroupCommand;
@@ -8683,6 +8684,7 @@ if (typeof DIMSDK !== "object") {
     MessageCallbackHandler.prototype.onFailed = function(error) {
         this.callback.onFinished(this.message, error)
     };
+    MessageTransmitter.CompletionHandler = MessageCallbackHandler;
     ns.MessageTransmitter = MessageTransmitter;
     ns.registers("MessageTransmitter")
 })(DIMSDK);
@@ -8994,14 +8996,14 @@ if (typeof StarGate !== "object") {
         if (typeof notification === "string") {
             notification = new Notification(notification, sender, userInfo)
         }
-        var observers = this.observerMap[notification.name];
+        var observers = this.__observers[notification.name];
         if (!observers) {
             return
         }
         var obs;
         for (var i = 0; i < observers.length; ++i) {
             obs = observers[i];
-            if (ns.Interface.conforms(obs, Observer)) {
+            if (sys.Interface.conforms(obs, Observer)) {
                 obs.onReceiveNotification(notification)
             } else {
                 if (typeof obs === "function") {

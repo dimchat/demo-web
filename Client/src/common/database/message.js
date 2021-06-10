@@ -36,8 +36,6 @@
     var Storage = sdk.dos.SessionStorage;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var kNotificationMessageUpdated = ns.kNotificationMessageUpdated;
-
     ns.db.MessageTable = {
 
         //---- conversations
@@ -127,7 +125,7 @@
         lastMessage: function (entity) {
             var messages = this.loadMessages(entity);
             if (messages && messages.length > 0) {
-                return messages[messages.length - 1];
+                return InstantMessage.parse(messages[messages.length - 1]);
             } else {
                 return null;
             }
@@ -152,7 +150,7 @@
         messageAtIndex: function (index, entity) {
             var messages = this.loadMessages(entity);
             console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
-            return messages[index];
+            return InstantMessage.parse(messages[index]);
         },
 
         /**
@@ -174,7 +172,7 @@
             }
             if (this.saveMessages(messages, entity)) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(kNotificationMessageUpdated, this, iMsg);
+                nc.postNotification(ns.kNotificationMessageUpdated, this, iMsg);
                 return true;
             } else {
                 throw new Error('failed to save message: ' + iMsg);
@@ -221,11 +219,18 @@
          *  Load messages in conversation
          *
          * @param {ID} conversation
-         * @returns {*[]}
+         * @returns {InstantMessage[]}
          */
         loadMessages: function (conversation) {
             this.load(conversation);
-            return this.__messages[conversation];
+            var array = this.__messages[conversation];
+            var messages = [];
+            if (array) {
+                for (var i = 0; i < array.length; ++i) {
+                    messages.push(InstantMessage.parse(array[i]));
+                }
+            }
+            return messages;
         },
 
         /**
@@ -236,17 +241,23 @@
          * @returns {boolean}
          */
         saveMessages: function (messages, conversation) {
-            this.__messages[conversation] = messages;
+            var array = [];
+            if (messages) {
+                for (var i = 0; i < messages.length; ++i) {
+                    array.push(messages[i].getMap());
+                }
+            }
+            this.__messages[conversation.toString()] = array;
             return this.save(conversation);
         },
 
         load: function (identifier) {
-            if (!this.__messages[identifier]) {
-                this.__messages[identifier] = parse(Storage.loadJSON(get_tag(identifier)));
+            if (!this.__messages[identifier.toString()]) {
+                this.__messages[identifier.toString()] = Storage.loadJSON(get_tag(identifier));
             }
         },
         save: function (identifier) {
-            return Storage.saveJSON(this.__messages[identifier], get_tag(identifier));
+            return Storage.saveJSON(this.__messages[identifier.toString()], get_tag(identifier));
         },
 
         __messages: {}  // ID => Array<InstantMessage>

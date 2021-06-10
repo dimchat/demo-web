@@ -2,14 +2,14 @@
 //
 //  User Cell for Group Chat / Search Results (Table View)
 //
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var Label = tui.Label;
     var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var UserTableViewCell = function (cell) {
         TableViewCell.call(this, cell);
@@ -27,7 +27,7 @@
         // avatar
         var avatarImage = new Image();
         avatarImage.setClassName('avatar');
-        var profile = facebook.getProfile(identifier);
+        var profile = facebook.getDocument(identifier, '*');
         if (profile) {
             var url = profile.getProperty('avatar');
             if (url) {
@@ -39,7 +39,7 @@
         // name
         var nameLabel = new Label();
         nameLabel.setClassName('name');
-        var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getName(identifier);
         if (!nickname) {
             nickname = identifier.name;
         }
@@ -71,4 +71,4 @@
     //-------- namespace --------
     ns.UserTableViewCell = UserTableViewCell;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

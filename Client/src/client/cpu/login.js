@@ -54,6 +54,6 @@
     //-------- namespace --------
     ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
 
-    ns.cpu.register('LoginCommandProcessor')
+    ns.cpu.registers('LoginCommandProcessor')
 
 })(SECHAT, DIMSDK);

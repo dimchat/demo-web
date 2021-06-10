@@ -246,7 +246,7 @@
     };
 
     CommonFacebook.prototype.createUser = function (identifier) {
-        if (is_waiting.call(identifier)) {
+        if (is_waiting.call(this, identifier)) {
             return null;
         } else {
             return Facebook.prototype.createUser.call(this, identifier);
@@ -256,7 +256,7 @@
         return !id.isBroadcast() && !this.getMeta(id);
     };
     CommonFacebook.prototype.createGroup = function (identifier) {
-        if (is_waiting.call(identifier)) {
+        if (is_waiting.call(this, identifier)) {
             return null;
         } else {
             return Facebook.prototype.createGroup.call(this, identifier);

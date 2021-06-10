@@ -59,7 +59,7 @@
             return false;
         }
         var now = new Date();
-        return now.getTime() - this.__timestamp > ns.BaseSession.EXPIRES;
+        return now.getTime() - this.__timestamp > ns.network.BaseSession.EXPIRES;
     };
 
     //
@@ -91,8 +91,8 @@
 
 
     //-------- namespace --------
-    ns.MessageWrapper = MessageWrapper;
+    ns.network.MessageWrapper = MessageWrapper;
 
-    ns.registers('MessageWrapper');
+    ns.network.registers('MessageWrapper');
 
 })(SECHAT, DIMSDK);

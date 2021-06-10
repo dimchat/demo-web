@@ -83,9 +83,9 @@
     };
 
     //-------- namespace --------
-    ns.ServerState = ServerState;
+    ns.network.ServerState = ServerState;
 
-    ns.register('ServerState');
+    ns.network.registers('ServerState');
 
 })(SECHAT, DIMSDK);
 
@@ -93,16 +93,16 @@
     'use strict';
 
     var Transition = sdk.fsm.Transition;
-    var Machine = sdk.fsm.Machine;
+    var AutoMachine = sdk.fsm.AutoMachine;
     var Gate = sdk.startrek.Gate;
 
-    var ServerState = ns.ServerState;
+    var ServerState = ns.network.ServerState;
 
     /**
      *  Server state machine
      */
     var StateMachine = function(server) {
-        Machine.call(this, ServerState.DEFAULT);
+        AutoMachine.call(this, ServerState.DEFAULT);
 
         this.setDelegate(server);
         this.__session = null;  // session key
@@ -115,7 +115,7 @@
         set_state.call(this, running_state());
         set_state.call(this, error_state());
     };
-    sdk.Class(StateMachine, Machine, null);
+    sdk.Class(StateMachine, AutoMachine, null);
 
     var set_state = function (state) {
         this.addState(state, state.name);
@@ -133,7 +133,7 @@
     //
 
     StateMachine.prototype.getCurrentState = function () {
-        var state = Machine.prototype.getCurrentState.call(this);
+        var state = AutoMachine.prototype.getCurrentState.call(this);
         if (!state) {
             state = this.getState(ServerState.DEFAULT);
         }
@@ -261,8 +261,8 @@
     };
 
     //-------- namespace --------
-    ns.StateMachine = StateMachine;
+    ns.network.StateMachine = StateMachine;
 
-    ns.register('StateMachine');
+    ns.network.registers('StateMachine');
 
 })(SECHAT, DIMSDK);

@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -13,8 +13,8 @@
     var FieldSet = tui.FieldSet;
     var Window = tui.Window;
 
-    var Facebook = dimp.Facebook;
-    var Register = dimp.extensions.Register;
+    var Facebook = app.Facebook;
+    var Register = app.Register;
 
     var RegisterWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -47,7 +47,7 @@
         };
         this.appendChild(button);
     };
-    dimp.Class(RegisterWindow, Window, null);
+    sdk.Class(RegisterWindow, Window, null);
 
     RegisterWindow.prototype.submit = function (nickname) {
         var reg = new Register();
@@ -89,4 +89,4 @@
 
     ns.RegisterWindow = RegisterWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

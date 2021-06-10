@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -16,15 +16,15 @@
     var TableViewDelegate = tui.TableViewDelegate;
     var TableView = tui.TableView;
 
-    var TextContent = dimp.protocol.TextContent;
+    var TextContent = sdk.protocol.TextContent;
 
-    var StarStatus = dimp.stargate.StarStatus;
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var StarStatus = sdk.stargate.StarStatus;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var MessageTable = dimp.db.MessageTable;
+    var MessageTable = app.db.MessageTable;
 
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
+    var Facebook = app.Facebook;
+    var Messenger = app.Messenger;
 
     var ChatWindow = function () {
         var frame = new Rect(0, 0, 640, 480);
@@ -83,9 +83,9 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, nc.kNotificationMessageUpdated);
     };
-    dimp.Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate]);
+    sdk.Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate]);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = Facebook.getInstance();
@@ -110,7 +110,7 @@
     ChatWindow.prototype.onReceiveNotification = function (notification) {
         var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageReceived) {
+        if (name === nc.kNotificationMessageUpdated) {
             var msg = notification.userInfo;
             var env = msg.envelope;
             var identifier = this.__identifier;
@@ -234,4 +234,4 @@
 
     ns.ChatWindow = ChatWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

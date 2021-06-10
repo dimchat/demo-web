@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var AdView = ns.AdView;
@@ -8,7 +8,7 @@
     var View = tui.View;
     var Image = tui.Image;
 
-    var Facebook = dimp.Facebook;
+    var Facebook = app.Facebook;
 
     var PersonalChatWindow = function () {
         ChatWindow.call(this);
@@ -36,13 +36,13 @@
 
         this.appendChild(tray);
     };
-    dimp.Class(PersonalChatWindow, ChatWindow, null);
+    sdk.Class(PersonalChatWindow, ChatWindow, null);
 
     PersonalChatWindow.prototype.setIdentifier = function (identifier) {
         ChatWindow.prototype.setIdentifier.call(this, identifier);
         var avatar = null;
         var facebook = Facebook.getInstance();
-        var profile = facebook.getProfile(identifier);
+        var profile = facebook.getDocument(identifier, '*');
         if (profile) {
             avatar = profile.getProperty('avatar');
         }
@@ -64,4 +64,4 @@
 
     ns.PersonalChatWindow = PersonalChatWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

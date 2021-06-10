@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -13,9 +13,10 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
-    var Profile = dimp.Profile;
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
+    var ID = sdk.protocol.ID;
+    var Document = sdk.protocol.Document;
+    var Facebook = app.Facebook;
+    var Messenger = app.Messenger;
 
     var AccountWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -76,7 +77,7 @@
         };
         this.appendChild(button);
     };
-    dimp.Class(AccountWindow, Window, null);
+    sdk.Class(AccountWindow, Window, null);
 
     AccountWindow.prototype.setIdentifier = function (identifier) {
         if (!identifier || !identifier.isUser()) {
@@ -102,13 +103,13 @@
             throw Error('Failed to get private key for current user: ' + user);
         }
         // update profile
-        var profile = user.getProfile();
+        var profile = user.getVisa();
         if (!profile) {
-            profile = new Profile(user.identifier);
+            profile = new Document(user.identifier);
         }
         profile.setName(nickname);
         profile.sign(privateKey);
-        facebook.saveProfile(profile);
+        facebook.saveDocument(profile);
         // submit event
         if (this.onSubmit(user)) {
             this.remove();
@@ -116,14 +117,13 @@
     };
 
     AccountWindow.prototype.onSubmit = function (user) {
-        var profile = user.getProfile();
+        var profile = user.getVisa();
         // post profile
         var messenger = Messenger.getInstance();
-        messenger.postProfile(profile);
-        var facebook = Facebook.getInstance();
-        var admin = facebook.getIdentifier('chatroom');
+        messenger.postDocument(profile);
+        var admin = ID.parse('chatroom');
         if (admin) {
-            messenger.sendProfile(profile, admin);
+            messenger.sendDocument(profile, admin);
         }
         var text = 'Nickname updated, profile: ' + profile.getValue('data');
         alert(text);
@@ -165,4 +165,4 @@
 
     ns.AccountWindow = AccountWindow;
 
-}(dicq, tarsier.ui, DIMP);
+}(dicq, tarsier.ui, SECHAT, DIMSDK);

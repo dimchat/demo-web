@@ -38,13 +38,13 @@
 
     var Gate = sdk.startrek.Gate;
     var WSDocker = sdk.stargate.WSDocker;
-    var BaseSession = ns.BaseSession;
+    var BaseSession = ns.network.BaseSession;
 
     var Session = function (host, port, messenger) {
-        BaseSession.call(host, port, messenger);
+        BaseSession.call(this, host, port, messenger);
         this.__docker = new WSDocker(this.gate);
     };
-    ns.Class(Session, BaseSession, null);
+    sdk.Class(Session, BaseSession, null);
 
     Session.prototype.setup = function () {
         this.gate.setDocker(this.__docker);
@@ -75,15 +75,15 @@
         BaseSession.prototype.onGateStatusChanged.call(this, gate, oldStatus, newStatus);
         if (newStatus.equals(Gate.Status.CONNECTED)) {
             var delegate = this.getMessenger().getDelegate();
-            if (delegate instanceof ns.Server) {
+            if (delegate instanceof ns.network.Server) {
                 delegate.handshake(null);
             }
         }
     };
 
     //-------- namespace --------
-    ns.Session = Session;
+    ns.network.Session = Session;
 
-    ns.register('Session');
+    ns.network.registers('Session');
 
 })(SECHAT, DIMSDK);

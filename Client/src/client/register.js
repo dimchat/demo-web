@@ -123,7 +123,7 @@
     };
 
     Register.prototype.createDocument = function (identifier, properties) {
-        var doc = Document.parse({'ID': identifier});
+        var doc = Document.parse({'ID': identifier.toString()});
         if (properties) {
             var keys = Object.keys(properties);
             var name, value;
@@ -153,6 +153,6 @@
     //-------- namespace --------
     ns.Register = Register;
 
-    ns.register('Register');
+    ns.registers('Register');
 
 })(SECHAT, DIMSDK);
