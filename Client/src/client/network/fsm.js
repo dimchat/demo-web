@@ -170,6 +170,12 @@
                 } else {
                     return false;
                 }
+            }),
+            // target state: Error
+            transition(ServerState.ERROR, function (machine) {
+                var server = get_server(machine);
+                var status = server.getStatus();
+                return status.equals(Gate.Status.ERROR);
             })
         );
     };
@@ -183,7 +189,7 @@
             }),
             // target state: Error
             transition(ServerState.ERROR, function (machine) {
-                var server = machine.server;
+                var server = get_server(machine);
                 var status = server.getStatus();
                 return status.equals(Gate.Status.ERROR);
             })
@@ -195,6 +201,12 @@
             transition(ServerState.HANDSHAKING, function (machine) {
                 var server = get_server(machine);
                 return server.getCurrentUser();
+            }),
+            // target state: Error
+            transition(ServerState.ERROR, function (machine) {
+                var server = get_server(machine);
+                var status = server.getStatus();
+                return status.equals(Gate.Status.ERROR);
             })
         );
     };
@@ -229,23 +241,22 @@
             transition(ServerState.ERROR, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return !status.equals(Gate.Status.CONNECTED);
+                return status.equals(Gate.Status.ERROR);
             })
         );
     };
     var running_state = function () {
         return server_state(ServerState.RUNNING,
+            // target state: Default
+            transition(ServerState.DEFAULT, function (machine) {
+                // user switched?
+                return !machine.getSessionKey();
+            }),
             // target state: Error
             transition(ServerState.ERROR, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return !status.equals(Gate.Status.CONNECTED);
-            }),
-            // target state: Default
-            transition(ServerState.DEFAULT, function (machine) {
-                var server = get_server(machine);
-                // user switched?
-                return !server.getSessionKey();
+                return status.equals(Gate.Status.ERROR);
             })
         );
     };

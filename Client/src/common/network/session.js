@@ -63,13 +63,13 @@
 
     var flush = function () {
         var msg;
-        var wrapper = this.__queue.pop();
+        var wrapper = this.__queue.shift();
         while (wrapper) {
             msg = wrapper.getMessage();
             if (msg) {
                 this.storeMessage(msg);
             }
-            wrapper = this.__queue.pop();
+            wrapper = this.__queue.shift();
         }
     };
     var clean = function () {
@@ -173,11 +173,10 @@
 
     BaseSession.prototype.onGateReceived = function (gate, ship) {
         var payload = ship.getPayload();
-        console.log('received data', payload);
         try {
             return this.getMessenger().processData(payload);
         } catch (e) {
-            console.log('received data error', payload);
+            console.log('received data error', e);
             return null;
         }
     };

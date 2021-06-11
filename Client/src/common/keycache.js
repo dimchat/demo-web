@@ -157,7 +157,7 @@
     // @override
     KeyCache.prototype.getCipherKey = function (sender, receiver, generate) {
         if (receiver.isBroadcast()) {
-            return ns.crypto.PlainKey.getInstance();
+            return sdk.crypto.PlainKey.getInstance();
         }
         // get key from cache
         var key = get_key.call(this, sender, receiver);

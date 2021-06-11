@@ -68,9 +68,9 @@
                 this.__server.end();
             }
         }
-        if (server) {
-            server.setDelegate(this);
-        }
+        // if (server) {
+        //     server.setDelegate(this);
+        // }
         this.__server = server;
     };
     var is_new_server = function (host, port) {

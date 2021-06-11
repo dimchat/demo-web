@@ -18,6 +18,8 @@
     var CommonFacebook = ns.CommonFacebook;
     var CommonMessenger = ns.CommonMessenger;
 
+    var StationDelegate = ns.network.StationDelegate;
+
     var Messenger = function () {
         CommonMessenger.call(this);
         this.__terminal = null;
@@ -27,7 +29,7 @@
         this.__docQueryExpires = {};    // ID => int
         this.__groupQueryExpires = {};  // ID => (ID => int)
     };
-    sdk.Class(Messenger, CommonMessenger, null);
+    sdk.Class(Messenger, CommonMessenger, [StationDelegate]);
 
     var QUERY_INTERVAL = 120 * 1000;  // query interval (2 minutes)
 
@@ -39,7 +41,7 @@
     };
     Messenger.prototype.getProcessor = function () {
         if (!this.__processor) {
-            this.__processor = new ns.Processor(this);
+            this.__processor = new ns.MessageProcessor(this);
         }
         return this.__processor;
     };

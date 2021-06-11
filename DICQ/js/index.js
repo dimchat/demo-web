@@ -183,24 +183,9 @@ if (typeof dicq !== 'object') {
         release = false;
     }
 
-    var dimsdk = [
-        /* third party cryptography libs */
-        '../Client/sdk/3rd/crypto.js',
-        '../Client/sdk/3rd/jsencrypt.js',
-
-        /* DIM SDK */
-        '../Client/sdk/dimsdk.js',
-
-        '../Client/sdk/host58.js',
-        '../Client/sdk/bubble.js',
-        '../Client/sdk/clipboard.js',
-
-        /* DIM Client */
-        '../Client/dist/client.js',
-        null
-    ];
+    var dim_codes;
     if (release) {
-        dimsdk = [
+        dim_codes = [
             /* third party cryptography libs */
             '../Client/sdk/3rd/crypto.min.js',
             '../Client/sdk/3rd/jsencrypt.min.js',
@@ -212,23 +197,52 @@ if (typeof dicq !== 'object') {
             '../Client/sdk/bubble.js',
             '../Client/sdk/clipboard.js',
 
+            /* DIM Common */
+            '../Client/dist/common.min.js',
             /* DIM Client */
             '../Client/dist/client.min.js',
             null
-        ]
+        ];
+    } else {
+        dim_codes = [
+            /* third party cryptography libs */
+            '../Client/sdk/3rd/crypto.js',
+            '../Client/sdk/3rd/jsencrypt.js',
+
+            /* DIM SDK */
+            '../Client/sdk/dimsdk.js',
+
+            '../Client/sdk/host58.js',
+            '../Client/sdk/bubble.js',
+            '../Client/sdk/clipboard.js',
+            null
+        ];
+        var item;
+        for (var x = 0; x < dim_common.length; ++x) {
+            item = dim_common[x];
+            if (item) {
+                dim_codes.push('../Client/' + item);
+            }
+        }
+        for (var y = 0; y < dim_client.length; ++y) {
+            item = dim_client[y];
+            if (item) {
+                dim_codes.push('../Client/' + item);
+            }
+        }
     }
 
     var tarsier_ui = [
         // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
         // 'http://apps.dim.chat/Tarsier/tarsier-ui.js',
-        '../Tarsier/tarsier-ui.js',
+        'js/Tarsier/tarsier-ui.js',
         null
     ];
     if (release) {
         tarsier_ui = [
             // 'https://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             // 'http://apps.dim.chat/Tarsier/tarsier-ui.min.js',
-            '../Tarsier/tarsier-ui.min.js',
+            'js/Tarsier/tarsier-ui.min.js',
             null
         ];
     }
@@ -270,9 +284,6 @@ if (typeof dicq !== 'object') {
     ];
 
     // check duplicate
-    if (typeof DIMP === 'object') {
-        dimsdk = [];
-    }
     if (typeof tarsier === 'object') {
         if (typeof tarsier.ui === 'object') {
             tarsier_ui = [];
@@ -283,7 +294,7 @@ if (typeof dicq !== 'object') {
         scripts = [];
     }
 
-    scripts = [].concat(dimsdk, tarsier_ui, scripts);
+    scripts = [].concat(dim_codes, tarsier_ui, scripts);
 
     var loader = new ns.Loader(tarsier, 'js/index.js');
 
