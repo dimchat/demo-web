@@ -92,11 +92,11 @@
     };
 
     var btc_number = function (btc) {
-        var data = sdk.format.Base58.decode(btc);
+        var data = sdk.format.Base58.decode(btc.toString());
         return user_number(data);
     };
     var eth_number = function (eth) {
-        var data = sdk.format.Hex.decode(eth.substr(2))
+        var data = sdk.format.Hex.decode(eth.toString().substr(2))
         return user_number(data);
     };
     var user_number = function (cc) {

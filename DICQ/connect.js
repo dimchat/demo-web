@@ -107,24 +107,21 @@
 
     var application = ns.Application.getInstance();
     application.reconnect = function () {
-        var server = messenger.server;
+        var server = messenger.getCurrentServer();
         if (server) {
             // FIXME: disconnect DIM station
             server.stationDelegate = null;
             server.messenger = null;
-            messenger.server = null;
+            // messenger.server = null;
         }
 
-        server = new Server(sid, host, port);
-        facebook.setCurrentUser(server);
+        var client = messenger.getTerminal()
+        client.launch({
+            'ID': sid,
+            'host': host,
+            'port': port
+        })
         // server.stationDelegate = application;
-
-        messenger.delegate = server;
-        messenger.server = server;
-        server.messenger = messenger;
-        server.start();
-
-        server.stationDelegate = application;
     };
     // TODO: when connection lost, call this to reconnect DIM station
     application.reconnect();

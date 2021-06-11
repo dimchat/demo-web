@@ -9,6 +9,7 @@
     var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
 
     var UserTableViewCell = function (cell) {
@@ -49,7 +50,7 @@
         // number
         var numberLabel = new Label();
         numberLabel.setClassName('number');
-        var number = facebook.getNumberString(identifier);
+        var number = Anonymous.getNumberString(identifier);
         numberLabel.setText(' (' + number + ')');
         this.appendChild(numberLabel);
 

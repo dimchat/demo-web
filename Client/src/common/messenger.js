@@ -51,19 +51,19 @@
     };
     CommonMessenger.prototype.getPacker = function () {
         if (!this.__packer) {
-            this.__packer = new ns.CommonPacker();
+            this.__packer = new ns.CommonPacker(this);
         }
         return this.__packer;
     };
     CommonMessenger.prototype.getProcessor = function () {
         if (!this.__processor) {
-            this.__processor = new ns.CommonProcessor();
+            this.__processor = new ns.CommonProcessor(this);
         }
         return this.__processor;
     };
     CommonMessenger.prototype.getTransmitter = function () {
         if (!this.__transmitter) {
-            this.__transmitter = new ns.CommonTransmitter();
+            this.__transmitter = new ns.CommonTransmitter(this);
         }
         return this.__transmitter;
     };

@@ -39,7 +39,7 @@
     };
     Messenger.prototype.getProcessor = function () {
         if (!this.__processor) {
-            this.__processor = new ns.Processor();
+            this.__processor = new ns.Processor(this);
         }
         return this.__processor;
     };

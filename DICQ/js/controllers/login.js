@@ -12,9 +12,21 @@
 
     var Window = tui.Window;
 
+    var Gate = sdk.startrek.Gate;
+
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
     var Messenger = app.Messenger;
-    var Gate = sdk.stargate.Gate;
+
+    var get_facebook = function () {
+        return Facebook.getInstance();
+    };
+    var get_messenger = function () {
+        return Messenger.getInstance();
+    };
+    var get_current_server = function () {
+        return get_messenger().getCurrentServer();
+    };
 
     var LoginWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -79,11 +91,10 @@
     sdk.Class(LoginWindow, Window, null);
 
     LoginWindow.prototype.setUser = function (user) {
-        var facebook = Facebook.getInstance();
         var identifier = user.identifier;
-        var address = identifier.address;
-        var number = facebook.getNumberString(user.identifier);
-        var nickname = user.getName();
+        var address = identifier.getAddress();
+        var number = Anonymous.getNumberString(user.identifier);
+        var nickname = get_facebook().getName(user.identifier);
         this.address.setText(address);
         this.address.__ie.title = identifier;
         this.number.setText(number);
@@ -102,7 +113,7 @@
             alert(res);
             return ;
         }
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getUser(identifier);
         if (!user) {
             alert('Failed to get user: ' + identifier + ' ...');
@@ -110,15 +121,16 @@
         }
         // set current user and login
         facebook.setCurrentUser(user);
-        var messenger = Messenger.getInstance();
-        messenger.login(user);
+        var server = get_current_server();
+        server.setCurrentUser(user);
+        server.handshake(null);
         // open main window
         ns.MainWindow.show();
         this.remove();
     };
 
     var check_connection = function () {
-        var server = Messenger.getInstance().server;
+        var server = get_current_server();
         var status = server.getStatus();
         if (status.equals(Gate.Status.CONNECTED)) {
             // connected

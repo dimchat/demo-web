@@ -38,13 +38,13 @@
 
         allUsers: function () {
             this.load();
-            return ID.convert(this.__users);
+            return this.__users;
         },
 
         addUser: function (user) {
             var list = this.allUsers();
             if (list.indexOf(user) < 0) {
-                list.push(user.toString());
+                list.push(user);
                 return this.save();
             } else {
                 console.error('user already exists', user);
@@ -54,7 +54,7 @@
 
         removeUser: function (user) {
             var list = this.allUsers();
-            var index = list.indexOf(user.toString());
+            var index = list.indexOf(user);
             if (index < 0) {
                 console.error('user not exists', user);
                 return true;
@@ -66,7 +66,7 @@
 
         setCurrentUser: function (user) {
             var list = this.allUsers();
-            var index = list.indexOf(user.toString());
+            var index = list.indexOf(user);
             if (index === 0) {
                 // already the first user
                 return true;
@@ -74,14 +74,14 @@
                 // already exists, but not the first user
                 list.splice(index, 1);
             }
-            list.unshift(user.toString());
+            list.unshift(user);
             return this.save();
         },
 
         getCurrentUser: function () {
             var list = this.allUsers();
             if (list.length > 0) {
-                return ID.parse(list[0]);
+                return list[0];
             } else {
                 return null;
             }
@@ -89,30 +89,29 @@
 
         load: function () {
             if (!this.__users) {
-                this.__users = Storage.loadJSON('UserTable');
-                if (!this.__users) {
-                    this.__users = [];
-                }
+                this.__users = convert(Storage.loadJSON('UserTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__users, 'UserTable');
+            return Storage.saveJSON(revert(this.__users), 'UserTable');
         },
 
         __users: null
     };
 
-    var parse = function (list) {
-        var users = [];
+    var convert = function (list) {
         if (list) {
-            var item;
-            for (var i = 0; i < list.length; ++i) {
-                item = ID.parse(list[i]);
-                console.assert(item !== null, 'user ID error', list[i]);
-                users.push(item);
-            }
+            return ID.convert(list);
+        } else {
+            return [];
         }
-        return users;
     };
+    var revert = function (list) {
+        if (list) {
+            return ID.revert(list);
+        } else {
+            return [];
+        }
+    }
 
 })(SECHAT, DIMSDK);

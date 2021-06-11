@@ -44,14 +44,16 @@
     var ID = sdk.protocol.ID;
 
     var Command = sdk.protocol.Command;
+
+    var NotificationCenter = sdk.lnc.NotificationCenter;
+
     var MessageBuilder = app.cpu.MessageBuilder;
 
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
 
     var StationDelegate = app.network.StationDelegate;
     var Terminal = app.network.Terminal;
-
-    var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var Application = function () {
         Terminal.call(this);
@@ -109,13 +111,13 @@
             } else {
                 text = MessageBuilder.getContentText(content, sender);
             }
-            var number = facebook.getNumberString(sender);
+            var number = Anonymous.getNumberString(sender);
             var group = content.getGroup();
             if (group && !ID.EVERYONE.equals(group)) {
                 // add group ID into contacts list
                 add_group(group);
 
-                name = facebook.getNickname(group);
+                name = facebook.getName(group);
                 if (name) {
                     group = name;
                 } else {

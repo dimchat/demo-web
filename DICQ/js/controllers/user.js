@@ -12,6 +12,7 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
 
     var UserWindow = function () {
@@ -79,10 +80,10 @@
         }
         var facebook = Facebook.getInstance();
         this.__identifier = identifier;
-        this.address.setText(identifier.address);
+        this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
-        this.number.setText(facebook.getNumberString(identifier));
-        this.nickname.setText(facebook.getNickname(identifier));
+        this.number.setText(Anonymous.getNumberString(identifier));
+        this.nickname.setText(facebook.getName(identifier));
         // check contacts
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.identifier);

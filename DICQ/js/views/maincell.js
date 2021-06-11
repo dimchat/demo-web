@@ -43,7 +43,7 @@
         //
         //  Name(Number)
         //
-        // var number = facebook.getNumberString(identifier);
+        // var number = Anonymous.getNumberString(identifier);
         var label = new Label();
         label.setClassName('name');
         this.appendChild(label);
@@ -78,7 +78,7 @@
         }
 
         // name
-        var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getName(identifier);
         if (!nickname) {
             nickname = identifier.name;
         }

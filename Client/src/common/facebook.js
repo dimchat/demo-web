@@ -42,7 +42,7 @@
     var CommonFacebook = function () {
         Facebook.call(this);
         // local users
-        this.__users = null;
+        this.__localUsers = null;
         // databases
         this.privateKeyTable = ns.db.PrivateKeyTable;
         this.metaTable = ns.db.MetaTable;
@@ -60,7 +60,7 @@
     //  Local Users
     //
     CommonFacebook.prototype.getLocalUsers = function() {
-        if (!this.__users) {
+        if (!this.__localUsers) {
             var list = this.userTable.allUsers();
             var users = [];
             var item;
@@ -72,9 +72,9 @@
                     throw new Error('failed to get local user:' + item);
                 }
             }
-            this.__users = users;
+            this.__localUsers = users;
         }
-        return this.__users;
+        return this.__localUsers;
     };
     CommonFacebook.prototype.getCurrentUser = function () {
         var uid = this.userTable.getCurrentUser();
@@ -85,7 +85,7 @@
         }
     };
     CommonFacebook.prototype.setCurrentUser = function(user) {
-        this.__users = null;
+        this.__localUsers = null;
         if (user instanceof User) {
             user = user.identifier;
         }
@@ -93,14 +93,14 @@
     };
 
     CommonFacebook.prototype.addUser = function(user) {
-        this.__users = null;
+        this.__localUsers = null;
         if (user instanceof User) {
             user = user.identifier;
         }
         return this.userTable.addUser(user);
     };
     CommonFacebook.prototype.removeUser = function(user) {
-        this.__users = null;
+        this.__localUsers = null;
         if (user instanceof User) {
             user = user.identifier;
         }

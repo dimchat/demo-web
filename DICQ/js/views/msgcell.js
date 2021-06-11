@@ -12,6 +12,7 @@
     var Command = sdk.protocol.Command;
     var ImageContent = sdk.protocol.ImageContent;
     var MessageBuilder = app.cpu.MessageBuilder;
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
 
     var MessageCell = function (cell) {
@@ -42,11 +43,11 @@
         this.appendChild(timeView);
 
         // name & number
-        var name = facebook.getNickname(sender);
+        var name = facebook.getName(sender);
         if (!name) {
             name = sender.name;
         }
-        var number = facebook.getNumberString(sender);
+        var number = Anonymous.getNumberString(sender);
         var nameView = new Label();
         nameView.setClassName('name');
         nameView.setText(name + ' (' + number + ')');

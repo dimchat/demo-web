@@ -15,6 +15,8 @@
 
     var ID = sdk.protocol.ID;
     var Document = sdk.protocol.Document;
+
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
     var Messenger = app.Messenger;
 
@@ -85,10 +87,10 @@
         }
         var facebook = Facebook.getInstance();
         this.__identifier = identifier;
-        this.address.setText(identifier.address);
+        this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
-        this.number.setText(facebook.getNumberString(identifier));
-        this.nickname.setValue(facebook.getNickname(identifier));
+        this.number.setText(Anonymous.getNumberString(identifier));
+        this.nickname.setValue(facebook.getName(identifier));
     };
 
     AccountWindow.prototype.submit = function (info) {

@@ -164,7 +164,7 @@
         this.__fsm.setSessionKey(null);
 
         // create handshake command
-        var cmd = new HandshakeCommand(this.__sessionKey);
+        var cmd = new HandshakeCommand(null, this.__sessionKey);
         set_last_time.call(this, cmd);
         var rMsg = pack.call(this, cmd);
         // first handshake?

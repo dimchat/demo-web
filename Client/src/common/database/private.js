@@ -93,7 +93,7 @@
          * @return {PrivateKey} first key marked for signature
          */
         getPrivateKeyForSignature: function (user) {
-            return this.getPrivateKeyForSignature(user);
+            return this.getPrivateKeyForVisaSignature(user);
         },
 
         /**

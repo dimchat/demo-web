@@ -31,6 +31,7 @@
     'use strict';
 
     var obj = sdk.type.Object;
+    var SymmetricKey = sdk.crypto.SymmetricKey;
     var CipherKeyDelegate = sdk.CipherKeyDelegate;
 
     /**
@@ -41,7 +42,7 @@
     var KeyCache = function () {
         obj.call(this);
         // memory cache
-        this.keyMap = {};
+        this.keyMap = {};  // ID => (ID => SymmetricKey)
         this.isDirty = false;
     };
     sdk.Class(KeyCache, obj, [CipherKeyDelegate]);
@@ -154,12 +155,18 @@
     //-------- CipherKeyDelegate --------
 
     // @override
-    KeyCache.prototype.getCipherKey = function (sender, receiver) {
+    KeyCache.prototype.getCipherKey = function (sender, receiver, generate) {
         if (receiver.isBroadcast()) {
             return ns.crypto.PlainKey.getInstance();
         }
         // get key from cache
-        return get_key.call(this, sender, receiver);
+        var key = get_key.call(this, sender, receiver);
+        if (!key && generate) {
+            // generate new key and store it
+            key = SymmetricKey.generate(SymmetricKey.AES);
+            this.cacheCipherKey(sender, receiver, key);
+        }
+        return key;
 
         // TODO: override to check whether key expired for sending message
     };

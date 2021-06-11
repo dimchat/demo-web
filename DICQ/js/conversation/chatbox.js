@@ -23,6 +23,7 @@
 
     var MessageTable = app.db.MessageTable;
 
+    var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
     var Messenger = app.Messenger;
 
@@ -89,8 +90,8 @@
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = Facebook.getInstance();
-        var name = facebook.getNickname(identifier);
-        var number = facebook.getNumberString(identifier);
+        var name = facebook.getName(identifier);
+        var number = Anonymous.getNumberString(identifier);
         this.identifierLabel.setText(identifier);
         this.nameLabel.setText(name);
         this.numberLabel.setText('(' + number + ')');
