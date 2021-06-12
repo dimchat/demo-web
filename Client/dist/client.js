@@ -257,10 +257,15 @@
             if (name !== ns.kNotificationMetaAccepted && name !== ns.kNotificationDocumentUpdated) {
                 return
             }
-            var info = notification.userInfo;
+            var userInfo = notification.userInfo;
             var messenger = get_messenger();
             var facebook = get_facebook();
-            var entity = ID.parse(info["ID"]);
+            var entity;
+            if (userInfo instanceof sdk.type.Map) {
+                entity = ID.parse(userInfo.getValue("ID"))
+            } else {
+                entity = ID.parse(userInfo["ID"])
+            }
             if (entity.isUser()) {
                 if (!facebook.getPublicKeyForEncryption(entity)) {
                     console.error("user not ready yet: " + entity);

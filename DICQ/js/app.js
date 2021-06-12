@@ -42,9 +42,8 @@
     'use strict';
 
     var ID = sdk.protocol.ID;
-
+    var Document = sdk.protocol.Document;
     var Command = sdk.protocol.Command;
-    var InstantMessage = sdk.protocol.InstantMessage;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
@@ -83,7 +82,7 @@
     Application.prototype.onReceiveNotification = function (notification) {
         var facebook = get_facebook();
         var identifier;
-        var profile;
+        var doc;
         var name = notification.name;
         var userInfo = notification.userInfo;
         var res;
@@ -94,12 +93,12 @@
         } else if (name === app.kNotificationStationError) {
             res = 'Connection error.';
         } else if (name === app.kNotificationMetaAccepted) {
-            identifier = notification.userInfo['ID'];
+            identifier = userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
         } else if (name === app.kNotificationDocumentUpdated) {
-            profile = notification.userInfo;
-            res = '[Profile updated] ID: ' + profile.getIdentifier()
-                + ' -> ' + profile.getValue('data');
+            doc = Document.parse(userInfo);
+            res = '[Document updated] ID: ' + doc.getIdentifier()
+                + ' -> ' + doc.getValue('data');
         } else if (name === app.kNotificationMessageUpdated) {
             var msg = userInfo['msg'];
             var sender = msg.getSender();
