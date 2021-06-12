@@ -132,11 +132,11 @@
     };
 
     GroupChatWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
-            var content = msg.content;
+        var userInfo = notification.userInfo;
+        if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
+            var content = msg.getContent();
             var identifier = this.__identifier;
             if (identifier.equals(content.getGroup())) {
                 // reload chat history

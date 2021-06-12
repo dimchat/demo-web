@@ -74,6 +74,7 @@
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
     var Meta = sdk.protocol.Meta;
+    var InstantMessage = sdk.protocol.InstantMessage;
     var CommandProcessor = sdk.cpu.CommandProcessor;
     var NotificationCenter = sdk.lnc.NotificationCenter;
     var SearchCommand = ns.protocol.SearchCommand;
@@ -86,7 +87,7 @@
         if (!identifier) {
             return string
         }
-        var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getName(identifier);
         return identifier + ' "' + nickname + '"'
     };
     SearchCommandProcessor.prototype.execute = function(cmd, rMsg) {
@@ -137,10 +138,11 @@
             }
         }
         cmd.setValue("text", text);
+        var iMsg = InstantMessage.create(rMsg.getEnvelope(), cmd);
         var nc = NotificationCenter.getInstance();
         nc.postNotification(ns.kNotificationMessageUpdated, this, {
-            "envelope": rMsg.getEnvelope(),
-            "content": cmd
+            "ID": rMsg.getSender(),
+            "msg": iMsg
         });
         return null
     };
@@ -166,6 +168,9 @@
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ReceiptCommand = sdk.protocol.ReceiptCommand;
+    var get_conversation_db = function() {
+        return ns.ConversationDatabase
+    };
     ns.Amanuensis = {
         getConversation: function(identifier) {
             var facebook = ns.Facebook.getInstance();
@@ -181,7 +186,7 @@
                 return null
             }
             var chatBox = new ns.Conversation(entity);
-            chatBox.database = ns.ConversationDatabase.getInstance();
+            chatBox.database = get_conversation_db();
             return chatBox
         },
         saveMessage: function(iMsg) {
@@ -242,6 +247,9 @@
     };
     var get_facebook = function() {
         return ns.Facebook.getInstance()
+    };
+    var get_clerk = function() {
+        return ns.Amanuensis
     };
     var MessageDataSource = {
         onReceiveNotification: function(notification) {
@@ -314,11 +322,10 @@
             if (content instanceof QueryCommand) {
                 return true
             }
-            var clerk = ns.Amanuensis.getInstance();
             if (content instanceof ReceiptCommand) {
-                return clerk.saveReceipt(iMsg)
+                return get_clerk().saveReceipt(iMsg)
             } else {
-                return clerk.saveMessage(iMsg)
+                return get_clerk().saveMessage(iMsg)
             }
         },
         suspendInstantMessage: function(iMsg) {
@@ -403,8 +410,8 @@
     var get_facebook = function() {
         return ns.Facebook.getInstance()
     };
-    var get_database = function() {
-        return ns.ConversationDatabase.getInstance()
+    var get_conversation_db = function() {
+        return ns.ConversationDatabase
     };
     var ConversationType = sdk.type.Enum(null, {
         Personal: (NetworkType.MAIN),
@@ -451,7 +458,7 @@
         }
     };
     Conversation.prototype.getLastMessage = function() {
-        return get_database().lastMessage(this.identifier)
+        return get_conversation_db().lastMessage(this.identifier)
     };
     Conversation.prototype.getLastVisibleMessage = function() {
         var count = this.getNumberOfMessages();
@@ -469,25 +476,25 @@
         return null
     };
     Conversation.prototype.getNumberOfMessages = function() {
-        return get_database().numberOfMessages(this.identifier)
+        return get_conversation_db().numberOfMessages(this.identifier)
     };
     Conversation.prototype.getNumberOfUnreadMessages = function() {
-        return get_database().numberOfUnreadMessages(this.identifier)
+        return get_conversation_db().numberOfUnreadMessages(this.identifier)
     };
     Conversation.prototype.getMessageAtIndex = function(index) {
-        return get_database().messageAtIndex(index, this.identifier)
+        return get_conversation_db().messageAtIndex(index, this.identifier)
     };
     Conversation.prototype.insertMessage = function(iMsg) {
-        return get_database().insertMessage(iMsg, this.identifier)
+        return get_conversation_db().insertMessage(iMsg, this.identifier)
     };
     Conversation.prototype.removeMessage = function(iMsg) {
-        return get_database().removeMessage(iMsg, this.identifier)
+        return get_conversation_db().removeMessage(iMsg, this.identifier)
     };
     Conversation.prototype.withdrawMessage = function(iMsg) {
-        return get_database().withdrawMessage(iMsg, this.identifier)
+        return get_conversation_db().withdrawMessage(iMsg, this.identifier)
     };
     Conversation.prototype.saveReceipt = function(iMsg) {
-        return get_database().saveReceipt(iMsg, this.identifier)
+        return get_conversation_db().saveReceipt(iMsg, this.identifier)
     };
     ns.Conversation = Conversation;
     ns.registers("Conversation")
@@ -813,35 +820,27 @@
             var server = get_server(machine);
             if (server && server.getCurrentUser()) {
                 var status = server.getStatus();
-                return status.equals(Gate.Status.CONNECTING) || status.equals(Gate.Status.CONNECTED)
+                return Gate.Status.CONNECTING.equals(status) || Gate.Status.CONNECTED.equals(status)
             } else {
                 return false
             }
-        }), transition(ServerState.ERROR, function(machine) {
-            var server = get_server(machine);
-            var status = server.getStatus();
-            return status.equals(Gate.Status.ERROR)
         }))
     };
     var connecting_state = function() {
         return server_state(ServerState.CONNECTING, transition(ServerState.CONNECTED, function(machine) {
             var server = get_server(machine);
             var status = server.getStatus();
-            return status.equals(Gate.Status.CONNECTED)
+            return Gate.Status.CONNECTED.equals(status)
         }), transition(ServerState.ERROR, function(machine) {
             var server = get_server(machine);
             var status = server.getStatus();
-            return status.equals(Gate.Status.ERROR)
+            return Gate.Status.ERROR.equals(status)
         }))
     };
     var connected_state = function() {
         return server_state(ServerState.CONNECTED, transition(ServerState.HANDSHAKING, function(machine) {
             var server = get_server(machine);
             return server.getCurrentUser()
-        }), transition(ServerState.ERROR, function(machine) {
-            var server = get_server(machine);
-            var status = server.getStatus();
-            return status.equals(Gate.Status.ERROR)
         }))
     };
     var handshaking_state = function() {
@@ -852,8 +851,8 @@
             var time = state.time;
             if (time) {
                 var expired = time.getTime() + 120 * 1000;
-                var now = new Date();
-                if (now.getTime() < expired) {
+                var now = (new Date()).getTime();
+                if (now < expired) {
                     return false
                 }
             } else {
@@ -861,11 +860,11 @@
             }
             var server = get_server(machine);
             var status = server.getStatus();
-            return status.equals(Gate.Status.CONNECTED)
+            return Gate.Status.CONNECTED.equals(status)
         }), transition(ServerState.ERROR, function(machine) {
             var server = get_server(machine);
             var status = server.getStatus();
-            return status.equals(Gate.Status.ERROR)
+            return Gate.Status.ERROR.equals(status)
         }))
     };
     var running_state = function() {
@@ -874,14 +873,14 @@
         }), transition(ServerState.ERROR, function(machine) {
             var server = get_server(machine);
             var status = server.getStatus();
-            return status.equals(Gate.Status.ERROR)
+            return Gate.Status.ERROR.equals(status)
         }))
     };
     var error_state = function() {
         return server_state(ServerState.ERROR, transition(ServerState.DEFAULT, function(machine) {
             var server = get_server(machine);
             var status = server.getStatus();
-            return !status.equals(Gate.Status.ERROR)
+            return !Gate.Status.ERROR.equals(status)
         }))
     };
     ns.network.StateMachine = StateMachine;
@@ -1556,6 +1555,7 @@
     var StorageCommand = sdk.protocol.StorageCommand;
     var QueryCommand = sdk.protocol.group.QueryCommand;
     var ReportCommand = ns.protocol.ReportCommand;
+    var SearchCommand = ns.protocol.SearchCommand;
     var CommonFacebook = ns.CommonFacebook;
     var CommonMessenger = ns.CommonMessenger;
     var StationDelegate = ns.network.StationDelegate;
@@ -1726,6 +1726,15 @@
             }
         }
         return checking
+    };
+    Messenger.prototype.search = function(keywords) {
+        if (keywords === SearchCommand.ONLINE_USERS) {
+            return this.sendCommand(new SearchCommand(), 0)
+        } else {
+            var cmd = new SearchCommand(keywords);
+            var bot = ID.parse("archivist@anywhere");
+            return this.sendContent(null, bot, cmd, null, 0)
+        }
     };
     Messenger.prototype.reportOnline = function() {
         var user = this.getCurrentUser();

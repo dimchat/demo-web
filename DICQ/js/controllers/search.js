@@ -61,7 +61,7 @@
     SearchWindow.prototype.search = function (keywords) {
         ns.SearchResultWindow.show();
         var messenger = Messenger.getInstance();
-        messenger.searchUsers(keywords);
+        messenger.search(keywords);
         this.remove();
     };
 
@@ -104,7 +104,6 @@
     var Window = tui.Window;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
-    var Facebook = app.Facebook;
 
     var SearchResultWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
@@ -146,7 +145,7 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageUpdated);
+        nc.addObserver(this, app.kNotificationMessageUpdated);
     };
     sdk.Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate]);
 
@@ -211,23 +210,22 @@
     'use strict';
 
     var ID = sdk.protocol.ID;
+    var InstantMessage = sdk.protocol.InstantMessage;
+
     var SearchResultWindow = ns.SearchResultWindow;
 
     var SearchCommand = sdk.protocol.SearchCommand;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-
-    var Facebook = app.Facebook;
 
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
-            if (msg.content instanceof SearchCommand) {
-                var command = msg.content.getCommand();
+        var userInfo = notification.userInfo;
+        if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
+            if (msg.getContent() instanceof SearchCommand) {
+                var command = msg.getContent().getCommand();
                 if (command === SearchCommand.SEARCH) {
                     // process search result notification
-                    update_users(msg.content);
+                    update_users(msg.getContent());
                     // reload users
                     this.reloadData();
                 }

@@ -40,12 +40,7 @@
 
         getDocument: function (identifier, type) {
             this.load();
-            var doc = this.__docs[identifier.toString()];
-            if (doc) {
-                return Document.parse(doc);
-            } else {
-                return null;  //Document.create(identifier);
-            }
+            return this.__docs[identifier];
         },
 
         saveDocument: function (doc) {
@@ -58,7 +53,7 @@
                 throw new Error('entity ID error: ' + doc);
             }
             this.load();
-            this.__docs[identifier.toString()] = doc.getMap();
+            this.__docs[identifier] = doc;
             console.log('saving document', identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -73,35 +68,39 @@
 
         load: function () {
             if (!this.__docs) {
-                this.__docs = parse(Storage.loadJSON('DocumentTable'));
-                if (!this.__docs) {
-                    this.__docs = {};
-                }
+                this.__docs = convert(Storage.loadJSON('DocumentTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__docs, 'DocumentTable');
+            return Storage.saveJSON(revert(this.__docs), 'DocumentTable');
         },
 
         __docs: null  // ID => Document
     };
 
-    var parse = function (map) {
-        var documents = {};
+    var convert = function (map) {
+        var results = {};
         if (map) {
-            var user, doc;
-            var list = Object.keys(map);
-            for (var i = 0; i < list.length; ++i) {
-                user = list[i];
-                doc = map[user];
-                user = ID.parse(user);
-                doc = Document.parse(doc);
-                if (user && doc) {
-                    documents[user] = doc;
-                }
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[ID.parse(u)] = Document.parse(map[u]);
             }
         }
-        return documents;
+        return results;
+    };
+    var revert = function (map) {
+        var results = {};
+        if (map) {
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[u.toString()] = map[u].getMap();
+            }
+        }
+        return results;
     };
 
 })(SECHAT, DIMSDK);

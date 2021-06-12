@@ -14,6 +14,7 @@
     var QueryCommand = sdk.protocol.group.QueryCommand;
 
     var ReportCommand = ns.protocol.ReportCommand;
+    var SearchCommand = ns.protocol.SearchCommand;
 
     var CommonFacebook = ns.CommonFacebook;
     var CommonMessenger = ns.CommonMessenger;
@@ -242,6 +243,16 @@
             }
         }
         return checking;
+    };
+
+    Messenger.prototype.search = function (keywords) {
+        if (keywords === SearchCommand.ONLINE_USERS) {
+            return this.sendCommand(new SearchCommand(), 0);
+        } else {
+            var cmd = new SearchCommand(keywords);
+            var bot = ID.parse('archivist@anywhere');
+            return this.sendContent(null, bot, cmd, null, 0);
+        }
     };
 
     Messenger.prototype.reportOnline = function () {

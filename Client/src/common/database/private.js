@@ -52,9 +52,9 @@
          */
         savePrivateKey: function (user, key, type, sign, decrypt) {
             this.load();
-            this.__keys[get_tag(user, type)] = key.getMap();
+            this.__keys[get_tag(user, type)] = key;
             if (type === this.META) {
-                this.__keys[get_tag(user, null)] = key.getMap();
+                this.__keys[get_tag(user, null)] = key;
             }
             return this.save();
         },
@@ -71,16 +71,13 @@
             var key0 = this.__keys[get_tag(user, null)];
             var key1 = this.__keys[get_tag(user, this.META)];
             var key2 = this.__keys[get_tag(user, this.VISA)];
-            key0 = PrivateKey.parse(key0);
-            key1 = PrivateKey.parse(key1);
-            key2 = PrivateKey.parse(key2);
             if (key2) {
                 keys.push(key2);
             }
-            if (keys.indexOf(key1) < 0) {
+            if (key1 && keys.indexOf(key1) < 0) {
                 keys.push(key1);
             }
-            if (keys.indexOf(key0) < 0) {
+            if (key0 && keys.indexOf(key0) < 0) {
                 keys.push(key0);
             }
             return keys;
@@ -108,19 +105,16 @@
             if (!key) {
                 key = this.__keys[get_tag(user, null)];
             }
-            return PrivateKey.parse(key);
+            return key;
         },
 
         load: function () {
             if (!this.__keys) {
-                this.__keys = Storage.loadJSON('PrivateTable');
-                if (!this.__keys) {
-                    this.__keys = {};
-                }
+                this.__keys = convert(Storage.loadJSON('PrivateTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__keys, 'PrivateTable');
+            return Storage.saveJSON(revert(this.__keys), 'PrivateTable');
         },
 
         __keys: null  // String => PrivateKey
@@ -138,22 +132,29 @@
         }
     };
 
-    var parse = function (map) {
-        var keys = {};
+    var convert = function (map) {
+        var results = {};
         if (map) {
-            var identifier, key;
+            var tag;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
-                identifier = list[i];
-                key = map[identifier];
-                // identifier = ID.parse(identifier);
-                key = PrivateKey.parse(key);
-                if (identifier && key) {
-                    keys[identifier] = key;
-                }
+                tag = list[i];
+                results[tag] = PrivateKey.parse(map[tag]);
             }
         }
-        return keys;
+        return results;
+    };
+    var revert = function (map) {
+        var results = {};
+        if (map) {
+            var tag;
+            var list = Object.keys(map);
+            for (var i = 0; i < list.length; ++i) {
+                tag = list[i];
+                results[tag] = map[tag].getMap();
+            }
+        }
+        return results;
     };
 
 })(SECHAT, DIMSDK);

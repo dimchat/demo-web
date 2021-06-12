@@ -11,9 +11,14 @@
     var TableViewCell = tui.TableViewCell;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
-    var MessageTable = app.db.MessageTable;
 
-    var Facebook = app.Facebook;
+    var get_facebook = function () {
+        return app.Facebook.getInstance();
+    };
+
+    var get_message_db = function () {
+        return app.db.MessageTable;
+    };
 
     var MainTableViewCell = function (cell) {
         TableViewCell.call(this, cell);
@@ -55,7 +60,7 @@
     MainTableViewCell.prototype.constructor = MainTableViewCell;
 
     MainTableViewCell.prototype.setIdentifier = function (identifier) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         if (facebook.getPrivateKeyForSignature(identifier)) {
             this.setClassName('me');
         }
@@ -93,22 +98,22 @@
     };
 
     MainTableViewCell.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
+        var userInfo = notification.userInfo;
+        if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
             check_unread_msg.call(this, msg);
         }
     };
 
     MainTableViewCell.prototype.onEnter = function () {
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageUpdated);
+        nc.addObserver(this, app.kNotificationMessageUpdated);
     };
 
     MainTableViewCell.prototype.onExit = function () {
         var nc = NotificationCenter.getInstance();
-        nc.removeObserver(this, nc.kNotificationMessageUpdated);
+        nc.removeObserver(this, app.kNotificationMessageUpdated);
         this.stopDancing();
     };
 
@@ -116,28 +121,28 @@
         var identifier = this.__identifier;
         if (msg) {
             if (identifier.isGroup()) {
-                if (!identifier.equals(msg.content.getGroup())) {
+                if (!identifier.equals(msg.getGroup())) {
                     return false;
                 }
             } else if (identifier.isUser()) {
-                if (!identifier.equals(msg.envelope.sender)) {
+                if (!identifier.equals(msg.getSender())) {
                     return false;
                 }
-                if (msg.content.getGroup()) {
+                if (msg.getGroup()) {
                     return false;
                 }
             }
         } else {
-            var db = MessageTable.getInstance();
-            var cnt = db.getMessageCount(this.__identifier);
+            var db = get_message_db();
+            var cnt = db.numberOfMessages(this.__identifier);
             if (cnt < 1) {
                 return false;
             }
-            msg = db.getMessage(cnt-1, this.__identifier);
+            msg = db.messageAtIndex(cnt-1, this.__identifier);
             if (!msg) {
                 return false;
             }
-            if (msg.envelope.getValue('read')) {
+            if (msg.getEnvelope().getValue('read')) {
                 return false;
             }
         }
@@ -147,18 +152,18 @@
     var clear_unread_msg = function (msg) {
         var identifier = this.__identifier;
         if (!msg) {
-            var db = MessageTable.getInstance();
-            var cnt = db.getMessageCount(identifier);
+            var db = get_message_db();
+            var cnt = db.numberOfMessages(identifier);
             if (cnt < 1) {
                 return ;
             }
-            msg = db.getMessage(cnt-1, identifier);
+            msg = db.messageAtIndex(cnt-1, identifier);
             if (!msg) {
                 return ;
             }
         }
         // TODO: save read status into message database
-        msg.envelope.setValue('read', true);
+        msg.getEnvelope().setValue('read', true);
         this.stopDancing();
     };
 

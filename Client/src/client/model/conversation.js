@@ -11,8 +11,8 @@
     var get_facebook = function () {
         return ns.Facebook.getInstance();
     };
-    var get_database = function () {
-        return ns.ConversationDatabase.getInstance();
+    var get_conversation_db = function () {
+        return ns.ConversationDatabase;
     };
 
     var ConversationType = sdk.type.Enum(null, {
@@ -65,7 +65,7 @@
     };
 
     Conversation.prototype.getLastMessage = function () {
-        return get_database().lastMessage(this.identifier);
+        return get_conversation_db().lastMessage(this.identifier);
     };
     Conversation.prototype.getLastVisibleMessage = function () {
         var count = this.getNumberOfMessages();
@@ -93,30 +93,30 @@
     };
 
     Conversation.prototype.getNumberOfMessages = function () {
-        return get_database().numberOfMessages(this.identifier);
+        return get_conversation_db().numberOfMessages(this.identifier);
     };
     Conversation.prototype.getNumberOfUnreadMessages = function () {
-        return get_database().numberOfUnreadMessages(this.identifier);
+        return get_conversation_db().numberOfUnreadMessages(this.identifier);
     };
 
     Conversation.prototype.getMessageAtIndex = function (index) {
-        return get_database().messageAtIndex(index, this.identifier);
+        return get_conversation_db().messageAtIndex(index, this.identifier);
     };
 
     Conversation.prototype.insertMessage = function (iMsg) {
-        return get_database().insertMessage(iMsg, this.identifier);
+        return get_conversation_db().insertMessage(iMsg, this.identifier);
     };
 
     Conversation.prototype.removeMessage = function (iMsg) {
-        return get_database().removeMessage(iMsg, this.identifier);
+        return get_conversation_db().removeMessage(iMsg, this.identifier);
     };
 
     Conversation.prototype.withdrawMessage = function (iMsg) {
-        return get_database().withdrawMessage(iMsg, this.identifier);
+        return get_conversation_db().withdrawMessage(iMsg, this.identifier);
     };
 
     Conversation.prototype.saveReceipt = function (iMsg) {
-        return get_database().saveReceipt(iMsg, this.identifier);
+        return get_conversation_db().saveReceipt(iMsg, this.identifier);
     };
 
     //-------- namespace --------

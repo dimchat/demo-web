@@ -287,22 +287,17 @@ if (typeof SECHAT !== "object") {
     ns.db.ContactTable = {
         getContacts: function(user) {
             this.load();
-            var contacts = this.__contacts[user.toString()];
-            if (contacts) {
-                return ID.convert(contacts)
-            } else {
-                return null
-            }
+            return this.__contacts[user]
         },
         addContact: function(contact, user) {
             var contacts = this.getContacts(user);
             if (contacts) {
-                if (contacts.indexOf(contact.toString()) >= 0) {
+                if (contacts.indexOf(contact) >= 0) {
                     return false
                 }
-                contacts.push(contact.toString())
+                contacts.push(contact)
             } else {
-                contacts = [contact.toString()]
+                contacts = [contact]
             }
             return this.saveContacts(contacts, user)
         },
@@ -311,7 +306,7 @@ if (typeof SECHAT !== "object") {
             if (!contacts) {
                 return false
             }
-            var pos = contacts.indexOf(contact.toString());
+            var pos = contacts.indexOf(contact);
             if (pos < 0) {
                 return false
             }
@@ -320,7 +315,7 @@ if (typeof SECHAT !== "object") {
         },
         saveContacts: function(contacts, user) {
             this.load();
-            this.__contacts[user.toString()] = ID.revert(contacts);
+            this.__contacts[user] = contacts;
             console.log("saving contacts for user", user);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -335,37 +330,35 @@ if (typeof SECHAT !== "object") {
         },
         load: function() {
             if (!this.__contacts) {
-                this.__contacts = Storage.loadJSON("ContactTable");
-                if (!this.__contacts) {
-                    this.__contacts = {}
-                }
+                this.__contacts = convert(Storage.loadJSON("ContactTable"))
             }
         },
         save: function() {
-            return Storage.saveJSON(this.__users, "ContactTable")
+            return Storage.saveJSON(revert(this.__contacts), "ContactTable")
         },
         __contacts: null
     };
-    var parse = function(map) {
-        var users = {};
+    var convert = function(map) {
+        var results = {};
         if (map) {
-            var u_list = Object.keys(map);
-            for (var i = 0; i < u_list.length; ++i) {
-                var user = u_list[i];
-                var c_list = map[user];
-                user = ID.parse(user);
-                console.assert(user !== null, "user ID error", u_list[i]);
-                var contacts = [];
-                for (var j = 0; j < c_list.length; ++j) {
-                    var item = c_list[j];
-                    item = ID.parse(item);
-                    console.assert(item !== null, "contact ID error", c_list[j]);
-                    contacts.push(item)
-                }
-                users[user] = contacts
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[ID.parse(u)] = ID.convert(map[u])
             }
         }
-        return users
+        return results
+    };
+    var revert = function(map) {
+        var results = {};
+        var users = Object.keys(map);
+        var u;
+        for (var i = 0; i < users.length; ++i) {
+            u = users[i];
+            results[u.toString()] = ID.revert(map[u])
+        }
+        return results
     }
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -376,12 +369,7 @@ if (typeof SECHAT !== "object") {
     ns.db.DocumentTable = {
         getDocument: function(identifier, type) {
             this.load();
-            var doc = this.__docs[identifier.toString()];
-            if (doc) {
-                return Document.parse(doc)
-            } else {
-                return null
-            }
+            return this.__docs[identifier]
         },
         saveDocument: function(doc) {
             if (!doc.isValid()) {
@@ -393,7 +381,7 @@ if (typeof SECHAT !== "object") {
                 throw new Error("entity ID error: " + doc)
             }
             this.load();
-            this.__docs[identifier.toString()] = doc.getMap();
+            this.__docs[identifier] = doc;
             console.log("saving document", identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -405,33 +393,37 @@ if (typeof SECHAT !== "object") {
         },
         load: function() {
             if (!this.__docs) {
-                this.__docs = parse(Storage.loadJSON("DocumentTable"));
-                if (!this.__docs) {
-                    this.__docs = {}
-                }
+                this.__docs = convert(Storage.loadJSON("DocumentTable"))
             }
         },
         save: function() {
-            return Storage.saveJSON(this.__docs, "DocumentTable")
+            return Storage.saveJSON(revert(this.__docs), "DocumentTable")
         },
         __docs: null
     };
-    var parse = function(map) {
-        var documents = {};
+    var convert = function(map) {
+        var results = {};
         if (map) {
-            var user, doc;
-            var list = Object.keys(map);
-            for (var i = 0; i < list.length; ++i) {
-                user = list[i];
-                doc = map[user];
-                user = ID.parse(user);
-                doc = Document.parse(doc);
-                if (user && doc) {
-                    documents[user] = doc
-                }
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[ID.parse(u)] = Document.parse(map[u])
             }
         }
-        return documents
+        return results
+    };
+    var revert = function(map) {
+        var results = {};
+        if (map) {
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[u.toString()] = map[u].getMap()
+            }
+        }
+        return results
     }
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -447,22 +439,17 @@ if (typeof SECHAT !== "object") {
         },
         getMembers: function(group) {
             this.load();
-            var members = this.__members[group.toString()];
-            if (members) {
-                return ID.convert(members)
-            } else {
-                return null
-            }
+            return this.__members[group]
         },
         addMember: function(member, group) {
             var members = this.getMembers(group);
             if (members) {
-                if (members.indexOf(member.toString()) >= 0) {
+                if (members.indexOf(member) >= 0) {
                     return false
                 }
-                members.push(member.toString())
+                members.push(member)
             } else {
-                members = [member.toString()]
+                members = [member]
             }
             return this.saveMembers(members, group)
         },
@@ -471,7 +458,7 @@ if (typeof SECHAT !== "object") {
             if (!members) {
                 return false
             }
-            var pos = members.indexOf(member.toString());
+            var pos = members.indexOf(member);
             if (pos < 0) {
                 return false
             }
@@ -480,7 +467,7 @@ if (typeof SECHAT !== "object") {
         },
         saveMembers: function(members, group) {
             this.load();
-            this.__members[group.toString()] = ID.revert(members);
+            this.__members[group] = members;
             console.log("saving members for group", group);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -495,8 +482,8 @@ if (typeof SECHAT !== "object") {
         },
         removeGroup: function(group) {
             this.load();
-            if (this.__members[group.toString()]) {
-                delete this.__members[group.toString()];
+            if (this.__members[group]) {
+                delete this.__members[group];
                 return this.save()
             } else {
                 console.error("group not exists: " + group);
@@ -505,41 +492,35 @@ if (typeof SECHAT !== "object") {
         },
         load: function() {
             if (!this.__members) {
-                this.__members = Storage.loadJSON("GroupTable");
-                if (!this.__members) {
-                    this.__members = {}
-                }
+                this.__members = convert(Storage.loadJSON("GroupTable"))
             }
         },
         save: function() {
-            return Storage.saveJSON(this.__members, "GroupTable")
+            return Storage.saveJSON(revert(this.__members), "GroupTable")
         },
         __members: null
     };
-    var parse = function(map) {
-        var groups = {};
+    var convert = function(map) {
+        var results = {};
         if (map) {
-            var g_list = Object.keys(map);
-            for (var i = 0; i < g_list.length; ++i) {
-                var group = g_list[i];
-                var m_list = map[group];
-                group = ID.parse(group);
-                if (!group) {
-                    throw new TypeError("group ID error: " + g_list[i])
-                }
-                var members = [];
-                for (var j = 0; j < m_list.length; ++j) {
-                    var item = m_list[j];
-                    item = ID.parse(item);
-                    if (!item) {
-                        throw new TypeError("member ID error: " + m_list[j])
-                    }
-                    members.push(item)
-                }
-                groups[group] = members
+            var g;
+            var groups = Object.keys(map);
+            for (var i = 0; i < groups.length; ++i) {
+                g = groups[i];
+                results[ID.parse(g)] = ID.convert(map[g])
             }
         }
-        return groups
+        return results
+    };
+    var revert = function(map) {
+        var results = {};
+        var g;
+        var groups = Object.keys(map);
+        for (var i = 0; i < groups.length; ++i) {
+            g = groups[i];
+            results[g.toString()] = ID.revert(map[g])
+        }
+        return results
     }
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -583,7 +564,7 @@ if (typeof SECHAT !== "object") {
         lastMessage: function(entity) {
             var messages = this.loadMessages(entity);
             if (messages && messages.length > 0) {
-                return InstantMessage.parse(messages[messages.length - 1])
+                return messages[messages.length - 1]
             } else {
                 return null
             }
@@ -591,8 +572,8 @@ if (typeof SECHAT !== "object") {
         lastReceivedMessage: function(user) {},
         messageAtIndex: function(index, entity) {
             var messages = this.loadMessages(entity);
-            console.assert(messages !== null, "failed to get messages for conversation: " + identifier);
-            return InstantMessage.parse(messages[index])
+            console.assert(messages !== null, "failed to get messages for conversation: " + entity);
+            return messages[index]
         },
         insertMessage: function(iMsg, entity) {
             var messages = this.loadMessages(entity);
@@ -605,7 +586,10 @@ if (typeof SECHAT !== "object") {
             }
             if (this.saveMessages(messages, entity)) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(ns.kNotificationMessageUpdated, this, iMsg);
+                nc.postNotification(ns.kNotificationMessageUpdated, this, {
+                    "ID": entity,
+                    "msg": iMsg
+                });
                 return true
             } else {
                 throw new Error("failed to save message: " + iMsg)
@@ -623,100 +607,95 @@ if (typeof SECHAT !== "object") {
         saveReceipt: function(iMsg, entity) {},
         loadMessages: function(conversation) {
             this.load(conversation);
-            var array = this.__messages[conversation];
-            var messages = [];
-            if (array) {
-                for (var i = 0; i < array.length; ++i) {
-                    messages.push(InstantMessage.parse(array[i]))
-                }
-            }
-            return messages
+            return this.__messages[conversation]
         },
         saveMessages: function(messages, conversation) {
-            var array = [];
-            if (messages) {
-                for (var i = 0; i < messages.length; ++i) {
-                    array.push(messages[i].getMap())
-                }
+            if (messages && messages.length > 0) {
+                this.__messages[conversation] = messages
+            } else {
+                delete this.__messages[conversation]
             }
-            this.__messages[conversation.toString()] = array;
             return this.save(conversation)
         },
         load: function(identifier) {
-            if (!this.__messages[identifier.toString()]) {
-                this.__messages[identifier.toString()] = Storage.loadJSON(get_tag(identifier))
+            if (!this.__messages[identifier]) {
+                this.__messages[identifier] = convert(Storage.loadJSON(get_tag(identifier)))
             }
         },
         save: function(identifier) {
-            return Storage.saveJSON(this.__messages[identifier.toString()], get_tag(identifier))
+            return Storage.saveJSON(revert(this.__messages[identifier]), get_tag(identifier))
         },
         __messages: {}
     };
     var get_tag = function(identifier) {
         return "Messages-" + identifier.getAddress().toString()
     };
-    var parse = function(list) {
+    var convert = function(list) {
         var messages = [];
         if (list) {
-            var msg;
             for (var i = 0; i < list.length; ++i) {
-                msg = InstantMessage.getInstance(list[i]);
-                if (!msg) {
-                    throw new Error("Message error: " + list[i])
-                }
-                messages.push(msg)
+                messages.push(InstantMessage.parse(list[i]))
+            }
+        }
+        return messages
+    };
+    var revert = function(list) {
+        var messages = [];
+        if (list) {
+            for (var i = 0; i < list.length; ++i) {
+                messages.push(list[i].getMap())
             }
         }
         return messages
     };
     var insert_message = function(iMsg, messages) {
         var t1, t2;
-        t1 = iMsg.envelope.time;
+        t1 = iMsg.getTime();
         if (!t1) {
             t1 = 0
         }
         var sn1, sn2;
-        sn1 = iMsg.content.sn;
+        sn1 = iMsg.getContent().getSerialNumber();
         var index;
         var item;
         for (index = messages.length - 1; index >= 0; --index) {
             item = messages[index];
-            t2 = item.envelope.time;
+            t2 = item.getTime();
             if (t2 && t2 < t1) {
                 break
             }
-            sn2 = item.content.sn;
+            sn2 = item.getContent().getSerialNumber();
             if (sn1 === sn2) {
                 console.log("duplicate message, no need to insert");
                 return false
             }
         }
-        ns.type.Arrays.insert(messages, index + 1, iMsg);
+        sdk.type.Arrays.insert(messages, index + 1, iMsg);
         return true
     };
     var remove_message = function(iMsg, messages) {
         var t1, t2;
-        t1 = iMsg.envelope.time;
+        t1 = iMsg.getTime();
         if (!t1) {
             t1 = 0
         }
         var sn1, sn2;
-        sn1 = iMsg.content.sn;
+        sn1 = iMsg.getContent().getSerialNumber();
         var index;
         var item;
         for (index = messages.length - 1; index >= 0; --index) {
             item = messages[index];
-            t2 = item.envelope.time;
+            t2 = item.getTime();
             if (t2 && t2 < t1) {
                 console.log("message not found");
                 return false
             }
-            sn2 = item.content.sn;
+            sn2 = item.getContent().getSerialNumber();
             if (sn1 === sn2) {
                 break
             }
         }
-        ns.type.Arrays.insert(messages, index + 1, iMsg);
+        sdk.type.Arrays.insert(messages, index + 1, iMsg);
         return true
     }
 })(SECHAT, DIMSDK);
@@ -728,12 +707,7 @@ if (typeof SECHAT !== "object") {
     ns.db.MetaTable = {
         getMeta: function(identifier) {
             this.load();
-            var meta = this.__metas[identifier.toString()];
-            if (meta) {
-                return Meta.parse(meta)
-            } else {
-                return null
-            }
+            return this.__metas[identifier]
         },
         saveMeta: function(meta, identifier) {
             if (!meta.matches(identifier)) {
@@ -741,11 +715,11 @@ if (typeof SECHAT !== "object") {
                 return false
             }
             this.load();
-            if (this.__metas[identifier.toString()]) {
+            if (this.__metas[identifier]) {
                 console.log("meta already exists", identifier);
                 return true
             }
-            this.__metas[identifier.toString()] = meta.getMap();
+            this.__metas[identifier] = meta;
             console.log("saving meta", identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -755,40 +729,43 @@ if (typeof SECHAT !== "object") {
                 });
                 return true
             } else {
-                var text = "failed to save meta: " + identifier + " -> " + sdk.format.JSON.encode(meta);
-                console.log(text);
+                console.error("failed to save meta", identifier, meta);
                 return false
             }
         },
         load: function() {
             if (!this.__metas) {
-                this.__metas = Storage.loadJSON("MetaTable");
-                if (!this.__metas) {
-                    this.__metas = {}
-                }
+                this.__metas = convert(Storage.loadJSON("MetaTable"))
             }
         },
         save: function() {
-            return Storage.saveJSON(this.__metas, "MetaTable")
+            return Storage.saveJSON(revert(this.__metas), "MetaTable")
         },
         __metas: null
     };
-    var parse = function(map) {
-        var metas = {};
+    var convert = function(map) {
+        var results = {};
         if (map) {
-            var identifier, meta;
+            var id;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
-                identifier = list[i];
-                meta = map[identifier];
-                identifier = ID.parse(identifier);
-                meta = Meta.parse(meta);
-                if (identifier && meta) {
-                    metas[identifier] = meta
-                }
+                id = list[i];
+                results[ID.parse(id)] = Meta.parse(map[id])
             }
         }
-        return metas
+        return results
+    };
+    var revert = function(map) {
+        var results = {};
+        if (map) {
+            var id;
+            var list = Object.keys(map);
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                results[id.toString()] = map[id].getMap()
+            }
+        }
+        return results
     }
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -809,9 +786,9 @@ if (typeof SECHAT !== "object") {
         VISA: "V",
         savePrivateKey: function(user, key, type, sign, decrypt) {
             this.load();
-            this.__keys[get_tag(user, type)] = key.getMap();
+            this.__keys[get_tag(user, type)] = key;
             if (type === this.META) {
-                this.__keys[get_tag(user, null)] = key.getMap()
+                this.__keys[get_tag(user, null)] = key
             }
             return this.save()
         },
@@ -821,16 +798,13 @@ if (typeof SECHAT !== "object") {
             var key0 = this.__keys[get_tag(user, null)];
             var key1 = this.__keys[get_tag(user, this.META)];
             var key2 = this.__keys[get_tag(user, this.VISA)];
-            key0 = PrivateKey.parse(key0);
-            key1 = PrivateKey.parse(key1);
-            key2 = PrivateKey.parse(key2);
             if (key2) {
                 keys.push(key2)
             }
-            if (keys.indexOf(key1) < 0) {
+            if (key1 && keys.indexOf(key1) < 0) {
                 keys.push(key1)
             }
-            if (keys.indexOf(key0) < 0) {
+            if (key0 && keys.indexOf(key0) < 0) {
                 keys.push(key0)
             }
             return keys
@@ -844,18 +818,15 @@ if (typeof SECHAT !== "object") {
             if (!key) {
                 key = this.__keys[get_tag(user, null)]
             }
-            return PrivateKey.parse(key)
+            return key
         },
         load: function() {
             if (!this.__keys) {
-                this.__keys = Storage.loadJSON("PrivateTable");
-                if (!this.__keys) {
-                    this.__keys = {}
-                }
+                this.__keys = convert(Storage.loadJSON("PrivateTable"))
             }
         },
         save: function() {
-            return Storage.saveJSON(this.__keys, "PrivateTable")
+            return Storage.saveJSON(revert(this.__keys), "PrivateTable")
         },
         __keys: null
     };
@@ -870,21 +841,29 @@ if (typeof SECHAT !== "object") {
             return identifier.toString() + "/" + type
         }
     };
-    var parse = function(map) {
-        var keys = {};
+    var convert = function(map) {
+        var results = {};
         if (map) {
-            var identifier, key;
+            var tag;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
-                identifier = list[i];
-                key = map[identifier];
-                key = PrivateKey.parse(key);
-                if (identifier && key) {
-                    keys[identifier] = key
-                }
+                tag = list[i];
+                results[tag] = PrivateKey.parse(map[tag])
             }
         }
-        return keys
+        return results
+    };
+    var revert = function(map) {
+        var results = {};
+        if (map) {
+            var tag;
+            var list = Object.keys(map);
+            for (var i = 0; i < list.length; ++i) {
+                tag = list[i];
+                results[tag] = map[tag].getMap()
+            }
+        }
+        return results
     }
 })(SECHAT, DIMSDK);
 (function(ns, sdk) {
@@ -2037,7 +2016,8 @@ if (typeof SECHAT !== "object") {
             }
             var OK = messenger.sendReliableMessage(rMsg, callback, priority);
             return messenger.saveMessage(iMsg) && OK
-        }, 128)
+        }, 128);
+        return true
     };
     ns.CommonTransmitter = CommonTransmitter;
     ns.registers("CommonTransmitter")

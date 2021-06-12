@@ -40,13 +40,7 @@
 
         getMeta: function (identifier) {
             this.load();
-            var meta = this.__metas[identifier.toString()];
-            if (meta) {
-                return Meta.parse(meta);
-            } else {
-                // TODO: place an empty meta for cache
-                return null;
-            }
+            return this.__metas[identifier];
         },
 
         saveMeta: function (meta, identifier) {
@@ -55,11 +49,11 @@
                 return false;
             }
             this.load();
-            if (this.__metas[identifier.toString()]) {
+            if (this.__metas[identifier]) {
                 console.log('meta already exists', identifier);
                 return true;
             }
-            this.__metas[identifier.toString()] = meta.getMap();
+            this.__metas[identifier] = meta;
             console.log('saving meta', identifier);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -67,44 +61,46 @@
                     {'ID': identifier, 'meta': meta});
                 return true;
             } else {
-                var text = 'failed to save meta: ' + identifier + ' -> '
-                    + sdk.format.JSON.encode(meta);
-                console.log(text);
+                console.error('failed to save meta', identifier, meta);
                 return false;
             }
         },
 
         load: function () {
             if (!this.__metas) {
-                this.__metas = Storage.loadJSON('MetaTable');
-                if (!this.__metas) {
-                    this.__metas = {};
-                }
+                this.__metas = convert(Storage.loadJSON('MetaTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__metas, 'MetaTable');
+            return Storage.saveJSON(revert(this.__metas), 'MetaTable');
         },
 
         __metas: null  // ID => Meta
     };
 
-    var parse = function (map) {
-        var metas = {};
+    var convert = function (map) {
+        var results = {};
         if (map) {
-            var identifier, meta;
+            var id;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
-                identifier = list[i];
-                meta = map[identifier];
-                identifier = ID.parse(identifier);
-                meta = Meta.parse(meta);
-                if (identifier && meta) {
-                    metas[identifier] = meta;
-                }
+                id = list[i];
+                results[ID.parse(id)] = Meta.parse(map[id]);
             }
         }
-        return metas;
+        return results;
+    };
+    var revert = function (map) {
+        var results = {};
+        if (map) {
+            var id;
+            var list = Object.keys(map);
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                results[id.toString()] = map[id].getMap();
+            }
+        }
+        return results;
     };
 
 })(SECHAT, DIMSDK);

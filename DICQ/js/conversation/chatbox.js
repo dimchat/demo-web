@@ -18,14 +18,21 @@
 
     var TextContent = sdk.protocol.TextContent;
 
-    var StarStatus = sdk.stargate.StarStatus;
+    var Gate = sdk.startrek.Gate;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var MessageTable = app.db.MessageTable;
-
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
-    var Messenger = app.Messenger;
+
+    var get_facebook = function () {
+        return app.Facebook.getInstance();
+    };
+    var get_messenger = function () {
+        return app.Messenger.getInstance();
+    };
+
+    var get_message_db = function () {
+        return app.db.MessageTable;
+    };
 
     var ChatWindow = function () {
         var frame = new Rect(0, 0, 640, 480);
@@ -84,12 +91,12 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationMessageUpdated);
+        nc.addObserver(this, app.kNotificationMessageUpdated);
     };
     sdk.Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate]);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var name = facebook.getName(identifier);
         var number = Anonymous.getNumberString(identifier);
         this.identifierLabel.setText(identifier);
@@ -100,24 +107,24 @@
     };
 
     ChatWindow.prototype.getMessageCount = function () {
-        var db = MessageTable.getInstance();
-        return db.getMessageCount(this.__identifier);
+        var db = get_message_db();
+        return db.numberOfMessages(this.__identifier);
     };
     ChatWindow.prototype.getMessage = function (index) {
-        var db = MessageTable.getInstance();
-        return db.getMessage(index, this.__identifier);
+        var db = get_message_db();
+        return db.messageAtIndex(index, this.__identifier);
     };
 
     ChatWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
-            var env = msg.envelope;
+        var userInfo = notification.userInfo;
+        if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
+            var env = msg.getEnvelope();
             var identifier = this.__identifier;
-            if (identifier.equals(msg.content.getGroup()) ||
-                identifier.equals(env.receiver) ||
-                identifier.equals(env.sender)) {
+            if (identifier.equals(msg.getGroup()) ||
+                identifier.equals(env.getReceiver()) ||
+                identifier.equals(env.getSender())) {
                 // reload chat history
                 this.historyView.reloadData();
                 this.historyView.scrollToBottom();
@@ -165,21 +172,21 @@
     };
 
     ChatWindow.prototype.sendContent = function (content) {
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
+        var messenger = get_messenger();
+        var server = messenger.getCurrentServer();
         var status = server.getStatus();
-        if (!status.equals(StarStatus.Connected)) {
+        if (!Gate.Status.CONNECTED.equals(status)) {
             alert('Station not connect');
             return false;
         }
-        var user = server.currentUser;
+        var user = server.getCurrentUser();
         if (!user) {
             alert('User not login');
             return false;
         }
         var receiver = this.__identifier;
         if (receiver.isGroup()) {
-            var facebook = Facebook.getInstance();
+            var facebook = get_facebook();
             var members = facebook.getMembers(receiver);
             if (!members || members.length === 0) {
                 var ass = facebook.getAssistants(receiver);
@@ -193,7 +200,7 @@
             }
             content.setGroup(receiver);
         }
-        if (messenger.sendContent(content, receiver, null, false)) {
+        if (messenger.sendContent(null, receiver, content, null, 0)) {
             console.log('sending message: ', content);
             this.messageView.setValue('');
             this.historyView.reloadData();

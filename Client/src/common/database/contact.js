@@ -39,23 +39,18 @@
 
         getContacts: function (user) {
             this.load();
-            var contacts = this.__contacts[user.toString()];
-            if (contacts) {
-                return ID.convert(contacts);
-            } else {
-                return null;
-            }
+            return this.__contacts[user];
         },
 
         addContact: function (contact, user) {
             var contacts = this.getContacts(user);
             if (contacts) {
-                if (contacts.indexOf(contact.toString()) >= 0) {
+                if (contacts.indexOf(contact) >= 0) {
                     return false;
                 }
-                contacts.push(contact.toString());
+                contacts.push(contact);
             } else {
-                contacts = [contact.toString()];
+                contacts = [contact];
             }
             return this.saveContacts(contacts, user);
         },
@@ -65,7 +60,7 @@
             if (!contacts) {
                 return false;
             }
-            var pos = contacts.indexOf(contact.toString());
+            var pos = contacts.indexOf(contact);
             if (pos < 0) {
                 return false;
             }
@@ -75,7 +70,7 @@
 
         saveContacts: function (contacts, user) {
             this.load();
-            this.__contacts[user.toString()] = ID.revert(contacts);
+            this.__contacts[user] = contacts;
             console.log('saving contacts for user', user);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -89,42 +84,37 @@
 
         load: function () {
             if (!this.__contacts) {
-                this.__contacts = Storage.loadJSON('ContactTable');
-                if (!this.__contacts) {
-                    this.__contacts = {};
-                }
+                this.__contacts = convert(Storage.loadJSON('ContactTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__users, 'ContactTable');
+            return Storage.saveJSON(revert(this.__contacts), 'ContactTable');
         },
 
         __contacts: null  // ID => Array<ID>
     };
 
-    var parse = function (map) {
-        var users = {};
+    var convert = function (map) {
+        var results = {};
         if (map) {
-            var u_list = Object.keys(map);
-            for (var i = 0; i < u_list.length; ++i) {
-                var user = u_list[i];
-                var c_list = map[user];
-                // user ID
-                user = ID.parse(user);
-                console.assert(user !== null, 'user ID error', u_list[i]);
-                // user contacts
-                var contacts = [];
-                for (var j = 0; j < c_list.length; ++j) {
-                    var item = c_list[j];
-                    item = ID.parse(item);
-                    console.assert(item !== null, 'contact ID error', c_list[j]);
-                    contacts.push(item);
-                }
-                // got contacts for one user
-                users[user] = contacts;
+            var users = Object.keys(map);
+            var u;
+            for (var i = 0; i < users.length; ++i) {
+                u = users[i];
+                results[ID.parse(u)] = ID.convert(map[u]);
             }
         }
-        return users;
+        return results;
+    };
+    var revert = function (map) {
+        var results = {};
+        var users = Object.keys(map);
+        var u;
+        for (var i = 0; i < users.length; ++i) {
+            u = users[i];
+            results[u.toString()] = ID.revert(map[u]);
+        }
+        return results;
     };
 
 })(SECHAT, DIMSDK);

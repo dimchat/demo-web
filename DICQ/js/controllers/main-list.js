@@ -13,11 +13,16 @@
 
     var NetworkType = sdk.protocol.NetworkType;
     var ID = sdk.protocol.ID;
-    var Facebook = app.Facebook;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
-    var MessageTable = app.db.MessageTable;
+    var get_facebook = function () {
+        return app.Facebook.getInstance();
+    };
+
+    var get_message_db = function () {
+        return app.db.MessageTable;
+    };
 
     var MainListView = function () {
         FixedTableView.call(this);
@@ -29,12 +34,11 @@
         // notifications
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, 'ContactsUpdated');
-        nc.addObserver(this, nc.kNotificationMessageUpdated);
+        nc.addObserver(this, app.kNotificationMessageUpdated);
     };
     sdk.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
         if (name === 'ContactsUpdated') {
             this.reloadData();
@@ -53,7 +57,7 @@
     var s_robots = [];
 
     MainListView.prototype.reloadData = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.identifier);
         // 1. fetch contacts
@@ -68,9 +72,9 @@
                     console.error('ID error: ' + contacts[i]);
                     continue;
                 }
-                if (NetworkType.Robot.equals(id.getType())) {
+                if (NetworkType.ROBOT.equals(id.getType())) {
                     robots.push(id);
-                } else if (NetworkType.Station.equals(id.getType())) {
+                } else if (NetworkType.STATION.equals(id.getType())) {
                     robots.push(id);
                 } else if (id.isUser()) {
                     persons.push(id);
@@ -90,13 +94,13 @@
         return last_time(id2) - last_time(id1);
     };
     var last_time = function (identifier) {
-        var db = MessageTable.getInstance();
-        var cnt = db.getMessageCount(identifier);
+        var db = get_message_db();
+        var cnt = db.numberOfMessages(identifier);
         if (cnt < 1) {
             return 0;
         }
-        var msg = db.getMessage(cnt-1, identifier);
-        return msg.envelope.time;
+        var msg = db.messageAtIndex(cnt-1, identifier);
+        return msg.getTime();
     };
 
     //

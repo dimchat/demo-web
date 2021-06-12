@@ -59,6 +59,7 @@
 
             return messenger.saveMessage(iMsg) && OK;
         }, 128);
+        return true;
     };
 
     //-------- namespace --------

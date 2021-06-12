@@ -44,16 +44,20 @@
     var ID = sdk.protocol.ID;
 
     var Command = sdk.protocol.Command;
+    var InstantMessage = sdk.protocol.InstantMessage;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var MessageBuilder = app.cpu.MessageBuilder;
 
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
 
     var StationDelegate = app.network.StationDelegate;
     var Terminal = app.network.Terminal;
+
+    var get_facebook = function () {
+        return app.Facebook.getInstance();
+    };
 
     var Application = function () {
         Terminal.call(this);
@@ -77,34 +81,30 @@
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var identifier;
         var profile;
         var name = notification.name;
         var userInfo = notification.userInfo;
         var res;
-        var nc = NotificationCenter.getInstance();
-        if (name === nc.kNotificationStationConnecting) {
+        if (name === app.kNotificationStationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
-        } else if (name === nc.kNotificationStationConnected) {
+        } else if (name === app.kNotificationStationConnected) {
             res = 'Station connected.';
-        } else if (name === nc.kNotificationStationError) {
+        } else if (name === app.kNotificationStationError) {
             res = 'Connection error.';
-        } else if (name === nc.kNotificationMetaAccepted) {
+        } else if (name === app.kNotificationMetaAccepted) {
             identifier = notification.userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
-        } else if (name === nc.kNotificationDocumentUpdated) {
+        } else if (name === app.kNotificationDocumentUpdated) {
             profile = notification.userInfo;
             res = '[Profile updated] ID: ' + profile.getIdentifier()
                 + ' -> ' + profile.getValue('data');
-        } else if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
+        } else if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
             var sender = msg.getSender();
             var username = facebook.getName(sender);
-            if (!username) {
-                username = sender.name;
-            }
-            var content = msg.content;
+            var content = msg.getContent();
             var text;
             if (content instanceof Command) {
                 text = MessageBuilder.getCommandText(content, sender);
@@ -135,8 +135,7 @@
     };
 
     var add_sender = function (sender) {
-        var facebook = Facebook.getInstance();
-        var user = facebook.getCurrentUser();
+        var user = get_facebook().getCurrentUser();
         if (!user) {
             throw Error('current user not set yet');
         }
@@ -154,7 +153,7 @@
     };
 
     var add_group = function (group) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         if (!user) {
             throw Error('current user not set yet');
@@ -184,19 +183,9 @@
     };
 
     var add_contact = function (contact, user) {
-        var facebook = Facebook.getInstance();
-        var contacts = facebook.getContacts(user);
-        if (contacts) {
-            for (var j = 0; j < contacts.length; ++j) {
-                if (contact.equals(contacts[j])) {
-                    return true;
-                }
-            }
-            contacts.push(contact);
-        } else {
-            contacts = [contact];
-        }
-        if (facebook.saveContacts(contacts, user)) {
+        var facebook = get_facebook();
+        if (facebook.addContact(contact, user)) {
+            var contacts = facebook.getContacts(user);
             var nc = NotificationCenter.getInstance();
             nc.postNotification('ContactsUpdated', this,
                 {'ID': contact, 'contacts': contacts});

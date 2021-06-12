@@ -160,72 +160,60 @@
 
     var default_state = function () {
         return server_state(ServerState.DEFAULT,
-            // target state: Connecting
+            // Default -> Connecting
             transition(ServerState.CONNECTING, function (machine) {
                 var server = get_server(machine);
                 if (server && server.getCurrentUser()) {
                     var status = server.getStatus();
-                    return status.equals(Gate.Status.CONNECTING)
-                        || status.equals(Gate.Status.CONNECTED);
+                    return Gate.Status.CONNECTING.equals(status)
+                        || Gate.Status.CONNECTED.equals(status);
                 } else {
                     return false;
                 }
-            }),
-            // target state: Error
-            transition(ServerState.ERROR, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return status.equals(Gate.Status.ERROR);
             })
         );
     };
     var connecting_state = function () {
         return server_state(ServerState.CONNECTING,
-            // target state: Connected
+            // Connecting -> Connected
             transition(ServerState.CONNECTED, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return status.equals(Gate.Status.CONNECTED);
+                return Gate.Status.CONNECTED.equals(status);
             }),
-            // target state: Error
+            // Connecting -> Error
             transition(ServerState.ERROR, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return status.equals(Gate.Status.ERROR);
+                return Gate.Status.ERROR.equals(status);
             })
         );
     };
     var connected_state = function () {
         return server_state(ServerState.CONNECTED,
-            // target state: Handshaking
+            // Connected -> Handshaking
             transition(ServerState.HANDSHAKING, function (machine) {
                 var server = get_server(machine);
                 return server.getCurrentUser();
-            }),
-            // target state: Error
-            transition(ServerState.ERROR, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return status.equals(Gate.Status.ERROR);
             })
         );
     };
     var handshaking_state = function () {
         return server_state(ServerState.HANDSHAKING,
-            // target state: Running
+            // Handshaking -> Running
             transition(ServerState.RUNNING, function (machine) {
                 // when current user changed, the server will clear this session, so
                 // if it's set again, it means handshake accepted
                 return machine.getSessionKey();
             }),
-            // target state: Connected
+            // Handshaking -> Connected
             transition(ServerState.CONNECTED, function (machine) {
                 var state = machine.getCurrentState();
                 var time = state.time;
                 if (time) {
                     var expired = time.getTime() + 120 * 1000;
-                    var now = new Date();
-                    if (now.getTime() < expired) {
+                    var now = (new Date()).getTime();
+                    if (now < expired) {
                         // not expired yet
                         return false;
                     }
@@ -233,40 +221,41 @@
                     // not enter yet
                     return false;
                 }
+                // handshake expired, return to connected to do it again
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return status.equals(Gate.Status.CONNECTED);
+                return Gate.Status.CONNECTED.equals(status);
             }),
-            // target state: Error
+            // Handshaking -> Error
             transition(ServerState.ERROR, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return status.equals(Gate.Status.ERROR);
+                return Gate.Status.ERROR.equals(status);
             })
         );
     };
     var running_state = function () {
         return server_state(ServerState.RUNNING,
-            // target state: Default
+            // Running -> Default
             transition(ServerState.DEFAULT, function (machine) {
                 // user switched?
                 return !machine.getSessionKey();
             }),
-            // target state: Error
+            // Running -> Error
             transition(ServerState.ERROR, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return status.equals(Gate.Status.ERROR);
+                return Gate.Status.ERROR.equals(status);
             })
         );
     };
     var error_state = function () {
         return server_state(ServerState.ERROR,
-            // target state: Default
+            // Error -> Default
             transition(ServerState.DEFAULT, function (machine) {
                 var server = get_server(machine);
                 var status = server.getStatus();
-                return !status.equals(Gate.Status.ERROR);
+                return !Gate.Status.ERROR.equals(status);
             })
         );
     };

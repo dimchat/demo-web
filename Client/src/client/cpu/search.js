@@ -37,6 +37,7 @@
 
     var ID = sdk.protocol.ID;
     var Meta = sdk.protocol.Meta;
+    var InstantMessage = sdk.protocol.InstantMessage;
 
     var CommandProcessor = sdk.cpu.CommandProcessor;
     var NotificationCenter = sdk.lnc.NotificationCenter;
@@ -56,7 +57,7 @@
         if (!identifier) {
             return string;
         }
-        var nickname = facebook.getNickname(identifier);
+        var nickname = facebook.getName(identifier);
         return identifier + ' "' + nickname + '"';
     };
 
@@ -111,11 +112,12 @@
         }
 
         cmd.setValue('text', text);
+        var iMsg = InstantMessage.create(rMsg.getEnvelope(), cmd);
 
         var nc = NotificationCenter.getInstance();
         nc.postNotification(ns.kNotificationMessageUpdated, this, {
-            'envelope': rMsg.getEnvelope(),
-            'content': cmd
+            'ID': rMsg.getSender(),
+            'msg': iMsg
         });
         return null;
     };

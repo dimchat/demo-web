@@ -47,23 +47,18 @@
 
         getMembers: function (group) {
             this.load()
-            var members = this.__members[group.toString()];
-            if (members) {
-                return ID.convert(members);
-            } else {
-                return null;
-            }
+            return this.__members[group];
         },
 
         addMember: function (member, group) {
             var members = this.getMembers(group);
             if (members) {
-                if (members.indexOf(member.toString()) >= 0) {
+                if (members.indexOf(member) >= 0) {
                     return false;
                 }
-                members.push(member.toString());
+                members.push(member);
             } else {
-                members = [member.toString()];
+                members = [member];
             }
             return this.saveMembers(members, group);
         },
@@ -73,7 +68,7 @@
             if (!members) {
                 return false;
             }
-            var pos = members.indexOf(member.toString());
+            var pos = members.indexOf(member);
             if (pos < 0) {
                 return false;
             }
@@ -83,7 +78,7 @@
 
         saveMembers: function (members, group) {
             this.load()
-            this.__members[group.toString()] = ID.revert(members);
+            this.__members[group] = members;
             console.log('saving members for group', group);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
@@ -97,8 +92,8 @@
 
         removeGroup: function (group) {
             this.load();
-            if (this.__members[group.toString()]) {
-                delete this.__members[group.toString()]
+            if (this.__members[group]) {
+                delete this.__members[group]
                 return this.save();
             } else {
                 console.error('group not exists: ' + group);
@@ -108,46 +103,37 @@
 
         load: function () {
             if (!this.__members) {
-                this.__members = Storage.loadJSON('GroupTable');
-                if (!this.__members) {
-                    this.__members = {};
-                }
+                this.__members = convert(Storage.loadJSON('GroupTable'));
             }
         },
         save: function () {
-            return Storage.saveJSON(this.__members, 'GroupTable');
+            return Storage.saveJSON(revert(this.__members), 'GroupTable');
         },
 
         __members: null  // ID => Array<ID>
     };
 
-    var parse = function (map) {
-        var groups = {};
+    var convert = function (map) {
+        var results = {};
         if (map) {
-            var g_list = Object.keys(map);
-            for (var i = 0; i < g_list.length; ++i) {
-                var group = g_list[i];
-                var m_list = map[group];
-                // group ID
-                group = ID.parse(group);
-                if (!group) {
-                    throw new TypeError('group ID error: ' + g_list[i]);
-                }
-                // group members
-                var members = [];
-                for (var j = 0; j < m_list.length; ++j) {
-                    var item = m_list[j];
-                    item = ID.parse(item);
-                    if (!item) {
-                        throw new TypeError('member ID error: ' + m_list[j]);
-                    }
-                    members.push(item);
-                }
-                // got members for one group
-                groups[group] = members;
+            var g;
+            var groups = Object.keys(map);
+            for (var i = 0; i < groups.length; ++i) {
+                g = groups[i];
+                results[ID.parse(g)] = ID.convert(map[g]);
             }
         }
-        return groups;
+        return results;
+    };
+    var revert = function (map) {
+        var results = {};
+        var g;
+        var groups = Object.keys(map);
+        for (var i = 0; i < groups.length; ++i) {
+            g = groups[i];
+            results[g.toString()] = ID.revert(map[g]);
+        }
+        return results;
     };
 
 })(SECHAT, DIMSDK);

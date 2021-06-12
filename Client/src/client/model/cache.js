@@ -27,6 +27,10 @@
         return ns.Facebook.getInstance();
     };
 
+    var get_clerk = function () {
+        return ns.Amanuensis;
+    };
+
     /**
      *  Message DataSource
      *  ~~~~~~~~~~~~~~~~~~
@@ -137,12 +141,10 @@
                 return true;
             }
 
-            var clerk = ns.Amanuensis.getInstance();
-
             if (content instanceof ReceiptCommand) {
-                return clerk.saveReceipt(iMsg);
+                return get_clerk().saveReceipt(iMsg);
             } else {
-                return clerk.saveMessage(iMsg);
+                return get_clerk().saveMessage(iMsg);
             }
         },
 

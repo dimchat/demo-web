@@ -36,7 +36,7 @@
         }
 
         // message time
-        var time = iMsg.envelope.getTime();
+        var time = iMsg.getTime();
         var timeView = new Label();
         timeView.setClassName('time');
         timeView.setText(time_string(time));
@@ -54,7 +54,7 @@
         this.appendChild(nameView);
 
         // message content
-        var content = iMsg.content;
+        var content = iMsg.getContent();
         if (content instanceof Command) {
             this.setClassName('cmd');
         }

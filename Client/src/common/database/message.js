@@ -125,7 +125,7 @@
         lastMessage: function (entity) {
             var messages = this.loadMessages(entity);
             if (messages && messages.length > 0) {
-                return InstantMessage.parse(messages[messages.length - 1]);
+                return messages[messages.length - 1];
             } else {
                 return null;
             }
@@ -149,8 +149,8 @@
          */
         messageAtIndex: function (index, entity) {
             var messages = this.loadMessages(entity);
-            console.assert(messages !== null, 'failed to get messages for conversation: ' + identifier);
-            return InstantMessage.parse(messages[index]);
+            console.assert(messages !== null, 'failed to get messages for conversation: ' + entity);
+            return messages[index];
         },
 
         /**
@@ -172,7 +172,10 @@
             }
             if (this.saveMessages(messages, entity)) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification(ns.kNotificationMessageUpdated, this, iMsg);
+                nc.postNotification(ns.kNotificationMessageUpdated, this, {
+                    'ID': entity,
+                    'msg': iMsg
+                });
                 return true;
             } else {
                 throw new Error('failed to save message: ' + iMsg);
@@ -223,14 +226,7 @@
          */
         loadMessages: function (conversation) {
             this.load(conversation);
-            var array = this.__messages[conversation];
-            var messages = [];
-            if (array) {
-                for (var i = 0; i < array.length; ++i) {
-                    messages.push(InstantMessage.parse(array[i]));
-                }
-            }
-            return messages;
+            return this.__messages[conversation];
         },
 
         /**
@@ -241,23 +237,21 @@
          * @returns {boolean}
          */
         saveMessages: function (messages, conversation) {
-            var array = [];
-            if (messages) {
-                for (var i = 0; i < messages.length; ++i) {
-                    array.push(messages[i].getMap());
-                }
+            if (messages && messages.length > 0) {
+                this.__messages[conversation] = messages;
+            } else {
+                delete this.__messages[conversation];
             }
-            this.__messages[conversation.toString()] = array;
             return this.save(conversation);
         },
 
         load: function (identifier) {
-            if (!this.__messages[identifier.toString()]) {
-                this.__messages[identifier.toString()] = Storage.loadJSON(get_tag(identifier));
+            if (!this.__messages[identifier]) {
+                this.__messages[identifier] = convert(Storage.loadJSON(get_tag(identifier)));
             }
         },
         save: function (identifier) {
-            return Storage.saveJSON(this.__messages[identifier.toString()], get_tag(identifier));
+            return Storage.saveJSON(revert(this.__messages[identifier]), get_tag(identifier));
         },
 
         __messages: {}  // ID => Array<InstantMessage>
@@ -267,16 +261,21 @@
         return 'Messages-' + identifier.getAddress().toString();
     };
 
-    var parse = function (list) {
+    var convert = function (list) {
         var messages = [];
         if (list) {
-            var msg;
             for (var i = 0; i < list.length; ++i) {
-                msg = InstantMessage.getInstance(list[i]);
-                if (!msg) {
-                    throw new Error('Message error: ' + list[i]);
-                }
-                messages.push(msg);
+                messages.push(InstantMessage.parse(list[i]));
+            }
+        }
+        return messages;
+    };
+
+    var revert = function (list) {
+        var messages = [];
+        if (list) {
+            for (var i = 0; i < list.length; ++i) {
+                messages.push(list[i].getMap());
             }
         }
         return messages;
@@ -285,61 +284,61 @@
     var insert_message = function (iMsg, messages) {
         // timestamp
         var t1, t2;
-        t1 = iMsg.envelope.time;
+        t1 = iMsg.getTime();
         if (!t1) {
             t1 = 0;
         }
         // serial number
         var sn1, sn2;
-        sn1 = iMsg.content.sn;
+        sn1 = iMsg.getContent().getSerialNumber();
 
         var index;
         var item;
         for (index = messages.length - 1; index >=0; --index) {
             item = messages[index];
-            t2 = item.envelope.time;
+            t2 = item.getTime();
             if (t2 && t2 < t1) {
                 // finished
                 break;
             }
-            sn2 = item.content.sn;
+            sn2 = item.getContent().getSerialNumber();
             if (sn1 === sn2) {
                 console.log('duplicate message, no need to insert');
                 return false;
             }
         }
         // insert after
-        ns.type.Arrays.insert(messages, index+1, iMsg);
+        sdk.type.Arrays.insert(messages, index+1, iMsg);
         return true;
     };
     var remove_message = function (iMsg, messages) {
         // timestamp
         var t1, t2;
-        t1 = iMsg.envelope.time;
+        t1 = iMsg.getTime();
         if (!t1) {
             t1 = 0;
         }
         // serial number
         var sn1, sn2;
-        sn1 = iMsg.content.sn;
+        sn1 = iMsg.getContent().getSerialNumber();
 
         var index;
         var item;
         for (index = messages.length - 1; index >=0; --index) {
             item = messages[index];
-            t2 = item.envelope.time;
+            t2 = item.getTime();
             if (t2 && t2 < t1) {
                 console.log('message not found');
                 return false;
             }
-            sn2 = item.content.sn;
+            sn2 = item.getContent().getSerialNumber();
             if (sn1 === sn2) {
                 // got it
                 break;
             }
         }
         // insert after
-        ns.type.Arrays.insert(messages, index+1, iMsg);
+        sdk.type.Arrays.insert(messages, index+1, iMsg);
         return true;
     };
 

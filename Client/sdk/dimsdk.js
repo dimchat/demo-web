@@ -101,14 +101,27 @@ if (typeof MONKEY !== "object") {
     var conforms = function(object, protocol) {
         if (!object) {
             return false
-        }
-        if (object instanceof protocol) {
-            return true
+        } else {
+            if (object instanceof protocol) {
+                return true
+            } else {
+                if (ns.type.Object.isBaseType(object)) {
+                    return false
+                }
+            }
         }
         var child = Object.getPrototypeOf(object);
+        if (child === Object.getPrototypeOf({})) {
+            child = object
+        }
         var names = Object.getOwnPropertyNames(protocol.prototype);
+        var p;
         for (var i = 0; i < names.length; ++i) {
-            if (!child.hasOwnProperty(names[i])) {
+            p = names[i];
+            if (p === "constructor") {
+                continue
+            }
+            if (!child.hasOwnProperty(p)) {
                 return false
             }
         }
@@ -292,6 +305,9 @@ if (typeof MONKEY !== "object") {
         var k;
         for (var i = 0; i < len1; ++i) {
             k = keys1[i];
+            if (keys2.indexOf(k) < 0) {
+                return false
+            }
             if (!objects_equal(dict1[k], dict2[k])) {
                 return false
             }
@@ -308,32 +324,34 @@ if (typeof MONKEY !== "object") {
                 if (!obj2) {
                     return false
                 } else {
-                    if (typeof obj1 === "string" || typeof obj2 === "string") {
-                        return false
+                    if (typeof obj1["equals"] === "function") {
+                        return obj1.equals(obj2)
                     } else {
-                        if (typeof obj1["equals"] === "function") {
-                            return obj1.equals(obj2)
+                        if (typeof obj2["equals"] === "function") {
+                            return obj2.equals(obj1)
                         } else {
-                            if (typeof obj2["equals"] === "function") {
-                                return obj2.equals(obj1)
+                            if (ns.type.Object.isBaseType(obj1)) {
+                                return obj1 === obj2
+                            } else {
+                                if (ns.type.Object.isBaseType(obj2)) {
+                                    return false
+                                } else {
+                                    if (is_array(obj1)) {
+                                        return is_array(obj2) && arrays_equal(obj1, obj2)
+                                    } else {
+                                        if (is_array(obj2)) {
+                                            return false
+                                        } else {
+                                            return maps_equal(obj1, obj2)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        if (is_array(obj1)) {
-            if (is_array(obj2)) {
-                return arrays_equal(obj1, obj2)
-            } else {
-                return false
-            }
-        } else {
-            if (is_array(obj2)) {
-                return false
-            }
-        }
-        return maps_equal(obj1, obj2)
     };
     var copy_items = function(src, srcPos, dest, destPos, length) {
         if (srcPos !== 0 || length !== src.length) {
@@ -6996,6 +7014,9 @@ if (typeof DIMP !== "object") {
     };
     ns.Class(GeneralAddressFactory, AddressFactory, null);
     GeneralAddressFactory.prototype.createAddress = function(address) {
+        if (address.length === 42) {
+            throw new TypeError("ETH address not support yet")
+        }
         return BTCAddress.parse(address)
     };
     Address.setFactory(new GeneralAddressFactory())
@@ -9737,7 +9758,19 @@ if (typeof StarGate !== "object") {
             proxy.onError(error)
         };
         ws.onmessage = function(ev) {
-            proxy.onReceived(ev.data)
+            var data = ev.data;
+            if (!data || data.length === 0) {
+                return
+            } else {
+                if (typeof data === "string") {
+                    data = sys.format.UTF8.encode(data)
+                } else {
+                    if (data instanceof Uint8Array) {} else {
+                        data = new Uint8Array(data)
+                    }
+                }
+            }
+            proxy.onReceived(data)
         };
         return ws
     };
@@ -10466,18 +10499,18 @@ if (typeof StarGate !== "object") {
             return null
         } else {
             if (data.length === 2) {
-                if (sys.format.Arrays.equals(data, OK)) {
+                if (sys.type.Arrays.equals(data, OK)) {
                     return null
                 }
             } else {
                 if (data.length === 4) {
-                    if (sys.format.Arrays.equals(data, NOOP)) {
+                    if (sys.type.Arrays.equals(data, NOOP)) {
                         return null
                     } else {
-                        if (sys.format.Arrays.equals(data, PONG)) {
+                        if (sys.type.Arrays.equals(data, PONG)) {
                             return null
                         } else {
-                            if (sys.format.Arrays.equals(data, PING)) {
+                            if (sys.type.Arrays.equals(data, PING)) {
                                 return new WSShip(PONG, StarShip.SLOWER, null)
                             }
                         }

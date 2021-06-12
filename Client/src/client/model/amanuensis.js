@@ -6,6 +6,10 @@
 
     var ReceiptCommand = sdk.protocol.ReceiptCommand;
 
+    var get_conversation_db = function () {
+        return ns.ConversationDatabase;
+    };
+
     /**
      *  Conversation pool to manage conversation instances
      *
@@ -35,7 +39,7 @@
                 return null;
             }
             var chatBox = new ns.Conversation(entity);
-            chatBox.database = ns.ConversationDatabase.getInstance();
+            chatBox.database = get_conversation_db();
             return chatBox;
         },
 
@@ -176,7 +180,7 @@
     //
     //     // check envelope
     //     var env1 = receipt.getEnvelope();
-    //     var env2 = iMsg.envelope;
+    //     var env2 = iMsg.getEnvelope();
     //     if (env1) {
     //         // if contains envelope, check it
     //         return env1.equals(env2);
@@ -184,7 +188,7 @@
     //
     //     // check serial number
     //     // (only the original message's receiver can know this number)
-    //     return receipt.sn === iMsg.content.sn;
+    //     return receipt.sn === iMsg.getContent().getSerialNumber();
     // };
 
 })(SECHAT, DIMSDK);

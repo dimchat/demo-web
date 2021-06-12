@@ -12,9 +12,14 @@
 
     var InstantMessage = sdk.protocol.InstantMessage;
     var Envelope = sdk.protocol.Envelope;
-    var Messenger = app.Messenger;
 
-    var MessageTable = app.db.MessageTable;
+    var get_messenger = function () {
+        return app.Messenger.getInstance();
+    };
+
+    var get_message_db = function () {
+        return app.db.MessageTable;
+    };
 
     var ChatroomWindow = function () {
         GroupChatWindow.call(this);
@@ -24,12 +29,12 @@
     sdk.Class(ChatroomWindow, GroupChatWindow, null);
 
     ChatroomWindow.prototype.getMessageCount = function () {
-        var db = MessageTable.getInstance();
-        return db.getMessageCount(ID.EVERYONE);
+        var db = get_message_db();
+        return db.numberOfMessages(ID.EVERYONE);
     };
     ChatroomWindow.prototype.getMessage = function (index) {
-        var db = MessageTable.getInstance();
-        return db.getMessage(index, ID.EVERYONE);
+        var db = get_message_db();
+        return db.messageAtIndex(index, ID.EVERYONE);
     };
 
     ChatroomWindow.prototype.getAdministratorCount = function () {
@@ -73,17 +78,17 @@
         if (!text) {
             return ;
         }
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
-        var user = server.currentUser;
+        var messenger = get_messenger();
+        var server = messenger.getCurrentServer();
+        var user = server.getCurrentUser();
         if (!user) {
             alert('User not login');
             return false;
         }
         var content = new TextContent(text);
         content.setGroup(ID.EVERYONE);
-        var env = Envelope.newEnvelope(user.identifier, ID.EVERYONE, 0);
-        var msg = InstantMessage.newMessage(content, env);
+        var env = Envelope.create(user.identifier, ID.EVERYONE, 0);
+        var msg = InstantMessage.create(env, content);
         messenger.saveMessage(msg);
         msg = messenger.signMessage(messenger.encryptMessage(msg));
         return this.sendContent(new ForwardContent(msg));
@@ -101,13 +106,12 @@
     var TextContent = sdk.protocol.TextContent;
     var SearchCommand = sdk.protocol.SearchCommand;
 
-    var Facebook = app.Facebook;
-    var Messenger = app.Messenger;
-
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-
     var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;
+
+    var get_messenger = function () {
+        return app.Messenger.getInstance();
+    };
 
     // group members
     ChatroomWindow.prototype.getParticipantCount = function () {
@@ -118,19 +122,19 @@
     };
 
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
-        var nc = NotificationCenter.getInstance();
         var name = notification.name;
-        if (name === nc.kNotificationMessageUpdated) {
-            var msg = notification.userInfo;
-            if (ID.EVERYONE.equals(msg.content.getGroup())) {
+        var userInfo = notification.userInfo;
+        if (name === app.kNotificationMessageUpdated) {
+            var msg = userInfo['msg'];
+            if (ID.EVERYONE.equals(msg.getGroup())) {
                 // reload chat history
                 this.historyView.reloadData();
                 this.historyView.scrollToBottom();
-            } else if (msg.content instanceof SearchCommand) {
-                var command = msg.content.getCommand();
+            } else if (msg.getContent() instanceof SearchCommand) {
+                var command = msg.getContent().getCommand();
                 if (command === SearchCommand.ONLINE_USERS) {
                     // process chatroom users updated notification
-                    update_users(msg.content);
+                    update_users(msg.getContent());
                     // reload online users
                     this.membersView.reloadData();
                 }
@@ -161,12 +165,12 @@
     //
 
     var query_history = function (admin) {
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
-        var user = server.currentUser;
+        var messenger = get_messenger();
+        var server = messenger.getCurrentServer();
+        var user = server.getCurrentUser();
         if (user) {
             var content = new TextContent('show history');
-            messenger.sendContent(content, admin);
+            messenger.sendContent(null, admin, content, null, 0);
         }
     };
 
@@ -196,12 +200,12 @@
     };
 
     var query_users = function (admin) {
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
-        var user = server.currentUser;
+        var messenger = get_messenger();
+        var server = messenger.getCurrentServer();
+        var user = server.getCurrentUser();
         if (user) {
             var content = new TextContent('show users');
-            messenger.sendContent(content, admin);
+            messenger.sendContent(null, admin, content, null, 0);
         }
     };
 
