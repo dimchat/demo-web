@@ -388,7 +388,7 @@ if (typeof SECHAT !== "object") {
                 nc.postNotification(ns.kNotificationDocumentUpdated, this, doc);
                 return true
             } else {
-                throw new Error("failed to save profile: " + identifier + " -> " + doc.getValue("data"))
+                throw new Error("failed to save document: " + identifier + " -> " + doc.getValue("data"))
             }
         },
         load: function() {

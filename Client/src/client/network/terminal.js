@@ -134,46 +134,6 @@
         set_server.call(this, null);
     };
 
-    // //
-    // //  StationDelegate
-    // //
-    // Terminal.prototype.onReceivePackage = function (data, server) {
-    //     if (!data || data.length === 0) {
-    //         return;
-    //     }
-    //     var response = get_messenger().processPackage(data);
-    //     if (response) {
-    //         server.send(response);
-    //     }
-    // };
-    // Terminal.prototype.didSendPackage = function (data, server) {
-    //     // TODO: mark it sent
-    // };
-    // Terminal.prototype.didFailToSendPackage = function (error, data, server) {
-    //     // TODO: resend it
-    // };
-    // Terminal.prototype.onHandshakeAccepted = function (session, server) {
-    //     var messenger = get_messenger();
-    //     var facebook = get_facebook();
-    //     var user = facebook.getCurrentUser();
-    //     // post current profile to station
-    //     var profile = user.getProfile();
-    //     if (profile) {
-    //         messenger.postProfile(profile);
-    //     }
-    //     // post contacts(encrypted) to station
-    //     var contacts = user.getContacts();
-    //     if (contacts != null && contacts.length > 0) {
-    //         messenger.postContacts(contacts);
-    //     }
-    //     // broadcast login command
-    //     var login = new LoginCommand(user.identifier);
-    //     login.setAgent(this.getUserAgent());
-    //     login.setStation(server);
-    //     // TODO: set provider
-    //     messenger.broadcastContent(login);
-    // };
-
     //-------- namespace --------
     ns.network.Terminal = Terminal;
 

@@ -68,9 +68,9 @@
         // avatar
         var image = null;
         if (identifier.isUser()) {
-            var profile = facebook.getDocument(identifier, '*');
-            if (profile) {
-                image = profile.getProperty('avatar');
+            var doc = facebook.getDocument(identifier, '*');
+            if (doc) {
+                image = doc.getProperty('avatar');
             }
         } else {
             // TODO: build group logo

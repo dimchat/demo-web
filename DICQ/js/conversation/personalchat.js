@@ -42,9 +42,9 @@
         ChatWindow.prototype.setIdentifier.call(this, identifier);
         var avatar = null;
         var facebook = Facebook.getInstance();
-        var profile = facebook.getDocument(identifier, '*');
-        if (profile) {
-            avatar = profile.getProperty('avatar');
+        var doc = facebook.getDocument(identifier, '*');
+        if (doc) {
+            avatar = doc.getProperty('avatar');
         }
         if (avatar) {
             this.avatarImage.setSrc(avatar);

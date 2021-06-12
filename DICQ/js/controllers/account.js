@@ -15,6 +15,7 @@
 
     var ID = sdk.protocol.ID;
     var Document = sdk.protocol.Document;
+    var DocumentCommand = sdk.protocol.DocumentCommand;
 
     var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
@@ -104,14 +105,14 @@
         if (!privateKey) {
             throw Error('Failed to get private key for current user: ' + user);
         }
-        // update profile
-        var profile = user.getVisa();
-        if (!profile) {
-            profile = new Document(user.identifier);
+        // update visa
+        var visa = user.getVisa();
+        if (!visa) {
+            visa = Document.create(Document.VISA, user.identifier);
         }
-        profile.setName(nickname);
-        profile.sign(privateKey);
-        facebook.saveDocument(profile);
+        visa.setName(nickname);
+        visa.sign(privateKey);
+        facebook.saveDocument(visa);
         // submit event
         if (this.onSubmit(user)) {
             this.remove();
@@ -119,15 +120,18 @@
     };
 
     AccountWindow.prototype.onSubmit = function (user) {
-        var profile = user.getVisa();
-        // post profile
+        var visa = user.getVisa();
+        // post visa
         var messenger = Messenger.getInstance();
-        messenger.postDocument(profile);
+        messenger.postDocument(visa);
         var admin = ID.parse('chatroom');
         if (admin) {
-            messenger.sendDocument(profile, admin);
+            var id = user.identifier;
+            var meta = user.getMeta();
+            var cmd = DocumentCommand.response(id, meta, visa);
+            messenger.sendContent(id, admin, cmd, null, 0);
         }
-        var text = 'Nickname updated, profile: ' + profile.getValue('data');
+        var text = 'Nickname updated, visa: ' + visa.getValue('data');
         alert(text);
         return true;
     };

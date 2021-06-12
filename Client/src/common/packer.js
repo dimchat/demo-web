@@ -40,7 +40,7 @@
     sdk.Class(CommonPacker, MessagePacker, null);
 
     // attach key digest
-    var attach= function (rMsg) {
+    var attach = function (rMsg) {
         var messenger = this.getMessenger();
         if (!rMsg.getDelegate()) {
             rMsg.setDelegate(messenger);

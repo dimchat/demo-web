@@ -112,6 +112,6 @@
         } else {
             return [];
         }
-    }
+    };
 
 })(SECHAT, DIMSDK);

@@ -28,9 +28,9 @@
         // avatar
         var avatarImage = new Image();
         avatarImage.setClassName('avatar');
-        var profile = facebook.getDocument(identifier, '*');
-        if (profile) {
-            var url = profile.getProperty('avatar');
+        var doc = facebook.getDocument(identifier, '*');
+        if (doc) {
+            var url = doc.getProperty('avatar');
             if (url) {
                 avatarImage.setSrc(url);
             }

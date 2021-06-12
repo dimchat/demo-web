@@ -122,7 +122,7 @@
     };
 
     /**
-     *  Post profile onto current station
+     *  Post document onto current station
      *
      * @param {Document} doc
      * @param {Meta} meta
