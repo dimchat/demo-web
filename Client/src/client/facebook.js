@@ -143,7 +143,9 @@
                 return null;
             }
             // query from DIM network
-            get_messenger().queryMeta(identifier);
+            setTimeout(function () {
+                get_messenger().queryMeta(identifier);
+            }, 512);
         }
         return meta;
     };
@@ -156,7 +158,9 @@
                 return null;
             }
             // query from DIM network
-            get_messenger().queryDocument(identifier, type);
+            setTimeout(function () {
+                get_messenger().queryDocument(identifier, type);
+            }, 512);
         }
         return doc;
     };

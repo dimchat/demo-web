@@ -1328,7 +1328,9 @@
             if (identifier.isBroadcast()) {
                 return null
             }
-            get_messenger().queryMeta(identifier)
+            setTimeout(function() {
+                get_messenger().queryMeta(identifier)
+            }, 512)
         }
         return meta
     };
@@ -1338,7 +1340,9 @@
             if (identifier.isBroadcast()) {
                 return null
             }
-            get_messenger().queryDocument(identifier, type)
+            setTimeout(function() {
+                get_messenger().queryDocument(identifier, type)
+            }, 512)
         }
         return doc
     };
