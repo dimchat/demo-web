@@ -49,7 +49,7 @@
             var facebook = get_facebook();
 
             var entity;
-            if (userInfo instanceof sdk.type.Map) {
+            if (sdk.Interface.conforms(userInfo, sdk.type.Map)) {
                 entity = ID.parse(userInfo.getValue('ID'));
             } else {
                 entity = ID.parse(userInfo['ID']);
