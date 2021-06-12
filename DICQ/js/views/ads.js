@@ -28,7 +28,11 @@
 
     AdView.prototype.showAd = function (id) {
         if (id === 'searchResultAd') {
-            this.showSearchResultAd();
+            try {
+                this.showSearchResultAd();
+            } catch (e) {
+                console.error('Ad error', id, e);
+            }
         } else {
             // TODO: fetch ad content with id
             this.setText('[' + id + '] placeholder');
