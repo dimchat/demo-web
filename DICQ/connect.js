@@ -82,8 +82,8 @@
 
     var host = $_GET['host'];
     if (!host) {
-        host = '127.0.0.1';
-        // host = '134.175.87.98';   // gz
+        // host = '127.0.0.1';
+        host = '106.52.25.169';   // gz
         // host = '124.156.108.150'; // hk
     }
     var port = $_GET['port'];
