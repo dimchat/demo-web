@@ -104,7 +104,8 @@
     var ID = sdk.protocol.ID;
 
     var TextContent = sdk.protocol.TextContent;
-    var SearchCommand = sdk.protocol.SearchCommand;
+
+    var SearchCommand = app.protocol.SearchCommand;
 
     var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;

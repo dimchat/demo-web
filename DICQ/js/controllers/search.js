@@ -210,11 +210,10 @@
     'use strict';
 
     var ID = sdk.protocol.ID;
-    var InstantMessage = sdk.protocol.InstantMessage;
+
+    var SearchCommand = app.protocol.SearchCommand;
 
     var SearchResultWindow = ns.SearchResultWindow;
-
-    var SearchCommand = sdk.protocol.SearchCommand;
 
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
@@ -222,13 +221,13 @@
         if (name === app.kNotificationMessageUpdated) {
             var msg = userInfo['msg'];
             if (msg.getContent() instanceof SearchCommand) {
-                var command = msg.getContent().getCommand();
-                if (command === SearchCommand.SEARCH) {
+                // var command = msg.getContent().getCommand();
+                // if (command === SearchCommand.SEARCH) {
                     // process search result notification
                     update_users(msg.getContent());
                     // reload users
                     this.reloadData();
-                }
+                // }
             }
         }
     };

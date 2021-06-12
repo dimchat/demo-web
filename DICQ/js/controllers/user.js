@@ -106,8 +106,7 @@
             ns.PersonalChatWindow.show(identifier);
             this.remove();
         } else {
-            contacts.push(identifier);
-            if (facebook.saveContacts(contacts, user.identifier)) {
+            if (facebook.addContact(identifier, user.identifier)) {
                 this.button.setText('Chat');
             } else {
                 throw Error('Failed to add contact: ' + identifier);
