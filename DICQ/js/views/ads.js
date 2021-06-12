@@ -82,10 +82,18 @@
     };
     var requestData = function (adView) {
         // query
-        ns.loader.importJS(gyData, function () {
-            var data = getData();
-            showData(data, adView);
-        });
+        try {
+            ns.loader.importJS(gyData, function () {
+                try {
+                    var data = getData();
+                    showData(data, adView);
+                } catch (e) {
+                    console.error('fetch Ad data error', e, data);
+                }
+            });
+        } catch (e) {
+            console.error('request Ad data error', gyData);
+        }
     };
     var showData = function (data, adView) {
         adView.removeChildren();
