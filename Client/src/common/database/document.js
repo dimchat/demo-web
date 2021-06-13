@@ -81,11 +81,11 @@
     var convert = function (map) {
         var results = {};
         if (map) {
-            var users = Object.keys(map);
-            var u;
-            for (var i = 0; i < users.length; ++i) {
-                u = users[i];
-                results[ID.parse(u)] = Document.parse(map[u]);
+            var list = Object.keys(map);
+            var id;
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                results[ID.parse(id)] = Document.parse(map[id]);
             }
         }
         return results;
@@ -93,11 +93,16 @@
     var revert = function (map) {
         var results = {};
         if (map) {
-            var users = Object.keys(map);
-            var u;
-            for (var i = 0; i < users.length; ++i) {
-                u = users[i];
-                results[u.toString()] = map[u].getMap();
+            var list = Object.keys(map);
+            var id, doc;
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                doc = map[id];
+                if (!doc) {
+                    // FIXME: document error
+                    continue;
+                }
+                results[id.toString()] = doc.getMap();
             }
         }
         return results;

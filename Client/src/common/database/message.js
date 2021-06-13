@@ -274,8 +274,14 @@
     var revert = function (list) {
         var messages = [];
         if (list) {
+            var msg;
             for (var i = 0; i < list.length; ++i) {
-                messages.push(list[i].getMap());
+                msg = list[i];
+                if (!msg) {
+                    // FIXME: message error:
+                    continue;
+                }
+                messages.push(msg.getMap());
             }
         }
         return messages;

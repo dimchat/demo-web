@@ -63,7 +63,9 @@
         msg.setText('Chat Room');
         msg.onClick = function (ev) {
             var admin = ID.parse('chatroom');
-            ns.ChatroomWindow.show(admin);
+            if (admin) {
+                ns.ChatroomWindow.show(admin);
+            }
         };
         this.appendChild(msg);
 

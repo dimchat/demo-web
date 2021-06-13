@@ -189,6 +189,9 @@ if (typeof dicq !== 'object') {
             /* third party cryptography libs */
             '../Client/sdk/3rd/crypto.min.js',
             '../Client/sdk/3rd/jsencrypt.min.js',
+            '../Client/sdk/3rd/sha3.min.js',
+            '../Client/sdk/3rd/ecc/bn.js',
+            '../Client/sdk/3rd/ecc/secp256k1.js',
 
             /* DIM SDK */
             '../Client/sdk/dimsdk.min.js',
@@ -208,6 +211,9 @@ if (typeof dicq !== 'object') {
             /* third party cryptography libs */
             '../Client/sdk/3rd/crypto.js',
             '../Client/sdk/3rd/jsencrypt.js',
+            '../Client/sdk/3rd/sha3.js',
+            '../Client/sdk/3rd/ecc/bn.js',
+            '../Client/sdk/3rd/ecc/secp256k1.js',
 
             /* DIM SDK */
             '../Client/sdk/dimsdk.js',

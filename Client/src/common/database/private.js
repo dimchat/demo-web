@@ -149,9 +149,15 @@
         if (map) {
             var tag;
             var list = Object.keys(map);
+            var key;
             for (var i = 0; i < list.length; ++i) {
                 tag = list[i];
-                results[tag] = map[tag].getMap();
+                key = map[tag];
+                if (!key) {
+                    // FIXME: key error?
+                    continue;
+                }
+                results[tag] = key.getMap();
             }
         }
         return results;

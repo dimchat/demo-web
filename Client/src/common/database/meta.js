@@ -93,11 +93,16 @@
     var revert = function (map) {
         var results = {};
         if (map) {
-            var id;
+            var id, m;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
                 id = list[i];
-                results[id.toString()] = map[id].getMap();
+                m = map[id];
+                if (!m) {
+                    // FIXME: meta error?
+                    continue;
+                }
+                results[id.toString()] = m.getMap();
             }
         }
         return results;
