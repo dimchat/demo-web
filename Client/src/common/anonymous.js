@@ -33,6 +33,7 @@
     var NetworkType = sdk.protocol.NetworkType;
     var ID = sdk.protocol.ID;
     var BTCAddress = sdk.mkm.BTCAddress;
+    var ETHAddress = sdk.mkm.ETHAddress;
 
     var Anonymous = function () {
     };
@@ -68,6 +69,9 @@
         }
         if (address instanceof BTCAddress) {
             return btc_number(address);
+        }
+        if (address instanceof ETHAddress) {
+            return eth_number(address);
         }
         throw new TypeError('address error: ' + address.toString());
     };

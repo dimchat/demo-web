@@ -404,11 +404,16 @@ if (typeof SECHAT !== "object") {
     var convert = function(map) {
         var results = {};
         if (map) {
-            var users = Object.keys(map);
-            var u;
-            for (var i = 0; i < users.length; ++i) {
-                u = users[i];
-                results[ID.parse(u)] = Document.parse(map[u])
+            var list = Object.keys(map);
+            var id, doc;
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                doc = Document.parse(map[id]);
+                if (!doc) {
+                    continue
+                }
+                doc.__status = 1;
+                results[ID.parse(id)] = doc
             }
         }
         return results
@@ -416,11 +421,15 @@ if (typeof SECHAT !== "object") {
     var revert = function(map) {
         var results = {};
         if (map) {
-            var users = Object.keys(map);
-            var u;
-            for (var i = 0; i < users.length; ++i) {
-                u = users[i];
-                results[u.toString()] = map[u].getMap()
+            var list = Object.keys(map);
+            var id, doc;
+            for (var i = 0; i < list.length; ++i) {
+                id = list[i];
+                doc = map[id];
+                if (!doc) {
+                    continue
+                }
+                results[id.toString()] = doc.getMap()
             }
         }
         return results
@@ -642,8 +651,13 @@ if (typeof SECHAT !== "object") {
     var revert = function(list) {
         var messages = [];
         if (list) {
+            var msg;
             for (var i = 0; i < list.length; ++i) {
-                messages.push(list[i].getMap())
+                msg = list[i];
+                if (!msg) {
+                    continue
+                }
+                messages.push(msg.getMap())
             }
         }
         return messages
@@ -758,11 +772,15 @@ if (typeof SECHAT !== "object") {
     var revert = function(map) {
         var results = {};
         if (map) {
-            var id;
+            var id, m;
             var list = Object.keys(map);
             for (var i = 0; i < list.length; ++i) {
                 id = list[i];
-                results[id.toString()] = map[id].getMap()
+                m = map[id];
+                if (!m) {
+                    continue
+                }
+                results[id.toString()] = m.getMap()
             }
         }
         return results
@@ -858,9 +876,14 @@ if (typeof SECHAT !== "object") {
         if (map) {
             var tag;
             var list = Object.keys(map);
+            var key;
             for (var i = 0; i < list.length; ++i) {
                 tag = list[i];
-                results[tag] = map[tag].getMap()
+                key = map[tag];
+                if (!key) {
+                    continue
+                }
+                results[tag] = key.getMap()
             }
         }
         return results
@@ -1241,6 +1264,7 @@ if (typeof SECHAT !== "object") {
     var NetworkType = sdk.protocol.NetworkType;
     var ID = sdk.protocol.ID;
     var BTCAddress = sdk.mkm.BTCAddress;
+    var ETHAddress = sdk.mkm.ETHAddress;
     var Anonymous = function() {};
     sdk.Class(Anonymous, null, null);
     Anonymous.getName = function(identifier) {
@@ -1269,6 +1293,9 @@ if (typeof SECHAT !== "object") {
         }
         if (address instanceof BTCAddress) {
             return btc_number(address)
+        }
+        if (address instanceof ETHAddress) {
+            return eth_number(address)
         }
         throw new TypeError("address error: " + address.toString())
     };

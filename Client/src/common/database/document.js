@@ -82,10 +82,16 @@
         var results = {};
         if (map) {
             var list = Object.keys(map);
-            var id;
+            var id, doc;
             for (var i = 0; i < list.length; ++i) {
                 id = list[i];
-                results[ID.parse(id)] = Document.parse(map[id]);
+                doc = Document.parse(map[id]);
+                if (!doc) {
+                    // FIXME: document error?
+                    continue;
+                }
+                doc.__status = 1;  // trust all document saved
+                results[ID.parse(id)] = doc;
             }
         }
         return results;

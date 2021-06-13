@@ -9,8 +9,7 @@
  */;
 if (typeof MONKEY !== "object") {
     MONKEY = {}
-}
-(function(ns) {
+}(function(ns) {
     var namespacefy = function(space) {
         space.__all__ = [];
         space.registers = namespace.prototype.registers;
@@ -2097,8 +2096,7 @@ if (typeof MONKEY !== "object") {
 })(MONKEY);
 if (typeof MingKeMing !== "object") {
     MingKeMing = new MONKEY.Namespace()
-}
-(function(ns, base) {
+}(function(ns, base) {
     base.exports(ns);
     if (typeof ns.protocol !== "object") {
         ns.protocol = new ns.Namespace()
@@ -3149,8 +3147,7 @@ if (typeof MingKeMing !== "object") {
 })(MingKeMing);
 if (typeof DaoKeDao !== "object") {
     DaoKeDao = new MingKeMing.Namespace()
-}
-(function(ns, base) {
+}(function(ns, base) {
     base.exports(ns);
     if (typeof ns.protocol !== "object") {
         ns.protocol = new ns.Namespace()
@@ -4300,8 +4297,7 @@ if (typeof DaoKeDao !== "object") {
 })(DaoKeDao);
 if (typeof DIMP !== "object") {
     DIMP = new MingKeMing.Namespace()
-}
-(function(ns, base) {
+}(function(ns, base) {
     base.exports(ns);
     if (typeof ns.core !== "object") {
         ns.core = new ns.Namespace()
@@ -6462,7 +6458,8 @@ if (typeof DIMP !== "object") {
     };
     ns.Class(hash, obj, [Hash]);
     hash.prototype.digest = function(data) {
-        return keccak256.update(data).digest()
+        var array = keccak256.update(data).digest();
+        return new Uint8Array(array)
     };
     ns.digest.KECCAK256.hash = new hash()
 })(MONKEY);
@@ -7516,7 +7513,11 @@ if (typeof DIMP !== "object") {
             }
         }
     };
-    Meta.register(MetaType.MKM, new GeneralMetaFactory(MetaType.MKM))
+    Meta.register(MetaType.MKM, new GeneralMetaFactory(MetaType.MKM));
+    Meta.register(MetaType.BTC, new GeneralMetaFactory(MetaType.BTC));
+    Meta.register(MetaType.ExBTC, new GeneralMetaFactory(MetaType.ExBTC));
+    Meta.register(MetaType.ETH, new GeneralMetaFactory(MetaType.ETH));
+    Meta.register(MetaType.ExETH, new GeneralMetaFactory(MetaType.ExETH))
 })(MingKeMing);
 (function(ns) {
     var obj = ns.type.Object;
@@ -7702,8 +7703,7 @@ if (typeof DIMP !== "object") {
 })(MONKEY);
 if (typeof DIMSDK !== "object") {
     DIMSDK = new MingKeMing.Namespace()
-}
-(function(ns, base) {
+}(function(ns, base) {
     base.exports(ns);
     if (typeof ns.cpu !== "object") {
         ns.cpu = new ns.Namespace()
@@ -8974,7 +8974,7 @@ if (typeof DIMSDK !== "object") {
         } else {
             meta = this.getMeta(identifier)
         }
-        return meta && doc.verify(meta.key)
+        return meta && doc.verify(meta.getKey())
     };
     Facebook.prototype.isFounder = function(member, group) {
         var gMeta = this.getMeta(group);
@@ -9382,8 +9382,7 @@ if (typeof StarTrek !== "object") {
 }
 if (typeof StarGate !== "object") {
     StarGate = new MONKEY.Namespace()
-}
-(function(ns, sys) {
+}(function(ns, sys) {
     var obj = sys.type.Object;
     var Storage = function(storage, prefix) {
         obj.call(this);
