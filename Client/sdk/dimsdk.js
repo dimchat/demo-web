@@ -6519,6 +6519,9 @@ if (typeof DIMP !== "object") {
     };
     var decode_public = function(pem) {
         var data = decode_key(pem, "-----BEGIN PUBLIC KEY-----", "-----END PUBLIC KEY-----");
+        if (!data) {
+            data = decode_key(pem, "-----BEGIN RSA PUBLIC KEY-----", "-----END RSA PUBLIC KEY-----")
+        }
         if (data) {
             return data
         }
