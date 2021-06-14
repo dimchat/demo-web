@@ -152,6 +152,7 @@
             throw Error('table view error');
         }
         var iMsg = this.getMessage(indexPath.row);
+        iMsg.getEnvelope().setValue('read', true);
         // create table cell
         var cell = new ns.MessageCell();
         cell.setClassName('msgCell');
