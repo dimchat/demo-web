@@ -9,7 +9,8 @@
  */;
 if (typeof MONKEY !== "object") {
     MONKEY = {}
-}(function(ns) {
+}
+(function(ns) {
     var namespacefy = function(space) {
         space.__all__ = [];
         space.registers = namespace.prototype.registers;
@@ -1362,7 +1363,9 @@ if (typeof MONKEY !== "object") {
                 if (this.handle()) {
                     return true
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Runner::handle() error", this, e)
+            }
             this.__stage = STAGE_CLEANING
         }
         if (this.__stage === STAGE_CLEANING) {
@@ -2096,7 +2099,8 @@ if (typeof MONKEY !== "object") {
 })(MONKEY);
 if (typeof MingKeMing !== "object") {
     MingKeMing = new MONKEY.Namespace()
-}(function(ns, base) {
+}
+(function(ns, base) {
     base.exports(ns);
     if (typeof ns.protocol !== "object") {
         ns.protocol = new ns.Namespace()
@@ -3147,7 +3151,8 @@ if (typeof MingKeMing !== "object") {
 })(MingKeMing);
 if (typeof DaoKeDao !== "object") {
     DaoKeDao = new MingKeMing.Namespace()
-}(function(ns, base) {
+}
+(function(ns, base) {
     base.exports(ns);
     if (typeof ns.protocol !== "object") {
         ns.protocol = new ns.Namespace()
@@ -4297,7 +4302,8 @@ if (typeof DaoKeDao !== "object") {
 })(DaoKeDao);
 if (typeof DIMP !== "object") {
     DIMP = new MingKeMing.Namespace()
-}(function(ns, base) {
+}
+(function(ns, base) {
     base.exports(ns);
     if (typeof ns.core !== "object") {
         ns.core = new ns.Namespace()
@@ -5374,7 +5380,9 @@ if (typeof DIMP !== "object") {
                 if (plaintext && plaintext.length > 0) {
                     return plaintext
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log("User::decrypt() error", this, e, keys[i], ciphertext)
+            }
         }
         return null
     };
@@ -6779,12 +6787,30 @@ if (typeof DIMP !== "object") {
         return CryptographyKey.getAlgorithm(this.getMap())
     };
     ECCPublicKey.prototype.getData = function() {
-        var data = this.getValue("data");
-        if (data && data.length > 0) {
-            return ns.format.Hex.decode(data)
-        } else {
+        var pem = this.getValue("data");
+        if (!pem || pem.length === 0) {
             throw new Error("ECC public key data not found")
+        } else {
+            if (pem.length === 66) {
+                return ns.format.Hex.decode(pem)
+            } else {
+                if (pem.length === 130) {
+                    return ns.format.Hex.decode(pem)
+                } else {
+                    var pos1 = pem.indexOf("-----BEGIN PUBLIC KEY-----");
+                    if (pos1 >= 0) {
+                        pos1 += "-----BEGIN PUBLIC KEY-----".length;
+                        var pos2 = pem.indexOf("-----END PUBLIC KEY-----", pos1);
+                        if (pos2 > 0) {
+                            var base64 = pem.substr(pos1, pos2 - pos1);
+                            var data = ns.format.Base64.decode(base64);
+                            return data.subarray(data.length - 65)
+                        }
+                    }
+                }
+            }
         }
+        throw new EvalError("key data error: " + pem)
     };
     ECCPublicKey.prototype.getSize = function() {
         var size = this.getValue("keySize");
@@ -6820,30 +6846,6 @@ if (typeof DIMP !== "object") {
             y: y
         }
     };
-    var parse_key = function() {
-        var data = this.getData();
-        if (data.length === 33) {
-            return decode_points(data)
-        } else {
-            if (data.length === 65) {
-                return decode_points(data)
-            } else {
-                var pem = this.getValue("data");
-                var pos1 = pem.indexOf("-----BEGIN PUBLIC KEY-----");
-                if (pos1 >= 0) {
-                    pos1 += "-----BEGIN PUBLIC KEY-----".length;
-                    var pos2 = pem.indexOf("-----END PUBLIC KEY-----", pos1);
-                    if (pos2 > 0) {
-                        var base64 = pem.substr(pos1, pos2 - pos1);
-                        data = ns.format.Base64.decode(base64);
-                        data = data.subarray(data.length - 65);
-                        return decode_points(data)
-                    }
-                }
-            }
-        }
-        throw new EvalError("key data error: " + pem)
-    };
     ECCPublicKey.prototype.verify = function(data, signature) {
         var hash = ns.digest.SHA256.digest(data);
         var z = Secp256k1.uint256(hash, 16);
@@ -6853,7 +6855,7 @@ if (typeof DIMP !== "object") {
         }
         var sig_r = Secp256k1.uint256(sig.r, 16);
         var sig_s = Secp256k1.uint256(sig.s, 16);
-        var pub = parse_key.call(this);
+        var pub = decode_points(this.getData());
         return Secp256k1.ecverify(pub.x, pub.y, sig_r, sig_s, z)
     };
     ECCPublicKey.prototype.matches = function(sKey) {
@@ -6946,9 +6948,16 @@ if (typeof DIMP !== "object") {
         }
     };
     var get_key_pair = function() {
-        var sKey = parse_key.call(this);
-        if (!sKey) {
+        var sKey;
+        var data = this.getData();
+        if (!data || data.length === 0) {
             sKey = generatePrivateKey.call(this, 256)
+        } else {
+            if (data.length === 32) {
+                sKey = Secp256k1.uint256(data, 16)
+            } else {
+                throw new EvalError("key data length error: " + data)
+            }
         }
         var pKey = Secp256k1.generatePublicKeyFromPrivateKeyData(sKey);
         return {
@@ -6963,18 +6972,6 @@ if (typeof DIMP !== "object") {
         this.setValue("curve", "secp256k1");
         this.setValue("digest", "SHA256");
         return key
-    };
-    var parse_key = function() {
-        var data = this.getData();
-        if (!data || data.length === 0) {
-            return null
-        } else {
-            if (data.length === 32) {
-                return Secp256k1.uint256(data, 16)
-            } else {
-                throw new EvalError("key data length error: " + data)
-            }
-        }
     };
     ECCPrivateKey.prototype.getPublicKey = function() {
         var pub = this.__publicKey;
@@ -7703,7 +7700,8 @@ if (typeof DIMP !== "object") {
 })(MONKEY);
 if (typeof DIMSDK !== "object") {
     DIMSDK = new MingKeMing.Namespace()
-}(function(ns, base) {
+}
+(function(ns, base) {
     base.exports(ns);
     if (typeof ns.cpu !== "object") {
         ns.cpu = new ns.Namespace()
@@ -7876,7 +7874,6 @@ if (typeof DIMSDK !== "object") {
     var map = ns.type.Map;
     var ID = ns.protocol.ID;
     var Command = ns.protocol.Command;
-    var Station = ns.Station;
     var LoginCommand = function(info) {
         if (ns.Interface.conforms(info, ID)) {
             Command.call(this, Command.LOGIN);
@@ -7906,7 +7903,7 @@ if (typeof DIMSDK !== "object") {
     };
     LoginCommand.prototype.setStation = function(station) {
         var info;
-        if (station instanceof Station) {
+        if (station instanceof ns.Station) {
             info = {
                 "host": station.getHost(),
                 "port": station.getPort(),
@@ -9382,7 +9379,8 @@ if (typeof StarTrek !== "object") {
 }
 if (typeof StarGate !== "object") {
     StarGate = new MONKEY.Namespace()
-}(function(ns, sys) {
+}
+(function(ns, sys) {
     var obj = sys.type.Object;
     var Storage = function(storage, prefix) {
         obj.call(this);
@@ -10515,6 +10513,7 @@ if (typeof StarGate !== "object") {
         try {
             return read.call(this)
         } catch (e) {
+            console.error("[WebSocket] failed to receive data", this, e);
             close.call(this);
             this.setStatus(Connection.Status.ERROR);
             return null
@@ -10524,6 +10523,7 @@ if (typeof StarGate !== "object") {
         try {
             return write.call(this, data)
         } catch (e) {
+            console.error("[WebSocket] failed to send data", this, e, data);
             close.call(this);
             this.setStatus(Connection.Status.ERROR);
             return null
@@ -10683,6 +10683,7 @@ if (typeof StarGate !== "object") {
             this.setStatus(Connection.Status.CONNECTED);
             return true
         } catch (e) {
+            console.error("[WebSocket] failed to connect", this, e);
             this.setStatus(Connection.Status.ERROR);
             return false
         }

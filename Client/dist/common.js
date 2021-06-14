@@ -2017,6 +2017,8 @@ if (typeof SECHAT !== "object") {
                         throw new SyntaxError("failed to get ID: " + text)
                     }
                 }
+            } else {
+                throw e
             }
             return null
         }
