@@ -33,14 +33,14 @@
 
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, 'ContactsUpdated');
+        nc.addObserver(this, app.kNotificationContactsUpdated);
         nc.addObserver(this, app.kNotificationMessageUpdated);
     };
     sdk.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
-        if (name === 'ContactsUpdated') {
+        if (name === app.kNotificationContactsUpdated) {
             this.reloadData();
         } else if (name === app.kNotificationMessageUpdated) {
             this.reloadData();
@@ -55,16 +55,17 @@
     var s_persons = [];
     var s_groups = [];
     var s_robots = [];
+    var s_strangers = [];
 
     MainListView.prototype.reloadData = function () {
         var facebook = get_facebook();
+        // 1. fetch contacts
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.identifier);
-        // 1. fetch contacts
-        var persons = [];
-        var groups = [];
-        var robots = [];
-        if (contacts) {
+        if (contacts && contacts.length > 0) {
+            var persons = [];
+            var groups = [];
+            var robots = [];
             var id;
             for (var i = 0; i < contacts.length; ++i) {
                 id = ID.parse(contacts[i]);
@@ -76,17 +77,37 @@
                     robots.push(id);
                 } else if (NetworkType.STATION.equals(id.getType())) {
                     robots.push(id);
-                } else if (id.isUser()) {
-                    persons.push(id);
                 } else if (id.isGroup()) {
                     groups.push(id);
+                } else if (id.isUser()) {
+                    persons.push(id);
                 }
             }
+            // sort by message time
+            s_persons = persons.sort(compare_time);
+            s_groups = groups.sort(compare_time);
+            s_robots = robots.sort(compare_time);
         }
-        // 2. sort by message time
-        s_persons = persons.sort(compare_time);
-        s_groups = groups.sort(compare_time);
-        s_robots = robots.sort(compare_time);
+        // 2. fetch strangers
+        var strangers = facebook.getContacts(ID.ANYONE);
+        if (strangers && strangers.length > 0) {
+            // filter contacts
+            var pos;
+            for (var j = 0; j < s_persons.length; j++) {
+                pos = strangers.indexOf(s_persons[j]);
+                if (pos >= 0) {
+                    s_strangers.splice(pos, 1);
+                }
+            }
+            for (var k = 0; k < s_robots.length; k++) {
+                pos = strangers.indexOf(s_robots[k]);
+                if (pos >= 0) {
+                    s_strangers.splice(pos, 1);
+                }
+            }
+            // sort by message time
+            s_strangers = strangers.sort(compare_time);
+        }
         // 3. refresh table view
         FixedTableView.prototype.reloadData.call(this);
     };
@@ -107,7 +128,7 @@
     //  TableViewDataSource/TableViewDelegate
     //
     MainListView.prototype.numberOfSections = function (tableView) {
-        return 3;
+        return 4;
     };
 
     MainListView.prototype.titleForHeaderInSection = function (section, tableView) {
@@ -115,8 +136,10 @@
             return 'Contacts';
         } else if (section === 1) {
             return 'Groups';
-        } else {
+        } else if (section === 2) {
             return 'Robots';
+        } else {
+            return 'Strangers';
         }
     };
 
@@ -139,8 +162,10 @@
             return s_persons.length;
         } else if (section === 1) {
             return s_groups.length;
-        } else {
+        } else if (section === 2) {
             return s_robots.length;
+        } else {
+            return s_strangers.length;
         }
     };
 
@@ -153,9 +178,12 @@
         } else if (indexPath.section === 1) {
             clazz = 'groupCell';
             identifier = s_groups[indexPath.row];
-        } else {
+        } else if (indexPath.section === 2) {
             clazz = 'robotCell';
             identifier = s_robots[indexPath.row];
+        } else {
+            clazz = 'strangerCell';
+            identifier = s_strangers[indexPath.row];
         }
 
         var cell = new MainTableViewCell();

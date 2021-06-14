@@ -74,7 +74,7 @@
             console.log('saving contacts for user', user);
             if (this.save()) {
                 var nc = NotificationCenter.getInstance();
-                nc.postNotification('ContactsUpdated', this,
+                nc.postNotification(ns.kNotificationContactsUpdated, this,
                     {'user': user, 'contacts': contacts});
                 return true;
             } else {

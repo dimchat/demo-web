@@ -134,7 +134,12 @@
     };
 
     var add_sender = function (sender) {
-        var user = get_facebook().getCurrentUser();
+        if (!sender.isUser()) {
+            console.log('sender is not a user: ' + sender);
+            return false;
+        }
+        var facebook = get_facebook();
+        var user = facebook.getCurrentUser();
         if (!user) {
             throw Error('current user not set yet');
         }
@@ -142,13 +147,10 @@
             console.log('it is me!');
             return false;
         }
-
-        if (!sender.isUser()) {
-            console.log('sender is not a user: ' + sender);
-            return false;
+        var contacts = facebook.getContacts(user.identifier);
+        if (!contacts || contacts.indexOf(sender) < 0) {
+            return add_contact(sender, ID.ANYONE);
         }
-
-        return add_contact(sender, user.identifier);
     };
 
     var add_group = function (group) {
@@ -186,7 +188,7 @@
         if (facebook.addContact(contact, user)) {
             var contacts = facebook.getContacts(user);
             var nc = NotificationCenter.getInstance();
-            nc.postNotification('ContactsUpdated', this,
+            nc.postNotification(app.kNotificationContactsUpdated, this,
                 {'ID': contact, 'contacts': contacts});
         }
     };

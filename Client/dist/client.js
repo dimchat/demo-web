@@ -1807,7 +1807,6 @@
     };
     sdk.Class(MessageProcessor, CommonProcessor, null);
     MessageProcessor.prototype.processContent = function(content, rMsg) {
-        console.log("process content", content, rMsg);
         var res = CommonProcessor.prototype.processContent.call(this, content, rMsg);
         if (!res) {
             return null
