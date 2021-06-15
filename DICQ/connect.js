@@ -76,8 +76,11 @@
     var facebook = app.Facebook.getInstance();
     var messenger = app.Messenger.getInstance();
 
-    // var sid = 'gsp-s001@x5Zh9ixt8ECr59XLye1y5WWfaX4fcoaaSC';
-    var sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
+    var sid = $_GET['sid'];
+    if (!sid) {
+        // sid = 'gsp-s001@x5Zh9ixt8ECr59XLye1y5WWfaX4fcoaaSC';
+        sid = 'gsp-s002@wpjUWg1oYDnkHh74tHQFPxii6q9j3ymnyW';
+    }
     sid = ID.parse(sid);
 
     var host = $_GET['host'];

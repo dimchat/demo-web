@@ -13,7 +13,7 @@ textarea {
 
 #tarsier-status {
     position: fixed;
-    bottom: 4px;
+    bottom: 24px;
     left: 4px;
     padding: 2px 8px;
     z-index: 3333;

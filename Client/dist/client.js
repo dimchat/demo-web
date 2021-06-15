@@ -391,7 +391,7 @@
             }
         },
         getUploadURL: function() {
-            return "https://sechat.dim.chat/{ID}}/upload"
+            return "https://sechat.dim.chat/{ID}/upload"
         },
         getDownloadURL: function() {
             return "https://sechat.dim.chat/download/{ID}/{filename}"
@@ -891,6 +891,196 @@
     ns.network.StateMachine = StateMachine;
     ns.network.registers("StateMachine")
 })(SECHAT, DIMSDK);
+(function(ns) {
+    var HTTP = {
+        get: function(url, callback) {
+            var xhr = create();
+            xhr.open("GET", url);
+            xhr.responseType = "blob";
+            xhr.onload = function(ev) {
+                callback(ev.target, url)
+            };
+            xhr.send()
+        },
+        post: function(url, headers, body, callback) {
+            var xhr = create();
+            xhr.open("POST", url);
+            xhr.responseType = "blob";
+            xhr.onload = function(ev) {
+                if (callback) {
+                    callback(ev.target, url)
+                }
+            };
+            if (headers) {
+                set_headers(xhr, headers)
+            }
+            xhr.send(body)
+        }
+    };
+    var create = function() {
+        try {
+            return new XMLHttpRequest()
+        } catch (e) {
+            try {
+                return new ActiveXObject("Msxml2.XMLHTTP")
+            } catch (e) {
+                try {
+                    return new ActiveXObject("Microsoft.XMLHTTP")
+                } catch (e) {
+                    throw e
+                }
+            }
+        }
+    };
+    var set_headers = function(xhr, headers) {
+        var keys = Object.keys(headers);
+        var name;
+        for (var i = 0; i < keys.length; ++i) {
+            name = keys[i];
+            xhr.setRequestHeader(name, headers[name])
+        }
+    };
+    ns.network.HTTP = HTTP;
+    ns.network.registers("HTTP")
+})(SECHAT, DIMSDK);
+(function(ns, sdk) {
+    var HTTP = ns.network.HTTP;
+    HTTP.upload = function(url, data, filename, name, callback) {
+        var body = http_body(data, filename, name);
+        this.post(url, {
+            "Content-Type": CONTENT_TYPE,
+            "Content-Length": "" + body.length
+        }, body, callback)
+    };
+    HTTP.download = function(url, callback) {
+        if (s_downloading.indexOf(url) < 0) {
+            s_downloading.push(url);
+            this.get(url, callback)
+        }
+    };
+    var s_downloading = [];
+    var BOUNDARY = "BU1kUJ19yLYPqv5xoT3sbKYbHwjUu1JU7roix";
+    var CONTENT_TYPE = "multipart/form-data; boundary=" + BOUNDARY;
+    var BOUNDARY_BEGIN = "--" + BOUNDARY + "\r\n" + "Content-Disposition: form-data; name={name}; filename={filename}\r\n" + "Content-Type: application/octet-stream\r\n\r\n";
+    var BOUNDARY_END = "\r\n--" + BOUNDARY + "--";
+    var http_body = function(data, filename, name) {
+        var begin = BOUNDARY_BEGIN;
+        begin = begin.replace("{filename}", filename);
+        begin = begin.replace("{name}", name);
+        begin = sdk.format.UTF8.encode(begin);
+        var end = sdk.format.UTF8.encode(BOUNDARY_END);
+        var size = begin.length + data.length + end.length;
+        var body = new Uint8Array(size);
+        body.set(begin, 0);
+        body.set(data, begin.length);
+        body.set(end, begin.length + data.length);
+        return body
+    }
+})(SECHAT, DIMSDK);
+(function(ns, sdk) {
+    var Storage = sdk.dos.SessionStorage;
+    var get_configuration = function() {
+        return ns.Configuration
+    };
+    var get_http_client = function() {
+        return ns.network.HTTP
+    };
+    var md5 = function(data) {
+        var hash = sdk.digest.MD5.digest(data);
+        return sdk.format.Hex.encode(hash)
+    };
+    var fetch_filename = function(url) {
+        var pos;
+        pos = url.indexOf("?");
+        if (pos > 0) {
+            url = url.substr(0, pos)
+        }
+        pos = url.indexOf("#");
+        if (pos > 0) {
+            url = url.substr(0, pos)
+        }
+        pos = url.lastIndexOf("/");
+        if (pos < 0) {
+            pos = url.lastIndexOf("\\");
+            if (pos < 0) {
+                return url
+            }
+        }
+        return url.substr(pos + 1)
+    };
+    var unique_filename = function(url) {
+        var filename = fetch_filename(url);
+        var pos = filename.indexOf(".");
+        if (pos !== 32) {
+            var utf8 = sdk.format.UTF8.encode(url);
+            if (pos > 0) {
+                filename = md5(utf8) + filename.substr(pos)
+            } else {
+                filename = md5(utf8)
+            }
+        }
+        return filename
+    };
+    var FtpServer = {
+        uploadAvatar: function(image, user) {
+            var filename = md5(image) + ".jpg";
+            var config = get_configuration();
+            var up = config.getUploadURL();
+            up = up.replace("{ID}", user.getAddress().toString());
+            get_http_client().upload(up, image, filename, "avatar", function(xhr, url) {
+                upload_success(image, filename, user, url, xhr.response)
+            });
+            var down = config.getAvatarURL();
+            down = down.replace("{ID}", user.getAddress.toString());
+            down = down.replace("{filename}", filename);
+            return down
+        },
+        downloadAvatar: function(url, identifier) {
+            return url
+        },
+        uploadEncryptedData: function(data, filename, sender) {
+            var pos = filename.indexOf(".");
+            if (pos > 0) {
+                filename = md5(data) + filename.substr(pos)
+            } else {
+                filename = md5(data)
+            }
+            var config = get_configuration();
+            var up = config.getUploadURL();
+            up = up.replace("{ID}", sender.getAddress().toString());
+            get_http_client().upload(up, data, filename, "file", function(xhr, url) {
+                upload_success(data, filename, sender, url, xhr.response)
+            });
+            var down = config.getDownloadURL();
+            down = down.replace("{ID}", sender.getAddress.toString());
+            down = down.replace("{filename}", filename);
+            return down
+        },
+        downloadEncryptedData: function(url) {
+            var filename = unique_filename(url);
+            var data = this.loadFileData(filename);
+            if (data) {
+                return data
+            }
+            get_http_client().download(url, function(xhr, url) {
+                var data = xhr.response;
+                this.saveFileData(data, filename);
+                download_success(data, url)
+            });
+            return null
+        },
+        saveFileData: function(data, filename) {
+            return Storage.saveData(data, filename)
+        },
+        loadFileData: function(filename) {
+            return Storage.loadData(filename)
+        }
+    };
+    var upload_success = function(data, filename, sender, url, response) {};
+    var download_success = function(response, url) {};
+    ns.network.FtpServer = FtpServer;
+    ns.network.registers("FtpServer")
+})(SECHAT, DIMSDK);
 (function(ns, sdk) {
     var ID = sdk.protocol.ID;
     var Envelope = sdk.protocol.Envelope;
@@ -1054,10 +1244,15 @@
         }
     };
     Server.prototype.uploadData = function(data, iMsg) {
-        return null
+        var sender = iMsg.getSender();
+        var content = iMsg.getContent();
+        var filename = content.getFilename();
+        var ftp = ns.network.FtpServer;
+        return ftp.uploadEncryptedData(data, filename, sender)
     };
     Server.prototype.downloadData = function(url, iMsg) {
-        return null
+        var ftp = ns.network.FtpServer;
+        return ftp.downloadEncryptedData(url)
     };
     Server.prototype.enterState = function(state, machine) {
         var info = {
@@ -1227,15 +1422,21 @@
     };
     sdk.Class(Facebook, CommonFacebook, null);
     Facebook.prototype.getAvatar = function(identifier) {
+        var avatar = null;
         var doc = this.getDocument(identifier, "*");
         if (doc) {
             if (sdk.Interface.conforms(doc, Visa)) {
-                return doc.getAvatar()
+                avatar = doc.getAvatar()
             } else {
-                return doc.getProperty("avatar")
+                avatar = doc.getProperty("avatar")
             }
         }
-        return null
+        if (avatar) {
+            var ftp = ns.network.FtpServer;
+            return ftp.downloadAvatar(avatar, identifier)
+        } else {
+            return null
+        }
     };
     Facebook.prototype.saveMeta = function(meta, identifier) {
         if (!CommonFacebook.prototype.saveMeta.call(this, meta, identifier)) {

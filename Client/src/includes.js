@@ -57,6 +57,7 @@ var dim_client = [
 
     'src/client/network/delegate.js',
     'src/client/network/fsm.js',
+    'src/client/network/http.js',
     'src/client/network/server.js',
     'src/client/network/session.js',
     'src/client/network/terminal.js',

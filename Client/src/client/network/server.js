@@ -257,13 +257,16 @@
     };
 
     Server.prototype.uploadData = function (data, iMsg) {
-        // TODO: upload onto FTP server
-        return null;
+        var sender = iMsg.getSender();
+        var content = iMsg.getContent();
+        var filename = content.getFilename();
+        var ftp = ns.network.FtpServer;
+        return ftp.uploadEncryptedData(data, filename, sender);
     };
 
     Server.prototype.downloadData = function (url, iMsg) {
-        // TODO: download from FTP server
-        return null;
+        var ftp = ns.network.FtpServer;
+        return ftp.downloadEncryptedData(url);
     };
 
     //

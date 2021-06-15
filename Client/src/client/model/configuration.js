@@ -25,7 +25,7 @@
         },
 
         getUploadURL: function () {
-            return 'https://sechat.dim.chat/{ID}}/upload';
+            return 'https://sechat.dim.chat/{ID}/upload';
         },
 
         getDownloadURL: function () {

@@ -21,15 +21,21 @@
     sdk.Class(Facebook, CommonFacebook, null);
 
     Facebook.prototype.getAvatar = function (identifier) {
+        var avatar = null;
         var doc = this.getDocument(identifier, '*');
         if (doc) {
             if (sdk.Interface.conforms(doc, Visa)) {
-                return doc.getAvatar();
+                avatar = doc.getAvatar();
             } else {
-                return doc.getProperty('avatar');
+                avatar = doc.getProperty('avatar');
             }
         }
-        return null;
+        if (avatar) {
+            var ftp = ns.network.FtpServer;
+            return ftp.downloadAvatar(avatar, identifier);
+        } else {
+            return null;
+        }
     };
 
     Facebook.prototype.saveMeta = function(meta, identifier) {
