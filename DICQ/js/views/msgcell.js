@@ -73,12 +73,26 @@
     };
 
     var image_content_view = function (content, sender) {
-        var image = new Image();
-        var thumbnail = content.getValue("thumbnail");
-        if (thumbnail && thumbnail.length > 0) {
-            image.setSrc('data:image/png;base64,' + thumbnail);
+        var base64 = null;
+        var ftp = app.network.FtpServer;
+        var data = ftp.getFileData(content);
+        if (data) {
+            // get image data from decrypted data
+            base64 = sdk.format.Base64.encode(data);
+        } else {
+            // get image data from thumbnail
+            var thumbnail = content.getValue("thumbnail");
+            if (thumbnail && thumbnail.length > 0) {
+                base64 = thumbnail;
+            }
         }
-        return image;
+        if (base64) {
+            var image = new Image();
+            image.setSrc('data:image/png;base64,' + base64);
+            return image;
+        } else {
+            return null;
+        }
     };
 
     var text_content_view = function (content, sender) {

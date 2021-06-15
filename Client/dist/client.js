@@ -1074,7 +1074,47 @@
         },
         loadFileData: function(filename) {
             return Storage.loadData(filename)
+        },
+        getFileData: function(content) {
+            var data = content.getData("data");
+            if (data) {
+                return data
+            }
+            var filename = content.getFilename();
+            if (filename) {
+                data = this.loadFileData(filename);
+                if (data) {
+                    return data
+                }
+            }
+            var url = content.getURL();
+            if (url) {
+                data = this.downloadEncryptedData(url);
+                if (data) {
+                    return decrypt_file_data(data, content, this)
+                }
+            }
+            return null
         }
+    };
+    var decrypt_file_data = function(encrypted, content, ftp) {
+        var filename = content.getFilename();
+        var pwd = content.getPassword();
+        if (!pwd || !filename) {
+            console.error("cannot decrypt file data", content);
+            return null
+        }
+        var data = pwd.decrypt(encrypted);
+        var pos = filename.indexOf(".");
+        if (pos > 0) {
+            filename = md5(data) + filename.substr(pos)
+        } else {
+            filename = md5(data)
+        }
+        if (ftp.saveFileData(data, filename)) {
+            content.setFilename(filename)
+        }
+        return data
     };
     var upload_success = function(data, filename, sender, url, response) {};
     var download_success = function(response, url) {};
