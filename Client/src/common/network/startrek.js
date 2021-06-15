@@ -31,7 +31,49 @@
     'use strict';
 
     var ActiveConnection = sdk.stargate.ActiveConnection;
+
+    var StarLink = function (host, port) {
+        ActiveConnection.call(this, host, port);
+        this.__outgo_packages = [];
+    };
+    sdk.Class(StarLink, ActiveConnection, null);
+
+    StarLink.prototype.send = function (data) {
+        this.__outgo_packages.push(data);
+        return data.length;
+    };
+
+    var next = function () {
+        if (this.__outgo_packages.length > 0) {
+            return this.__outgo_packages.shift();
+        } else {
+            return null;
+        }
+    };
+
+    StarLink.prototype.process = function () {
+        var ok = ActiveConnection.prototype.process.call(this);
+        var data = next.call(this);
+        if (data) {
+            if (ActiveConnection.prototype.send.call(this, data)) {
+                ok = true;
+            }
+        }
+        return ok;
+    };
+
+    //-------- namespace --------
+    ns.network.StarLink = StarLink;
+
+    ns.network.registers('StarLink');
+
+})(SECHAT, DIMSDK);
+
+(function (ns, sdk) {
+    'use strict';
+
     var WSGate = sdk.stargate.WSGate;
+    var StarLink = ns.network.StarLink;
 
     var StarTrek = function (connection) {
         WSGate.call(this, connection);
@@ -39,7 +81,7 @@
     sdk.Class(StarTrek, WSGate, null);
 
     StarTrek.createGate = function (host, port) {
-        var conn = new ActiveConnection(host, port);
+        var conn = new StarLink(host, port);
         var gate = new StarTrek(conn);
         conn.setDelegate(gate);
         gate.start();
