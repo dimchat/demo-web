@@ -292,9 +292,10 @@
                 // already downloaded
                 return data;
             }
+            var ftp = this;
             get_http_client().download(url, function (xhr, url) {
                 var data = xhr.response;
-                this.saveFileData(data, filename);
+                ftp.saveFileData(data, filename);
                 download_success(data, url);
             });
             return null;
