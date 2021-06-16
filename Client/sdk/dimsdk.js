@@ -8294,7 +8294,7 @@ if (typeof DIMSDK !== "object") {
     };
     FileContentProcessor.prototype.downloadFileContent = function(content, pwd, sMsg) {
         var url = content.getURL();
-        if (!url || !url.indexOf("://") < 3) {
+        if (!url || url.indexOf("://") < 3) {
             return false
         }
         var iMsg = InstantMessage.create(sMsg.getEnvelope(), content);

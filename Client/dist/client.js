@@ -896,7 +896,7 @@
         get: function(url, callback) {
             var xhr = create();
             xhr.open("GET", url);
-            xhr.responseType = "blob";
+            xhr.responseType = "arraybuffer";
             xhr.onload = function(ev) {
                 callback(ev.target, url)
             };
@@ -905,7 +905,7 @@
         post: function(url, headers, body, callback) {
             var xhr = create();
             xhr.open("POST", url);
-            xhr.responseType = "blob";
+            xhr.responseType = "arraybuffer";
             xhr.onload = function(ev) {
                 if (callback) {
                     callback(ev.target, url)
@@ -1028,7 +1028,8 @@
             var up = config.getUploadURL();
             up = up.replace("{ID}", user.getAddress().toString());
             get_http_client().upload(up, image, filename, "avatar", function(xhr, url) {
-                upload_success(image, filename, user, url, xhr.response)
+                var response = new Uint8Array(xhr.response);
+                upload_success(image, filename, user, url, response)
             });
             var down = config.getAvatarURL();
             down = down.replace("{ID}", user.getAddress.toString());
@@ -1049,7 +1050,8 @@
             var up = config.getUploadURL();
             up = up.replace("{ID}", sender.getAddress().toString());
             get_http_client().upload(up, data, filename, "file", function(xhr, url) {
-                upload_success(data, filename, sender, url, xhr.response)
+                var response = new Uint8Array(xhr.response);
+                upload_success(data, filename, sender, url, response)
             });
             var down = config.getDownloadURL();
             down = down.replace("{ID}", sender.getAddress.toString());
@@ -1064,9 +1066,11 @@
             }
             var ftp = this;
             get_http_client().download(url, function(xhr, url) {
-                var data = xhr.response;
-                ftp.saveFileData(data, filename);
-                download_success(data, url)
+                var response = new Uint8Array(xhr.response);
+                if (response.length > 0) {
+                    ftp.saveFileData(response, filename);
+                    download_success(response, url)
+                }
             });
             return null
         },
