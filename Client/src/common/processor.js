@@ -25,25 +25,29 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'cpu/creator.js'
 
 (function (ns, sdk) {
     'use strict';
 
     var ID = sdk.protocol.ID;
+    var ForwardContent = sdk.protocol.ForwardContent;
     var InviteCommand = sdk.protocol.group.InviteCommand;
     var ResetCommand = sdk.protocol.group.ResetCommand;
-
     var MessageProcessor = sdk.MessageProcessor;
+    var CommonProcessorCreator = ns.cpu.CommonProcessorCreator;
 
-    var CommonProcessor = function (messenger) {
-        MessageProcessor.call(this, messenger);
+    var CommonProcessor = function (facebook, messenger) {
+        MessageProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(CommonProcessor, MessageProcessor, null);
-
-    CommonProcessor.prototype.getFacebook = function () {
-        return this.getMessenger().getFacebook();
-    };
+    sdk.Class(CommonProcessor, MessageProcessor, null, {
+        // Override
+        createCreator: function () {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            return new CommonProcessorCreator(facebook, messenger);
+        }
+    });
 
     // check whether group info empty
     var is_empty = function (group) {
@@ -80,7 +84,8 @@
         if (is_empty.call(this, group)) {
             // NOTICE: if the group info not found, and this is not an 'invite' command
             //         query group info from the sender
-            if (content instanceof InviteCommand || content instanceof ResetCommand) {
+            if (sdk.Interface.conforms(content, InviteCommand) ||
+                sdk.Interface.conforms(content, ResetCommand)) {
                 // FIXME: can we trust this stranger?
                 //        may be we should keep this members list temporary,
                 //        and send 'query' to the owner immediately.
@@ -111,13 +116,15 @@
         }
     };
 
+    // Override
     CommonProcessor.prototype.processContent = function (content, rMsg) {
+        var messenger = this.getMessenger();
         var sender = rMsg.getSender();
         if (is_waiting_group.call(this, content, sender)) {
             // save this message in a queue to wait group meta response
             var group = content.getGroup();
             rMsg.setValue("waiting", group.toString());
-            this.getMessenger().suspendMessage(rMsg);
+            messenger.suspendReliableMessage(rMsg);
             return null;
         }
         try {
@@ -130,7 +137,7 @@
                     var waiting = ID.parse(text.substr(pos + 2));
                     if (waiting) {
                         rMsg.setValue('waiting', waiting.toString());
-                        this.getMessenger().suspendReliableMessage(rMsg);
+                        messenger.suspendReliableMessage(rMsg);
                     } else {
                         throw new SyntaxError('failed to get ID: ' + text);
                     }
@@ -140,6 +147,36 @@
             }
             return null;
         }
+    };
+
+    // Override
+    CommonProcessor.prototype.processInstantMessage = function (iMsg, rMsg) {
+        var messenger = this.getMessenger();
+        var sMsg;
+        // unwrap secret message circularly
+        var content = iMsg.getContent();
+        while (sdk.Interface.conforms(content, ForwardContent)) {
+            rMsg = content.getMessage();
+            sMsg = messenger.verifyMessage(rMsg);
+            if (!sMsg) {
+                // signature not matched
+                return null;
+            }
+            iMsg = messenger.decryptMessage(sMsg);
+            if (!iMsg) {
+                // not for you?
+                return null;
+            }
+            content = iMsg.getContent();
+        }
+        // call super to process
+        var responses = MessageProcessor.prototype.processInstantMessage(iMsg, rMsg);
+        // save instant message
+        if (!messenger.saveMessage(iMsg)) {
+            // error
+            return null;
+        }
+        return responses;
     };
 
     //-------- namespace --------

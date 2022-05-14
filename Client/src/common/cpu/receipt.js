@@ -30,21 +30,21 @@
 (function (ns, sdk) {
     'use strict';
 
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Receipt Command Processor
      */
-    var ReceiptCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var ReceiptCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(ReceiptCommandProcessor, CommandProcessor, null);
-
-    // Override
-    ReceiptCommandProcessor.prototype.execute = function (cmd, rMsg) {
-        // no need to response receipt command
-        return null;
-    };
+    sdk.Class(ReceiptCommandProcessor, BaseCommandProcessor, null, {
+        // Override
+        process: function (cmd, rMsg) {
+            // no need to response receipt command
+            return null;
+        }
+    });
 
     //-------- namespace --------
     ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor;

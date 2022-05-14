@@ -62,24 +62,24 @@
         //
         getContentText: function (content) {
             // File: Image, Audio, Video
-            if (content instanceof FileContent) {
-                if (content instanceof ImageContent) {
+            if (sdk.Interface.conforms(content, FileContent)) {
+                if (sdk.Interface.conforms(content, ImageContent)) {
                     return '[Image:' + content.getFilename() + ']';
                 }
-                if (content instanceof AudioContent) {
+                if (sdk.Interface.conforms(content, AudioContent)) {
                     return '[Voice:' + content.getFilename() + ']';
                 }
-                if (content instanceof VideoContent) {
+                if (sdk.Interface.conforms(content, VideoContent)) {
                     return '[Movie:' + content.getFilename() + ']';
                 }
                 return '[File:' + content.getFilename() + ']';
             }
             // Text
-            if (content instanceof TextContent) {
+            if (sdk.Interface.conforms(content, TextContent)) {
                 return content.getText();
             }
             // Web page
-            if (content instanceof PageContent) {
+            if (sdk.Interface.conforms(content, PageContent)) {
                 return '[File:' + content.getURL() + ']';
             }
             var type = content.getType();
@@ -90,14 +90,14 @@
         //  Command
         //
         getCommandText: function (cmd, commander) {
-            if (cmd instanceof GroupCommand) {
+            if (sdk.Interface.conforms(cmd, GroupCommand)) {
                 return this.getGroupCommandText(cmd, commander);
             }
-            // if (cmd instanceof HistoryCommand) {
+            // if (sdk.Interface.conforms(cmd, HistoryCommand)) {
             //     // TODO: process history command
             // }
 
-            if (cmd instanceof LoginCommand) {
+            if (sdk.Interface.conforms(cmd, LoginCommand)) {
                 return this.getLoginCommandText(cmd, commander);
             }
             return 'Current version doesn\'t support this command: ' + cmd.getCommand();
@@ -112,19 +112,19 @@
                 // already processed
                 return text;
             }
-            if (cmd instanceof InviteCommand) {
+            if (sdk.Interface.conforms(cmd, InviteCommand)) {
                 return this.getInviteCommandText(cmd, commander);
             }
-            if (cmd instanceof ExpelCommand) {
+            if (sdk.Interface.conforms(cmd, ExpelCommand)) {
                 return this.getExpelCommandText(cmd, commander);
             }
-            if (cmd instanceof QuitCommand) {
+            if (sdk.Interface.conforms(cmd, QuitCommand)) {
                 return this.getQuitCommandText(cmd, commander);
             }
-            if (cmd instanceof ResetCommand) {
+            if (sdk.Interface.conforms(cmd, ResetCommand)) {
                 return this.getResetCommandText(cmd, commander);
             }
-            if (cmd instanceof QueryCommand) {
+            if (sdk.Interface.conforms(cmd, QueryCommand)) {
                 return this.getQueryCommandText(cmd, commander);
             }
             throw new Error('unsupported group command: ' + cmd);

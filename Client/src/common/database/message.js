@@ -281,7 +281,7 @@
                     // FIXME: message error:
                     continue;
                 }
-                messages.push(msg.getMap());
+                messages.push(msg.toMap());
             }
         }
         return messages;

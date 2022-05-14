@@ -36,9 +36,13 @@
     ns.db.MsgKeyTable = {
 
         getKey: function (from, to) {
+            // TODO:
+            return null;
         },
 
         addKey: function (from, to, key) {
+            // TODO:
+            return true;
         },
 
         __keys: null

@@ -31,18 +31,17 @@
     'use strict';
 
     var DecryptKey = sdk.crypto.DecryptKey;
-
     var ID = sdk.protocol.ID;
-    var Entity = sdk.Entity;
-    var User = sdk.User;
-    var Group = sdk.Group;
+    var Entity = sdk.mkm.Entity;
+    var User = sdk.mkm.User;
+    var Group = sdk.mkm.Group;
 
     var Facebook = sdk.Facebook;
 
     var CommonFacebook = function () {
         Facebook.call(this);
         // local users
-        this.__localUsers = null;
+        this.__localUsers = null;  // User[]
         // databases
         this.privateKeyTable = ns.db.PrivateKeyTable;
         this.metaTable = ns.db.MetaTable;
@@ -51,14 +50,14 @@
         this.contactTable = ns.db.ContactTable;
         this.groupTable = ns.db.GroupTable;
     };
-    sdk.Class(CommonFacebook, Facebook, null);
+    sdk.Class(CommonFacebook, Facebook, null, null);
 
     CommonFacebook.EXPIRES = 30 * 60 * 1000;  // document expires (30 minutes)
     CommonFacebook.EXPIRES_KEY = 'expires';
 
-    //
-    //  Local Users
-    //
+    //-------- Local Users
+
+    // Override
     CommonFacebook.prototype.getLocalUsers = function() {
         if (!this.__localUsers) {
             var list = this.userTable.allUsers();
@@ -76,86 +75,86 @@
         }
         return this.__localUsers;
     };
+
+    // Override
     CommonFacebook.prototype.getCurrentUser = function () {
         var uid = this.userTable.getCurrentUser();
         if (uid) {
             return this.getUser(uid);
-        } else {
-            return Facebook.prototype.getCurrentUser.call(this);
         }
+        return Facebook.prototype.getCurrentUser.call(this);
     };
     CommonFacebook.prototype.setCurrentUser = function(user) {
         this.__localUsers = null;
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.userTable.setCurrentUser(user);
     };
 
     CommonFacebook.prototype.addUser = function(user) {
         this.__localUsers = null;
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.userTable.addUser(user);
     };
     CommonFacebook.prototype.removeUser = function(user) {
         this.__localUsers = null;
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.userTable.removeUser(user);
     };
 
-    //
-    //  Contacts
-    //
+    //-------- Contacts
+
     CommonFacebook.prototype.addContact = function(contact, user) {
-        if (contact instanceof Entity) {
-            contact = contact.identifier;
+        if (sdk.Interface.conforms(contact, Entity)) {
+            contact = contact.getIdentifier();
         }
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.contactTable.addContact(contact, user);
     };
     CommonFacebook.prototype.removeContact = function(contact, user) {
-        if (contact instanceof Entity) {
-            contact = contact.identifier;
+        if (sdk.Interface.conforms(contact, Entity)) {
+            contact = contact.getIdentifier();
         }
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.contactTable.removeContact(contact, user);
     };
 
-    //
-    //  Private Key
-    //
+    //-------- Private Key
+
     CommonFacebook.prototype.savePrivateKey = function (key, user) {
-        if (user instanceof User) {
-            user = user.identifier;
+        if (sdk.Interface.conforms(user, User)) {
+            user = user.getIdentifier();
         }
         return this.privateKeyTable.savePrivateKey(key, user);
     };
 
-    //
-    //  Meta
-    //
+    //-------- Meta
+
+    // Override
     CommonFacebook.prototype.saveMeta = function(meta, identifier) {
         return this.metaTable.saveMeta(meta, identifier);
     };
 
-    //
-    //  Document
-    //
+    //-------- Document
+
+    // Override
     CommonFacebook.prototype.saveDocument = function(doc) {
         if (!this.checkDocument(doc)) {
             return false;
         }
-        doc.setValue(CommonFacebook.EXPIRES_KEY, null);
+        doc.removeValue(CommonFacebook.EXPIRES_KEY);
         return this.documentTable.saveDocument(doc);
     };
+
     CommonFacebook.prototype.isExpiredDocument = function (doc, reset) {
         var now = (new Date()).getTime();
         var expires = doc.getValue(CommonFacebook.EXPIRES_KEY);
@@ -173,46 +172,47 @@
         return true;
     };
 
-    //
-    //  Group
-    //
+    //-------- Group
+
     CommonFacebook.prototype.addMember = function (member, group) {
-        if (member instanceof User) {
-            member = member.identifier;
+        if (sdk.Interface.conforms(member, User)) {
+            member = member.getIdentifier();
         }
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         return this.groupTable.addMember(member, group);
     };
     CommonFacebook.prototype.removeMember = function (member, group) {
-        if (member instanceof User) {
-            member = member.identifier;
+        if (sdk.Interface.conforms(member, User)) {
+            member = member.getIdentifier();
         }
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         return this.groupTable.removeMember(member, group);
     };
+    // Override
     CommonFacebook.prototype.saveMembers = function (members, group) {
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         return this.groupTable.saveMembers(members, group);
     };
+
     CommonFacebook.prototype.removeGroup = function (group) {
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         return this.groupTable.removeGroup(group);
     };
 
     CommonFacebook.prototype.containsMember = function (member, group) {
-        if (member instanceof User) {
-            member = member.identifier;
+        if (sdk.Interface.conforms(member, User)) {
+            member = member.getIdentifier();
         }
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         var members = this.getMembers(group);
         if (members && members.indexOf(member) >= 0) {
@@ -222,11 +222,11 @@
         return owner && owner.equals(member);
     };
     CommonFacebook.prototype.containsAssistant = function (bot, group) {
-        if (bot instanceof User) {
-            bot = bot.identifier;
+        if (sdk.Interface.conforms(bot, User)) {
+            bot = bot.getIdentifier();
         }
-        if (group instanceof Group) {
-            group = group.identifier;
+        if (sdk.Interface.conforms(group, Group)) {
+            group = group.getIdentifier();
         }
         var bots = this.getAssistants(group);
         return bots && bots.indexOf(bot) >= 0;
@@ -245,49 +245,51 @@
         return ns.Anonymous.getName(identifier);
     };
 
+    // Override
     CommonFacebook.prototype.createUser = function (identifier) {
         if (is_waiting.call(this, identifier)) {
             return null;
-        } else {
-            return Facebook.prototype.createUser.call(this, identifier);
         }
+        return Facebook.prototype.createUser.call(this, identifier);
     };
     var is_waiting = function (id) {
         return !id.isBroadcast() && !this.getMeta(id);
     };
+    // Override
     CommonFacebook.prototype.createGroup = function (identifier) {
         if (is_waiting.call(this, identifier)) {
             return null;
-        } else {
-            return Facebook.prototype.createGroup.call(this, identifier);
         }
+        return Facebook.prototype.createGroup.call(this, identifier);
     };
 
-    //
-    //  Entity DataSource
-    //
+    //-------- Entity DataSource
+
+    // Override
     CommonFacebook.prototype.getMeta = function (identifier) {
         if (identifier.isBroadcast()) {
             // broadcast ID has no meta
             return null;
-        } else {
-            // try from database
-            return this.metaTable.getMeta(identifier);
         }
+        // try from database
+        return this.metaTable.getMeta(identifier);
     };
+
+    // Override
     CommonFacebook.prototype.getDocument = function (identifier, type) {
         // try from database
         return this.documentTable.getDocument(identifier, type);
     };
 
-    //
-    //  User DataSource
-    //
+    //-------- User DataSource
+
+    // Override
     CommonFacebook.prototype.getContacts = function (user) {
         // try from database
         return this.contactTable.getContacts(user);
     };
 
+    // Override
     CommonFacebook.prototype.getPrivateKeysForDecryption = function (user) {
         // try from database
         var keys = this.privateKeyTable.getPrivateKeysForDecryption(user);
@@ -301,45 +303,52 @@
         }
         return keys;
     };
+
+    // Override
     CommonFacebook.prototype.getPrivateKeyForSignature = function (user) {
         // try from database
         return this.privateKeyTable.getPrivateKeyForSignature(user);
     };
+
+    // Override
     CommonFacebook.prototype.getPrivateKeyForVisaSignature = function (user) {
         // try from database
         return this.privateKeyTable.getPrivateKeyForVisaSignature(user);
     };
 
-    //
-    //  Group DataSource
-    //
+    //-------- Group DataSource
+
+    // Override
     CommonFacebook.prototype.getFounder = function (group) {
         // get from database
         var founder = this.groupTable.getFounder(group);
         if (founder) {
             return founder;
-        } else {
-            return Facebook.prototype.getFounder.call(this, group);
         }
+        return Facebook.prototype.getFounder.call(this, group);
     };
+
+    // Override
     CommonFacebook.prototype.getOwner = function (group) {
         // get from database
         var owner = this.groupTable.getOwner(group);
         if (owner) {
             return owner;
-        } else {
-            return Facebook.prototype.getOwner.call(this, group);
         }
+        return Facebook.prototype.getOwner.call(this, group);
     };
+
+    // Override
     CommonFacebook.prototype.getMembers = function (group) {
         // get from database
         var members = this.groupTable.getMembers(group);
         if (members && members.length > 0) {
             return members;
-        } else {
-            return Facebook.prototype.getMembers.call(this, group);
         }
+        return Facebook.prototype.getMembers.call(this, group);
     };
+
+    // Override
     CommonFacebook.prototype.getAssistants = function (group) {
         // get from database
         var bots = this.groupTable.getAssistants(group);
@@ -354,6 +363,8 @@
             return null;
         }
     };
+
+    // TODO: ANS
 
     //-------- namespace --------
     ns.CommonFacebook = CommonFacebook;

@@ -35,45 +35,44 @@
     var BTCAddress = sdk.mkm.BTCAddress;
     var ETHAddress = sdk.mkm.ETHAddress;
 
-    var Anonymous = function () {
-    };
-    sdk.Class(Anonymous, null, null);
+    var Anonymous = {
 
-    Anonymous.getName = function (identifier) {
-        var name;
-        if (sdk.Interface.conforms(identifier, ID)) {
-            name = identifier.getName();
-            if (!name || name.length === 0) {
-                name = get_name(identifier.getType());
+        getName: function (identifier) {
+            var name;
+            if (sdk.Interface.conforms(identifier, ID)) {
+                name = identifier.getName();
+                if (!name || name.length === 0) {
+                    name = get_name(identifier.getType());
+                }
+            } else {  // Address
+                name = get_name(identifier.getNetwork());
             }
-        } else {  // Address
-            name = get_name(identifier.getNetwork());
-        }
-        var number = Anonymous.getNumberString(identifier);
-        return name + ' (' + number + ')';
-    };
+            var number = this.getNumberString(identifier);
+            return name + ' (' + number + ')';
+        },
 
-    Anonymous.getNumberString = function (address) {
-        var str = '' + Anonymous.getNumber(address);
-        while (str.length < 10) {
-            str = '0' + str;
-        }
-        return str.substr(0, 3) + '-'
-            + str.substr(3, 3) + '-'
-            + str.substr(6);
-    };
+        getNumberString: function (address) {
+            var str = '' + this.getNumber(address);
+            while (str.length < 10) {
+                str = '0' + str;
+            }
+            return str.substr(0, 3) + '-'
+                + str.substr(3, 3) + '-'
+                + str.substr(6);
+        },
 
-    Anonymous.getNumber = function (address) {
-        if (sdk.Interface.conforms(address, ID)) {
-            address = address.getAddress();
+        getNumber: function (address) {
+            if (sdk.Interface.conforms(address, ID)) {
+                address = address.getAddress();
+            }
+            if (address instanceof BTCAddress) {
+                return btc_number(address);
+            }
+            if (address instanceof ETHAddress) {
+                return eth_number(address);
+            }
+            throw new TypeError('address error: ' + address.toString());
         }
-        if (address instanceof BTCAddress) {
-            return btc_number(address);
-        }
-        if (address instanceof ETHAddress) {
-            return eth_number(address);
-        }
-        throw new TypeError('address error: ' + address.toString());
     };
 
     var get_name = function (type) {

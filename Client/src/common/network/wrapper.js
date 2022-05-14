@@ -30,14 +30,16 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Ship = sdk.startrek.Ship;
-    var Callback = sdk.Callback;
+    var Departure = sdk.startrek.port.Departure;
 
-    var MessageWrapper = function (rMsg) {
+    var MessageWrapper = function (rMsg, departureShip) {
         this.__msg = rMsg;
+        this.__ship = departureShip;
         this.__timestamp = 0;
     };
-    sdk.Class(MessageWrapper, null, [Ship.Delegate, Callback]);
+    sdk.Class(MessageWrapper, null, [Departure], null);
+
+    MessageWrapper.EXPIRES = 600 * 1000;  // 10 minutes
 
     MessageWrapper.prototype.getMessage = function () {
         return this.__msg;
@@ -52,43 +54,95 @@
     MessageWrapper.prototype.isVirgin = function () {
         return this.__timestamp === 0;
     };
-    MessageWrapper.prototype.isFailed = function () {
+    MessageWrapper.prototype.isExpired = function (now) {
         if (this.__timestamp < 0) {
             return true;
         } else if (this.__timestamp === 0) {
             return false;
         }
-        var now = new Date();
-        return now.getTime() - this.__timestamp > ns.network.BaseSession.EXPIRES;
+        var expired = this.__timestamp + MessageWrapper.EXPIRES;
+        return now > expired;
     };
 
     //
-    //  Ship Delegate
+    //  Departure Ship
     //
-    MessageWrapper.prototype.onShipSent = function (ship, error) {
-        if (error) {
-            // failed
-            this.__timestamp = -1;
-        } else {
-            // success, remove message
-            this.__msg = null;
-        }
+
+    // Override
+    MessageWrapper.prototype.getSN = function () {
+        return this.__ship.getSN();
+    };
+
+    // Override
+    MessageWrapper.prototype.getPriority = function () {
+        return this.__ship.getPriority();
+    };
+
+    // Override
+    MessageWrapper.prototype.getFragments = function () {
+        return this.__ship.getFragments();
+    };
+
+    // Override
+    MessageWrapper.prototype.checkResponse = function (arrival) {
+        return this.__ship.checkResponse(arrival);
+    };
+
+    // Override
+    MessageWrapper.prototype.isNew = function () {
+        return this.__ship.isNew();
+    };
+
+    // Override
+    MessageWrapper.prototype.isDisposable = function () {
+        return this.__ship.isDisposable();
+    };
+
+    // Override
+    MessageWrapper.prototype.isTimeout = function (now) {
+        return this.__ship.isTimeout(now);
+    };
+
+    // Override
+    MessageWrapper.prototype.isFailed = function (now) {
+        return this.__ship.isFailed(now);
+    };
+
+    // Override
+    MessageWrapper.prototype.touch = function (now) {
+        return this.__ship.touch(now);
     };
 
     //
-    //  Messenger Callback
+    //  Callback
     //
-    MessageWrapper.prototype.onFinished = function (result, error) {
-        if (error) {
-            // failed
-            this.__timestamp = -1;
-        } else {
-            // this message was assigned to the worker of StarGate,
-            // update sent time
-            this.__timestamp = (new Date()).getTime();
-        }
+
+    /**
+     *  Message appended to outgoing queue
+     */
+    MessageWrapper.prototype.onAppended = function () {
+        // this message was assigned to the worker of StarGate
+        // update sent time
+        this.__timestamp = (new Date()).getTime();
     };
 
+    /**
+     *  Gate error, failed to append
+     */
+    MessageWrapper.prototype.onGateError = function (error) {
+        // failed
+        this.__timestamp = -1;
+    };
+
+    MessageWrapper.prototype.onSent = function (docker) {
+        // success, remove message
+        this.__msg = null;
+    };
+
+    MessageWrapper.prototype.onFailed = function (error, docker) {
+        // failed
+        this.__timestamp = -1;
+    };
 
     //-------- namespace --------
     ns.network.MessageWrapper = MessageWrapper;

@@ -25,18 +25,6 @@
 // =============================================================================
 //
 
-/**
- *  Command message: {
- *      type : 0x88,
- *      sn   : 123,
- *
- *      command  : "report",
- *      title    : "online",      // or "offline"
- *      //---- extra info
- *      time     : 1234567890,    // timestamp?
- *  }
- */
-
 //! require 'namespace.js'
 
 (function (ns, sdk) {
@@ -45,27 +33,18 @@
     var Command = sdk.protocol.Command;
 
     /**
-     *  Create report command
+     *  Command message: {
+     *      type : 0x88,
+     *      sn   : 123,
      *
-     *  Usages:
-     *      1. new ReportCommand();
-     *      2. new ReportCommand(title);
-     *      3. new ReportCommand(map);
+     *      command  : "report",
+     *      title    : "online",      // or "offline"
+     *      //---- extra info
+     *      time     : 1234567890,    // timestamp?
+     *  }
      */
-    var ReportCommand = function () {
-        if (arguments.length === 0) {
-            // new ReportCommand();
-            Command.call(this, ReportCommand.REPORT);
-        } else if (typeof arguments[0] === 'string') {
-            // new SearchCommand(keywords);
-            Command.call(this, ReportCommand.REPORT);
-            this.setTitle(arguments[0]);
-        } else {
-            // new SearchCommand(map);
-            Command.call(this, arguments[0]);
-        }
-    };
-    sdk.Class(ReportCommand, Command, null);
+    var ReportCommand = function () {};
+    sdk.Interface(ReportCommand, [Command]);
 
     ReportCommand.REPORT = 'report';
     ReportCommand.ONLINE = 'online';
@@ -74,15 +53,76 @@
     //-------- setter/getter --------
 
     ReportCommand.prototype.setTitle = function (title) {
-        this.setValue('title', title);
+        console.assert(false, 'implement me!');
     };
     ReportCommand.prototype.getTitle = function () {
-        return this.getValue('title');
+        console.assert(false, 'implement me!');
+        return null;
     };
 
     //-------- namespace --------
     ns.protocol.ReportCommand = ReportCommand;
 
     ns.protocol.registers('ReportCommand');
+
+})(SECHAT, DIMSDK);
+
+(function (ns, sdk) {
+    'use strict';
+
+    var ReportCommand = sdk.protocol.ReportCommand;
+    var BaseCommand = ns.dkd.BaseCommand;
+
+    /**
+     *  Create report command
+     *
+     *  Usages:
+     *      1. new BaseReportCommand();
+     *      2. new BaseReportCommand(title);
+     *      3. new BaseReportCommand(map);
+     */
+    var BaseReportCommand = function () {
+        if (arguments.length === 0) {
+            // new BaseReportCommand();
+            BaseCommand.call(this, ReportCommand.REPORT);
+        } else if (typeof arguments[0] === 'string') {
+            // new BaseReportCommand(title);
+            BaseCommand.call(this, ReportCommand.REPORT);
+            this.setTitle(arguments[0]);
+        } else {
+            // new BaseReportCommand(map);
+            BaseCommand.call(this, arguments[0]);
+        }
+    };
+    sdk.Class(BaseReportCommand, BaseCommand, [ReportCommand], {
+
+        // Override
+        setTitle: function (title) {
+            this.setValue('title', title);
+        },
+
+        // Override
+        getTitle: function () {
+            return this.getValue('title');
+        }
+    });
+
+    //
+    //  Factory
+    //
+    ReportCommand.report = function (title) {
+        if (title) {
+            // new BaseReportCommand(title);
+            return new BaseReportCommand();
+        } else {
+            // new BaseReportCommand();
+            return new BaseReportCommand();
+        }
+    };
+
+    //-------- namespace --------
+    ns.dkd.BaseReportCommand = BaseReportCommand;
+
+    ns.dkd.registers('BaseReportCommand');
 
 })(SECHAT, DIMSDK);

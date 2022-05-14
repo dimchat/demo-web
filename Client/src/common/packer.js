@@ -30,14 +30,15 @@
 (function (ns, sdk) {
     'use strict';
 
+    var Meta = sdk.protocol.Meta;
+    var ReliableMessage = sdk.protocol.ReliableMessage;
     var DocumentCommand = sdk.protocol.DocumentCommand;
-
     var MessagePacker = sdk.MessagePacker;
 
-    var CommonPacker = function (messenger) {
-        MessagePacker.call(this, messenger);
+    var CommonPacker = function (facebook, messenger) {
+        MessagePacker.call(this, facebook, messenger);
     };
-    sdk.Class(CommonPacker, MessagePacker, null);
+    sdk.Class(CommonPacker, MessagePacker, null, null);
 
     // attach key digest
     var attach = function (rMsg) {
@@ -77,7 +78,7 @@
                 // broadcast message has no key
                 return;
             }
-            throw new ReferenceError('key data error: ' + key.getMap());
+            throw new ReferenceError('key data error: ' + key.toMap());
         }
         // get digest
         var part = data.subarray(data.length - 6);
@@ -86,10 +87,14 @@
         keys['digest'] = base64.substr(base64.length - 8);
         rMsg.setValue('keys', keys);
     };
+
+    // Override
     CommonPacker.prototype.serializeMessage = function (rMsg) {
         attach.call(this, rMsg);
         return MessagePacker.prototype.serializeMessage.call(this, rMsg);
     };
+
+    // Override
     CommonPacker.prototype.deserializeMessage = function (data) {
         if (!data || data.length < 2) {
             console.error('receive data error', data);
@@ -98,18 +103,75 @@
         return MessagePacker.prototype.deserializeMessage.call(this, data);
     };
 
+    // Override
+    CommonPacker.prototype.signMessage = function (sMsg) {
+        if (sdk.Interface.conforms(sMsg, ReliableMessage)) {
+            // already signed
+            return sMsg;
+        }
+        return MessagePacker.prototype.signMessage.call(this, sMsg);
+    };
+
+    // Override
+    CommonPacker.prototype.verifyMessage = function (rMsg) {
+        var sender = rMsg.getSender();
+        // [Meta Protocol]
+        var meta = rMsg.getMeta();
+        if (!meta) {
+            var facebook = this.getFacebook();
+            meta = facebook.getMeta(sender);
+        } else if (!Meta.matches(meta, sender)) {
+            meta = null;
+        }
+        if (!meta) {
+            // NOTICE: the application will query meta automatically,
+            //         save this message in a queue waiting sender's meta response
+            var messenger = this.getMessenger();
+            messenger.suspendReliableMessage(rMsg);
+            return null;
+        }
+        // make sure meta exists before verifying message
+        return MessagePacker.prototype.verifyMessage.call(this, rMsg);
+    };
+
+    var isWaiting = function (identifier, facebook) {
+        if (identifier.isGroup()) {
+            // checking group meta
+            return !facebook.getMeta(identifier);
+        } else {
+            // checking visa key
+            return !facebook.getPublicKeyForEncryption(identifier);
+        }
+    };
+
+    // Override
     CommonPacker.prototype.encryptMessage = function (iMsg) {
-        var sMsg = MessagePacker.prototype.encryptMessage.call(this, iMsg);
+        var facebook = this.getFacebook();
+        var messenger = this.getMessenger();
         var receiver = iMsg.getReceiver();
+        var group = iMsg.getGroup();
+        if (!(receiver.isBroadcast() || (group && group.isBroadcast()))) {
+            // this message is not a broadcast message
+            if (isWaiting(receiver, facebook) || (group && isWaiting(group, facebook))) {
+                // NOTICE: the application will query visa automatically,
+                //         save this message in a queue waiting sender's visa response
+                messenger.suspendInstantMessage(iMsg);
+                return null;
+            }
+        }
+        // make sure visa.key exists before encrypting message
+        var sMsg = MessagePacker.prototype.encryptMessage.call(this, iMsg);
         if (receiver.isGroup()) {
             // reuse group message keys
             var sender = iMsg.getSender();
-            var key = this.getMessenger().getCipherKey(sender, receiver, false);
+            var key = messenger.getCipherKey(sender, receiver, false);
             key.setValue('reused', true);
         }
         // TODO: reuse personal message key?
         return sMsg;
     };
+
+    // Override
     CommonPacker.prototype.decryptMessage = function (sMsg) {
         try {
             return MessagePacker.prototype.decryptMessage.call(this, sMsg);
@@ -117,14 +179,16 @@
             // check exception thrown by DKD: EncryptedMessage.decrypt()
             if (e.toString().indexOf('failed to decrypt key in msg: ') === 0) {
                 // visa.key not updated?
-                var user = this.getFacebook().getCurrentUser();
+                var facebook = this.getFacebook();
+                var user = facebook.getCurrentUser();
                 var visa = user.getVisa();
                 if (!visa || !visa.isValid()) {
                     // FIXME: user visa not found?
-                    throw new ReferenceError('user visa error: ' + user.identifier);
+                    throw new ReferenceError('user visa error: ' + user.getIdentifier());
                 }
-                var cmd = DocumentCommand.response(user.identifier, null, visa);
-                this.getMessenger().sendContent(user.identifier, sMsg.getSender(), cmd, null, 0);
+                var cmd = DocumentCommand.response(user.getIdentifier(), null, visa);
+                var messenger = this.getMessenger();
+                messenger.sendContent(user.getIdentifier(), sMsg.getSender(), cmd, 0);
             } else {
                 // FIXME: message error? cipher text error?
                 throw e;

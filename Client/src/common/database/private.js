@@ -157,7 +157,7 @@
                     // FIXME: key error?
                     continue;
                 }
-                results[tag] = key.getMap();
+                results[tag] = key.toMap();
             }
         }
         return results;

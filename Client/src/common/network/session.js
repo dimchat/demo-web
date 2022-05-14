@@ -25,160 +25,222 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'gatekeeper.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Runner = sdk.threading.Runner;
-    var Gate = sdk.startrek.Gate;
+    var UTF8 = sdk.format.UTF8;
+    var Runner = sdk.skywalker.Runner;
+    var DockerDelegate = sdk.startrek.port.DockerDelegate;
+    var DockerStatus = sdk.startrek.port.DockerStatus;
+    var Transmitter = ns.network.Transmitter;
+    var MessageWrapper = ns.network.MessageWrapper;
 
     /**
      *  Create session
      *
-     *  Usages:
-     *      1. new BaseSession(gate, transceiver);
-     *      2. new BaseSession(host, port, transceiver);
+     * @param {String} host             - remote host
+     * @param {uint} port               - remote port
+     * @param {Messenger} transceiver   - messenger
      */
-    var BaseSession = function () {
+    var BaseSession = function (host, port, transceiver) {
         Runner.call(this);
-        if (arguments.length === 2) {
-            // new BaseSession(gate, transceiver);
-            this.gate = arguments[0];
-            this.__messenger = arguments[1];
-        } else if (arguments.length === 3) {
-            // new BaseSession(host, port, transceiver);
-            this.gate = ns.network.StarTrek.createGate(arguments[0], arguments[1]);
-            this.__messenger = arguments[2];
-        } else {
-            throw new SyntaxError('session arguments error: ' + arguments);
-        }
-        this.gate.setDelegate(this);
-        this.__queue = new ns.network.MessageQueue();
-        this.__active = false;
+        this.__keeper = this.createGateKeeper(host, port, transceiver);
     };
-    sdk.Class(BaseSession, Runner, [Gate.Delegate]);
+    sdk.Class(BaseSession, Runner, [DockerDelegate, Transmitter], null);
 
-    BaseSession.EXPIRES = 600 * 1000;  // 10 minutes
-
-    var flush = function () {
-        var msg;
-        var wrapper = this.__queue.shift();
-        while (wrapper) {
-            msg = wrapper.getMessage();
-            if (msg) {
-                this.storeMessage(msg);
-            }
-            wrapper = this.__queue.shift();
-        }
-    };
-    var clean = function () {
-        var msg;
-        var wrapper = this.__queue.eject();
-        while (wrapper) {
-            msg = wrapper.getMessage();
-            if (msg) {
-                this.storeMessage(msg);
-            }
-            wrapper = this.__queue.eject();
-        }
-    };
-
-    BaseSession.prototype.storeMessage = function (msg) {
-        // TODO: store the stranded message?
+    // protected
+    BaseSession.prototype.createGateKeeper = function (host, port, messenger) {
+        ns.assert(false, "implement me!");
+        return null;
     };
 
     BaseSession.prototype.getMessenger = function () {
-        return this.__messenger;
+        return this.__keeper.getMessenger();
     };
 
     BaseSession.prototype.isActive = function () {
-        return this.__active && this.gate.isRunning();
+        return this.__keeper.isActive();
     };
     BaseSession.prototype.setActive = function (active) {
-        this.__active = active;
+        this.__keeper.setActive(active);
+    };
+
+    BaseSession.prototype.getStatus = function () {
+        return this.__keeper.getStats();
     };
 
     BaseSession.prototype.close = function () {
-        this.__running = false;
+        this.setActive(false);
+        // this.__keeper.stop();
     };
 
-    BaseSession.prototype.setup = function () {
-        this.__running = true;
-        return this.gate.setup();
-    };
-    BaseSession.prototype.finish = function () {
-        this.__running = false;
-        if (this.gate.finish()) {
-            // gate stuck, return true to try it again
-            return true;
-        } else {
-            flush.call(this);
-            return false;
-        }
+    // Override
+    BaseSession.prototype.stop = function () {
+        Runner.prototype.stop.call(this);
+        this.__keeper.stop();
     };
 
+    // Override
     BaseSession.prototype.isRunning = function () {
-        return this.__running && this.gate.isRunning();
+        var running = Runner.prototype.isRunning.call(this);
+        return running && this.__keeper.isRunning();
     };
 
+    // Override
+    BaseSession.prototype.setup = function () {
+        // FIXME: cache waiting flags
+        var waiting1 = Runner.prototype.setup.call(this);
+        var waiting2 = this.__keeper.setup();
+        return waiting1 || waiting2;
+    };
+
+    // Override
+    BaseSession.prototype.finish = function () {
+        // FIXME: cache waiting flags
+        var waiting1 = Runner.prototype.finish.call(this);
+        var waiting2 = this.__keeper.finish();
+        return waiting1 || waiting2;
+    };
+
+    // Override
     BaseSession.prototype.process = function () {
-        if (this.gate.process()) {
-            // processed income/outgo packages
-            return true;
-        }
-        // all packages processed, do the clean job
-        clean.call(this);
+        return this.__keeper.process();
+    };
+
+    BaseSession.prototype.sendData = function (payload, priority) {
         if (!this.isActive()) {
-            return false;
+            // FIXME: connection lost?
+            console.warn('BaseSession::sendData()', this.__keeper.getRemoteAddress());
         }
-        // still active, get next message
-        var rMsg, wrapper = this.__queue.next();
-        if (wrapper) {
-            // if msg in this wrapper is None (means sent successfully),
-            // it must have been cleaned already, so it should not be empty here.
-            rMsg = wrapper.getMessenger();
-        } else {
-            // no more new message
-            rMsg = null;
-        }
-        if (!rMsg) {
-            // no more new message, return false to have a rest
-            return false;
-        }
-        // try to push
-        if (!this.getMessenger().sendReliableMessage(rMsg, wrapper, 0)) {
-            wrapper.fail();
-        }
-        return true;
+        console.log('sending ' + payload.length + ' byte(s)');
+        return this.__keeper.sendData(payload, priority);
     };
 
-    BaseSession.prototype.push = function (rMsg) {
-        if (this.isActive()) {
-            return this.__queue.append(rMsg);
-        } else {
-            return false;
+    // Override
+    BaseSession.prototype.sendReliableMessage = function (rMsg, priority) {
+        if (!this.isActive()) {
+            // FIXME: connection lost?
+            console.warn('BaseSession::sendReliableMessage()', this.__keeper.getRemoteAddress());
         }
+        console.log('sending message to ' + rMsg.getReceiver() + ', priority: ' + priority);
+        return this.__keeper.sendReliableMessage(rMsg, priority);
+    };
+
+    // Override
+    BaseSession.prototype.sendInstantMessage = function (iMsg, priority) {
+        if (!this.isActive()) {
+            // FIXME: connection lost?
+            console.warn('BaseSession::sendInstantMessage()', this.__keeper.getRemoteAddress());
+        }
+        console.log('sending message to ' + iMsg.getReceiver() + ', priority: ' + priority);
+        return this.__keeper.sendInstantMessage(iMsg, priority);
+    };
+
+    // Override
+    BaseSession.prototype.sendContent = function (sender, receiver, content, priority) {
+        if (!this.isActive()) {
+            // FIXME: connection lost?
+            console.warn('BaseSession::sendContent()', this.__keeper.getRemoteAddress());
+        }
+        console.log('sending content to ' + receiver + ', priority: ' + priority);
+        return this.__keeper.sendContent(sender, receiver, content, priority);
     };
 
     //
-    //  Gate Delegate
+    //  Docker Delegate
     //
 
-    BaseSession.prototype.onGateStatusChanged = function (gate, oldStatus, newStatus) {
-        if (newStatus.equals(Gate.Status.CONNECTED)) {
-            this.getMessenger().onConnected();
+    // Override
+    BaseSession.prototype.onDockerStatusChanged = function (previous, current, docker) {
+        if (!current || current.equals(DockerStatus.ERROR)) {
+            this.setActive(false);
+            // this.close();
+        } else if (current.equals(DockerStatus.READY)) {
+            var messenger = this.getMessenger();
+            messenger.onConnected();
         }
     };
 
-    BaseSession.prototype.onGateReceived = function (gate, ship) {
-        var payload = ship.getPayload();
-        try {
-            return this.getMessenger().processData(payload);
-        } catch (e) {
-            console.log('received data error', e);
-            return null;
+    var split_lines = function (data) {
+        if (data.indexOf(LINEFEED) < 0) {
+            // only one line
+            return [data];
         }
+        var str = UTF8.decode(data);
+        var array = str.split('\n');
+        var lines = [];
+        for (var i = 0; i < array.length; ++i) {
+            lines.push(UTF8.encode(array[i]));
+        }
+        return lines;
+    };
+    var join_lines = function (responses) {
+        if (responses.length === 1) {
+            // only one line
+            return responses[0];
+        }
+        var str = UTF8.decode(responses[0]);
+        for (var i = 1; i < responses.length; ++i) {
+            str += '\n' + UTF8.decode(responses[i]);
+        }
+        return UTF8.encode(str);
+    };
+    var LINEFEED = '\n'.charCodeAt(0);  // 10
+    var BRACE = '{'.charCodeAt(0);     // 123
+
+    // Override
+    BaseSession.prototype.onDockerReceived = function (arrival, docker) {
+        var payload = arrival.getPackage();
+        console.log('BaseSession::onDockerReceived()', payload);
+        // 1. split data when multi packages received in one time
+        var packages;
+        if (!payload || payload.length === 0) {
+            packages = [];
+        } else if (payload[0] === BRACE) {
+            packages = split_lines(payload);
+        } else {
+            packages = [payload];
+        }
+        var pack;
+        // 2. process package data one by one
+        var messenger = this.getMessenger();
+        var responses, buffer;
+        for (var i = 0; i < packages.length; ++i) {
+            pack = packages[i];
+            try {
+                responses = messenger.processPackage(pack);
+            } catch (e) {
+                console.error('BaseSession::onDockerReceived()', e);
+                continue;
+            }
+            if (!responses || responses.length === 0) {
+                continue;
+            }
+            // combine & respond
+            buffer = join_lines(responses);
+            this.__keeper.sendData(buffer, 1);  // SLOWER
+        }
+    };
+
+    // Override
+    BaseSession.prototype.onDockerSent = function (departure, docker) {
+        if (departure instanceof MessageWrapper) {
+            departure.onSent(docker);
+        }
+    };
+
+    // Override
+    BaseSession.prototype.onDockerFailed = function (error, departure, docker) {
+        if (departure instanceof MessageWrapper) {
+            departure.onFailed(error, docker);
+        }
+    };
+
+    // Override
+    BaseSession.prototype.onDockerError = function (error, departure, docker) {
+        console.error('BaseSession::onDockerError()', error, departure, docker);
     };
 
     //-------- namespace --------

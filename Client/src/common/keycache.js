@@ -30,7 +30,6 @@
 (function (ns, sdk) {
     'use strict';
 
-    var obj = sdk.type.Object;
     var SymmetricKey = sdk.crypto.SymmetricKey;
     var CipherKeyDelegate = sdk.CipherKeyDelegate;
 
@@ -39,199 +38,71 @@
      *  ~~~~~~~~~~~~~~~~~~~~
      *  Manage keys for conversations
      */
-    var KeyCache = function () {
-        obj.call(this);
+    var KeyStore = function () {
+        Object.call(this);
         // memory cache
-        this.keyMap = {};  // ID => (ID => SymmetricKey)
-        this.isDirty = false;
+        this.__keyMap = {};   // str(ID) => {str(ID) => map(SymmetricKey)}
+        this.keyTable = null; // MsgKeyTable
     };
-    sdk.Class(KeyCache, obj, [CipherKeyDelegate]);
+    sdk.Class(KeyStore, Object, [CipherKeyDelegate], null);
 
-    /**
-     *  Trigger for loading cipher key table
-     *
-     * @returns {boolean}
-     */
-    KeyCache.prototype.reload = function () {
-        var map = this.loadKeys();
-        if (!map) {
-            return false;
+    // Override
+    KeyStore.prototype.getCipherKey = function (sender, receiver, generate) {
+        if (receiver.isBroadcast()) {
+            // broadcast message has no key
+            return sdk.crypto.PlainKey.getInstance();
         }
-        return this.updateKeys(map);
-    };
-
-    /**
-     *  Trigger for saving cipher key table
-     */
-    KeyCache.prototype.flush = function () {
-        if (this.isDirty) {
-            if (this.saveKeys(this.keyMap)) {
-                // keys saved
-                this.isDirty = false;
-            }
-        }
-    };
-
-    // noinspection JSUnusedLocalSymbols
-    /**
-     *  Callback for saving cipher key table into local storage
-     *  (Override it to access database)
-     *
-     * @param {{}} map - all cipher keys(with direction) from memory cache
-     * @returns {boolean}
-     */
-    KeyCache.prototype.saveKeys = function (map) {
-        console.assert(false, 'implement me!');
-        return false;
-    };
-
-    /**
-     *  Load cipher key table from local storage
-     *  (Override it to access database)
-     *
-     * @returns {{}}
-     */
-    KeyCache.prototype.loadKeys = function () {
-        console.assert(false, 'implement me!');
-        return null;
-    };
-
-    /**
-     *  Update cipher key table into memory cache
-     *
-     * @param {{}} map - cipher keys(with direction) from local storage
-     * @returns {boolean}
-     */
-    KeyCache.prototype.updateKeys = function (map) {
-        if (!map) {
-            return false;
-        }
-        var changed = false;
-        var sender, receiver;
-        var oldKey, newKey;
-        var table;
-        for (sender in map) {
-            if (!map.hasOwnProperty(sender)) continue;
-            table = map[sender];
-            for (receiver in table) {
-                if (!table.hasOwnProperty(receiver)) continue;
-                newKey = table[receiver];
-                // check whether exists an old key
-                oldKey = get_key.call(this, sender, receiver);
-                if (oldKey !== newKey) {
-                    changed = true;
-                }
-                // cache key with direction
-                set_key.call(this, sender, receiver, newKey);
-            }
-        }
-        return changed;
-    };
-
-    var get_key = function (sender, receiver) {
-        var table = this.keyMap[sender];
+        var key;
+        // try from memory cache
+        var table = this.__keyMap[sender.toString()];
         if (table) {
-            return table[receiver];
-        } else {
-            return null;
-        }
-    };
-
-    var set_key = function (sender, receiver, key) {
-        var table = this.keyMap[sender];
-        if (table) {
-            var old = table[receiver];
-            if (old && old.equals(key)) {
-                // no need to update
-                return;
+            key = table[receiver.toString()];
+            if (key) {
+                return SymmetricKey.parse(key);
             }
         } else {
             table = {};
-            this.keyMap[sender] = table;
+            this.__keyMap[sender.toString()] = table;
         }
-        table[receiver] = key;
-    };
-
-    //-------- CipherKeyDelegate --------
-
-    // @override
-    KeyCache.prototype.getCipherKey = function (sender, receiver, generate) {
-        if (receiver.isBroadcast()) {
-            return sdk.crypto.PlainKey.getInstance();
-        }
-        // get key from cache
-        var key = get_key.call(this, sender, receiver);
-        if (!key && generate) {
+        // try from database
+        key = this.keyTable.getKey(sender, receiver);
+        if (key) {
+            // cache it
+            table[receiver.toString()] = key.toMap();
+        } else if (generate) {
             // generate new key and store it
             key = SymmetricKey.generate(SymmetricKey.AES);
-            this.cacheCipherKey(sender, receiver, key);
+            this.keyTable.addKey(sender, receiver, key);
+            // cache it
+            table[receiver.toString()] = key.toMap();
         }
         return key;
-
-        // TODO: override to check whether key expired for sending message
     };
 
-    // @override
-    KeyCache.prototype.cacheCipherKey = function (sender, receiver, key) {
+    // Override
+    KeyStore.prototype.cacheCipherKey = function (sender, receiver, key) {
         if (receiver.isBroadcast()) {
             // broadcast message has no key
-        } else {
-            set_key.call(this, sender, receiver, key);
-            this.isDirty = true;
-        }
-    };
-
-    //-------- namespace --------
-    ns.KeyCache = KeyCache;
-
-    ns.registers('KeyCache');
-
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
-    'use strict';
-
-    var KeyCache = ns.KeyCache;
-
-    var KeyStore = function() {
-        KeyCache.call(this);
-        // current user
-        this.user = null;
-    };
-    sdk.Class(KeyStore, KeyCache, null);
-
-    KeyStore.prototype.getUser = function () {
-        return this.user;
-    };
-    KeyStore.prototype.setUser = function (user) {
-        if (this.user) {
-            // save key map for old user
-            this.flush();
-            if (this.user.equals(user)) {
-                // user not changed
-                return;
-            }
-        }
-        if (!user) {
-            this.user = null;
             return;
         }
-        // change current user
-        this.user = user;
-        var keys = this.loadKeys();
-        if (keys) {
-            this.updateKeys(keys);
+        // save into database
+        if (this.keyTable.addKey(sender, receiver, key)) {
+            // store into memory cache
+            var table = this.__keyMap[sender.toString()];
+            if (!table) {
+                table = {};
+                this.__keyMap[sender.toString()] = table;
+            }
+            table[receiver.toString()] = key.toMap();
         }
     };
 
-    // noinspection JSUnusedLocalSymbols
-    KeyStore.prototype.saveKeys = function(map) {
-        // do nothing
-        return false
-    };
-    KeyStore.prototype.loadKeys = function() {
-        // do nothing
-        return null
+    var s_cache = null;
+    KeyStore.getInstance = function () {
+        if (!s_cache) {
+            s_cache = new KeyStore();
+        }
+        return s_cache;
     };
 
     //-------- namespace --------

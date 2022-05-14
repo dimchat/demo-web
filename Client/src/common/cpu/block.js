@@ -30,21 +30,21 @@
 (function (ns, sdk) {
     'use strict';
 
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Block Command Processor
      */
-    var BlockCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var BlockCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(BlockCommandProcessor, CommandProcessor, null);
-
-    // Override
-    BlockCommandProcessor.prototype.execute = function (cmd, rMsg) {
-        // no need to response block command
-        return null;
-    };
+    sdk.Class(BlockCommandProcessor, BaseCommandProcessor, null, {
+        // Override
+        process: function (cmd, rMsg) {
+            // no need to response block command
+            return null;
+        }
+    });
 
     //-------- namespace --------
     ns.cpu.BlockCommandProcessor = BlockCommandProcessor;

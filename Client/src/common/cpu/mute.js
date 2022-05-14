@@ -30,21 +30,21 @@
 (function (ns, sdk) {
     'use strict';
 
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Mute Command Processor
      */
-    var MuteCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var MuteCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(MuteCommandProcessor, CommandProcessor, null);
-
-    // Override
-    MuteCommandProcessor.prototype.execute = function (cmd, rMsg) {
-        // no need to response mute command
-        return null;
-    };
+    sdk.Class(MuteCommandProcessor, BaseCommandProcessor, null, {
+        // Override
+        process: function (cmd, rMsg) {
+            // no need to response mute command
+            return null;
+        }
+    });
 
     //-------- namespace --------
     ns.cpu.MuteCommandProcessor = MuteCommandProcessor;

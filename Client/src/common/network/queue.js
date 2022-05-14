@@ -25,52 +25,143 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'wrapper.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var MessageQueue = function () {
-        this.__queue = [];  // List[MessageWrapper]
-    };
-    sdk.Class(MessageQueue, null, null);
+    var Dictionary = sdk.type.Dictionary;
+    var MessageWrapper = ns.network.MessageWrapper;
 
-    MessageQueue.prototype.append = function (rMsg) {
-        var wrapper = new ns.network.MessageWrapper(rMsg);
-        this.__queue.push(wrapper);
+    var MessageQueue = function () {
+        this.__priorities = [];  // List[Integer]
+        this.__fleets = new Dictionary();  // Integer => List[MessageWrapper]
+    };
+    sdk.Class(MessageQueue, null, null, null);
+
+    /**
+     *  Append message with departure ship
+     *
+     * @param {ReliableMessage|*} rMsg
+     * @param {Departure|Ship} departureShip
+     * @return {boolean}
+     */
+    MessageQueue.prototype.append = function (rMsg, departureShip) {
+        var priority = departureShip.getPriority();
+        // 1. choose an array with priority
+        var queue = this.__fleets.getValue(priority);
+        if (queue) {
+            // 1.0. check duplicated
+            var signature = rMsg.getValue('signature');
+            var wrapper, item;
+            for (var i = queue.length - 1; i >= 0; --i) {
+                wrapper = queue[i];
+                item = wrapper.getMessage();
+                if (item && item.getValue('signature') === signature) {
+                    // duplicated message
+                    return true;
+                }
+            }
+        } else {
+            // 1.1. create new array for this priority
+            queue = [];
+            this.__fleets.setValue(priority, queue);
+            // 1.2. insert the priority in a sorted list
+            insert_priority(priority, this.__priorities);
+        }
+        queue.push(new MessageWrapper(rMsg, departureShip));
         return true;
     };
-
-    MessageQueue.prototype.shift = function () {
-        if (this.__queue.length > 0) {
-            return this.__queue.shift();
-        } else {
-            return null;
+    var insert_priority = function (prior, priorities) {
+        var total = priorities.length;
+        var value;
+        var index = 0;
+        // seeking position for new priority
+        for (; index < total; ++index) {
+            value = priorities[index];
+            if (value === prior) {
+                // duplicated
+                return;
+            } else if (value > prior) {
+                // got it
+                break;
+            }
+            // current value is smaller than the new value,
+            // keep going
         }
+        // insert new value before the bigger one
+        priorities.splice(index, 0, prior);
     };
 
+    /**
+     *  Get next message wrapper waiting to be sent
+     *
+     * @return {MessageWrapper|null}
+     */
     MessageQueue.prototype.next = function () {
-        var item;
-        for (var i = 0; i < this.__queue.length; ++i) {
-            item = this.__queue[i];
-            if (item.isVirgin()) {
-                item.mark();  // mark sent
-                return item;
+        var priority;
+        var queue, wrapper;
+        var i, j;
+        for (i = 0; i < this.__priorities.length; ++i) {
+            // 1. get tasks with priority
+            priority = this.__priorities[i];
+            queue = this.__fleets.getValue(priority);
+            if (!queue) {
+                continue;
+            }
+            // 2. seeking new task in this priority
+            for (j = 0; j < queue.length; ++j) {
+                wrapper = queue[j];
+                if (wrapper.isVirgin()) {
+                    // got it, mark sent
+                    wrapper.mark();
+                    return wrapper;
+                }
             }
         }
         return null;
     };
 
-    MessageQueue.prototype.eject = function () {
-        var item;
-        for (var i = 0; i < this.__queue.length; ++i) {
-            item = this.__queue[i];
-            if (!item.getMessage() || item.isFailed()) {
-                this.__queue.splice(i, 1)
-                return item;
+    /**
+     *  Remove message wrapper which message sent or expired
+     *
+     * @param {number} now - timestamp
+     * @return {MessageWrapper|number}
+     */
+    MessageQueue.prototype.eject = function (now) {
+        var priority;
+        var queue, wrapper;
+        var i, j;
+        for (i = 0; i < this.__priorities.length; ++i) {
+            // 1. get tasks with priority
+            priority = this.__priorities[i];
+            queue = this.__fleets.getValue(priority);
+            if (!queue) {
+                continue;
+            }
+            // 2. seeking new task in this priority
+            for (j = 0; j < queue.length; ++j) {
+                wrapper = queue[j];
+                if (!wrapper.getMessage() || wrapper.isExpired(now)) {
+                    // got it, remove from the queue
+                    queue.splice(i, 1)
+                    return wrapper;
+                }
             }
         }
         return null;
+    };
+
+    MessageQueue.prototype.purge = function () {
+        var count = 0;
+        var now = (new Date()).getTime();
+        var wrapper = this.eject(now);
+        while (wrapper) {
+            count += 1;
+            // TODO: callback for failed task?
+            wrapper = this.eject(now);
+        }
+        return count;
     };
 
     //-------- namespace --------

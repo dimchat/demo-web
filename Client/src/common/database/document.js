@@ -108,7 +108,7 @@
                     // FIXME: document error
                     continue;
                 }
-                results[id.toString()] = doc.getMap();
+                results[id.toString()] = doc.toMap();
             }
         }
         return results;

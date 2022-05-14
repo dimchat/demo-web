@@ -27,44 +27,44 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
-    'use strict';
-
-    var MessageTransmitter = sdk.MessageTransmitter;
-
-    var CommonTransmitter = function (messenger) {
-        MessageTransmitter.call(this, messenger);
-    };
-    sdk.Class(CommonTransmitter, MessageTransmitter, null);
-
-    CommonTransmitter.prototype.sendInstantMessage = function(iMsg, callback, priority) {
-        var messenger = this.getMessenger();
-        // do the encryption in background thread
-        setTimeout(function () {
-            // Send message (secured + certified) to target station
-            var sMsg = messenger.encryptMessage(iMsg);
-            if (sMsg == null) {
-                // public key not found?
-                return false;
-                //throw new ReferenceError("failed to encrypt message: " + iMsg.getMap());
-            }
-            var rMsg = messenger.signMessage(sMsg);
-            if (rMsg == null) {
-                // TODO: set iMsg.state = error
-                throw new ReferenceError("failed to sign message: " + sMsg.getMap());
-            }
-
-            var OK = messenger.sendReliableMessage(rMsg, callback, priority);
-            // TODO: if OK, set iMsg.state = sending; else set iMsg.state = waiting
-
-            return messenger.saveMessage(iMsg) && OK;
-        }, 128);
-        return true;
-    };
-
-    //-------- namespace --------
-    ns.CommonTransmitter = CommonTransmitter;
-
-    ns.registers('CommonTransmitter');
-
-})(SECHAT, DIMSDK);
+// (function (ns, sdk) {
+//     'use strict';
+//
+//     var MessageTransmitter = sdk.Transmitter;
+//
+//     var CommonTransmitter = function (messenger) {
+//         MessageTransmitter.call(this, messenger);
+//     };
+//     sdk.Class(CommonTransmitter, MessageTransmitter, null);
+//
+//     CommonTransmitter.prototype.sendInstantMessage = function(iMsg, callback, priority) {
+//         var messenger = this.getMessenger();
+//         // do the encryption in background thread
+//         setTimeout(function () {
+//             // Send message (secured + certified) to target station
+//             var sMsg = messenger.encryptMessage(iMsg);
+//             if (sMsg == null) {
+//                 // public key not found?
+//                 return false;
+//                 //throw new ReferenceError("failed to encrypt message: " + iMsg.toMap());
+//             }
+//             var rMsg = messenger.signMessage(sMsg);
+//             if (rMsg == null) {
+//                 // TODO: set iMsg.state = error
+//                 throw new ReferenceError("failed to sign message: " + sMsg.toMap());
+//             }
+//
+//             var OK = messenger.sendReliableMessage(rMsg, callback, priority);
+//             // TODO: if OK, set iMsg.state = sending; else set iMsg.state = waiting
+//
+//             return messenger.saveMessage(iMsg) && OK;
+//         }, 128);
+//         return true;
+//     };
+//
+//     //-------- namespace --------
+//     ns.CommonTransmitter = CommonTransmitter;
+//
+//     ns.registers('CommonTransmitter');
+//
+// })(SECHAT, DIMSDK);

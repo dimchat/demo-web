@@ -25,71 +25,38 @@
 // =============================================================================
 //
 
-/**
- *  Command message: {
- *      type : 0x88,
- *      sn   : 123,
- *
- *      command  : "search",        // or "users"
- *
- *      keywords : "keywords",      // keyword string
- *      users    : ["ID"],          // user ID list
- *      results  : {"ID": {meta}, } // user's meta map
- *  }
- */
-
 //! require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
     var Command = sdk.protocol.Command;
 
     /**
-     *  Create search command
+     *  Command message: {
+     *      type : 0x88,
+     *      sn   : 123,
      *
-     *  Usages:
-     *      1. new SearchCommand();
-     *      2. new SearchCommand(keywords);
-     *      3. new SearchCommand(map);
+     *      command  : "search",        // or "users"
+     *
+     *      keywords : "keywords",      // keyword string
+     *      users    : ["ID"],          // user ID list
+     *      results  : {"ID": {meta}, } // user's meta map
+     *  }
      */
-    var SearchCommand = function () {
-        if (arguments.length === 0) {
-            // new SearchCommand();
-            Command.call(this, SearchCommand.ONLINE_USERS);
-        } else if (typeof arguments[0] === 'string') {
-            // new SearchCommand(keywords);
-            Command.call(this, SearchCommand.SEARCH);
-            this.setKeywords(arguments[0]);
-        } else {
-            // new SearchCommand(map);
-            Command.call(this, arguments[0]);
-        }
-    };
-    sdk.Class(SearchCommand, Command, null);
+    var SearchCommand = function () {};
+    sdk.Interface(SearchCommand, [Command]);
 
     SearchCommand.SEARCH = 'search';
     SearchCommand.ONLINE_USERS = 'users'; // search online users
 
-    //-------- setter/getter --------
-
     SearchCommand.prototype.setKeywords = function (keywords) {
-        this.setValue('keywords', keywords);
+        console.assert(false, 'implement me!');
     };
 
-    /**
-     *  Get user ID list
-     *
-     * @returns {String[]} - ID string list
-     */
     SearchCommand.prototype.getUsers = function () {
-        var users = this.getValue('users');
-        if (users) {
-            return ID.convert(users);
-        } else {
-            return null;
-        }
+        console.assert(false, 'implement me!');
+        return null;
     };
 
     /**
@@ -98,12 +65,84 @@
      * @returns {*} - meta dictionary
      */
     SearchCommand.prototype.getResults = function () {
-        return this.getValue('results');
+        console.assert(false, 'implement me!');
+        return null;
     };
 
     //-------- namespace --------
     ns.protocol.SearchCommand = SearchCommand;
 
     ns.protocol.registers('SearchCommand');
+
+})(SECHAT, DIMSDK);
+
+(function (ns, sdk) {
+    'use strict';
+
+    var ID = sdk.protocol.ID;
+    var SearchCommand = sdk.protocol.SearchCommand;
+    var BaseCommand = ns.dkd.BaseCommand;
+
+    /**
+     *  Create search command
+     *
+     *  Usages:
+     *      1. new BaseSearchCommand();
+     *      2. new BaseSearchCommand(keywords);
+     *      3. new BaseSearchCommand(map);
+     */
+    var BaseSearchCommand = function () {
+        if (arguments.length === 0) {
+            // new BaseSearchCommand();
+            BaseCommand.call(this, SearchCommand.ONLINE_USERS);
+        } else if (typeof arguments[0] === 'string') {
+            // new BaseSearchCommand(keywords);
+            BaseCommand.call(this, SearchCommand.SEARCH);
+            this.setKeywords(arguments[0]);
+        } else {
+            // new BaseSearchCommand(map);
+            BaseCommand.call(this, arguments[0]);
+        }
+    };
+    sdk.Class(BaseSearchCommand, BaseCommand, [SearchCommand], {
+
+        // Override
+        setKeywords: function (keywords) {
+            this.setValue('keywords', keywords);
+        },
+
+        // Override
+        getUsers: function () {
+            var users = this.getValue('users');
+            if (users) {
+                return ID.convert(users);
+            } else {
+                return null;
+            }
+        },
+
+        // Override
+        getResults: function () {
+            return this.getValue('results');
+        }
+    });
+
+    //
+    //  Factory
+    //
+    SearchCommand.search = function (keywords) {
+        if (keywords) {
+            // new BaseSearchCommand(keywords);
+            return new BaseSearchCommand(keywords);
+        } else {
+            // new BaseSearchCommand();
+            return new BaseSearchCommand();
+        }
+    };
+
+    //-------- namespace --------
+    ns.dkd.BaseSearchCommand = BaseSearchCommand;
+
+    ns.dkd.registers('BaseSearchCommand');
 
 })(SECHAT, DIMSDK);

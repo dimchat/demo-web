@@ -34,6 +34,10 @@ if (typeof SECHAT !== 'object') {
 (function (ns, sdk) {
     'use strict';
 
+    if (typeof ns.assert !== 'function') {
+        ns.assert = console.assert;
+    }
+
     //-------- namespace --------
     if (typeof ns.cpu !== 'object') {
         ns.cpu = new sdk.Namespace();
@@ -44,6 +48,9 @@ if (typeof SECHAT !== 'object') {
     if (typeof ns.network !== 'object') {
         ns.network = new sdk.Namespace();
     }
+    if (typeof ns.dkd !== 'object') {
+        ns.dkd = new sdk.Namespace();
+    }
     if (typeof ns.protocol !== 'object') {
         ns.protocol = new sdk.Namespace();
     }
@@ -51,6 +58,7 @@ if (typeof SECHAT !== 'object') {
     ns.registers('cpu');
     ns.registers('db');
     ns.registers('network');
+    ns.registers('dkd');
     ns.registers('protocol');
 
 })(SECHAT, DIMSDK);

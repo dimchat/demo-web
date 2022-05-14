@@ -102,7 +102,7 @@
                     // FIXME: meta error?
                     continue;
                 }
-                results[id.toString()] = m.getMap();
+                results[id.toString()] = m.toMap();
             }
         }
         return results;

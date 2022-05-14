@@ -38,43 +38,43 @@
     var TextContent = sdk.protocol.TextContent;
     var PageContent = sdk.protocol.PageContent;
 
-    var ContentProcessor = sdk.cpu.ContentProcessor;
+    var BaseContentProcessor = sdk.cpu.BaseContentProcessor;
 
     /**
      *  Default Content Processor
      */
-    var AnyContentProcessor = function () {
-        ContentProcessor.call(this);
+    var AnyContentProcessor = function (facebook, messenger) {
+        BaseContentProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(AnyContentProcessor, ContentProcessor, null);
+    sdk.Class(AnyContentProcessor, BaseContentProcessor, null, null);
 
     // Override
     AnyContentProcessor.prototype.process = function (content, rMsg) {
         var text;
 
-        if (content instanceof FileContent) {
-            if (content instanceof ImageContent) {
+        if (sdk.Interface.conforms(content, FileContent)) {
+            if (sdk.Interface.conforms(content, ImageContent)) {
                 // Image
                 text = 'Image received';
-            } else if (content instanceof AudioContent) {
+            } else if (sdk.Interface.conforms(content, AudioContent)) {
                 // Audio
                 text = 'Voice message received';
-            } else if (content instanceof VideoContent) {
+            } else if (sdk.Interface.conforms(content, VideoContent)) {
                 // Video
                 text = 'Movie received';
             } else {
                 // other file
                 text = 'File received';
             }
-        } else if (content instanceof TextContent) {
+        } else if (sdk.Interface.conforms(content, TextContent)) {
             // Text
             text = 'Text message received';
-        } else if (content instanceof PageContent) {
+        } else if (sdk.Interface.conforms(content, PageContent)) {
             // Web page
             text = 'Web page received';
         } else {
             // Other
-            return ContentProcessor.prototype.process.call(this, content, rMsg);
+            return BaseContentProcessor.prototype.process.call(this, content, rMsg);
         }
 
         // check group message
