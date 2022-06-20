@@ -105,13 +105,6 @@
         return KeyStore.getInstance();
     };
 
-    // CommonMessenger.prototype.getEntityDelegate = function() {
-    //     if (!this.__barrack) {
-    //         this.__barrack = new ns.CommonFacebook();
-    //     }
-    //     return this.__barrack;
-    // };
-
     // Override
     CommonMessenger.prototype.getPacker = function () {
         if (!this.__packer) {
@@ -135,13 +128,6 @@
     CommonMessenger.prototype.createProcessor = function () {
         return new ns.CommonProcessor(this.getFacebook(), this);
     };
-
-    // CommonMessenger.prototype.getTransmitter = function () {
-    //     if (!this.__transmitter) {
-    //         this.__transmitter = new ns.CommonTransmitter(this);
-    //     }
-    //     return this.__transmitter;
-    // };
 
     // private
     CommonMessenger.prototype.getFileContentProcessor = function () {
@@ -303,41 +289,23 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Content = sdk.protocol.Content;
     var Command = sdk.protocol.Command;
-    var MuteCommand = sdk.protocol.MuteCommand;
-    var BlockCommand = sdk.protocol.BlockCommand;
     var CommandFactory = sdk.core.CommandFactory;
 
     var SearchCommand = ns.protocol.SearchCommand;
     var ReportCommand = ns.protocol.ReportCommand;
-    var AnyContentProcessor = ns.cpu.AnyContentProcessor;
-    var ReceiptCommandProcessor = ns.cpu.ReceiptCommandProcessor;
-    var MuteCommandProcessor = ns.cpu.MuteCommandProcessor;
-    var BlockCommandProcessor = ns.cpu.BlockCommandProcessor;
 
-    var registerCommandFactories = function () {
-        var search = new CommandFactory(SearchCommand);
-        Command.setFactory(SearchCommand.SEARCH, search);
-        Command.setFactory(SearchCommand.ONLINE_USERS, search);
-        var report = new CommandFactory(ReportCommand);
-        Command.setFactory(ReportCommand.REPORT, report);
-        Command.setFactory(ReportCommand.ONLINE, report);
-        Command.setFactory(ReportCommand.OFFLINE, report);
-    };
+    // load factories from SDK
+    sdk.registerAllFactories();
 
-    var registerCommandProcessors = function () {
-        Command.setFactory(Command.RECEIPT, new ReceiptCommandProcessor());
-        Command.setFactory(MuteCommand.MUTE, new MuteCommandProcessor());
-        Command.setFactory(BlockCommand.BLOCK, new BlockCommandProcessor());
-    };
+    // register command factories
+    var search = new CommandFactory(SearchCommand);
+    Command.setFactory(SearchCommand.SEARCH, search);
+    Command.setFactory(SearchCommand.ONLINE_USERS, search);
 
-    var registerContentProcessors = function () {
-        Content.setFactory(0, new AnyContentProcessor());
-    };
-
-    registerCommandFactories();
-    registerCommandProcessors();
-    registerContentProcessors();
+    var report = new CommandFactory(ReportCommand);
+    Command.setFactory(ReportCommand.REPORT, report);
+    Command.setFactory(ReportCommand.ONLINE, report);
+    Command.setFactory(ReportCommand.OFFLINE, report);
 
 })(SECHAT, DIMSDK);

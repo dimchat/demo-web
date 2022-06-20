@@ -8,6 +8,8 @@ var dim_common = [
     'src/common/cpu/default.js',
     'src/common/cpu/mute.js',
     'src/common/cpu/receipt.js',
+    'src/common/cpu/file.js',
+    'src/common/cpu/creator.js',
 
     'src/common/database/ans.js',
     'src/common/database/contact.js',
@@ -20,10 +22,10 @@ var dim_common = [
     'src/common/database/private.js',
     'src/common/database/user.js',
 
-    'src/common/network/queue.js',
-    'src/common/network/session.js',
-    'src/common/network/startrek.js',
     'src/common/network/wrapper.js',
+    'src/common/network/queue.js',
+    'src/common/network/gatekeeper.js',
+    'src/common/network/session.js',
 
     'src/common/protocol/report.js',
     'src/common/protocol/search.js',
@@ -34,7 +36,6 @@ var dim_common = [
     'src/common/messenger.js',
     'src/common/packer.js',
     'src/common/processor.js',
-    'src/common/transmitter.js',
 
     null
 ];

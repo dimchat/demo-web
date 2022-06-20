@@ -100,7 +100,9 @@
             console.error('receive data error', data);
             return null;
         }
-        return MessagePacker.prototype.deserializeMessage.call(this, data);
+        var rMsg = MessagePacker.prototype.deserializeMessage.call(this, data);
+        fix_visa(rMsg);
+        return rMsg;
     };
 
     // Override
@@ -174,7 +176,9 @@
     // Override
     CommonPacker.prototype.decryptMessage = function (sMsg) {
         try {
-            return MessagePacker.prototype.decryptMessage.call(this, sMsg);
+            var iMsg = MessagePacker.prototype.decryptMessage.call(this, sMsg);
+            fix_profile(iMsg.getContent());
+            return iMsg;
         } catch (e) {
             // check exception thrown by DKD: EncryptedMessage.decrypt()
             if (e.toString().indexOf('failed to decrypt key in msg: ') === 0) {
@@ -194,6 +198,60 @@
                 throw e;
             }
             return null;
+        }
+    };
+
+    var fix_profile = function (content) {
+        if (sdk.Interface.conforms(content, DocumentCommand)) {
+            // compatible for document command
+            var doc = content.getValue('document');
+            if (doc) {
+                // (v2.0)
+                //    "ID"       : "{ID}",
+                //    "document" : {
+                //        "ID"        : "{ID}",
+                //        "data"      : "{JsON}",
+                //        "signature" : "{BASE64}"
+                //    }
+                return;
+            }
+            var profile = content.getValue('profile');
+            if (profile) {
+                content.removeValue('profile')
+                // 1.* => 2.0
+                if (typeof profile === 'string') {
+                    // compatible with v1.0
+                    //    "ID"        : "{ID}",
+                    //    "profile"   : "{JsON}",
+                    //    "signature" : "{BASE64}"
+                    var dict = {
+                        'ID': content.getValue('ID'),
+                        'data': profile,
+                        'signature': content.getValue('signature')
+                    };
+                    content.setValue('document', dict);
+                } else {
+                    // compatible with v1.1
+                    //    "ID"       : "{ID}",
+                    //    "profile"  : {
+                    //        "ID"        : "{ID}",
+                    //        "data"      : "{JsON}",
+                    //        "signature" : "{BASE64}"
+                    //    }
+                    content.setValue('document', profile);
+                }
+            }
+        }
+    };
+    var fix_visa = function (rMsg) {
+        var profile = rMsg.getValue('profile');
+        if (profile) {
+            rMsg.removeValue('profile');
+            // 1.* => 2.0
+            var visa = rMsg.getValue('visa');
+            if (!visa) {
+                rMsg.setValue('visa', profile);
+            }
         }
     };
 

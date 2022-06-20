@@ -62,11 +62,11 @@
             }
             // others
             var cpu = ContentProcessorCreator.prototype.createContentProcessor.call(this, type);
-            if (cpu) {
-                return cpu;
+            if (!cpu) {
+                // unknown type?
+                cpu = new AnyContentProcessor(facebook, messenger);
             }
-            // unknown
-            return new AnyContentProcessor(facebook, messenger);
+            return cpu;
         },
         // Override
         createCommandProcessor: function (type, command) {
