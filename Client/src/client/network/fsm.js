@@ -94,7 +94,7 @@
 
     var Transition = sdk.fsm.Transition;
     var AutoMachine = sdk.fsm.AutoMachine;
-    var Gate = sdk.startrek.Gate;
+    var DockerStatus = sdk.startrek.port.DockerStatus;
 
     var ServerState = ns.network.ServerState;
 
@@ -108,49 +108,56 @@
         this.__session = null;  // session key
 
         // add states
-        set_state.call(this, default_state());
-        set_state.call(this, connecting_state());
-        set_state.call(this, connected_state());
-        set_state.call(this, handshaking_state());
-        set_state.call(this, running_state());
-        set_state.call(this, error_state());
+        set_state(this, default_state());
+        set_state(this, connecting_state());
+        set_state(this, connected_state());
+        set_state(this, handshaking_state());
+        set_state(this, running_state());
+        set_state(this, error_state());
     };
-    sdk.Class(StateMachine, AutoMachine, null);
-
-    var set_state = function (state) {
-        this.addState(state, state.name);
-    };
-
-    StateMachine.prototype.getSessionKey = function () {
-        return this.__session;
-    };
-    StateMachine.prototype.setSessionKey = function (session) {
-        this.__session = session;
-    };
-
-    //
-    //  States
-    //
-
-    StateMachine.prototype.getCurrentState = function () {
-        var state = AutoMachine.prototype.getCurrentState.call(this);
-        if (!state) {
-            state = this.getState(ServerState.DEFAULT);
+    sdk.Class(StateMachine, AutoMachine, null, {
+        getSessionKey: function () {
+            return this.__session;
+        },
+        setSessionKey: function (session) {
+            this.__session = session;
+        },
+        getServer: function () {
+            return this.getDelegate();
+        },
+        getCurrentUser: function () {
+            var server = this.getServer();
+            return server ? server.getCurrentUser() : null;
+        },
+        getStatus: function () {
+            var server = this.getServer();
+            return server ? server.getStatus() : DockerStatus.ERROR;
+        },
+        // Override
+        getContext: function () {
+            return this;
+        },
+        // Override
+        getCurrentState: function () {
+            var state = AutoMachine.prototype.getCurrentState.call(this);
+            if (!state) {
+                state = this.getState(ServerState.DEFAULT);
+            }
+            return state;
         }
-        return state;
+    });
+
+    var set_state = function (fsm, state) {
+        fsm.setState(state.name, state);
     };
 
-    var get_server = function (machine) {
-        return machine.getDelegate();
-    };
-
-    var transition = function (target, evaluate) {
+    var new_transition = function (target, evaluate) {
         var trans = new Transition(target);
         trans.evaluate = evaluate;
         return trans;
     };
 
-    var server_state = function (name, transitions) {
+    var new_state = function (name, transitions) {
         var state = new ServerState(name);
         for (var i = 1; i < arguments.length; ++i) {
             state.addTransition(arguments[i]);
@@ -158,104 +165,102 @@
         return state;
     };
 
+    //
+    //  States
+    //
+
     var default_state = function () {
-        return server_state(ServerState.DEFAULT,
+        return new_state(ServerState.DEFAULT,
             // Default -> Connecting
-            transition(ServerState.CONNECTING, function (machine) {
-                var server = get_server(machine);
-                if (server && server.getCurrentUser()) {
-                    var status = server.getStatus();
-                    return Gate.Status.CONNECTING.equals(status)
-                        || Gate.Status.CONNECTED.equals(status);
-                } else {
+            new_transition(ServerState.CONNECTING, function (machine) {
+                if (machine.getCurrentUser() === null) {
                     return false;
                 }
+                var status = machine.getStatus();
+                return DockerStatus.PREPARING.equals(status) || DockerStatus.READY.equals(status);
             })
         );
     };
     var connecting_state = function () {
-        return server_state(ServerState.CONNECTING,
+        return new_state(ServerState.CONNECTING,
             // Connecting -> Connected
-            transition(ServerState.CONNECTED, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return Gate.Status.CONNECTED.equals(status);
+            new_transition(ServerState.CONNECTED, function (machine) {
+                var status = machine.getStatus();
+                return DockerStatus.READY.equals(status);
             }),
             // Connecting -> Error
-            transition(ServerState.ERROR, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return Gate.Status.ERROR.equals(status);
+            new_transition(ServerState.ERROR, function (machine) {
+                var status = machine.getStatus();
+                return DockerStatus.ERROR.equals(status);
             })
         );
     };
     var connected_state = function () {
-        return server_state(ServerState.CONNECTED,
+        return new_state(ServerState.CONNECTED,
             // Connected -> Handshaking
-            transition(ServerState.HANDSHAKING, function (machine) {
-                var server = get_server(machine);
-                return server.getCurrentUser();
+            new_transition(ServerState.HANDSHAKING, function (machine) {
+                return machine.getCurrentUser() !== null;
+            }),
+            // Connected -> Error
+            new_transition(ServerState.ERROR, function (machine) {
+                var status = machine.getStatus();
+                return DockerStatus.ERROR.equals(status);
             })
         );
     };
     var handshaking_state = function () {
-        return server_state(ServerState.HANDSHAKING,
+        return new_state(ServerState.HANDSHAKING,
             // Handshaking -> Running
-            transition(ServerState.RUNNING, function (machine) {
+            new_transition(ServerState.RUNNING, function (machine) {
                 // when current user changed, the server will clear this session, so
                 // if it's set again, it means handshake accepted
-                return machine.getSessionKey();
+                return machine.getSessionKey() !== null;
             }),
             // Handshaking -> Connected
-            transition(ServerState.CONNECTED, function (machine) {
+            new_transition(ServerState.CONNECTED, function (machine) {
                 var state = machine.getCurrentState();
                 var time = state.time;
-                if (time) {
-                    var expired = time.getTime() + 120 * 1000;
-                    var now = (new Date()).getTime();
-                    if (now < expired) {
-                        // not expired yet
-                        return false;
-                    }
-                } else {
+                if (!time) {
                     // not enter yet
                     return false;
                 }
+                var expired = time.getTime() + 16 * 1000;
+                var now = (new Date()).getTime();
+                if (now < expired) {
+                    // not expired yet
+                    return false;
+                }
                 // handshake expired, return to connected to do it again
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return Gate.Status.CONNECTED.equals(status);
+                var status = machine.getStatus();
+                return DockerStatus.READY.equals(status);
             }),
             // Handshaking -> Error
-            transition(ServerState.ERROR, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return Gate.Status.ERROR.equals(status);
+            new_transition(ServerState.ERROR, function (machine) {
+                var status = machine.getStatus();
+                return DockerStatus.ERROR.equals(status);
             })
         );
     };
     var running_state = function () {
-        return server_state(ServerState.RUNNING,
+        return new_state(ServerState.RUNNING,
             // Running -> Default
-            transition(ServerState.DEFAULT, function (machine) {
+            new_transition(ServerState.DEFAULT, function (machine) {
                 // user switched?
-                return !machine.getSessionKey();
+                return machine.getSessionKey() === null;
             }),
             // Running -> Error
-            transition(ServerState.ERROR, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return Gate.Status.ERROR.equals(status);
+            new_transition(ServerState.ERROR, function (machine) {
+                var status = machine.getStatus();
+                return DockerStatus.ERROR.equals(status);
             })
         );
     };
     var error_state = function () {
-        return server_state(ServerState.ERROR,
+        return new_state(ServerState.ERROR,
             // Error -> Default
-            transition(ServerState.DEFAULT, function (machine) {
-                var server = get_server(machine);
-                var status = server.getStatus();
-                return !Gate.Status.ERROR.equals(status);
+            new_transition(ServerState.DEFAULT, function (machine) {
+                var status = machine.getStatus();
+                return !DockerStatus.ERROR.equals(status);
             })
         );
     };

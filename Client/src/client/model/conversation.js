@@ -6,10 +6,10 @@
 
     var NetworkType = sdk.protocol.NetworkType;
     var ContentType = sdk.protocol.ContentType;
-    var Entity = sdk.Entity;
+    var Entity = sdk.mkm.Entity;
 
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
     var get_conversation_db = function () {
         return ns.ConversationDatabase;
@@ -21,8 +21,8 @@
     });
 
     var Conversation = function (entity) {
-        if (entity instanceof Entity) {
-            entity = entity.identifier;
+        if (sdk.Interface.conforms(entity, Entity)) {
+            entity = entity.getIdentifier();
         }
         this.identifier = entity;
         this.type = get_type(entity);
@@ -36,6 +36,10 @@
         } else {
             throw new TypeError('conversation type error: ' + identifier);
         }
+    };
+
+    Conversation.prototype.getIdentifier = function () {
+        return this.identifier;
     };
 
     Conversation.prototype.getTitle = function () {

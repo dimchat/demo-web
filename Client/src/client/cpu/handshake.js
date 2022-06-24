@@ -35,15 +35,15 @@
 (function (ns, sdk) {
     'use strict';
 
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Handshake Command Processor
      */
-    var HandshakeCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var HandshakeCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(HandshakeCommandProcessor, CommandProcessor, null);
+    sdk.Class(HandshakeCommandProcessor, BaseCommandProcessor, null, null);
 
     var success = function () {
         console.log('handshake success!')
@@ -62,7 +62,7 @@
     };
 
     // Override
-    HandshakeCommandProcessor.prototype.execute = function (cmd, rMsg) {
+    HandshakeCommandProcessor.prototype.process = function (cmd, rMsg) {
         var message = cmd.getMessage();
         if (message === 'DIM!' || message === 'OK!') {
             // S -> C

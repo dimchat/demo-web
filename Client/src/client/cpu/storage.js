@@ -36,18 +36,18 @@
     'use strict';
 
     var StorageCommand = sdk.protocol.StorageCommand;
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Storage Command Processor
      */
-    var StorageCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var StorageCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(StorageCommandProcessor, CommandProcessor, null);
+    sdk.Class(StorageCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    StorageCommandProcessor.prototype.execute = function (cmd, rMsg) {
+    StorageCommandProcessor.prototype.process = function (cmd, rMsg) {
         var title = cmd.getTitle();
         if (title === StorageCommand.CONTACTS) {
             // process contacts

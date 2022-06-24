@@ -48,7 +48,7 @@
     var QueryCommand = sdk.protocol.group.QueryCommand;
 
     var getUsername = function (string) {
-        var facebook = ns.Facebook.getInstance();
+        var facebook = ns.ClientFacebook.getInstance();
         return facebook.getName(ID.parse(string));
     };
 

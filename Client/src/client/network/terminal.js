@@ -37,21 +37,26 @@
 (function (ns, sdk) {
     'use strict';
 
+    var BaseLoginCommand = sdk.dkd.BaseLoginCommand;
+    var ServerDelegate = ns.network.ServerDelegate;
+
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
     var get_messenger = function () {
-        return ns.Messenger.getInstance();
+        return ns.ClientMessenger.getInstance();
     };
 
     /**
      *  DIM Client
      */
     var Terminal = function() {
+        Object.call(this);
         this.__server = null; // current server
-        get_messenger().setTerminal(this);
+        var messenger = get_messenger();
+        messenger.setTerminal(this);
     };
-    sdk.Class(Terminal, null, null);
+    sdk.Class(Terminal, Object, [ServerDelegate], null);
 
     // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36"
     Terminal.prototype.getUserAgent = function () {
@@ -63,9 +68,10 @@
     };
 
     var set_server = function (server) {
-        if (this.__server) {
-            if (!server || !this.__server.equals(server)) {
-                this.__server.end();
+        var current = this.__server;
+        if (current) {
+            if (!server || !current.equals(server)) {
+                current.end();
             }
         }
         // if (server) {
@@ -75,19 +81,18 @@
     };
     var is_new_server = function (host, port) {
         var current = this.__server
-        if (current) {
-            return current.getPort() !== port || current.getHost() !== host;
-        } else {
+        if (!current) {
             return true;
         }
+        return current.getPort() !== port || current.getHost() !== host;
     };
 
     Terminal.prototype.getCurrentUser = function () {
-        if (this.__server) {
-            return this.__server.getCurrentUser();
-        } else {
+        var current = this.__server
+        if (!current) {
             return null;
         }
+        return current.getCurrentUser();
     };
     // Terminal.prototype.setCurrentUser = function (user) {
     //     if (this.__server) {
@@ -97,8 +102,7 @@
     //     }
     // };
 
-    var start = function (identifier, host, port) {
-        var messenger = get_messenger();
+    var start = function (identifier, host, port, name) {
         var facebook = get_facebook();
 
         // TODO: config FTP server
@@ -109,9 +113,9 @@
             // disconnect old server
             set_server.call(this, null);
             // connect new server
-            server = new ns.network.Server(identifier, host, port);
+            server = new ns.network.Server(identifier, host, port, name);
             server.setDataSource(facebook);
-            server.setDelegate(messenger);
+            server.setDelegate(this);
             server.start();
             set_server.call(this, server);
         }
@@ -128,10 +132,24 @@
         var identifier = options['ID'];
         var host = options['host'];
         var port = options['port'];
-        start.call(this, identifier, host, port);
+        var name = options['name'];
+        start.call(this, identifier, host, port, name);
     };
     Terminal.prototype.terminate = function () {
         set_server.call(this, null);
+    };
+
+    //
+    //  ServerDelegate
+    //
+    Terminal.prototype.onHandshakeAccepted = function (session, server) {
+        var user = this.getCurrentUser();
+        // broadcast login command
+        var login = new BaseLoginCommand(user.getIdentifier());
+        login.setAgent(this.getUserAgent());
+        login.setStation(server);
+        // TODO: set provider
+        get_messenger().broadcastContent(login);
     };
 
     //-------- namespace --------
@@ -150,7 +168,7 @@
     var Client = function () {
         Terminal.call(this);
     };
-    sdk.Class(Client, Terminal, [Observer]);
+    sdk.Class(Client, Terminal, [Observer], null);
 
     Client.prototype.onReceiveNotification = function(notification) {
         console.log('received notification: ', notification);

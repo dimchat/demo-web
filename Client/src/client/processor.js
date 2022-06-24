@@ -31,87 +31,67 @@
     'use strict';
 
     var NetworkType = sdk.protocol.NetworkType;
-    var Envelope = sdk.protocol.Envelope;
-    var InstantMessage = sdk.protocol.InstantMessage;
+    var TextContent = sdk.protocol.TextContent;
     var HandshakeCommand = sdk.protocol.HandshakeCommand;
     var ReceiptCommand = sdk.protocol.ReceiptCommand;
 
     var CommonProcessor = ns.CommonProcessor;
 
-    var MessageProcessor = function (messenger) {
-        CommonProcessor.call(this, messenger);
+    var ClientProcessor = function (facebook, messenger) {
+        CommonProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(MessageProcessor, CommonProcessor, null);
-
-    MessageProcessor.prototype.processContent = function (content, rMsg) {
-        var res = CommonProcessor.prototype.processContent.call(this, content, rMsg);
-        if (!res) {
-            // respond nothing
+    sdk.Class(ClientProcessor, CommonProcessor, null, {
+        createCreator: function () {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            return new ns.cpu.ClientProcessorCreator(facebook, messenger);
+        },
+        // Override
+        processContent: function (content, rMsg) {
+            var responses = CommonProcessor.prototype.processContent.call(this, content, rMsg);
+            if (!responses || responses.length === 0) {
+                // respond nothing
+                return null;
+            } else if (sdk.Interface.conforms(responses[0], HandshakeCommand)) {
+                // urgent command
+                return responses;
+            }
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            var sender = rMsg.getSender();
+            var receiver = rMsg.getReceiver();
+            var user = facebook.selectLocalUser(receiver);
+            // check responses
+            var res;
+            for (var i = 0; i < responses.length; ++i) {
+                res = responses[i];
+                if (!res) {
+                    // should not happen
+                    continue;
+                } else if (sdk.Interface.conforms(res, ReceiptCommand)) {
+                    if (NetworkType.STATION.equals(sender.getType())) {
+                        // no need to respond receipt to station
+                        return null;
+                    }
+                    console.log('receipt to sender', sender);
+                } else if (sdk.Interface.conforms(res, TextContent)) {
+                    if (NetworkType.STATION.equals(sender.getType())) {
+                        // no need to respond text message to station
+                        return null;
+                    }
+                    console.log('text to sender', sender);
+                }
+                // pack & send
+                messenger.sendContent(user.getIdentifier(), sender, res, 1);
+            }
+            // DON'T respond to station directly
             return null;
         }
-        if (res instanceof HandshakeCommand) {
-            // urgent command
-            return res;
-        }
-        var sender = rMsg.getSender();
-        if (res instanceof ReceiptCommand) {
-            if (NetworkType.STATION.equals(sender.getType())) {
-                // no need to respond receipt to station
-                return null;
-            }
-            console.log('receipt to sender', sender);
-        }
-        // check receiver
-        var receiver = rMsg.getReceiver();
-        var user = this.getFacebook().selectLocalUser(receiver);
-        // pack message
-        var env = Envelope.create(user.identifier, sender, null);
-        var iMsg = InstantMessage.create(env, res);
-        // normal response
-        this.getMessenger().sendInstantMessage(iMsg, null, 1);
-        // DON'T respond to station directly
-        return null;
-    };
+    });
 
     //-------- namespace --------
-    ns.MessageProcessor = MessageProcessor;
+    ns.ClientProcessor = ClientProcessor;
 
-    ns.registers('MessageProcessor');
-
-})(SECHAT, DIMSDK);
-
-//! require 'cpu/handshake.js'
-//! require 'cpu/login.js'
-//! require 'cpu/search.js'
-//! require 'cpu/storage.js'
-
-(function (ns, sdk) {
-    'use strict';
-
-    var Command = sdk.protocol.Command;
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var CommandProcessor = sdk.cpu.CommandProcessor;
-
-    var SearchCommand = ns.protocol.SearchCommand;
-    var HandshakeCommandProcessor = ns.cpu.HandshakeCommandProcessor;
-    var LoginCommandProcessor = ns.cpu.LoginCommandProcessor;
-    var SearchCommandProcessor = ns.cpu.SearchCommandProcessor;
-    var StorageCommandProcessor = ns.cpu.StorageCommandProcessor;
-
-    var registerCommandProcessors = function () {
-        CommandProcessor.register(Command.HANDSHAKE, new HandshakeCommandProcessor());
-        CommandProcessor.register(Command.LOGIN, new LoginCommandProcessor());
-        // search (online)
-        var search = new SearchCommandProcessor();
-        CommandProcessor.register(SearchCommand.SEARCH, search);
-        CommandProcessor.register(SearchCommand.ONLINE_USERS, search);
-        // storage (contacts, private_key)
-        var storage = new StorageCommandProcessor();
-        CommandProcessor.register(StorageCommand.STORAGE, storage);
-        CommandProcessor.register(StorageCommand.CONTACTS, storage);
-        CommandProcessor.register(StorageCommand.PRIVATE_KEY, storage);
-    };
-
-    registerCommandProcessors();
+    ns.registers('ClientProcessor');
 
 })(SECHAT, DIMSDK);

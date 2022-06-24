@@ -24,10 +24,10 @@
          *  Conversation factory
          *
          * @param {ID|*} identifier
-         * @returns {Conversation}
+         * @returns {Conversation|*}
          */
         getConversation: function (identifier) {
-            var facebook = ns.Facebook.getInstance();
+            var facebook = ns.ClientFacebook.getInstance();
             // create directly if we can find the entity
             var entity = null;
             if (identifier.isUser()) {
@@ -80,7 +80,7 @@
          * @returns {boolean}
          */
         saveMessage: function (iMsg) {
-            if (iMsg.getContent() instanceof ReceiptCommand) {
+            if (sdk.Interface.conforms(iMsg.getContent(), ReceiptCommand)) {
                 // it's a receipt
                 return this.saveReceipt(iMsg);
             }
@@ -148,10 +148,10 @@
             return this.getConversation(group);
         }
         // personal chat, get chat box with contact ID
-        var facebook = ns.Facebook.getInstance();
+        var facebook = ns.ClientFacebook.getInstance();
         var sender = iMsg.getSender();
         var user = facebook.getCurrentUser();
-        if (sender.equals(user.identifier)) {
+        if (user.getIdentifier().equals(sender)) {
             return this.getConversation(receiver);
         } else {
             return this.getConversation(sender);

@@ -30,56 +30,69 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'common/network/gatekeeper.js'
 //! require 'common/network/session.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Gate = sdk.startrek.Gate;
-    var WSDocker = sdk.stargate.WSDocker;
+    var Thread = sdk.threading.Thread;
+    var InetSocketAddress = sdk.startrek.type.InetSocketAddress;
+    var WSGate = sdk.startrek.WSGate;
+    var GateKeeper = ns.network.GateKeeper;
     var BaseSession = ns.network.BaseSession;
+
+    var ClientGateKeeper = function (host, port, delegate, messenger) {
+        GateKeeper.call(this, host, port, delegate, messenger);
+        this.__thread = null;
+    };
+    sdk.Class(ClientGateKeeper, GateKeeper, null, {
+        // Override
+        createGate: function (host, port, delegate) {
+            var remote = new InetSocketAddress(host, port);
+            // FIXME: ClientGate?
+            return new WSGate(delegate, remote, null);
+        }
+    });
 
     var Session = function (host, port, messenger) {
         BaseSession.call(this, host, port, messenger);
-        this.__docker = new WSDocker(this.gate);
     };
-    sdk.Class(Session, BaseSession, null);
+    sdk.Class(Session, BaseSession, null, {
+        // Override
+        createGateKeeper: function (host, port, messenger) {
+            return new ClientGateKeeper(host, port, this, messenger);
+        },
 
-    Session.prototype.setup = function () {
-        this.gate.setDocker(this.__docker);
-        this.setActive(true);
-        return BaseSession.prototype.setup.call(this);
-    };
+        start: function () {
+            var thread = new Thread(this);
+            thread.start();
+            this.__thread = thread;
+        },
 
-    Session.prototype.finish = function () {
-        var ok = BaseSession.prototype.finish.call(this);
-        this.setActive(false);
-        this.gate.setDocker(null);
-        return ok;
-    };
+        // Override
+        setup: function () {
+            this.setActive(true);
+            return BaseSession.prototype.setup.call(this);
+        },
 
-    Session.prototype.sendPayload = function(payload, priority, delegate) {
-        if (this.isActive()) {
-            return this.gate.sendPayload(payload, priority, delegate);
-        } else {
-            return false;
+        finish: function () {
+            var ok = BaseSession.prototype.finish.call(this);
+            this.setActive(false);
+            return ok;
         }
-    };
+    });
 
-    //
-    //  Gate Delegate
-    //
-
-    Session.prototype.onGateStatusChanged = function (gate, oldStatus, newStatus) {
-        BaseSession.prototype.onGateStatusChanged.call(this, gate, oldStatus, newStatus);
-        if (newStatus.equals(Gate.Status.CONNECTED)) {
-            var delegate = this.getMessenger().getDelegate();
-            if (delegate instanceof ns.network.Server) {
-                delegate.handshake(null);
-            }
-        }
-    };
+    // // Override
+    // Session.prototype.onDockerStatusChanged = function (previous, current, docker) {
+    //     BaseSession.prototype.onDockerStatusChanged.call(this, previous, current, docker);
+    //     if (current && current.equals(Gate.Status.ERROR)) {
+    //         // connection lost, reconnecting
+    //         var gate = this.getGate();
+    //         var hub = gate.getHub();
+    //         hub.connect(remote, local);
+    //     }
+    // };
 
     //-------- namespace --------
     ns.network.Session = Session;

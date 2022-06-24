@@ -48,6 +48,7 @@ var dim_client = [
     'src/client/cpu/login.js',
     'src/client/cpu/search.js',
     'src/client/cpu/storage.js',
+    'src/client/cpu/creator.js',
 
     'src/client/model/amanuensis.js',
     'src/client/model/cache.js',
@@ -56,9 +57,9 @@ var dim_client = [
     'src/client/model/database.js',
     'src/client/model/provider.js',
 
-    'src/client/network/delegate.js',
     'src/client/network/fsm.js',
     'src/client/network/http.js',
+    'src/client/network/ftp.js',
     'src/client/network/server.js',
     'src/client/network/session.js',
     'src/client/network/terminal.js',

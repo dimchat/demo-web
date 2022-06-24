@@ -64,7 +64,7 @@ if (typeof SECHAT !== "object") {
     var ResetCommand = sdk.protocol.group.ResetCommand;
     var QueryCommand = sdk.protocol.group.QueryCommand;
     var getUsername = function (string) {
-        var facebook = ns.Facebook.getInstance();
+        var facebook = ns.ClientFacebook.getInstance();
         return facebook.getName(ID.parse(string));
     };
     var MessageBuilder = {

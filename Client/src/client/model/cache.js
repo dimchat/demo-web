@@ -21,10 +21,10 @@
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var get_messenger = function () {
-        return ns.Messenger.getInstance();
+        return ns.ClientMessenger.getInstance();
     };
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
 
     var get_clerk = function () {
@@ -49,7 +49,7 @@
             var facebook = get_facebook();
 
             var entity;
-            if (sdk.Interface.conforms(userInfo, sdk.type.Map)) {
+            if (sdk.Interface.conforms(userInfo, sdk.type.Mapper)) {
                 entity = ID.parse(userInfo.getValue('ID'));
             } else {
                 entity = ID.parse(userInfo['ID']);
@@ -94,43 +94,44 @@
             //       ignore 'Handshake', ...
             //       return true to allow responding
 
-            if (content instanceof HandshakeCommand) {
+            if (ns.Interface.conforms(content, HandshakeCommand)) {
                 // handshake command will be processed by CPUs
                 // no need to save handshake command here
                 return true;
             }
-            if (content instanceof ReportCommand) {
+            if (ns.Interface.conforms(content, ReportCommand)) {
                 // report command is sent to station,
                 // no need to save report command here
                 return true;
             }
-            if (content instanceof LoginCommand) {
+            if (ns.Interface.conforms(content, LoginCommand)) {
                 // login command will be processed by CPUs
                 // no need to save login command here
                 return true;
             }
-            if (content instanceof MetaCommand) {
+            if (ns.Interface.conforms(content, MetaCommand)) {
                 // meta & document command will be checked and saved by CPUs
                 // no need to save meta & document command here
                 return true;
             }
-            if (content instanceof MuteCommand || content instanceof BlockCommand) {
+            if (ns.Interface.conforms(content, MuteCommand) ||
+                ns.Interface.conforms(content, BlockCommand)) {
                 // TODO: create CPUs for mute & block command
                 // no need to save mute & block command here
                 return true;
             }
-            if (content instanceof SearchCommand) {
+            if (ns.Interface.conforms(content, SearchCommand)) {
                 // search result will be parsed by CPUs
                 // no need to save search command here
                 return true;
             }
-            if (content instanceof ForwardContent) {
+            if (ns.Interface.conforms(content, ForwardContent)) {
                 // forward content will be parsed, if secret message decrypted, save it
                 // no need to save forward content itself
                 return true;
             }
 
-            if (content instanceof InviteCommand) {
+            if (ns.Interface.conforms(content, InviteCommand)) {
                 // send keys again
                 var me = iMsg.getReceiver();
                 var group = content.getGroup();
@@ -141,12 +142,12 @@
                     key.remove("reused");
                 }
             }
-            if (content instanceof QueryCommand) {
+            if (ns.Interface.conforms(content, QueryCommand)) {
                 // FIXME: same query command sent to different members?
                 return true;
             }
 
-            if (content instanceof ReceiptCommand) {
+            if (ns.Interface.conforms(content, ReceiptCommand)) {
                 return get_clerk().saveReceipt(iMsg);
             } else {
                 return get_clerk().saveMessage(iMsg);

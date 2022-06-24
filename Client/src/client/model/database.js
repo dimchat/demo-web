@@ -4,11 +4,11 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Entity = sdk.Entity;
+    var Entity = sdk.mkm.Entity;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
 
     ns.ConversationDatabase = {
@@ -86,10 +86,12 @@
         },
         lastReceivedMessage: function () {
             var user = get_facebook().getCurrentUser();
-            if (!user) {
+            if (user) {
+                user = user.getIdentifier();
+            } else {
                 return null;
             }
-            return this.messageTable.lastReceivedMessage(user.identifier);
+            return this.messageTable.lastReceivedMessage(user);
         },
         messageAtIndex: function (index, chat) {
             chat = get_id(chat);
@@ -146,9 +148,9 @@
 
     var get_id = function (chatBox) {
         if (chatBox instanceof ns.Conversation) {
-            return chatBox.identifier;
-        } else if (chatBox instanceof Entity) {
-            return chatBox.identifier;
+            return chatBox.getIdentifier();
+        } else if (sdk.Interface.conforms(chatBox, Entity)) {
+            return chatBox.getIdentifier();
         } else {
             return chatBox;
         }

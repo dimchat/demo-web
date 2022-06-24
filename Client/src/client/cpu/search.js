@@ -38,8 +38,7 @@
     var ID = sdk.protocol.ID;
     var Meta = sdk.protocol.Meta;
     var InstantMessage = sdk.protocol.InstantMessage;
-
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var SearchCommand = ns.protocol.SearchCommand;
@@ -47,10 +46,10 @@
     /**
      *  Search Command Processor
      */
-    var SearchCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var SearchCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(SearchCommandProcessor, CommandProcessor, null);
+    sdk.Class(SearchCommandProcessor, BaseCommandProcessor, null, null);
 
     var user_info = function (string, facebook) {
         var identifier = ID.parse(string);
@@ -62,7 +61,7 @@
     };
 
     // @Override
-    SearchCommandProcessor.prototype.execute = function (cmd, rMsg) {
+    SearchCommandProcessor.prototype.process = function (cmd, rMsg) {
         var facebook = this.getFacebook();
         var users = cmd.getUsers();
 

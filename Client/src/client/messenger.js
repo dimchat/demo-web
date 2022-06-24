@@ -1,4 +1,30 @@
 ;
+// license: https://mit-license.org
+// =============================================================================
+// The MIT License (MIT)
+//
+// Copyright (c) 2021 Albert Moky
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// =============================================================================
+//
+
 //! require 'namespace.js'
 
 (function (ns, sdk) {
@@ -19,9 +45,9 @@
     var CommonFacebook = ns.CommonFacebook;
     var CommonMessenger = ns.CommonMessenger;
 
-    var StationDelegate = ns.network.StationDelegate;
+    var ServerDelegate = ns.network.ServerDelegate;
 
-    var Messenger = function () {
+    var ClientMessenger = function () {
         CommonMessenger.call(this);
         this.__terminal = null;
         this.__offlineTime = null;  // Date
@@ -30,40 +56,40 @@
         this.__docQueryExpires = {};    // ID => int
         this.__groupQueryExpires = {};  // ID => (ID => int)
     };
-    sdk.Class(Messenger, CommonMessenger, [StationDelegate]);
+    sdk.Class(ClientMessenger, CommonMessenger, [ServerDelegate]);
 
     var QUERY_INTERVAL = 120 * 1000;  // query interval (2 minutes)
 
-    Messenger.prototype.getEntityDelegate = function() {
+    ClientMessenger.prototype.getEntityDelegate = function() {
         if (!this.__barrack) {
-            this.__barrack = ns.Facebook.getInstance();
+            this.__barrack = ns.ClientFacebook.getInstance();
         }
         return this.__barrack;
     };
-    Messenger.prototype.getProcessor = function () {
+    ClientMessenger.prototype.getProcessor = function () {
         if (!this.__processor) {
-            this.__processor = new ns.MessageProcessor(this);
+            this.__processor = new ns.ClientProcessor(this);
         }
         return this.__processor;
     };
-    Messenger.prototype.getDataSource = function() {
+    ClientMessenger.prototype.getDataSource = function() {
         if (!this.__datasource) {
             this.__datasource = ns.MessageDataSource;
         }
         return this.__datasource
     };
 
-    Messenger.prototype.getTerminal = function () {
+    ClientMessenger.prototype.getTerminal = function () {
         return this.__terminal;
     };
-    Messenger.prototype.setTerminal = function (client) {
+    ClientMessenger.prototype.setTerminal = function (client) {
         this.__terminal = client;
     };
 
-    Messenger.prototype.getCurrentServer = function () {
+    ClientMessenger.prototype.getCurrentServer = function () {
         return this.__terminal.getCurrentServer();
     };
-    Messenger.prototype.getCurrentUser = function () {
+    ClientMessenger.prototype.getCurrentUser = function () {
         return this.__terminal.getCurrentUser();
     };
 
@@ -74,13 +100,13 @@
      * @param {int} priority
      * @returns {boolean}
      */
-    Messenger.prototype.sendCommand = function (cmd, priority) {
+    ClientMessenger.prototype.sendCommand = function (cmd, priority) {
         var server = this.getCurrentServer();
         if (!server) {
             console.error('current server not found')
             return false;
         }
-        return this.sendContent(null, server.identifier, cmd, null, priority);
+        return this.sendContent(null, server.getIdentifier(), cmd, null, priority);
     };
 
     /**
@@ -89,7 +115,7 @@
      * @param content
      * @returns {boolean}
      */
-    Messenger.prototype.broadcastContent = function (content) {
+    ClientMessenger.prototype.broadcastContent = function (content) {
         content.setGroup(ID.EVERYONE);
         return this.sendContent(null, ID.EVERYONE, content, null, 1);
     };
@@ -100,15 +126,15 @@
      * @param {Visa} doc
      * @returns {boolean}
      */
-    Messenger.prototype.broadcastVisa = function (doc) {
+    ClientMessenger.prototype.broadcastVisa = function (doc) {
         var user = this.getCurrentUser();
         if (!user) {
             // TODO: save the message content in waiting queue
             throw new ReferenceError('login first');
         }
         var identifier = doc.getIdentifier();
-        if (!user.identifier.equals(identifier)) {
-            throw new ReferenceError('visa document error' + doc.getMap());
+        if (!user.getIdentifier().equals(identifier)) {
+            throw new ReferenceError('visa document error' + doc.toMap());
         }
         doc.setValue(CommonFacebook.EXPIRES_KEY, null);
         // pack and send user document to every contact
@@ -128,13 +154,13 @@
      * @param {Meta} meta
      * @returns {boolean}
      */
-    Messenger.prototype.postDocument = function (doc, meta) {
+    ClientMessenger.prototype.postDocument = function (doc, meta) {
         doc.setValue(CommonFacebook.EXPIRES_KEY, null);
         var cmd = DocumentCommand.response(doc.getIdentifier(), meta, doc);
         return this.sendCommand(cmd, 1);
     };
 
-    Messenger.prototype.postContacts = function (contacts) {
+    ClientMessenger.prototype.postContacts = function (contacts) {
         var facebook = this.getFacebook();
         var user = facebook.getCurrentUser();
         if (!user) {
@@ -150,24 +176,24 @@
         key = user.encrypt(key);
         // 4. pack 'storage' command
         var cmd = new StorageCommand(StorageCommand.CONTACTS);
-        cmd.setIdentifier(user.identifier);
+        cmd.setIdentifier(user.getIdentifier());
         cmd.setData(data);
         cmd.setKey(key);
         return this.sendCommand(cmd, 1);
     };
 
-    Messenger.prototype.queryContacts = function () {
+    ClientMessenger.prototype.queryContacts = function () {
         var facebook = this.getFacebook();
         var user = facebook.getCurrentUser();
         if (!user) {
             throw new Error('current user not found');
         }
         var cmd = new StorageCommand(StorageCommand.CONTACTS);
-        cmd.setIdentifier(user.identifier);
+        cmd.setIdentifier(user.getIdentifier());
         return this.sendCommand(cmd, 1);
     };
 
-    Messenger.prototype.queryMeta = function (identifier) {
+    ClientMessenger.prototype.queryMeta = function (identifier) {
         if (identifier.isBroadcast()) {
             // broadcast ID has no meta
             return false;
@@ -185,7 +211,7 @@
         return this.sendCommand(cmd, 1);
     };
 
-    Messenger.prototype.queryDocument = function (identifier, type) {
+    ClientMessenger.prototype.queryDocument = function (identifier, type) {
         if (identifier.isBroadcast()) {
             // broadcast ID has no document
             return false;
@@ -203,7 +229,7 @@
         return this.sendCommand(cmd, 1);
     };
 
-    Messenger.prototype.queryGroupInfo = function (group, member) {
+    ClientMessenger.prototype.queryGroupInfo = function (group, member) {
         if (group.isBroadcast()) {
             // this group contains all users
             return false;
@@ -238,51 +264,51 @@
             }
             times[user] = now + QUERY_INTERVAL;
             console.log('querying group', group, user);
-            if (this.sendContent(currentUser.identifier, user, cmd, null, 1)) {
+            if (this.sendContent(currentUser.getIdentifier(), user, cmd, null, 1)) {
                 checking = true;
             }
         }
         return checking;
     };
 
-    Messenger.prototype.search = function (keywords) {
+    ClientMessenger.prototype.search = function (keywords) {
         if (keywords === SearchCommand.ONLINE_USERS) {
-            return this.sendCommand(new SearchCommand(), 0);
+            return this.sendCommand(SearchCommand.search(), 0);
         } else {
-            var cmd = new SearchCommand(keywords);
+            var cmd = SearchCommand.search(keywords);
             var bot = ID.parse('archivist@anywhere');
             return this.sendContent(null, bot, cmd, null, 0);
         }
     };
 
-    Messenger.prototype.reportOnline = function () {
+    ClientMessenger.prototype.reportOnline = function () {
         var user = this.getCurrentUser();
         if (!user) {
             console.error('current user not set yet')
             return;
         }
-        var cmd = new ReportCommand(ReportCommand.ONLINE);
+        var cmd = ReportCommand.report(ReportCommand.ONLINE);
         if (this.__offlineTime) {
             cmd.setValue('last_time', this.__offlineTime.getTime() / 1000);
         }
         this.sendCommand(cmd, 0);
     };
 
-    Messenger.prototype.reportOffline = function () {
+    ClientMessenger.prototype.reportOffline = function () {
         var user = this.getCurrentUser();
         if (!user) {
             console.error('current user not set yet')
             return;
         }
-        var cmd = new ReportCommand(ReportCommand.OFFLINE);
+        var cmd = ReportCommand.report(ReportCommand.OFFLINE);
         this.__offlineTime = cmd.getTime();
         this.sendCommand(cmd, 0);
     };
 
     //
-    //  Station Delegate
+    //  ServerDelegate
     //
-    Messenger.prototype.onReceivePackage = function (data, server) {
+    ClientMessenger.prototype.onReceivePackage = function (data, server) {
         try {
             var res = this.processData(data);
             if (res && res.length > 0) {
@@ -293,18 +319,18 @@
         }
     };
 
-    Messenger.prototype.didSendPackage = function (data, server) {
+    ClientMessenger.prototype.didSendPackage = function (data, server) {
         // TODO: mark it sent
     };
 
-    Messenger.prototype.didFailToSendPackage = function (error, data, server) {
+    ClientMessenger.prototype.didFailToSendPackage = function (error, data, server) {
         // TODO: resend it
     };
 
-    Messenger.prototype.onHandshakeAccepted = function (session, server) {
+    ClientMessenger.prototype.onHandshakeAccepted = function (session, server) {
         var user = this.getCurrentUser();
         // broadcast login command
-        var login = new LoginCommand(user.identifier);
+        var login = new LoginCommand(user.getIdentifier());
         login.setAgent(this.getTerminal().getUserAgent());
         login.setStation(server);
         // TODO: set provider
@@ -312,14 +338,14 @@
     };
 
     var s_messenger = null;
-    Messenger.getInstance = function () {
+    ClientMessenger.getInstance = function () {
         if (!s_messenger) {
-            s_messenger = new Messenger();
+            s_messenger = new ClientMessenger();
         }
         return s_messenger;
     };
 
     //-------- namespace --------
-    ns.Messenger = Messenger;
+    ns.ClientMessenger = ClientMessenger;
 
 })(SECHAT, DIMSDK);

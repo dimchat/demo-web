@@ -1,4 +1,30 @@
 ;
+// license: https://mit-license.org
+// =============================================================================
+// The MIT License (MIT)
+//
+// Copyright (c) 2021 Albert Moky
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// =============================================================================
+//
+
 //! require 'namespace.js'
 
 (function (ns, sdk) {
@@ -12,15 +38,15 @@
     var CommonFacebook = ns.CommonFacebook;
 
     var get_messenger = function () {
-        return ns.Messenger.getInstance();
+        return ns.ClientMessenger.getInstance();
     };
 
-    var Facebook = function () {
+    var ClientFacebook = function () {
         CommonFacebook.call(this);
     };
-    sdk.Class(Facebook, CommonFacebook, null);
+    sdk.Class(ClientFacebook, CommonFacebook, null);
 
-    Facebook.prototype.getAvatar = function (identifier) {
+    ClientFacebook.prototype.getAvatar = function (identifier) {
         var avatar = null;
         var doc = this.getDocument(identifier, '*');
         if (doc) {
@@ -38,7 +64,7 @@
         }
     };
 
-    Facebook.prototype.saveMeta = function(meta, identifier) {
+    ClientFacebook.prototype.saveMeta = function(meta, identifier) {
         if (!CommonFacebook.prototype.saveMeta.call(this, meta, identifier)) {
             return false;
         }
@@ -50,19 +76,19 @@
         return true;
     };
 
-    Facebook.prototype.saveDocument = function(doc) {
+    ClientFacebook.prototype.saveDocument = function(doc) {
         if (!CommonFacebook.prototype.saveDocument.call(this, doc)) {
             return false;
         }
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationDocumentUpdated, this, doc.getMap());
+        nc.postNotification(ns.kNotificationDocumentUpdated, this, doc.toMap());
         return true;
     };
 
     //
     //  Contacts
     //
-    Facebook.prototype.addContact = function(contact, user) {
+    ClientFacebook.prototype.addContact = function(contact, user) {
         if (!CommonFacebook.prototype.addContact.call(this, contact, user)) {
             return false;
         }
@@ -74,7 +100,7 @@
         });
         return true;
     };
-    Facebook.prototype.removeContact = function(contact, user) {
+    ClientFacebook.prototype.removeContact = function(contact, user) {
         if (!CommonFacebook.prototype.removeContact.call(this, contact, user)) {
             return false;
         }
@@ -90,7 +116,7 @@
     //
     //  Group
     //
-    Facebook.prototype.addMember = function (member, group) {
+    ClientFacebook.prototype.addMember = function (member, group) {
         if (!CommonFacebook.prototype.addMember.call(this, member, group)) {
             return false;
         }
@@ -102,7 +128,7 @@
         });
         return true;
     };
-    Facebook.prototype.removeMember = function (member, group) {
+    ClientFacebook.prototype.removeMember = function (member, group) {
         if (!CommonFacebook.prototype.removeMember.call(this, member, group)) {
             return false;
         }
@@ -114,7 +140,7 @@
         });
         return true;
     };
-    Facebook.prototype.saveMembers = function (members, group) {
+    ClientFacebook.prototype.saveMembers = function (members, group) {
         if (!CommonFacebook.prototype.saveMembers.call(this, members, group)) {
             return false;
         }
@@ -126,7 +152,7 @@
         });
         return true;
     };
-    Facebook.prototype.removeGroup = function (group) {
+    ClientFacebook.prototype.removeGroup = function (group) {
         if (!CommonFacebook.prototype.removeGroup.call(this, group)) {
             return false;
         }
@@ -141,7 +167,7 @@
     //
     //  Entity DataSource
     //
-    Facebook.prototype.getMeta = function(identifier) {
+    ClientFacebook.prototype.getMeta = function(identifier) {
         var meta = CommonFacebook.prototype.getMeta.call(this, identifier);
         if (!meta) {
             if (identifier.isBroadcast()) {
@@ -156,7 +182,7 @@
         return meta;
     };
 
-    Facebook.prototype.getDocument = function(identifier, type) {
+    ClientFacebook.prototype.getDocument = function(identifier, type) {
         var doc = CommonFacebook.prototype.getDocument.call(this, identifier, type);
         if (!doc || this.isExpiredDocument(doc, true)) {
             if (identifier.isBroadcast()) {
@@ -174,7 +200,7 @@
     //
     //  User DataSource
     //
-    Facebook.prototype.getContacts = function (user) {
+    ClientFacebook.prototype.getContacts = function (user) {
         var contacts = CommonFacebook.prototype.getContacts.call(this, user);
         if (!contacts || contacts.length === 0) {
             // TODO: get default contacts
@@ -185,7 +211,7 @@
     //
     //  Group DataSource
     //
-    Facebook.prototype.getMembers = function (group) {
+    ClientFacebook.prototype.getMembers = function (group) {
         var members = CommonFacebook.prototype.getMembers.call(this, group);
         if (!members || members.length === 0) {
             // TODO: query from group assistants
@@ -196,7 +222,7 @@
         return members;
     };
 
-    Facebook.prototype.getAssistants = function (group) {
+    ClientFacebook.prototype.getAssistants = function (group) {
         var assistants = [
             // desktop.dim.chat
             'assistant@4WBSiDzg9cpZGPqFrQ4bHcq4U5z9QAQLHS',
@@ -207,14 +233,14 @@
     };
 
     var s_facebook = null;
-    Facebook.getInstance = function () {
+    ClientFacebook.getInstance = function () {
         if (!s_facebook) {
-            s_facebook = new Facebook();
+            s_facebook = new ClientFacebook();
         }
         return s_facebook;
     };
 
     //-------- namespace --------
-    ns.Facebook = Facebook;
+    ns.ClientFacebook = ClientFacebook;
 
 })(SECHAT, DIMSDK);

@@ -31,6 +31,30 @@
 //
 
 //! require 'fsm.js'
+//! require 'session.js'
+
+(function (ns, sdk) {
+    'use strict';
+
+    var ServerDelegate = function () {};
+    sdk.Interface(ServerDelegate, null);
+
+    /**
+     *  Callback for handshake accepted
+     *
+     * @param {String} session - new session key
+     * @param {Station} server - current station
+     */
+    ServerDelegate.prototype.onHandshakeAccepted = function (session, server) {
+        console.assert(false, 'implement me!');
+    };
+
+    //-------- namespace --------
+    ns.network.ServerDelegate = ServerDelegate;
+
+    ns.network.registers('ServerDelegate');
+
+})(SECHAT, DIMSDK);
 
 (function (ns, sdk) {
     'use strict';
@@ -44,33 +68,34 @@
     var NotificationCenter = sdk.lnc.NotificationCenter;
     var StateMachineDelegate = sdk.fsm.Delegate;
 
-    var Ship = sdk.startrek.Ship;
-    var Gate = sdk.startrek.Gate;
-    var StarShip = sdk.startrek.StarShip;
+    var DockerStatus = sdk.startrek.port.DockerStatus;
+    var Departure = sdk.startrek.port.Departure;
 
-    var Station = sdk.Station;
-    var MessengerDelegate = sdk.MessengerDelegate;
-    var MessageTransmitter = sdk.MessageTransmitter;
+    var Station = sdk.mkm.Station;
 
+    var Transmitter = ns.network.Transmitter;
     var ServerState = ns.network.ServerState;
     var StateMachine = ns.network.StateMachine;
+    var MessengerDelegate = ns.MessengerDelegate;
 
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
     var get_messenger = function () {
-        return ns.Messenger.getInstance();
+        return ns.ClientMessenger.getInstance();
     };
 
     /**
      *  DIM Station
      */
-    var Server = function(identifier, host, port) {
+    var Server = function(identifier, host, port, name) {
         Station.call(this, identifier, host, port);
-        this.__delegate = null; // StationDelegate
+        this.__delegate = null; // ServerDelegate
         // connection state machine
         this.__fsm = new StateMachine(this);
         this.__fsm.start();
+
+        this.__name = name ? name : identifier.getName();
 
         this.__session = new ns.network.Session(host, port, get_messenger());
         this.__sessionKey = null; // session key
@@ -78,7 +103,11 @@
         this.__paused = false;
         this.__currentUser = null; // User
     };
-    sdk.Class(Server, Station, [MessengerDelegate, StateMachineDelegate]);
+    sdk.Class(Server, Station, [Transmitter, MessengerDelegate, StateMachineDelegate], null);
+
+    Server.prototype.getName = function () {
+        return this.__name;
+    };
 
     Server.prototype.getDelegate = function () {
         return this.__delegate;
@@ -100,33 +129,38 @@
     };
 
     Server.prototype.getCurrentState = function () {
-        return this.__fsm.getCurrentState();
+        var state = this.__fsm.getCurrentState();
+        if (!state) {
+            state = this.__fsm.getDefaultState();
+        }
+        return state;
     };
 
     Server.prototype.getStatus = function () {
-        return this.__session.gate.getStatus();
+        return this.__session.getStatus();
     };
 
     var pack = function (cmd) {
-        if (!this.__currentUser) {
+        var currentUser = this.__currentUser;
+        if (!currentUser) {
             throw new Error('current user not set');
         }
-        var sender = this.__currentUser.identifier;
-        var receiver = this.identifier;
+        var messenger = get_messenger();
         var facebook = get_facebook();
+        var receiver = this.getIdentifier();
         if (!facebook.getPublicKeyForEncryption(receiver)) {
             cmd.setGroup(ID.EVERYONE);
         }
-        var messenger = get_messenger();
+        var sender = currentUser.getIdentifier();
         var env = Envelope.create(sender, receiver, null);
         var iMsg = InstantMessage.create(env, cmd);
         var sMsg = messenger.encryptMessage(iMsg);
         if (!sMsg) {
-            throw new EvalError('failed to encrypt message: ' + iMsg.getMap());
+            throw new EvalError('failed to encrypt message: ' + iMsg.toMap());
         }
         var rMsg = messenger.signMessage(sMsg);
         if (!rMsg) {
-            throw new EvalError('failed to sign message: ' + sMsg.getMap());
+            throw new EvalError('failed to sign message: ' + sMsg.toMap());
         }
         return rMsg;
     };
@@ -140,20 +174,23 @@
     };
 
     Server.prototype.handshake = function (newSessionKey) {
-        if (!this.__currentUser) {
+        var currentUser = this.__currentUser;
+        if (!currentUser) {
             // current user not set yet
             return;
         }
         // check FSM state == 'Handshaking'
         var state = this.getCurrentState();
-        if (!state.equals(ServerState.CONNECTED) && !state.equals(ServerState.HANDSHAKING)) {
+        if (!state.equals(ServerState.HANDSHAKING) &&
+            !state.equals(ServerState.CONNECTED) &&
+            !state.equals(ServerState.RUNNING)) {
             // FIXME: sometimes the connection state will be reset
             console.log('server state not handshaking', state);
             return;
         }
         // check connection state == 'Connected'
         var status = this.getStatus();
-        if (!status.equals(Gate.Status.CONNECTED)) {
+        if (!DockerStatus.READY.equals(status)) {
             // FIXME: sometimes the connection will be lost while handshaking
             console.log('server not connected');
             return;
@@ -164,21 +201,21 @@
         this.__fsm.setSessionKey(null);
 
         // create handshake command
-        var cmd = new HandshakeCommand(null, this.__sessionKey);
+        var cmd = HandshakeCommand.restart(this.__sessionKey);
         set_last_time.call(this, cmd);
         var rMsg = pack.call(this, cmd);
         // first handshake?
         if (cmd.getState().equals(HandshakeState.START)) {
             // [Meta/Visa protocol]
-            var meta = this.__currentUser.getMeta();
-            var visa = this.__currentUser.getVisa();
+            var meta = currentUser.getMeta();
+            var visa = currentUser.getVisa();
             rMsg.setMeta(meta);
             rMsg.setVisa(visa);
         }
         // send out directly
         var data = get_messenger().serializeMessage(rMsg);
         // Urgent command
-        this.__session.sendPayload(data, StarShip.URGENT, null);
+        this.__session.sendData(data, Departure.URGENT.valueOf());
     };
 
     Server.prototype.handshakeAccepted = function () {
@@ -193,7 +230,8 @@
         this.__fsm.setSessionKey(this.__sessionKey);
 
         // call client
-        this.getDelegate().onHandshakeAccepted(this.__sessionKey, this);
+        var client = this.getDelegate();
+        client.onHandshakeAccepted(this.__sessionKey, this);
     };
 
     //
@@ -231,31 +269,22 @@
         }
     };
 
-    //
-    //  MessengerDelegate
-    //
-
-    Server.prototype.sendPackage = function(data, handler, priority) {
-        var delegate = null;
-        if (handler instanceof MessageTransmitter.CompletionHandler) {
-            var callback = handler.callback;
-            if (sdk.Interface.conforms(callback, Ship.Delegate)) {
-                delegate = callback;
-            }
-        }
-        if (this.__session.sendPayload(data, priority, delegate)) {
-            if (handler) {
-                handler.onSuccess();
-            }
-            return true;
-        } else {
-            if (handler) {
-                handler.onFailed(new Error('failed to send data package'));
-            }
-            return false;
-        }
+    // Override
+    Server.prototype.sendContent = function (sender, receiver, content, priority) {
+        return this.__session.sendContent(sender, receiver, content, priority);
     };
 
+    // Override
+    Server.prototype.sendInstantMessage = function (iMsg, priority) {
+        return this.__session.sendInstantMessage(iMsg, priority);
+    };
+
+    // Override
+    Server.prototype.sendReliableMessage = function (rMsg, priority) {
+        return this.__session.sendReliableMessage(rMsg, priority);
+    };
+
+    // Override
     Server.prototype.uploadData = function (data, iMsg) {
         var sender = iMsg.getSender();
         var content = iMsg.getContent();
@@ -264,6 +293,7 @@
         return ftp.uploadEncryptedData(data, filename, sender);
     };
 
+    // Override
     Server.prototype.downloadData = function (url, iMsg) {
         var ftp = ns.network.FtpServer;
         return ftp.downloadEncryptedData(url);
@@ -273,30 +303,42 @@
     //  StateMachine Delegate
     //
 
-    Server.prototype.enterState = function (state, machine) {
+    Server.prototype.enterState = function (next, machine) {
+        // call before state changed
+    };
+    Server.prototype.exitState = function (previous, machine) {
+        // called after state changed
+        var current = machine.getCurrentState();
+        console.info('server state changed:', previous, current);
+        if (!current) {
+            return;
+        }
+        var stateName = current.name;
         var info = {
-            'state': state.name
+            'state': stateName
         };
         var nc = NotificationCenter.getInstance();
         nc.postNotification(ns.kNotificationServerStateChanged, this, info);
 
-        if (state.equals(ServerState.HANDSHAKING)) {
+        if (stateName === ServerState.HANDSHAKING) {
             // start handshake
-            var session = this.session;
-            this.session = null;
-            this.handshake(session);
-        } else if (state.equals(ServerState.RUNNING)) {
+            this.handshake(null);
+        } else if (stateName === ServerState.RUNNING) {
             // TODO: send all packages waiting
-        } else if (state.equals(ServerState.ERROR)) {
+        } else if (stateName === ServerState.ERROR) {
             console.error('Station connection error!');
-            nc.postNotification(ns.kNotificationStationError, this, null);
+            // TODO: reconnect?
         }
     };
-    Server.prototype.exitState = function (state, machine) {
+    Server.prototype.pauseState = function (current, machine) {
+        // TODO: reuse session key?
     };
-    Server.prototype.pauseState = function (state, machine) {
-    };
-    Server.prototype.resumeState = function (state, machine) {
+    Server.prototype.resumeState = function (current, machine) {
+        var stateName = current.toString();
+        if (stateName === ServerState.RUNNING) {
+            // switch state for re-login
+            this.__fsm.setSessionKey(null);
+        }
     };
 
     //-------- namespace --------

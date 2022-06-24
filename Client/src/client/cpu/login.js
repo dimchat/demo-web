@@ -35,18 +35,18 @@
 (function (ns, sdk) {
     'use strict';
 
-    var CommandProcessor = sdk.cpu.CommandProcessor;
+    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
 
     /**
      *  Login Command Processor
      */
-    var LoginCommandProcessor = function () {
-        CommandProcessor.call(this);
+    var LoginCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(LoginCommandProcessor, CommandProcessor, null);
+    sdk.Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    LoginCommandProcessor.prototype.execute = function (cmd, rMsg) {
+    LoginCommandProcessor.prototype.process = function (cmd, rMsg) {
         // no need to response login command
         return null;
     };

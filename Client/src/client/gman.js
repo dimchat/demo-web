@@ -35,10 +35,10 @@
     var GroupCommand = sdk.protocol.GroupCommand;
 
     var get_messenger = function () {
-        return ns.Messenger.getInstance();
+        return ns.ClientMessenger.getInstance();
     };
     var get_facebook = function () {
-        return ns.Facebook.getInstance();
+        return ns.ClientFacebook.getInstance();
     };
 
     // send command to current station
@@ -56,9 +56,9 @@
         var messenger = get_messenger();
         var facebook = get_messenger();
         var user = facebook.getCurrentUser();
-        var sender = user.identifier;
+        var sender = user.getIdentifier();
         for (var i = 0; i < members.length; ++i) {
-            messenger.sendContent(sender, members[i], cmd, null, 0);
+            messenger.sendContent(sender, members[i], cmd, 0);
         }
     };
 
@@ -77,30 +77,31 @@
      * @return {boolean} true on success
      */
     GroupManager.prototype.send = function (content) {
+        var facebook = get_facebook();
+        var messenger = get_messenger();
         // check group ID
-        var gid = content.getGroup();
-        if (gid) {
-            if (!this.__group.equals(gid)) {
-                throw new Error('group ID not match: ' + this.__group + ', ' + gid);
-            }
-        } else {
-            content.setGroup(this.__group);
+        var group = content.getGroup();
+        if (!group) {
+            group = this.__group;
+            content.setGroup(group);
+        } else if (!this.__group.equals(group)) {
+            throw new Error('group ID not match: ' + this.__group + ', ' + group);
         }
         // check members
-        var facebook = get_facebook();
-        var members = facebook.getMembers(this.__group);
+        var members = facebook.getMembers(group);
         if (!members || members.length === 0) {
             // get group assistant
-            var assistants = facebook.getAssistants(this.__group);
-            if (!assistants || assistants.length === 0) {
-                throw new Error('failed to get assistants for group: ' + this.__group);
+            var bots = facebook.getAssistants(group);
+            if (!bots || bots.length === 0) {
+                throw new Error('failed to get assistants for group: ' + group);
             }
             // querying assistants for group info
-            get_messenger().queryGroupInfo(this.__group, assistants);
+            messenger.queryGroupInfo(group, bots);
+            // TODO: suspend this content?
             return false;
         }
         // let group assistant to split and deliver this message to all members
-        return get_messenger().sendContent(null, this.__group, content, null, 0);
+        return messenger.sendContent(null, group, content, 0);
     };
 
     /**
@@ -133,10 +134,11 @@
             cmd = MetaCommand.response(group, meta);
         }
 
+        // 1. send 'meta/document' to station and bots
+        send_command(cmd);                    // to current station
+        send_group_command(cmd, bots);        // to group assistants
+
         if (count <= 2) {  // new group?
-            // 1. send 'meta/document' to station and bots
-            send_command(cmd);                    // to current station
-            send_group_command(cmd, bots);        // to group assistants
             // 2. update local storage
             members = addMembers(newMembers, group);
             send_group_command(cmd, members);     // to all members
@@ -145,9 +147,6 @@
             send_group_command(cmd, bots);        // to group assistants
             send_group_command(cmd, members);     // to all members
         } else {
-            // 1. send 'meta/document' to station, bots and all members
-            send_command(cmd);                    // to current station
-            send_group_command(cmd, bots);        // to group assistants
             //send_group_command(cmd, members);     // to old members
             send_group_command(cmd, newMembers);  // to new members
             // 2. send 'invite' command with new members to old members
@@ -225,11 +224,11 @@
         }
 
         // 0. check members
-        if (bots.indexOf(user.identifier) >= 0) {
-            throw new Error('Group assistant cannot quit: ' + user.identifier);
+        if (bots.indexOf(user.getIdentifier()) >= 0) {
+            throw new Error('Group assistant cannot quit: ' + user.getIdentifier());
         }
-        if (user.identifier.equals(owner)) {
-            throw new Error('Group owner cannot quit: ' + user.identifier);
+        if (user.getIdentifier().equals(owner)) {
+            throw new Error('Group owner cannot quit: ' + user.getIdentifier());
         }
 
         // 1. send 'quit' command to all members
@@ -242,6 +241,19 @@
 
         // 2. update local storage
         return facebook.removeGroup(group);
+    };
+
+    /**
+     *  Query group info
+     *
+     * @return {boolean} false on error
+     */
+    GroupManager.prototype.query = function () {
+        var facebook = get_facebook();
+        var messenger = get_messenger();
+        var group = this.__group;
+        var bots = facebook.getAssistants(group);
+        return messenger.queryGroupInfo(group, bots);
     };
 
     //
@@ -259,7 +271,10 @@
                 ++count;
             }
         }
-        return count > 0 && facebook.saveMembers(members, group);
+        if (count > 0) {
+            facebook.saveMembers(members, group);
+        }
+        return members;
     };
     var removeMembers = function (outMembers, group) {
         var facebook = get_facebook();
