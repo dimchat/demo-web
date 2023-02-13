@@ -69,6 +69,20 @@
                 SearchCommand.ONLINE_USERS === command) {
                 return new SearchCommandProcessor(facebook, messenger);
             }
+            // group commands
+            if (command === 'group') {
+                return new ns.cpu.GroupCommandProcessor(facebook, messenger);
+            } else if (command === GroupCommand.INVITE) {
+                return new ns.cpu.InviteCommandProcessor(facebook, messenger);
+            } else if (command === GroupCommand.EXPEL) {
+                return new ns.cpu.ExpelCommandProcessor(facebook, messenger);
+            } else if (command === GroupCommand.QUIT) {
+                return new ns.cpu.QuitCommandProcessor(facebook, messenger);
+            } else if (command === GroupCommand.QUERY) {
+                return new ns.cpu.QueryCommandProcessor(facebook, messenger);
+            } else if (command === GroupCommand.RESET) {
+                return new ns.cpu.ResetCommandProcessor(facebook, messenger);
+            }
             // others
             return CommonProcessorCreator.prototype.createCommandProcessor.call(this, type, command);
         }
