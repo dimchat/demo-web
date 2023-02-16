@@ -27,49 +27,50 @@
 
 //! require 'wrapper.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Dictionary = sdk.type.Dictionary;
+    var Class = ns.type.Class;
+    var Arrays = ns.type.Arrays;
     var MessageWrapper = ns.network.MessageWrapper;
 
     var MessageQueue = function () {
         this.__priorities = [];  // List[Integer]
-        this.__fleets = new Dictionary();  // Integer => List[MessageWrapper]
+        this.__fleets = {};      // Integer => List[MessageWrapper]
     };
-    sdk.Class(MessageQueue, null, null, null);
+    Class(MessageQueue, null, null, null);
 
     /**
      *  Append message with departure ship
      *
-     * @param {ReliableMessage|*} rMsg
-     * @param {Departure|Ship} departureShip
-     * @return {boolean}
+     * @param {ReliableMessage|*} rMsg   - outgoing message
+     * @param {Departure|Ship} departure - departure ship
+     * @return {boolean} false on duplicated
      */
-    MessageQueue.prototype.append = function (rMsg, departureShip) {
-        var priority = departureShip.getPriority();
+    MessageQueue.prototype.append = function (rMsg, departure) {
         // 1. choose an array with priority
-        var queue = this.__fleets.getValue(priority);
-        if (queue) {
-            // 1.0. check duplicated
+        var priority = departure.getPriority();
+        var array = this.__fleets[priority];
+        if (array) {
+            // 1.1. check duplicated
             var signature = rMsg.getValue('signature');
-            var wrapper, item;
-            for (var i = queue.length - 1; i >= 0; --i) {
-                wrapper = queue[i];
-                item = wrapper.getMessage();
+            var item;
+            for (var i = array.length - 1; i >= 0; --i) {
+                item = array[i].getMessage();
                 if (item && item.getValue('signature') === signature) {
                     // duplicated message
-                    return true;
+                    return false;
                 }
             }
         } else {
-            // 1.1. create new array for this priority
-            queue = [];
-            this.__fleets.setValue(priority, queue);
-            // 1.2. insert the priority in a sorted list
+            // 1.2. create new array for this priority
+            array = [];
+            this.__fleets[priority] = array;
+            // 1.3. insert the priority in a sorted list
             insert_priority(priority, this.__priorities);
         }
-        queue.push(new MessageWrapper(rMsg, departureShip));
+        // 2. append with wrapper
+        array.push(new MessageWrapper(rMsg, departure));
         return true;
     };
     var insert_priority = function (prior, priorities) {
@@ -90,7 +91,8 @@
             // keep going
         }
         // insert new value before the bigger one
-        priorities.splice(index, 0, prior);
+        Arrays.insert(priorities, index, prior);
+        //priorities.splice(index, 0, prior);
     };
 
     /**
@@ -100,73 +102,37 @@
      */
     MessageQueue.prototype.next = function () {
         var priority;
-        var queue, wrapper;
-        var i, j;
-        for (i = 0; i < this.__priorities.length; ++i) {
-            // 1. get tasks with priority
+        var array;
+        for (var i = 0; i < this.__priorities.length; ++i) {
+            // get first task
             priority = this.__priorities[i];
-            queue = this.__fleets.getValue(priority);
-            if (!queue) {
-                continue;
-            }
-            // 2. seeking new task in this priority
-            for (j = 0; j < queue.length; ++j) {
-                wrapper = queue[j];
-                if (wrapper.isVirgin()) {
-                    // got it, mark sent
-                    wrapper.mark();
-                    return wrapper;
-                }
-            }
-        }
-        return null;
-    };
-
-    /**
-     *  Remove message wrapper which message sent or expired
-     *
-     * @param {number} now - timestamp
-     * @return {MessageWrapper|number}
-     */
-    MessageQueue.prototype.eject = function (now) {
-        var priority;
-        var queue, wrapper;
-        var i, j;
-        for (i = 0; i < this.__priorities.length; ++i) {
-            // 1. get tasks with priority
-            priority = this.__priorities[i];
-            queue = this.__fleets.getValue(priority);
-            if (!queue) {
-                continue;
-            }
-            // 2. seeking new task in this priority
-            for (j = 0; j < queue.length; ++j) {
-                wrapper = queue[j];
-                if (!wrapper.getMessage() || wrapper.isExpired(now)) {
-                    // got it, remove from the queue
-                    queue.splice(i, 1)
-                    return wrapper;
-                }
+            array = this.__fleets[priority];
+            if (array && array.length > 0) {
+                return array.shift();
             }
         }
         return null;
     };
 
     MessageQueue.prototype.purge = function () {
-        var count = 0;
-        var now = (new Date()).getTime();
-        var wrapper = this.eject(now);
-        while (wrapper) {
-            count += 1;
-            // TODO: callback for failed task?
-            wrapper = this.eject(now);
+        var priority;
+        var array;
+        for (var i = this.__priorities.length - 1; i >= 0; --i) {
+            priority = this.__priorities[i];
+            array = this.__fleets[priority];
+            if (!array) {
+                // the priority is empty
+                this.__priorities.splice(i, 1);
+            } else if (array.length === 0) {
+                // this priority is empty
+                delete this.__fleets[priority];
+                this.__priorities.splice(i, 1);
+            }
         }
-        return count;
+        return null;
     };
 
     //-------- namespace --------
     ns.network.MessageQueue = MessageQueue;
 
-    ns.network.registers('MessageQueue');
-
-})(SECHAT, DIMSDK);
+})(SECHAT);

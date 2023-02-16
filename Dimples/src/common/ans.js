@@ -35,6 +35,7 @@
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var ID = ns.protocol.ID;
     var AddressNameService = ns.AddressNameService;
 
@@ -59,9 +60,9 @@
         this.__caches = caches;      // String => ID
         this.__tables = {}           // String(ID) => String[], name list
     };
-    ns.Class(AddressNameServer, Object, [AddressNameService], null);
+    Class(AddressNameServer, Object, [AddressNameService], null);
 
-    // protected
+    // Override
     AddressNameServer.prototype.isReserved = function (name) {
         return this.__reserved[name] === true;
     };
@@ -117,4 +118,4 @@
     //-------- namespace --------
     ns.AddressNameServer = AddressNameServer;
 
-})(DIMP);
+})(SECHAT);

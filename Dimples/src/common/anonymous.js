@@ -25,27 +25,31 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimp.js>
+//! require <sdk.js>
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var NetworkType = sdk.protocol.NetworkType;
-    var ID = sdk.protocol.ID;
-    var BTCAddress = sdk.mkm.BTCAddress;
-    var ETHAddress = sdk.mkm.ETHAddress;
+    var Interface = ns.type.Interface;
+    var Hex = ns.format.Hex;
+    var Base58 = ns.format.Base58;
+    var EntityType = ns.protocol.EntityType;
+    var ID = ns.protocol.ID;
+    var BTCAddress = ns.mkm.BTCAddress;
+    var ETHAddress = ns.mkm.ETHAddress;
 
     var Anonymous = {
 
         getName: function (identifier) {
             var name;
-            if (sdk.Interface.conforms(identifier, ID)) {
+            if (Interface.conforms(identifier, ID)) {
                 name = identifier.getName();
                 if (!name || name.length === 0) {
                     name = get_name(identifier.getType());
                 }
             } else {  // Address
-                name = get_name(identifier.getNetwork());
+                name = get_name(identifier.getType());
             }
             var number = this.getNumberString(identifier);
             return name + ' (' + number + ')';
@@ -62,44 +66,44 @@
         },
 
         getNumber: function (address) {
-            if (sdk.Interface.conforms(address, ID)) {
+            if (Interface.conforms(address, ID)) {
                 address = address.getAddress();
             }
             if (address instanceof BTCAddress) {
-                return btc_number(address);
+                return btc_number(address.toString());
             }
             if (address instanceof ETHAddress) {
-                return eth_number(address);
+                return eth_number(address.toString());
             }
             throw new TypeError('address error: ' + address.toString());
         }
     };
 
     var get_name = function (type) {
-        if (NetworkType.ROBOT.equals(type)) {
-            return 'Robot';
+        if (EntityType.BOT.equals(type)) {
+            return 'Bot';
         }
-        if (NetworkType.STATION.equals(type)) {
+        if (EntityType.STATION.equals(type)) {
             return 'Station';
         }
-        if (NetworkType.PROVIDER.equals(type)) {
-            return 'SP';
+        if (EntityType.ISP.equals(type)) {
+            return 'ISP';
         }
-        if (NetworkType.isUser(type)) {
+        if (EntityType.isUser(type)) {
             return 'User';
         }
-        if (NetworkType.isGroup(type)) {
+        if (EntityType.isGroup(type)) {
             return 'Group';
         }
         return 'Unknown';
     };
 
-    var btc_number = function (btc) {
-        var data = sdk.format.Base58.decode(btc.toString());
+    var btc_number = function (address) {
+        var data = Base58.decode(address);
         return user_number(data);
     };
-    var eth_number = function (eth) {
-        var data = sdk.format.Hex.decode(eth.toString().substr(2))
+    var eth_number = function (address) {
+        var data = Hex.decode(address.substr(2))
         return user_number(data);
     };
     var user_number = function (cc) {
@@ -114,6 +118,4 @@
     //-------- namespace --------
     ns.Anonymous = Anonymous;
 
-    ns.registers('Anonymous');
-
-})(SECHAT, DIMSDK);
+})(DIMP);

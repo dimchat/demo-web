@@ -27,14 +27,14 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
-    var Document = sdk.protocol.Document;
+    var ID = ns.protocol.ID;
+    var Document = ns.protocol.Document;
 
-    var Storage = sdk.dos.LocalStorage;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Storage = ns.db.LocalStorage;
+    var NotificationCenter = ns.lnc.NotificationCenter;
 
     ns.db.DocumentTable = {
 
@@ -114,4 +114,4 @@
         return results;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

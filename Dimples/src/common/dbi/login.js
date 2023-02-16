@@ -25,14 +25,14 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
+    var ID = ns.protocol.ID;
 
-    var Storage = sdk.dos.LocalStorage;
+    var Storage = ns.db.LocalStorage;
 
     ns.db.LoginTable = {
 
@@ -57,4 +57,4 @@
         __docs: null
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

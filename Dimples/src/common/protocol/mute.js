@@ -35,6 +35,7 @@
 (function (ns) {
     'use strict';
 
+    var Interface = ns.type.Interface;
     var ID = ns.protocol.ID;
     var Command = ns.protocol.Command;
 
@@ -43,15 +44,13 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command : "mute",
-     *      list    : []      // mute-list
+     *      cmd  : "mute",
+     *      list : []      // mute-list
      *  }
      */
-    var MuteCommand = function (info) {};
-    ns.Interface(MuteCommand, [Command]);
+    var MuteCommand = Interface(null, [Command]);
 
-    // Command.MUTE = 'mute';
-    MuteCommand.MUTE = 'mute';
+    Command.MUTE = 'mute';
 
     /**
      *  Set muted list
@@ -59,86 +58,86 @@
      * @param {ID[]} list
      */
     MuteCommand.prototype.setMuteCList = function (list) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     MuteCommand.prototype.getMuteCList = function () {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-    MuteCommand.setMuteList = function (list, cmd) {
-        if (list/* && list.length > 0*/) {
-            cmd['list'] = ID.revert(list);
-        } else {
-            delete cmd['list'];
-        }
-    };
-    MuteCommand.getMuteList = function (cmd) {
-        var list = cmd['list'];
-        if (list/* && list.length > 0*/) {
-            return ID.convert(list);
-        } else {
-            return list;
-        }
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.MuteCommand = MuteCommand;
 
-    ns.protocol.registers('MuteCommand');
-
-})(DIMSDK);
+})(DIMP);
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
+    var ID = ns.protocol.ID;
+    var Command = ns.protocol.Command;
     var MuteCommand = ns.protocol.MuteCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create mute command
      *
      *  Usages:
-     *      1. new BaseMuteCommand();
+     *      1. new BaseMuteCommand(map);
      *      2. new BaseMuteCommand(list);
-     *      3. new BaseMuteCommand(map);
+     *      3. new BaseMuteCommand();
      */
     var BaseMuteCommand = function (info) {
+        var list = null;
         if (arguments.length === 0) {
             // new BaseMuteCommand();
-            BaseCommand.call(this, MuteCommand.MUTE)
-            this.__list = null;
+            BaseCommand.call(this, Command.MUTE)
         } else if (arguments[0] instanceof Array) {
             // new BaseMuteCommand(list);
-            BaseCommand.call(this, MuteCommand.MUTE)
-            this.setBlockCList(arguments[0]);
+            BaseCommand.call(this, Command.MUTE)
+            list = arguments[0]
         } else {
             // new BaseMuteCommand(map);
             BaseCommand.call(this, arguments[0]);
-            this.__list = null;
         }
+        if (list) {
+            this.setValue('list', ID.revert(list));
+        }
+        this.__list = list;
     };
-    ns.Class(BaseMuteCommand, BaseCommand, [MuteCommand], {
+    Class(BaseMuteCommand, BaseCommand, [MuteCommand], {
 
         // Override
         getMuteCList: function () {
-            if (!this.__list) {
-                var dict = this.toMap();
-                this.__list = MuteCommand.getMuteList(dict);
+            if (this.__list === null) {
+                var list = this.getValue('list');
+                if (list/* && list.length > 0*/) {
+                    this.__list = ID.convert(list);
+                } else {
+                    this.__list = [];
+                }
             }
             return this.__list;
         },
 
         // Override
         setMuteCList: function (list) {
-            var dict = this.toMap();
-            MuteCommand.setMuteList(list, dict);
             this.__list = list;
+            if (list/* && list.length > 0*/) {
+                list = ID.revert(list);
+            }
+            this.setValue('list', list);
         }
     });
 
+    //
+    //  Factory
+    //
+
+    MuteCommand.create = function (list) {
+        return new BaseMuteCommand(list);
+    };
+
     //-------- namespace --------
-    ns.dkd.BaseMuteCommand = BaseMuteCommand;
+    ns.dkd.cmd.MuteCommand = BaseMuteCommand;
 
-    ns.dkd.registers('BaseMuteCommand');
-
-})(DIMSDK);
+})(DIMP);

@@ -30,70 +30,60 @@
 // =============================================================================
 //
 
-//!require 'protocol/receipt.js'
-//!require 'protocol/handshake.js'
-//!require 'protocol/login.js'
-//!require 'protocol/block.js'
-//!require 'protocol/mute.js'
-//!require 'protocol/storage.js'
+//!require 'protocol/*.js'
 
 (function (ns) {
     'use strict';
 
-    var ContentType = ns.protocol.ContentType;
-    var Content = ns.protocol.Content;
     var Command = ns.protocol.Command;
-    var MuteCommand = ns.protocol.MuteCommand;
-    var BlockCommand = ns.protocol.BlockCommand;
-    var StorageCommand = ns.protocol.StorageCommand;
-    var ContentFactory = ns.core.ContentFactory;
-    var CommandFactory = ns.core.CommandFactory;
+    var CommandFactory = ns.CommandFactory;
 
-    /**
-     *  Register all content/command factories
-     */
-    var registerAllFactories = function () {
-        //
-        //  Register core factories
-        //
-        ns.core.registerContentFactories();
-        ns.core.registerCommandFactories();
+    var HandshakeCommand = ns.dkd.cmd.HandshakeCommand;
+    var ReceiptCommand = ns.dkd.cmd.ReceiptCommand;
+    var LoginCommand = ns.dkd.cmd.LoginCommand;
+    var ReportCommand = ns.dkd.cmd.ReportCommand;
 
-        //
-        //  Register extended content factories
-        //
-        Content.setFactory(ContentType.CUSTOMIZED, new ContentFactory(ns.dkd.CustomizedContent));
-        Content.setFactory(ContentType.APPLICATION, new ContentFactory(ns.dkd.CustomizedContent));
+    var MuteCommand = ns.dkd.cmd.MuteCommand;
+    var BlockCommand = ns.dkd.cmd.BlockCommand;
+    var SearchCommand = ns.dkd.cmd.SearchCommand;
+    var StorageCommand = ns.dkd.cmd.StorageCommand;
 
-        //
-        //  Register extended command factories
-        //
-        registerCommandFactories();
-    };
-    var registerCommandFactories = function () {
+    var registerAllFactories = ns.registerAllFactories;
 
-        // Receipt Command
-        Command.setFactory(Command.RECEIPT, new CommandFactory(ns.dkd.BaseReceiptCommand));
-        // Handshake Command
-        Command.setFactory(Command.HANDSHAKE, new CommandFactory(ns.dkd.BaseHandshakeCommand));
-        // Login Command
-        Command.setFactory(Command.LOGIN, new CommandFactory(ns.dkd.BaseLoginCommand));
+    var registerExtraCommandFactories = function () {
 
-        // Mute Command
-        Command.setFactory(MuteCommand.MUTE, new CommandFactory(ns.dkd.BaseMuteCommand));
-        // Block Command
-        Command.setFactory(BlockCommand.BLOCK, new CommandFactory(ns.dkd.BaseBlockCommand));
+        // Handshake
+        Command.setFactory(Command.HANDSHAKE, new CommandFactory(HandshakeCommand));
+        // Receipt
+        Command.setFactory(Command.RECEIPT, new CommandFactory(ReceiptCommand));
+        // Login
+        Command.setFactory(Command.LOGIN, new CommandFactory(LoginCommand));
+        // Report (online, offline)
+        Command.setFactory(Command.REPORT, new CommandFactory(ReportCommand));
+        Command.setFactory('broadcast', new CommandFactory(ReportCommand));
+        Command.setFactory(Command.ONLINE, new CommandFactory(ReportCommand));
+        Command.setFactory(Command.OFFLINE, new CommandFactory(ReportCommand));
 
-        // Storage Command
-        var spu = new CommandFactory(ns.dkd.BaseStorageCommand);
-        Command.setFactory(StorageCommand.STORAGE, spu);
-        Command.setFactory(StorageCommand.CONTACTS, spu);
-        Command.setFactory(StorageCommand.PRIVATE_KEY, spu);
+        // Mute
+        Command.setFactory(Command.MUTE, new CommandFactory(MuteCommand));
+        // Block
+        Command.setFactory(Command.BLOCK, new CommandFactory(BlockCommand));
+        // Search (users)
+        Command.setFactory(Command.SEARCH, new CommandFactory(SearchCommand));
+        Command.setFactory(Command.ONLINE_USERS, new CommandFactory(SearchCommand));
+        // Storage (contacts, private_key)
+        Command.setFactory(Command.STORAGE, new CommandFactory(StorageCommand));
+        Command.setFactory(Command.CONTACTS, new CommandFactory(StorageCommand));
+        Command.setFactory(Command.PRIVATE_KEY, new CommandFactory(StorageCommand));
     };
 
-    //-------- namespace --------
-    ns.registerAllFactories = registerAllFactories;
+    //
+    //  Register core factories
+    //
+    registerAllFactories();
+    //
+    //  Register extra command factories
+    //
+    registerExtraCommandFactories();
 
-    ns.registers('registerAllFactories');
-
-})(DIMSDK);
+})(DIMP);

@@ -25,13 +25,17 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimp.js>
+//! require <sdk.js>
+//! require <plugins.js>
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var SymmetricKey = sdk.crypto.SymmetricKey;
-    var CipherKeyDelegate = sdk.CipherKeyDelegate;
+    var Class = ns.type.Class;
+    var SymmetricKey = ns.crypto.SymmetricKey;
+    var PlainKey = ns.crypto.PlainKey;
+    var CipherKeyDelegate = ns.CipherKeyDelegate;
 
     /**
      *  Symmetric Keys Cache
@@ -44,13 +48,13 @@
         this.__keyMap = {};   // str(ID) => {str(ID) => map(SymmetricKey)}
         this.keyTable = null; // MsgKeyTable
     };
-    sdk.Class(KeyStore, Object, [CipherKeyDelegate], null);
+    Class(KeyStore, Object, [CipherKeyDelegate], null);
 
     // Override
     KeyStore.prototype.getCipherKey = function (sender, receiver, generate) {
         if (receiver.isBroadcast()) {
             // broadcast message has no key
-            return sdk.crypto.PlainKey.getInstance();
+            return PlainKey.getInstance();
         }
         var key;
         // try from memory cache
@@ -108,6 +112,4 @@
     //-------- namespace --------
     ns.KeyStore = KeyStore;
 
-    ns.registers('KeyStore');
-
-})(SECHAT, DIMSDK);
+})(DIMP);

@@ -30,6 +30,7 @@
 (function (ns, sdk) {
     'use strict';
 
+    var Interface = ns.typ0e.Interface;
     var Command = sdk.protocol.Command;
 
     /**
@@ -37,78 +38,119 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command  : "search",        // or "users"
-     *
+     *      cmd      : "search",        // or "users"
      *      keywords : "keywords",      // keyword string
+     *
+     *      start    : 0,
+     *      limit    : 20,
+     *
+     *      station  : "STATION_ID",    // station ID
      *      users    : ["ID"],          // user ID list
      *      results  : {"ID": {meta}, } // user's meta map
      *  }
      */
-    var SearchCommand = function () {};
-    sdk.Interface(SearchCommand, [Command]);
+    var SearchCommand = Interface(null, [Command]);
 
-    SearchCommand.SEARCH = 'search';
-    SearchCommand.ONLINE_USERS = 'users'; // search online users
+    Command.SEARCH = 'search';
+    Command.ONLINE_USERS = 'users'; // search online users
 
+    /**
+     *  Set keywords
+     *
+     * @param {string} keywords
+     */
     SearchCommand.prototype.setKeywords = function (keywords) {
-        console.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
+    };
+    SearchCommand.prototype.getKeywords = function () {
+        throw new Error('NotImplemented');
     };
 
-    SearchCommand.prototype.getUsers = function () {
-        console.assert(false, 'implement me!');
-        return null;
+    SearchCommand.prototype.setRange = function (start, limit) {
+        throw new Error('NotImplemented');
+    };
+    SearchCommand.prototype.getRange = function () {
+        throw new Error('NotImplemented');
     };
 
     /**
-     *  Get user metas mapping to ID strings
+     *  Get user ID list
      *
-     * @returns {*} - meta dictionary
+     * @return {ID[]}
+     */
+    SearchCommand.prototype.getUsers = function () {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Get user metas mapping to IDs
+     *
+     * @returns {{}} meta dictionary
      */
     SearchCommand.prototype.getResults = function () {
-        console.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.SearchCommand = SearchCommand;
 
-    ns.protocol.registers('SearchCommand');
+})(DIMP);
 
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
-    var SearchCommand = sdk.protocol.SearchCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+    var Class = ns.type.Class;
+    var ID = ns.protocol.ID;
+    var Command = ns.protocol.Command;
+    var SearchCommand = ns.protocol.SearchCommand;
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create search command
      *
      *  Usages:
-     *      1. new BaseSearchCommand();
+     *      1. new BaseSearchCommand(map);
      *      2. new BaseSearchCommand(keywords);
-     *      3. new BaseSearchCommand(map);
+     *      3. new BaseSearchCommand();
      */
     var BaseSearchCommand = function () {
+        var keywords = null;
         if (arguments.length === 0) {
             // new BaseSearchCommand();
-            BaseCommand.call(this, SearchCommand.ONLINE_USERS);
+            BaseCommand.call(this, Command.ONLINE_USERS);
         } else if (typeof arguments[0] === 'string') {
             // new BaseSearchCommand(keywords);
-            BaseCommand.call(this, SearchCommand.SEARCH);
-            this.setKeywords(arguments[0]);
+            BaseCommand.call(this, Command.SEARCH);
+            keywords = arguments[0];
         } else {
             // new BaseSearchCommand(map);
             BaseCommand.call(this, arguments[0]);
         }
+        if (keywords) {
+            this.setValue('keywords', keywords);
+        }
     };
-    sdk.Class(BaseSearchCommand, BaseCommand, [SearchCommand], {
+    Class(BaseSearchCommand, BaseCommand, [SearchCommand], {
 
         // Override
         setKeywords: function (keywords) {
             this.setValue('keywords', keywords);
+        },
+        // Override
+        getKeywords: function () {
+            return this.getValue('keywords');
+        },
+
+        // Override
+        setRange: function (start, limit) {
+            this.setValue('start', start);
+            this.setValue('limit', limit);
+        },
+        // Override
+        getRange: function () {
+            var start = this.getNumber('start');
+            var limit = this.getNumber('limit');
+            return [start, limit];
         },
 
         // Override
@@ -131,18 +173,16 @@
     //  Factory
     //
     SearchCommand.search = function (keywords) {
-        if (keywords) {
-            // new BaseSearchCommand(keywords);
-            return new BaseSearchCommand(keywords);
-        } else {
-            // new BaseSearchCommand();
-            return new BaseSearchCommand();
+        if (keywords instanceof Array) {
+            keywords = keywords.join(' ');
+        } else if (typeof keywords !== 'string') {
+            throw new TypeError('keywords error: ' + keywords);
         }
+        // new BaseSearchCommand(keywords);
+        return new BaseSearchCommand(keywords);
     };
 
     //-------- namespace --------
-    ns.dkd.BaseSearchCommand = BaseSearchCommand;
+    ns.dkd.cmd.SearchCommand = BaseSearchCommand;
 
-    ns.dkd.registers('BaseSearchCommand');
-
-})(SECHAT, DIMSDK);
+})(DIMP);

@@ -27,13 +27,13 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
+    var ID = ns.protocol.ID;
 
-    var Storage = sdk.dos.LocalStorage;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Storage = ns.db.LocalStorage;
+    var NotificationCenter = ns.lnc.NotificationCenter;
 
     ns.db.GroupTable = {
 
@@ -136,4 +136,4 @@
         return results;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

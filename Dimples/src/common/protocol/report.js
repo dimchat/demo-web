@@ -27,59 +27,57 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Command = sdk.protocol.Command;
+    var Interface = ns.type.Interface;
+    var Command = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command  : "report",
-     *      title    : "online",      // or "offline"
+     *      cmd   : "report",
+     *      title : "online",      // or "offline"
      *      //---- extra info
-     *      time     : 1234567890,    // timestamp?
+     *      time  : 1234567890,    // timestamp
      *  }
      */
-    var ReportCommand = function () {};
-    sdk.Interface(ReportCommand, [Command]);
+    var ReportCommand = Interface(null, [Command]);
 
-    ReportCommand.REPORT = 'report';
-    ReportCommand.ONLINE = 'online';
-    ReportCommand.OFFLINE = 'offline';
+    Command.REPORT = 'report';
+    Command.ONLINE = 'online';
+    Command.OFFLINE = 'offline';
 
     //-------- setter/getter --------
 
     ReportCommand.prototype.setTitle = function (title) {
-        console.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     ReportCommand.prototype.getTitle = function () {
-        console.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.ReportCommand = ReportCommand;
 
-    ns.protocol.registers('ReportCommand');
+})(DIMP);
 
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ReportCommand = sdk.protocol.ReportCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+    var Class = ns.type.Class;
+    var ReportCommand = ns.protocol.ReportCommand;
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create report command
      *
      *  Usages:
-     *      1. new BaseReportCommand();
+     *      1. new BaseReportCommand(map);
      *      2. new BaseReportCommand(title);
-     *      3. new BaseReportCommand(map);
+     *      3. new BaseReportCommand();
      */
     var BaseReportCommand = function () {
         if (arguments.length === 0) {
@@ -94,7 +92,7 @@
             BaseCommand.call(this, arguments[0]);
         }
     };
-    sdk.Class(BaseReportCommand, BaseCommand, [ReportCommand], {
+    Class(BaseReportCommand, BaseCommand, [ReportCommand], {
 
         // Override
         setTitle: function (title) {
@@ -103,26 +101,18 @@
 
         // Override
         getTitle: function () {
-            return this.getValue('title');
+            return this.getString('title');
         }
     });
 
     //
     //  Factory
     //
-    ReportCommand.report = function (title) {
-        if (title) {
-            // new BaseReportCommand(title);
-            return new BaseReportCommand();
-        } else {
-            // new BaseReportCommand();
-            return new BaseReportCommand();
-        }
+    ReportCommand.create = function (title) {
+        return new BaseReportCommand(title);
     };
 
     //-------- namespace --------
-    ns.dkd.BaseReportCommand = BaseReportCommand;
+    ns.dkd.cmd.ReportCommand = BaseReportCommand;
 
-    ns.dkd.registers('BaseReportCommand');
-
-})(SECHAT, DIMSDK);
+})(DIMP);

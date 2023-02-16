@@ -25,16 +25,16 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
-    var Meta = sdk.protocol.Meta;
+    var ID = ns.protocol.ID;
+    var Meta = ns.protocol.Meta;
 
-    var Storage = sdk.dos.LocalStorage;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Storage = ns.db.LocalStorage;
+    var NotificationCenter = ns.lnc.NotificationCenter;
 
     ns.db.MetaTable = {
 
@@ -108,4 +108,4 @@
         return results;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

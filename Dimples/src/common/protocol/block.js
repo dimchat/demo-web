@@ -35,6 +35,7 @@
 (function (ns) {
     'use strict';
 
+    var Interface = ns.type.Interface;
     var ID = ns.protocol.ID;
     var Command = ns.protocol.Command;
 
@@ -43,15 +44,13 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command : "block",
-     *      list    : []      // block-list
+     *      cmd  : "block",
+     *      list : []      // block-list
      *  }
      */
-    var BlockCommand = function () {};
-    ns.Interface(BlockCommand, [Command]);
+    var BlockCommand = Interface(null, [Command]);
 
-    // Command.BLOCK = 'block';
-    BlockCommand.BLOCK = 'block';
+    Command.BLOCK = 'block';
 
     /**
      *  Set blocking list
@@ -59,86 +58,86 @@
      * @param {ID[]} list
      */
     BlockCommand.prototype.setBlockCList = function (list) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     BlockCommand.prototype.getBlockCList = function () {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-    BlockCommand.setBlockList = function (list, cmd) {
-        if (list/* && list.length > 0*/) {
-            cmd['list'] = ID.revert(list);
-        } else {
-            delete cmd['list'];
-        }
-    };
-    BlockCommand.getBlockList = function (cmd) {
-        var list = cmd['list'];
-        if (list/* && list.length > 0*/) {
-            return ID.convert(list);
-        } else {
-            return list;
-        }
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.BlockCommand = BlockCommand;
 
-    ns.protocol.registers('BlockCommand');
-
-})(DIMSDK);
+})(DIMP);
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
+    var ID = ns.protocol.ID;
+    var Command = ns.protocol.Command;
     var BlockCommand = ns.protocol.BlockCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create block command
      *
      *  Usages:
-     *      1. new BaseBlockCommand();
+     *      1. new BaseBlockCommand(map);
      *      2. new BaseBlockCommand(list);
-     *      3. new BaseBlockCommand(map);
+     *      3. new BaseBlockCommand();
      */
     var BaseBlockCommand = function () {
+        var list = null;
         if (arguments.length === 0) {
             // new BaseBlockCommand();
-            BaseCommand.call(this, BlockCommand.BLOCK)
-            this.__list = null;
+            BaseCommand.call(this, Command.BLOCK)
         } else if (arguments[0] instanceof Array) {
             // new BaseBlockCommand(list);
-            BaseCommand.call(this, BlockCommand.BLOCK)
-            this.setBlockCList(arguments[0]);
+            BaseCommand.call(this, Command.BLOCK)
+            list = arguments[0]
         } else {
             // new BaseBlockCommand(map);
             BaseCommand.call(this, arguments[0]);
-            this.__list = null;
         }
+        if (list) {
+            this.setValue('list', ID.revert(list));
+        }
+        this.__list = list;
     };
-    ns.Class(BaseBlockCommand, BaseCommand, [BlockCommand], {
+    Class(BaseBlockCommand, BaseCommand, [BlockCommand], {
 
         // Override
         getBlockCList: function () {
-            if (!this.__list) {
-                var dict = this.toMap();
-                this.__list = BlockCommand.getBlockList(dict);
+            if (this.__list === null) {
+                var list = this.getValue('list');
+                if (list/* && list.length > 0*/) {
+                    this.__list = ID.convert(list);
+                } else {
+                    this.__list = [];
+                }
             }
             return this.__list;
         },
 
         // Override
         setBlockCList: function (list) {
-            var dict = this.toMap();
-            BlockCommand.setBlockList(list, dict);
             this.__list = list;
+            if (list/* && list.length > 0*/) {
+                list = ID.revert(list);
+            }
+            this.setValue('list', list);
         }
     });
 
+    //
+    //  Factory
+    //
+
+    BlockCommand.create = function (list) {
+        return new BaseBlockCommand(list);
+    };
+
     //-------- namespace --------
-    ns.dkd.BaseBlockCommand = BaseBlockCommand;
+    ns.dkd.cmd.BlockCommand = BaseBlockCommand;
 
-    ns.dkd.registers('BaseBlockCommand');
-
-})(DIMSDK);
+})(DIMP);

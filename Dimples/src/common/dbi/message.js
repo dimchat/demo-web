@@ -27,14 +27,15 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
-    var InstantMessage = sdk.protocol.InstantMessage;
+    var Arrays = ns.type.Arrays;
+    var ID = ns.protocol.ID;
+    var InstantMessage = ns.protocol.InstantMessage;
 
-    var Storage = sdk.dos.SessionStorage;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Storage = ns.db.SessionStorage;
+    var NotificationCenter = ns.lnc.NotificationCenter;
 
     ns.db.MessageTable = {
 
@@ -314,7 +315,7 @@
             }
         }
         // insert after
-        sdk.type.Arrays.insert(messages, index+1, iMsg);
+        Arrays.insert(messages, index+1, iMsg);
         return true;
     };
     var remove_message = function (iMsg, messages) {
@@ -344,8 +345,8 @@
             }
         }
         // insert after
-        sdk.type.Arrays.insert(messages, index+1, iMsg);
+        Arrays.insert(messages, index+1, iMsg);
         return true;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

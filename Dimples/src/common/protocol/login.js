@@ -36,7 +36,7 @@
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
+    var Interface = ns.type.Interface;
     var Command = ns.protocol.Command;
 
     /**
@@ -44,8 +44,8 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command : "login",
-     *      time    : 0,
+     *      cmd      : "login",
+     *      time     : 0,
      *      //---- client info ----
      *      ID       : "{UserID}",
      *      device   : "DeviceID",  // (optional)
@@ -61,8 +61,9 @@
      *      }
      *  }
      */
-    var LoginCommand = function (info) {};
-    ns.Interface(LoginCommand, [Command]);
+    var LoginCommand = Interface(null, [Command]);
+
+    Command.LOGIN = 'login';
 
     //-------- client info --------
 
@@ -72,44 +73,41 @@
      * @returns {ID}
      */
     LoginCommand.prototype.getIdentifier = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     /**
      *  Get device ID
      *
-     * @returns {String}
+     * @returns {string}
      */
     LoginCommand.prototype.getDevice = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
     /**
      *  Set device ID
      *
-     * @param {String} device
+     * @param {string} device
      */
     LoginCommand.prototype.setDevice = function (device) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
 
     /**
      *  Get user agent
      *
-     * @returns {String}
+     * @returns {string}
      */
     LoginCommand.prototype.getAgent = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
     /**
      *  Set user agent
      *
-     * @param {String} UA
+     * @param {string} UA
      */
     LoginCommand.prototype.setAgent = function (UA) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
 
     //-------- server info --------
@@ -120,16 +118,15 @@
      * @returns {{}}
      */
     LoginCommand.prototype.getStation = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
     /**
      *  Set station info
      *
-     * @param {{}} station
+     * @param {Station|{}} station
      */
     LoginCommand.prototype.setStation = function (station) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
 
     /**
@@ -138,33 +135,34 @@
      * @returns {{}}
      */
     LoginCommand.prototype.getProvider = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
     /**
      *  Set provider info
      *
-     * @param {{}} provider
+     * @param {ServiceProvider|{}} provider
      */
     LoginCommand.prototype.setProvider = function (provider) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.LoginCommand = LoginCommand;
 
-    ns.protocol.registers('LoginCommand');
-
-})(DIMSDK);
+})(DIMP);
 
 (function (ns) {
     'use strict';
 
+    var Interface = ns.type.Interface;
+    var Class = ns.type.Class;
     var Wrapper = ns.type.Wrapper;
     var ID = ns.protocol.ID;
     var Command = ns.protocol.Command;
     var LoginCommand = ns.protocol.LoginCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
+    var Station = ns.mkm.Station;
+    var ServiceProvider = ns.mkm.ServiceProvider;
 
     /**
      *  Create login command
@@ -174,16 +172,16 @@
      *      2. new BaseLoginCommand(identifier);
      */
     var BaseLoginCommand = function (info) {
-        if (ns.Interface.conforms(info, ID)) {
+        if (Interface.conforms(info, ID)) {
             // new BaseLoginCommand(identifier);
             BaseCommand.call(this, Command.LOGIN);
-            this.setValue('ID', info.toString());
+            this.setString('ID', info);
         } else {
             // new BaseLoginCommand(map);
             BaseCommand.call(this, info);
         }
     };
-    ns.Class(BaseLoginCommand, BaseCommand, [LoginCommand], {
+    Class(BaseLoginCommand, BaseCommand, [LoginCommand], {
 
         // Override
         getIdentifier: function () {
@@ -192,7 +190,7 @@
 
         // Override
         getDevice: function () {
-            return this.getValue('device');
+            return this.getString('device');
         },
 
         // Override
@@ -202,7 +200,7 @@
 
         // Override
         getAgent: function () {
-            return this.getValue('agent');
+            return this.getString('agent');
         },
 
         // Override
@@ -218,7 +216,9 @@
         // Override
         setStation: function (station) {
             var info;
-            if (station instanceof ns.Station) {
+            if (!station) {
+                info = null;
+            } else if (station instanceof Station) {
                 info = {
                     'host': station.getHost(),
                     'port': station.getPort(),
@@ -238,11 +238,13 @@
         // Override
         setProvider: function (provider) {
             var info;
-            if (provider instanceof ns.ServiceProvider) {
+            if (!provider) {
+                info = null;
+            } else if (provider instanceof ServiceProvider) {
                 info = {
                     'ID': provider.getIdentifier().toString()
                 }
-            } else if (ns.Interface.conforms(provider, ID)) {
+            } else if (Interface.conforms(provider, ID)) {
                 info = {
                     'ID': provider.toString()
                 }
@@ -253,9 +255,15 @@
         }
     });
 
+    //
+    //  Factory
+    //
+
+    LoginCommand.create = function (identifier) {
+        return new BaseLoginCommand(identifier);
+    };
+
     //-------- namespace --------
-    ns.dkd.BaseLoginCommand = BaseLoginCommand;
+    ns.dkd.cmd.LoginCommand = BaseLoginCommand;
 
-    ns.dkd.registers('BaseLoginCommand');
-
-})(DIMSDK);
+})(DIMP);

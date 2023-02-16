@@ -25,15 +25,15 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var ID = sdk.protocol.ID;
+    var ID = ns.protocol.ID;
 
-    var Storage = sdk.dos.LocalStorage;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Storage = ns.db.LocalStorage;
+    var NotificationCenter = ns.lnc.NotificationCenter;
 
     ns.db.ContactTable = {
 
@@ -83,7 +83,7 @@
         },
 
         load: function () {
-            if (!this.__contacts) {
+            if (this.__contacts === null) {
                 this.__contacts = convert(Storage.loadJSON('ContactTable'));
             }
         },
@@ -117,4 +117,4 @@
         return results;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

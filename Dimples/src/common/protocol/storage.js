@@ -35,6 +35,7 @@
 (function (ns) {
     'use strict';
 
+    var Interface = ns.type.Interface;
     var ID = ns.protocol.ID;
     var Command = ns.protocol.Command;
 
@@ -43,35 +44,33 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      command : "storage",
-     *      title   : "key name",  // "contacts", "private_key", ...
+     *      cmd   : "storage",
+     *      title : "key name",  // "contacts", "private_key", ...
      *
-     *      data    : "...",       // base64_encode(symmetric)
-     *      key     : "...",       // base64_encode(asymmetric)
+     *      data  : "...",       // base64_encode(symmetric)
+     *      key   : "...",       // base64_encode(asymmetric)
      *
      *      // -- extra info
      *      //...
      *  }
      */
-    var StorageCommand = function (info) {};
-    ns.Interface(StorageCommand, [Command]);
+    var StorageCommand = Interface(null, [Command]);
 
-    StorageCommand.STORAGE = 'storage';
+    Command.STORAGE = 'storage';
     // storage titles (should be encrypted)
-    StorageCommand.CONTACTS = 'contacts';
-    StorageCommand.PRIVATE_KEY = 'private_key';
+    Command.CONTACTS = 'contacts';
+    Command.PRIVATE_KEY = 'private_key';
 
     /**
      *  Set storage title
      *
-     * @param {String} title
+     * @param {string} title
      */
     StorageCommand.prototype.setTitle = function (title) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     StorageCommand.prototype.getTitle = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     /**
@@ -80,11 +79,10 @@
      * @param {ID} identifier
      */
     StorageCommand.prototype.setIdentifier = function (identifier) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     StorageCommand.prototype.getIdentifier = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     /**
@@ -94,11 +92,19 @@
      * @param {Uint8Array} data
      */
     StorageCommand.prototype.setData = function (data) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     StorageCommand.prototype.getData = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Decryption
+     *
+     * @param {SymmetricKey|PrivateKey} key
+     */
+    StorageCommand.prototype.decrypt = function (key) {
+        throw new Error('NotImplemented');
     };
 
     /**
@@ -109,41 +115,36 @@
      * @param {Uint8Array} data
      */
     StorageCommand.prototype.setKey = function (data) {
-        ns.assert(false, 'implement me!');
+        throw new Error('NotImplemented');
     };
     StorageCommand.prototype.getKey = function () {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-
-    //
-    //  Decryption
-    //
-    StorageCommand.prototype.decryptData = function (key) {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-    StorageCommand.prototype.decryptKey = function (privateKey) {
-        ns.assert(false, 'implement me!');
-        return null;
+        throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
     ns.protocol.StorageCommand = StorageCommand;
 
-    ns.protocol.registers('StorageCommand');
-
-})(DIMSDK);
+})(DIMP);
 
 (function (ns) {
     'use strict';
 
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+
+    var DecryptKey   = ns.crypto.DecryptKey;
     var SymmetricKey = ns.crypto.SymmetricKey;
-    var PrivateKey = ns.crypto.PrivateKey;
+    var PrivateKey   = ns.crypto.PrivateKey;
+
     var Base64 = ns.format.Base64;
-    var ID = ns.protocol.ID;
+    var JsON   = ns.format.JSON;
+    var UTF8   = ns.format.UTF8;
+
+    var ID             = ns.protocol.ID;
+    var Command        = ns.protocol.Command;
     var StorageCommand = ns.protocol.StorageCommand;
-    var BaseCommand = ns.dkd.BaseCommand;
+
+    var BaseCommand = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create storage command
@@ -155,8 +156,8 @@
     var BaseStorageCommand = function (info) {
         if (typeof info === 'string') {
             // new BaseStorageCommand(title);
-            BaseCommand.call(this, StorageCommand.STORAGE);
-            this.setTitle(info);
+            BaseCommand.call(this, Command.STORAGE);
+            this.setValue('string', info);
         } else {
             // new BaseStorageCommand(map);
             BaseCommand.call(this, info);
@@ -167,7 +168,7 @@
         this.__key = null;       // encrypted symmetric key data
         this.__password = null;  // symmetric key for data
     };
-    ns.Class(BaseStorageCommand, BaseCommand, [StorageCommand], {
+    Class(BaseStorageCommand, BaseCommand, [StorageCommand], {
 
         // Override
         setTitle: function (title) {
@@ -176,27 +177,12 @@
 
         // Override
         getTitle: function () {
-            var title = this.getValue('title');
-            if (title && title.length > 0) {
-                return title;
-            } else {
-                // (compatible with v1.0)
-                //  contacts command: {
-                //      command : 'contacts',
-                //      data    : '...',
-                //      key     : '...'
-                //  }
-                return this.getCommand();
-            }
+            return this.getString('title');
         },
 
         // Override
         setIdentifier: function (identifier) {
-            if (identifier && ns.Interface.conforms(identifier, ID)) {
-                this.setValue('ID', identifier.toString());
-            } else {
-                this.setValue('ID', null);
-            }
+            this.setString('ID', identifier);
         },
 
         // Override
@@ -217,8 +203,8 @@
 
         // Override
         getData: function () {
-            if (!this.__data) {
-                var base64 = this.getValue('data');
+            if (this.__data === null) {
+                var base64 = this.getString('data');
                 if (base64) {
                     this.__data = Base64.decode(base64);
                 }
@@ -239,7 +225,7 @@
 
         // Override
         getKey: function () {
-            if (!this.__key) {
+            if (this.__key === null) {
                 var base64 = this.getValue('key');
                 if (base64) {
                     this.__key = Base64.decode(base64);
@@ -249,44 +235,57 @@
         },
 
         // Override
-        decryptData: function (key) {
-            if (!this.__plaintext) {
-                // 1. get password for decrypting data
-                var pwd = null;
-                if (ns.Interface.conforms(key, PrivateKey)) {
-                    // decrypt password with private key
-                    pwd = this.decryptKey(key);
-                    if (!pwd) {
-                        throw new Error('failed to decrypt key: ' + key);
-                    }
-                } else if (ns.Interface.conforms(key, SymmetricKey)) {
-                    pwd = key;
-                } else {
-                    throw new TypeError('Decryption key error: ' + key);
-                }
-                // 2. decrypt data with symmetric key
-                var data = this.getData();
-                this.__plaintext = pwd.decrypt(data);
+        decrypt: function (key) {
+            // 1. decrypt password with private key
+            if (Interface.conforms(key, PrivateKey)) {
+                return decrypt_password_by_private_key.call(this, key);
             }
-            return this.__plaintext;
-        },
-
-        // Override
-        decryptKey: function (privateKey) {
-            if (!this.__password) {
-                var key = this.getKey();
-                var data = privateKey.decrypt(key);
-                var json = ns.format.UTF8.decode(data);
-                var dict = ns.format.JSON.decode(json);
-                this.__password = SymmetricKey.parse(dict);
+            // 2. decrypt data with password (symmetric key)
+            if (Interface.conforms(key, SymmetricKey)) {
+                return decrypt_data_by_symmetric_key.call(this, key);
             }
-            return this.__password;
+            throw new TypeError('key error: ' + key);
         }
     });
 
+    var decrypt_password_by_private_key = function (privateKey) {
+        if (this.__password === null) {
+            if (Interface.conforms(privateKey, DecryptKey)) {
+                this.__password = decrypt_symmetric_key.call(this, privateKey);
+            } else {
+                throw new TypeError('private key error: ' + privateKey);
+            }
+        }
+        return decrypt_data_by_symmetric_key.call(this, this.__password);
+    };
+
+    var decrypt_data_by_symmetric_key = function (password) {
+        if (this.__plaintext === null) {
+            if (!password) {
+                throw new Error('symmetric key empty');
+            }
+            var data = this.getData();
+            if (data) {
+                this.__plaintext = password.decrypt(data);
+            }
+        }
+        return this.__plaintext;
+    };
+
+    var decrypt_symmetric_key = function (decryptKey) {
+        var data = this.getKey();
+        if (!data) {
+            return;
+        }
+        var key = decryptKey.decrypt(data);
+        if (!key) {
+            throw new Error('failed to decrypt key');
+        }
+        var info = JsON.decode(UTF8.decode(key));
+        return SymmetricKey.parse(info);
+    };
+
     //-------- namespace --------
-    ns.dkd.BaseStorageCommand = BaseStorageCommand;
+    ns.dkd.cmd.BaseStorageCommand = BaseStorageCommand;
 
-    ns.dkd.registers('BaseStorageCommand');
-
-})(DIMSDK);
+})(DIMP);

@@ -25,149 +25,257 @@
 // =============================================================================
 //
 
-//! require 'keycache.js'
+//! require 'protocol/*.js'
+//! require 'db/*.js'
+//! require 'mem/*.js'
+//! require 'network/*.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var MessengerDelegate = function () {};
-    sdk.Interface(MessengerDelegate, null);
+    var Class = ns.type.Class;
+    var ID = ns.protocol.ID;
+    var GroupCommand = ns.protocol.GroupCommand;
+    var Envelope = ns.protocol.Envelope;
+    var InstantMessage = ns.protocol.InstantMessage;
+    var QueryFrequencyChecker = ns.mem.QueryFrequencyChecker;
+    var Messenger = ns.Messenger;
 
-    /**
-     *  Upload encrypted data to CDN
-     *
-     * @param {Uint8Array} data     - encrypted file data
-     * @param {InstantMessage} iMsg - instant message
-     * @return {String} download URL
-     */
-    MessengerDelegate.prototype.uploadData = function (data, iMsg) {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-
-    /**
-     *  Download encrypted data from CDN
-     *
-     * @param {String} url          - download URL
-     * @param {InstantMessage} iMsg - instant message
-     * @return {Uint8Array} encrypted file data
-     */
-    MessengerDelegate.prototype.downloadData = function (url, iMsg) {
-        ns.assert(false, 'implement me!');
-        return null;
-    };
-
-    //-------- namespace --------
-    ns.MessengerDelegate = MessengerDelegate;
-
-    ns.registers('MessengerDelegate');
-
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
-    'use strict';
-
-    var ContentType = sdk.protocol.ContentType;
-    var FileContent = sdk.protocol.FileContent;
-    var Messenger = sdk.Messenger;
-    var KeyStore = ns.KeyStore;
-
-    var CommonMessenger = function () {
+    var CommonMessenger = function (session, facebook, db) {
         Messenger.call(this);
-        this.__delegate = null;
+        this.__session = session;
+        this.__facebook = facebook;
+        this.__db = db;
         this.__packer = null;
         this.__processor = null;
     };
-    sdk.Class(CommonMessenger, Messenger, null, null);
+    Class(CommonMessenger, Messenger, null, {
 
-    /**
-     *  Delegate for Station
-     *
-     * @param {MessengerDelegate} delegate - message delegate
-     */
-    CommonMessenger.prototype.setDelegate = function (delegate) {
-        this.__delegate = delegate;
+        //
+        //  Interfaces for Transmitting Message
+        //
+
+        // Override
+        sendContent: function (sender, receiver, content, priority) {
+            if (!sender) {
+                var current = this.__facebook.getCurrentUser();
+                sender = current.getIdentifier();
+            }
+            var env = Envelope.create(sender, receiver, null);
+            var iMsg = InstantMessage.create(env, content);
+            var rMsg = this.sendInstantMessage(iMsg, priority);
+            return [iMsg, rMsg];
+        },
+
+        // Override
+        sendInstantMessage: function (iMsg, priority) {
+            // send message (secured + certified) to target station
+            var sMsg = this.encryptMessage(iMsg);
+            if (!sMsg) {
+                // public key not found?
+                return null;
+            }
+            var rMsg = this.signMessage(sMsg);
+            if (!rMsg) {
+                // TODO: set msg.state = error
+                throw new ReferenceError('failed to sign message: ' + iMsg);
+            }
+            if (this.sendReliableMessage(rMsg, priority)) {
+                return rMsg;
+            }
+            // failed
+            return null;
+        },
+
+        // Override
+        sendReliableMessage: function (rMsg, priority) {
+            // 1. serialize message
+            var data = this.serializeMessage(rMsg);
+            // 2. call gate keeper to send the message data package
+            //    put message package into the waiting queue of current session
+            return this.__session.queueMessagePackage(rMsg, data, priority);
+        }
+    });
+
+    CommonMessenger.prototype.getSession = function () {
+        return this.__session;
     };
-    CommonMessenger.prototype.getDelegate = function () {
-        return this.__delegate;
-    };
+
+    // Override
+    CommonMessenger.prototype.getEntityDelegate = function () {
+        return this.__facebook;
+    }
 
     CommonMessenger.prototype.getFacebook = function () {
-        ns.assert(false, 'implement me!');
-        return null;
+        return this.__facebook;
+    };
+
+    CommonMessenger.prototype.getDatabase = function () {
+        return this.__db;
     };
 
     // Override
     CommonMessenger.prototype.getCipherKeyDelegate = function () {
-        return this.getKeyStore();
-    };
-    CommonMessenger.prototype.getKeyStore = function () {
-        return KeyStore.getInstance();
+        return this.__db;
     };
 
     // Override
     CommonMessenger.prototype.getPacker = function () {
-        if (!this.__packer) {
-            this.__packer = this.createPacker();
-        }
         return this.__packer;
     };
-    // protected
-    CommonMessenger.prototype.createPacker = function () {
-        return new ns.CommonPacker(this.getFacebook(), this);
+    CommonMessenger.prototype.setPacker = function (packer) {
+        this.__packer = packer;
     };
 
     // Override
     CommonMessenger.prototype.getProcessor = function () {
-        if (!this.__processor) {
-            this.__processor = this.createProcessor();
-        }
         return this.__processor;
     };
+    CommonMessenger.prototype.setProcessor = function (processor) {
+        this.__processor = processor;
+    };
+
+    /**
+     *  Request for meta with entity ID
+     *
+     * @param {ID} identifier - entity ID
+     * @return {boolean} false on duplicated
+     */
+    CommonMessenger.prototype.queryMeta = function (identifier) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Request for meta & visa document with entity ID
+     *
+     * @param identifier - entity ID
+     * @return {boolean} false on duplicated
+     */
+    CommonMessenger.prototype.queryDocument = function (identifier) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Request for group members with group ID
+     *
+     * @param identifier - group ID
+     * @return {boolean} false on duplicated
+     */
+    CommonMessenger.prototype.queryMembers = function (identifier) {
+        if (QueryFrequencyChecker.isMembersQueryExpired(identifier, 0)) {
+            // query not expired yet
+            return false;
+        }
+        var bots = this.__facebook.getAssistants(identifier);
+        if (!bots || bots.length === 0) {
+            // group assistants not found
+            return false;
+        }
+        // querying members from bots
+        var cmd = GroupCommand.query(identifier);
+        send_group_command.call(this, cmd, bots);
+        return true;
+    };
+    var send_group_command = function (cmd, members) {
+        for (var i = 0; i < members.length; ++i) {
+            this.sendContent(null, members[i], cmd, 0);
+        }
+    }
+
     // protected
-    CommonMessenger.prototype.createProcessor = function () {
-        return new ns.CommonProcessor(this.getFacebook(), this);
+    CommonMessenger.prototype.checkSender = function (rMsg) {
+        var sender = rMsg.getSender();
+        var visa = rMsg.getVisa();
+        if (visa) {
+            // first handshake?
+            return true;
+        }
+        var visaKey = this.__facebook.getPublicKeyForEncryption(sender);
+        if (visaKey) {
+            // sender is OK
+            return visaKey;
+        }
+        if (this.queryDocument(sender)) {
+            console.info('CommandMessenger::checkSender(), queryDocument', sender);
+        }
+        rMsg.setValue('error', {
+            'message': 'verify key not found',
+            'user': sender.toString()
+        });
+        return false;
     };
 
-    // private
-    CommonMessenger.prototype.getFileContentProcessor = function () {
-        var processor = this.getProcessor();
-        var type = ContentType.FILE.valueOf();
-        return processor.getContentProcessor(type);
+    // protected
+    CommonMessenger.prototype.checkReceiver = function (iMsg) {
+        var receiver = iMsg.getReceiver();
+        if (receiver.isBroadcast()) {
+            // broadcast message
+            return true;
+        }
+        if (receiver.isUser()) {
+            // check user's meta & document
+            if (this.queryDocument(receiver)) {
+                console.info('CommandMessenger::checkReceiver(), queryDocument', receiver);
+            }
+            iMsg.setValue('error', {
+                'message': 'encrypt key not found',
+                'user': receiver.toString()
+            });
+            return false;
+        } else {
+            // check group's meta
+            var meta = this.__facebook.getMeta(receiver);
+            if (!meta) {
+                if (this.queryMeta(receiver)) {
+                    console.info('CommandMessenger::checkReceiver(), queryMeta', receiver);
+                }
+                iMsg.setValue('error', {
+                    'message': 'group meta not found',
+                    'user': receiver.toString()
+                });
+                return false;
+            }
+            // check group members
+            var members = this.__facebook.getMembers(receiver);
+            if (!members || members.length === 0) {
+                if (this.queryMembers(receiver)) {
+                    console.info('CommandMessenger::checkReceiver(), queryMembers', receiver);
+                }
+                iMsg.setValue('error', {
+                    'message': 'members not found',
+                    'user': receiver.toString()
+                });
+                return false;
+            }
+            var waiting = [];
+            var item;
+            for (var i = 0; i < members.length; ++i) {
+                item = members[i];
+                if (this.__facebook.getPublicKeyForEncryption(item)) {
+                    continue;
+                }
+                if (this.queryDocument(item)) {
+                    console.info('CommandMessenger::checkReceiver(), queryDocument for member', item, receiver);
+                }
+                waiting.push(item);
+            }
+            if (waiting.length > 0) {
+                iMsg.setValue('error', {
+                    'message': 'encrypt keys not found',
+                    'group': receiver.toString(),
+                    'members': ID.revert(waiting)
+                });
+                return false;
+            }
+        }
+        // receiver is OK
+        return true;
     };
 
-    // Override
-    CommonMessenger.prototype.serializeContent = function (content, password, iMsg) {
-        // check attachment for File/Image/Audio/Video message content
-        if (sdk.Interface.conforms(content, FileContent)) {
-            var fpu = this.getFileContentProcessor();
-            fpu.uploadFileContent(content, password, iMsg);
-        }
-        return Messenger.prototype.serializeContent.call(this, content, password, iMsg);
-    };
-
-    // Override
-    CommonMessenger.prototype.deserializeContent = function (data, password, sMsg) {
-        var content;
-        try {
-            content = Messenger.prototype.deserializeContent.call(this, data, password, sMsg);
-        } catch (e) {
-            console.error('deserialize content error', e);
-            return null;
-        }
-        if (!content) {
-            throw new Error('failed to deserialize message content: ' + sMsg);
-        }
-        // check attachment for File/Image/Audio/Video message content
-        if (sdk.Interface.conforms(content, FileContent)) {
-            var fpu = this.getFileContentProcessor();
-            fpu.downloadFileContent(content, password, sMsg);
-        }
-        return content;
-    };
-
+    /*/
     // Override
     CommonMessenger.prototype.serializeKey = function (password, iMsg) {
+        // try to reuse message key
         var reused = password.getValue('reused');
         if (reused) {
             var receiver = iMsg.getReceiver();
@@ -185,127 +293,27 @@
         }
         return data;
     };
+    /*/
 
-    CommonMessenger.prototype.encryptKey = function (data, receiver, iMsg) {
-        var facebook = this.getFacebook();
-        var key = facebook.getPublicKeyForEncryption(receiver);
-        if (!key) {
-            // save this message in a queue waiting receiver's meta/document response
-            this.suspendInstantMessage(iMsg);
+    // Override
+    CommonMessenger.prototype.encryptMessage = function (iMsg) {
+        if (!this.checkReceiver(iMsg)) {
+            console.warn('receiver not ready', iMsg.getReceiver());
             return null;
         }
-        return Messenger.prototype.encryptKey.call(this, data, receiver, iMsg);
+        return Messenger.prototype.encryptMessage.call(this, iMsg);
     };
 
-    //
-    //  Interfaces for Message Storage
-    //
-
-    /**
-     *  Suspend the received message for the sender's meta
-     *
-     * @param {ReliableMessage} rMsg - message received from network
-     */
-    CommonMessenger.prototype.suspendReliableMessage = function (rMsg) {
-        ns.assert(false, 'implement me!');
-    };
-
-    /**
-     *  Suspend the sending message for the receiver's meta & visa,
-     *  or group meta when received new message
-     *
-     * @param {InstantMessage} iMsg - instant message to be sent
-     */
-    CommonMessenger.prototype.suspendInstantMessage = function (iMsg) {
-        ns.assert(false, 'implement me!');
-    };
-
-    /**
-     *  Save the message into local storeage
-     *
-     * @param {InstantMessage} iMsg - instant message
-     * @return {boolean} true on success
-     */
-    CommonMessenger.prototype.saveMessage = function (iMsg) {
-        ns.assert(false, 'implement me!');
-        return false;
-    };
-
-    //
-    //  Interfaces for Sending Commands
-    //
-    CommonMessenger.prototype.sendContent = function (sender, receiver, content, priority) {
-        ns.assert(false, 'implement me!');
-        return false;
-    };
-
-    CommonMessenger.prototype.queryMeta = function (identifier) {
-        console.assert(false, 'implement me!');
-        return false;
-    };
-    CommonMessenger.prototype.queryDocument = function (identifier, type) {
-        console.assert(false, 'implement me!');
-        return false;
-    };
-    CommonMessenger.prototype.queryGroupInfo = function (group, members) {
-        console.assert(false, 'implement me!');
-        return false;
-    };
-
-    //
-    //  Events
-    //
-    CommonMessenger.prototype.onConnected = function () {
-        console.log('connected');
-    };
-
-    //
-    //  Interfaces for Station
-    //
-    CommonMessenger.prototype.uploadData = function (data, iMsg) {
-        var delegate = this.getDelegate();
-        return delegate.uploadData(data, iMsg);
-    };
-
-    CommonMessenger.prototype.downloadData = function (url, iMsg) {
-        var delegate = this.getDelegate();
-        return delegate.downloadData(url, iMsg);
+    // Override
+    CommonMessenger.prototype.verifyMessage = function (rMsg) {
+        if (!this.checkSender(rMsg)) {
+            console.warn('sender not ready', rMsg.getReceiver());
+            return null;
+        }
+        return Messenger.prototype.verifyMessage.call(this, rMsg);
     };
 
     //-------- namespace --------
     ns.CommonMessenger = CommonMessenger;
 
-    ns.registers('CommonMessenger');
-
-})(SECHAT, DIMSDK);
-
-//! require 'protocol/search.js'
-//! require 'protocol/report.js'
-//! require 'cpu/receipt.js'
-//! require 'cpu/mute.js'
-//! require 'cpu/block.js'
-//! require 'cpu/default.js'
-
-(function (ns, sdk) {
-    'use strict';
-
-    var Command = sdk.protocol.Command;
-    var CommandFactory = sdk.core.CommandFactory;
-
-    var SearchCommand = ns.protocol.SearchCommand;
-    var ReportCommand = ns.protocol.ReportCommand;
-
-    // load factories from SDK
-    sdk.registerAllFactories();
-
-    // register command factories
-    var search = new CommandFactory(SearchCommand);
-    Command.setFactory(SearchCommand.SEARCH, search);
-    Command.setFactory(SearchCommand.ONLINE_USERS, search);
-
-    var report = new CommandFactory(ReportCommand);
-    Command.setFactory(ReportCommand.REPORT, report);
-    Command.setFactory(ReportCommand.ONLINE, report);
-    Command.setFactory(ReportCommand.OFFLINE, report);
-
-})(SECHAT, DIMSDK);
+})(SECHAT);

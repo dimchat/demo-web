@@ -1,14 +1,9 @@
 ;
 // license: https://mit-license.org
-//
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
-//
-//                               Written in 2022 by Moky <albert.moky@gmail.com>
-//
 // =============================================================================
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 Albert Moky
+// Copyright (c) 2021 Albert Moky
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,39 +26,58 @@
 //
 
 //! require <dimp.js>
+//! require <sdk.js>
+//! require <fsm.js>
+//! require <startrek.js>
+//! require <stargate.js>
 
-(function (ns) {
+if (typeof SECHAT !== 'object') {
+    SECHAT = DIMP;
+}
+
+(function (ns, fsm, startrek) {
     'use strict';
 
-    var BaseContent = ns.dkd.BaseContent;
+    //-------- namespace --------
+    if (typeof ns.fsm !== 'object') {
+        ns.fsm = fsm;
+    }
+    if (typeof ns.startrek !== 'object') {
+        ns.startrek = startrek;
+    }
 
-    /**
-     *  Application Customized message: {
-     *      type : 0xCC,
-     *      sn   : 123,
-     *
-     *      app   : "{APP_ID}",  // application (e.g.: 'chat.dim.sechat')
-     *      mod   : "{MODULE}",  // module name (e.g.: 'drift_bottle')
-     *      act   : "{ACTION}",  // action name (e.g.: 'throw')
-     *      extra : info         // action parameters
-     *  }
-     */
-    var CustomizedContent = function (info) {};
-    ns.Class(CustomizedContent, [BaseContent], null, {
-        getApplication: function () {
-            return this.getValue('app');
-        },
-        getModule: function () {
-            return this.getValue('mod');
-        }/*,
-        getAction: function () {
-            return this.getValue('act');
-        }*/
-    });
+})(SECHAT, FiniteStateMachine, StarTrek);
+
+(function (ns, sg) {
+    'use strict';
 
     //-------- namespace --------
-    ns.dkd.CustomizedContent = CustomizedContent;
+    if (typeof ns.dos !== 'object') {
+        ns.dos = sg.dos;
+    }
+    if (typeof ns.cpu !== 'object') {
+        ns.lnc = sg.lnc;
+    }
+    if (typeof ns.cpu !== 'object') {
+        ns.network = sg.network;
+    }
+    if (typeof ns.cpu !== 'object') {
+        ns.ws = sg.ws;
+    }
+    if (typeof ns.db !== 'object') {
+        ns.db = {};
+    }
+    if (typeof ns.mem !== 'object') {
+        ns.mem = {};
+    }
 
-    ns.dkd.registers('CustomizedContent');
+})(SECHAT, StarGate);
 
-})(DIMSDK);
+(function (ns, sg) {
+    'use strict';
+
+    //-------- namespace --------
+    ns.db.LocalStorage = sg.dos.LocalStorage;
+    ns.db.SessionStorage = sg.dos.SessionStorage;
+
+})(SECHAT, StarGate);
