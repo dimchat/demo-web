@@ -1,839 +1,73 @@
 /**
- *  DIM-Client (v0.2.0)
+ *  DIM-Client (v0.2.2)
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Jun. 20, 2022
- * @copyright (c) 2022 Albert Moky
+ * @date      Feb. 18, 2023
+ * @copyright (c) 2023 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
-(function (ns, sdk) {
-    ns.kNotificationServerStateChanged = "ServerStateChanged";
-    ns.kNotificationStationConnecting = "StationConnecting";
-    ns.kNotificationStationConnected = "StationConnected";
-    ns.kNotificationStationError = "StationError";
-    ns.kNotificationServiceProviderUpdated = "ServiceProviderUpdated";
-    ns.kNotificationMetaAccepted = "MetaAccepted";
-    ns.kNotificationDocumentUpdated = "DocumentUpdated";
-    ns.kNotificationContactsUpdated = "ContactsUpdated";
-    ns.kNotificationMembersUpdated = "MembersUpdated";
-    ns.kNotificationGroupRemoved = "GroupRemoved";
-    ns.kNotificationMessageUpdated = "MessageUpdated";
-    if (typeof ns.model !== "object") {
-        ns.model = new sdk.Namespace();
-    }
-    ns.registers("model");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
-    var HandshakeCommandProcessor = function (facebook, messenger) {
-        BaseCommandProcessor.call(this, facebook, messenger);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseState = ns.fsm.BaseState;
+    var SessionState = function (name) {
+        BaseState.call(this);
+        this.__name = name;
+        this.__enterTime = 0;
     };
-    sdk.Class(HandshakeCommandProcessor, BaseCommandProcessor, null, null);
-    var success = function () {
-        console.log("handshake success!");
-        var messenger = this.getMessenger();
-        var server = messenger.getCurrentServer();
-        server.handshakeAccepted();
-        return null;
-    };
-    var restart = function (session) {
-        console.log("handshake again", session);
-        var messenger = this.getMessenger();
-        var server = messenger.getCurrentServer();
-        server.handshake(session);
-        return null;
-    };
-    HandshakeCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var message = cmd.getMessage();
-        if (message === "DIM!" || message === "OK!") {
-            return success.call(this);
+    Class(SessionState, BaseState, null);
+    SessionState.DEFAULT = "default";
+    SessionState.CONNECTING = "connecting";
+    SessionState.CONNECTED = "connected";
+    SessionState.HANDSHAKING = "handshaking";
+    SessionState.RUNNING = "running";
+    SessionState.ERROR = "error";
+    SessionState.prototype.equals = function (other) {
+        if (this === other) {
+            return true;
         } else {
-            if (message === "DIM?") {
-                return restart.call(this, cmd.getSessionKey());
+            if (!other) {
+                return false;
             } else {
-                throw new Error("handshake command error: " + cmd);
-            }
-        }
-    };
-    ns.cpu.HandshakeCommandProcessor = HandshakeCommandProcessor;
-    ns.cpu.registers("HandshakeCommandProcessor");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
-    var LoginCommandProcessor = function (facebook, messenger) {
-        BaseCommandProcessor.call(this, facebook, messenger);
-    };
-    sdk.Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
-    LoginCommandProcessor.prototype.process = function (cmd, rMsg) {
-        return null;
-    };
-    ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
-    ns.cpu.registers("LoginCommandProcessor");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    var Meta = sdk.protocol.Meta;
-    var InstantMessage = sdk.protocol.InstantMessage;
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var SearchCommand = ns.protocol.SearchCommand;
-    var SearchCommandProcessor = function (facebook, messenger) {
-        BaseCommandProcessor.call(this, facebook, messenger);
-    };
-    sdk.Class(SearchCommandProcessor, BaseCommandProcessor, null, null);
-    var user_info = function (string, facebook) {
-        var identifier = ID.parse(string);
-        if (!identifier) {
-            return string;
-        }
-        var nickname = facebook.getName(identifier);
-        return identifier + ' "' + nickname + '"';
-    };
-    SearchCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var facebook = this.getFacebook();
-        var users = cmd.getUsers();
-        var online = cmd.getCommand() === SearchCommand.ONLINE_USERS;
-        var cnt = users ? users.length : 0;
-        var text;
-        if (cnt === 0) {
-            if (online) {
-                text = "No user online now.";
-            } else {
-                text = "User not found.";
-            }
-        } else {
-            if (cnt === 1) {
-                if (online) {
-                    text = "One user online now,\n" + user_info(users[0], facebook);
+                if (other instanceof SessionState) {
+                    return this.__name === other.toString();
                 } else {
-                    text = "Got one user,\n" + user_info(users[0], facebook);
-                }
-            } else {
-                if (online) {
-                    text = cnt + " users online now,";
-                } else {
-                    text = "Got " + cnt + " users,";
-                }
-                for (var i = 0; i < cnt; ++i) {
-                    text += "\n" + user_info(users[i], facebook);
+                    return this.__name === other;
                 }
             }
         }
-        var results = cmd.getResults();
-        if (results) {
-            var id, meta;
-            var keys = Object.keys(results);
-            for (var j = 0; j < keys.length; ++j) {
-                id = ID.parse(keys[j]);
-                if (!id) {
-                    continue;
-                }
-                meta = results[id];
-                meta = Meta.parse(meta);
-                if (!meta) {
-                    continue;
-                }
-                facebook.saveMeta(meta, id);
-            }
-        }
-        cmd.setValue("text", text);
-        var iMsg = InstantMessage.create(rMsg.getEnvelope(), cmd);
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMessageUpdated, this, {
-            ID: rMsg.getSender(),
-            msg: iMsg
-        });
-        return null;
     };
-    ns.cpu.SearchCommandProcessor = SearchCommandProcessor;
-    ns.cpu.registers("SearchCommandProcessor");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
-    var StorageCommandProcessor = function (facebook, messenger) {
-        BaseCommandProcessor.call(this, facebook, messenger);
+    SessionState.prototype.valueOf = function () {
+        return this.__name;
     };
-    sdk.Class(StorageCommandProcessor, BaseCommandProcessor, null, null);
-    StorageCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var title = cmd.getTitle();
-        if (title === StorageCommand.CONTACTS) {
-        } else {
-            if (title === StorageCommand.PRIVATE_KEY) {
-            }
-        }
-        return null;
+    SessionState.prototype.toString = function () {
+        return this.__name;
     };
-    ns.cpu.StorageCommandProcessor = StorageCommandProcessor;
-    ns.cpu.registers("StorageCommandProcessor");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Command = sdk.protocol.Command;
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var SearchCommand = sdk.protocol.SearchCommand;
-    var HandshakeCommandProcessor = ns.cpu.HandshakeCommandProcessor;
-    var LoginCommandProcessor = ns.cpu.LoginCommandProcessor;
-    var StorageCommandProcessor = ns.cpu.StorageCommandProcessor;
-    var SearchCommandProcessor = ns.cpu.SearchCommandProcessor;
-    var CommonProcessorCreator = sdk.cpu.CommonProcessorCreator;
-    var ClientProcessorCreator = function (facebook, messenger) {
-        CommonProcessorCreator.call(this, facebook, messenger);
+    SessionState.prototype.getName = function () {
+        return this.__name;
     };
-    sdk.Class(ClientProcessorCreator, CommonProcessorCreator, null, {
-        createCommandProcessor: function (type, command) {
-            var facebook = this.getFacebook();
-            var messenger = this.getMessenger();
-            if (Command.HANDSHAKE === command) {
-                return new HandshakeCommandProcessor(facebook, messenger);
-            }
-            if (Command.LOGIN === command) {
-                return new LoginCommandProcessor(facebook, messenger);
-            }
-            if (
-                StorageCommand.STORAGE === command ||
-                StorageCommand.CONTACTS === command ||
-                StorageCommand.PRIVATE_KEY === command
-            ) {
-                return new StorageCommandProcessor(facebook, messenger);
-            }
-            if (
-                SearchCommand.SEARCH === command ||
-                SearchCommand.ONLINE_USERS === command
-            ) {
-                return new SearchCommandProcessor(facebook, messenger);
-            }
-            return CommonProcessorCreator.prototype.createCommandProcessor.call(
-                this,
-                type,
-                command
-            );
-        }
-    });
-    ns.cpu.ClientProcessorCreator = ClientProcessorCreator;
-    ns.cpu.registers("ClientProcessorCreator");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ReceiptCommand = sdk.protocol.ReceiptCommand;
-    var get_conversation_db = function () {
-        return ns.ConversationDatabase;
+    SessionState.prototype.getEnterTime = function () {
+        return this.__enterTime;
     };
-    ns.Amanuensis = {
-        getConversation: function (identifier) {
-            var facebook = ns.ClientFacebook.getInstance();
-            var entity = null;
-            if (identifier.isUser()) {
-                entity = facebook.getUser(identifier);
-            } else {
-                if (identifier.isGroup()) {
-                    entity = facebook.getGroup(identifier);
-                }
-            }
-            if (!entity) {
-                return null;
-            }
-            var chatBox = new ns.Conversation(entity);
-            chatBox.database = get_conversation_db();
-            return chatBox;
-        },
-        saveMessage: function (iMsg) {
-            if (sdk.Interface.conforms(iMsg.getContent(), ReceiptCommand)) {
-                return this.saveReceipt(iMsg);
-            }
-            var chatBox = get_conversation.call(this, iMsg);
-            if (chatBox) {
-                return chatBox.insertMessage(iMsg);
-            } else {
-                return false;
-            }
-        },
-        saveReceipt: function (iMsg) {
-            var chatBox = get_conversation.call(this, iMsg);
-            if (chatBox) {
-                return chatBox.saveReceipt(iMsg);
-            } else {
-                return false;
-            }
-        }
+    SessionState.prototype.onEnter = function (previous, machine, now) {
+        this.__enterTime = now;
     };
-    var get_conversation = function (iMsg) {
-        var receiver = iMsg.getReceiver();
-        if (receiver.isGroup()) {
-            return this.getConversation(receiver);
-        }
-        var group = iMsg.getGroup();
-        if (group) {
-            return this.getConversation(group);
-        }
-        var facebook = ns.ClientFacebook.getInstance();
-        var sender = iMsg.getSender();
-        var user = facebook.getCurrentUser();
-        if (user.getIdentifier().equals(sender)) {
-            return this.getConversation(receiver);
-        } else {
-            return this.getConversation(sender);
-        }
+    SessionState.prototype.onExit = function (next, machine, now) {
+        this.__enterTime = 0;
     };
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    var ForwardContent = sdk.protocol.ForwardContent;
-    var HandshakeCommand = sdk.protocol.HandshakeCommand;
-    var ReceiptCommand = sdk.protocol.ReceiptCommand;
-    var LoginCommand = sdk.protocol.LoginCommand;
-    var MetaCommand = sdk.protocol.MetaCommand;
-    var MuteCommand = sdk.protocol.MuteCommand;
-    var BlockCommand = sdk.protocol.BlockCommand;
-    var InviteCommand = sdk.protocol.group.InviteCommand;
-    var QueryCommand = sdk.protocol.group.QueryCommand;
-    var ReportCommand = ns.protocol.ReportCommand;
-    var SearchCommand = ns.protocol.SearchCommand;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
-    };
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    var get_clerk = function () {
-        return ns.Amanuensis;
-    };
-    var MessageDataSource = {
-        onReceiveNotification: function (notification) {
-            var name = notification.name;
-            if (
-                name !== ns.kNotificationMetaAccepted &&
-                name !== ns.kNotificationDocumentUpdated
-            ) {
-                return;
-            }
-            var userInfo = notification.userInfo;
-            var messenger = get_messenger();
-            var facebook = get_facebook();
-            var entity;
-            if (sdk.Interface.conforms(userInfo, sdk.type.Mapper)) {
-                entity = ID.parse(userInfo.getValue("ID"));
-            } else {
-                entity = ID.parse(userInfo["ID"]);
-            }
-            if (entity.isUser()) {
-                if (!facebook.getPublicKeyForEncryption(entity)) {
-                    console.error("user not ready yet: " + entity);
-                    return;
-                }
-            }
-            var incoming = this.__incoming[entity];
-            if (incoming) {
-                delete this.__incoming[entity];
-                var item, res;
-                for (var i = 0; i < incoming.length; ++i) {
-                    item = incoming[i];
-                    res = messenger.processReliableMessage(item);
-                    if (res) {
-                        messenger.sendReliableMessage(res, null, 1);
-                    }
-                }
-            }
-            var outgoing = this.__outgoing[entity];
-            if (outgoing) {
-                delete this.__outgoing[entity];
-                for (var j = 0; j < outgoing.length; ++j) {
-                    messenger.sendInstantMessage(outgoing[j], null, 1);
-                }
-            }
-        },
-        saveMessage: function (iMsg) {
-            var content = iMsg.getContent();
-            if (ns.Interface.conforms(content, HandshakeCommand)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, ReportCommand)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, LoginCommand)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, MetaCommand)) {
-                return true;
-            }
-            if (
-                ns.Interface.conforms(content, MuteCommand) ||
-                ns.Interface.conforms(content, BlockCommand)
-            ) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, SearchCommand)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, ForwardContent)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, InviteCommand)) {
-                var me = iMsg.getReceiver();
-                var group = content.getGroup();
-                var messenger = get_messenger();
-                var key = messenger
-                    .getCipherKeyDelegate()
-                    .getCipherKey(me, group, false);
-                if (key != null) {
-                    key.remove("reused");
-                }
-            }
-            if (ns.Interface.conforms(content, QueryCommand)) {
-                return true;
-            }
-            if (ns.Interface.conforms(content, ReceiptCommand)) {
-                return get_clerk().saveReceipt(iMsg);
-            } else {
-                return get_clerk().saveMessage(iMsg);
-            }
-        },
-        suspendInstantMessage: function (iMsg) {
-            var waiting = ID.parse(iMsg.getValue("waiting"));
-            if (waiting == null) {
-                waiting = iMsg.getGroup();
-                if (waiting == null) {
-                    waiting = iMsg.getSender();
-                }
-            } else {
-                iMsg.remove("waiting");
-            }
-            var list = this.__outgoing[waiting];
-            if (!list) {
-                list = [];
-                this.__outgoing[waiting] = list;
-            }
-            list.push(iMsg);
-        },
-        suspendReliableMessage: function (rMsg) {
-            var waiting = ID.parse(rMsg.getValue("waiting"));
-            if (!waiting) {
-                waiting = rMsg.getGroup();
-                if (waiting == null) {
-                    waiting = rMsg.getSender();
-                }
-            } else {
-                rMsg.remove("waiting");
-            }
-            var list = this.__incoming[waiting];
-            if (!list) {
-                list = [];
-                this.__incoming[waiting] = list;
-            }
-            list.push(rMsg);
-        },
-        __outgoing: {},
-        __incoming: {}
-    };
-    var nc = NotificationCenter.getInstance();
-    nc.addObserver(MessageDataSource, ns.kNotificationMetaAccepted);
-    nc.addObserver(MessageDataSource, ns.kNotificationDocumentUpdated);
-    ns.MessageDataSource = MessageDataSource;
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    ns.Configuration = {
-        getDefaultProvider: function () {
-            return this.__sp;
-        },
-        getDefaultContacts: function () {
-            var info = this.__sp;
-            var array = info.get("contacts");
-            if (array) {
-                return ID.convert(array);
-            } else {
-                return null;
-            }
-        },
-        getUploadURL: function () {
-            return "https://sechat.dim.chat/{ID}/upload";
-        },
-        getDownloadURL: function () {
-            return "https://sechat.dim.chat/download/{ID}/{filename}";
-        },
-        getAvatarURL: function () {
-            return "https://sechat.dim.chat/avatar/{ID}/{filename}";
-        },
-        getTermsURL: function () {
-            return "https://wallet.dim.chat/dimchat/sechat/privacy.html";
-        },
-        getAboutURL: function () {
-            return "https://dim.chat/sechat";
-        },
-        __sp: null
-    };
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var NetworkType = sdk.protocol.NetworkType;
-    var ContentType = sdk.protocol.ContentType;
-    var Entity = sdk.mkm.Entity;
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    var get_conversation_db = function () {
-        return ns.ConversationDatabase;
-    };
-    var ConversationType = sdk.type.Enum(null, {
-        Personal: NetworkType.MAIN,
-        Group: NetworkType.GROUP
-    });
-    var Conversation = function (entity) {
-        if (sdk.Interface.conforms(entity, Entity)) {
-            entity = entity.getIdentifier();
-        }
-        this.identifier = entity;
-        this.type = get_type(entity);
-    };
-    var get_type = function (identifier) {
-        if (identifier.isUser()) {
-            return ConversationType.Personal;
-        } else {
-            if (identifier.isGroup()) {
-                return ConversationType.Group;
-            } else {
-                throw new TypeError("conversation type error: " + identifier);
-            }
-        }
-    };
-    Conversation.prototype.getIdentifier = function () {
-        return this.identifier;
-    };
-    Conversation.prototype.getTitle = function () {
-        var facebook = get_facebook();
-        var name = facebook.getName(this.identifier);
-        if (this.identifier.isGroup()) {
-            var members = facebook.getMembers(this.identifier);
-            if (members && members.length > 0) {
-                return name + " (" + members.length + ")";
-            } else {
-                return name + " (...)";
-            }
-        } else {
-            return name;
-        }
-    };
-    Conversation.prototype.getLastTime = function () {
-        var iMsg = this.getLastMessage();
-        if (iMsg) {
-            return iMsg.getTime();
-        } else {
-            return new Date(0);
-        }
-    };
-    Conversation.prototype.getLastMessage = function () {
-        return get_conversation_db().lastMessage(this.identifier);
-    };
-    Conversation.prototype.getLastVisibleMessage = function () {
-        var count = this.getNumberOfMessages();
-        var iMsg, type;
-        for (var index = count - 1; index >= 0; --index) {
-            iMsg = this.getMessageAtIndex(index);
-            if (!iMsg) {
-                continue;
-            }
-            type = iMsg.getType();
-            if (
-                ContentType.TEXT.equals(type) ||
-                ContentType.FILE.equals(type) ||
-                ContentType.IMAGE.equals(type) ||
-                ContentType.AUDIO.equals(type) ||
-                ContentType.VIDEO.equals(type) ||
-                ContentType.PAGE.equals(type) ||
-                ContentType.MONEY.equals(type) ||
-                ContentType.TRANSFER.equals(type)
-            ) {
-                return iMsg;
-            }
-        }
-        return null;
-    };
-    Conversation.prototype.getNumberOfMessages = function () {
-        return get_conversation_db().numberOfMessages(this.identifier);
-    };
-    Conversation.prototype.getNumberOfUnreadMessages = function () {
-        return get_conversation_db().numberOfUnreadMessages(this.identifier);
-    };
-    Conversation.prototype.getMessageAtIndex = function (index) {
-        return get_conversation_db().messageAtIndex(index, this.identifier);
-    };
-    Conversation.prototype.insertMessage = function (iMsg) {
-        return get_conversation_db().insertMessage(iMsg, this.identifier);
-    };
-    Conversation.prototype.removeMessage = function (iMsg) {
-        return get_conversation_db().removeMessage(iMsg, this.identifier);
-    };
-    Conversation.prototype.withdrawMessage = function (iMsg) {
-        return get_conversation_db().withdrawMessage(iMsg, this.identifier);
-    };
-    Conversation.prototype.saveReceipt = function (iMsg) {
-        return get_conversation_db().saveReceipt(iMsg, this.identifier);
-    };
-    ns.Conversation = Conversation;
-    ns.registers("Conversation");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Entity = sdk.mkm.Entity;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    ns.ConversationDatabase = {
-        getName: function (identifier) {
-            return get_facebook().getName(identifier);
-        },
-        getTimeString: function (msg) {
-            var time = msg.getTime();
-            if (!time) {
-                time = new Date(0);
-            }
-            var yyyy = time.getFullYear();
-            var mm = time.getMonth() + 1;
-            var dd = time.getDate();
-            var hh = time.getHours();
-            var MM = time.getMinutes();
-            var ss = time.getSeconds();
-            return yyyy + "/" + mm + "/" + dd + " " + hh + ":" + MM + ":" + ss;
-        },
-        numberOfConversations: function () {
-            return this.messageTable.numberOfConversations();
-        },
-        conversationAtIndex: function (index) {
-            return this.messageTable.conversationAtIndex(index);
-        },
-        removeConversationAtIndex: function (index) {
-            var chat = this.messageTable.conversationAtIndex(index);
-            if (!this.messageTable.removeConversationAtIndex(index)) {
-                return false;
-            }
-            post_updated(null, chat);
-            return true;
-        },
-        removeConversation: function (chat) {
-            chat = get_id(chat);
-            if (!this.messageTable.removeConversation(chat)) {
-                return false;
-            }
-            post_updated(null, chat);
-            return true;
-        },
-        clearConversation: function (chat) {
-            chat = get_id(chat);
-            if (!this.messageTable.removeConversation(chat)) {
-                return false;
-            }
-            post_updated(null, chat);
-            return true;
-        },
-        numberOfMessages: function (chat) {
-            chat = get_id(chat);
-            return this.messageTable.numberOfMessages(chat);
-        },
-        numberOfUnreadMessages: function (chat) {
-            chat = get_id(chat);
-            return this.messageTable.numberOfUnreadMessages(chat);
-        },
-        clearUnreadMessages: function (chat) {
-            chat = get_id(chat);
-            return this.messageTable.numberOfUnreadMessages(chat);
-        },
-        lastMessage: function (chat) {
-            chat = get_id(chat);
-            return this.messageTable.lastMessage(chat);
-        },
-        lastReceivedMessage: function () {
-            var user = get_facebook().getCurrentUser();
-            if (user) {
-                user = user.getIdentifier();
-            } else {
-                return null;
-            }
-            return this.messageTable.lastReceivedMessage(user);
-        },
-        messageAtIndex: function (index, chat) {
-            chat = get_id(chat);
-            return this.messageTable.messageAtIndex(index, chat);
-        },
-        insertMessage: function (iMsg, chat) {
-            chat = get_id(chat);
-            var ok = this.messageTable.insertMessage(iMsg, chat);
-            if (ok) {
-                post_updated(iMsg, chat);
-            }
-            return ok;
-        },
-        removeMessage: function (iMsg, chat) {
-            chat = get_id(chat);
-            var ok = this.messageTable.removeMessage(iMsg, chat);
-            if (ok) {
-                post_updated(iMsg, chat);
-            }
-            return ok;
-        },
-        withdrawMessage: function (iMsg, chat) {
-            chat = get_id(chat);
-            var ok = this.messageTable.withdrawMessage(iMsg, chat);
-            if (ok) {
-                post_updated(iMsg, chat);
-            }
-            return ok;
-        },
-        saveReceipt: function (iMsg, chat) {
-            chat = get_id(chat);
-            var ok = this.messageTable.saveReceipt(iMsg, chat);
-            if (ok) {
-                if (chat.isUser()) {
-                    var receipt = iMsg.getContent();
-                    var env = receipt.getEnvelope();
-                    if (env) {
-                        var sender = env.getSender();
-                        if (sender && sender.equals(iMsg.getReceiver())) {
-                            chat = env.getReceiver();
-                        }
-                    }
-                }
-                post_updated(iMsg, chat);
-            }
-            return ok;
-        },
-        messageTable: ns.db.MessageTable
-    };
-    var get_id = function (chatBox) {
-        if (chatBox instanceof ns.Conversation) {
-            return chatBox.getIdentifier();
-        } else {
-            if (sdk.Interface.conforms(chatBox, Entity)) {
-                return chatBox.getIdentifier();
-            } else {
-                return chatBox;
-            }
-        }
-    };
-    var post_updated = function (iMsg, identifier) {
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMessageUpdated, this, {
-            ID: identifier,
-            msg: iMsg
-        });
-    };
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    ns.NetworkDatabase = {
-        allProviders: function () {
-            var providers = this.providerTable.getProviders();
-            if (providers && providers.length > 0) {
-                return providers;
-            } else {
-                return [default_provider()];
-            }
-        },
-        addProvider: function (identifier, name, url, chosen) {
-            return this.providerTable.addProvider(identifier, name, url, chosen);
-        },
-        allStations: function (sp) {
-            return this.providerTable.getStations(sp);
-        },
-        addStation: function (sp, station, host, port, name, chosen) {
-            if (
-                !this.providerTable.addStation(sp, station, host, port, name, chosen)
-            ) {
-                return false;
-            }
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
-                sp: sp,
-                action: "add",
-                station: station,
-                chosen: chosen
-            });
-            return true;
-        },
-        chooseStation: function (sp, station) {
-            if (!this.providerTable.chooseStation(sp, station)) {
-                return false;
-            }
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
-                sp: sp,
-                action: "switch",
-                station: station,
-                chosen: 1
-            });
-            return true;
-        },
-        removeStation: function (sp, station, host, port) {
-            if (!this.providerTable.removeStation(sp, station)) {
-                return false;
-            }
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(ns.kNotificationServiceProviderUpdated, this, {
-                sp: sp,
-                action: "remove",
-                station: station,
-                host: host,
-                port: port
-            });
-            return true;
-        },
-        providerTable: null
-    };
-    var default_provider = function () {
-        return null;
-    };
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var State = sdk.fsm.State;
-    var ServerState = function (name) {
-        State.call(this);
-        this.name = name;
-        this.time = null;
-    };
-    sdk.Class(ServerState, State, null);
-    ServerState.DEFAULT = "default";
-    ServerState.CONNECTING = "connecting";
-    ServerState.CONNECTED = "connected";
-    ServerState.HANDSHAKING = "handshaking";
-    ServerState.RUNNING = "running";
-    ServerState.ERROR = "error";
-    ServerState.prototype.equals = function (state) {
-        if (state instanceof ServerState) {
-            return this.name === state.name;
-        } else {
-            if (typeof state === "string") {
-                return this.name === state;
-            } else {
-                throw new Error("state error: " + state);
-            }
-        }
-    };
-    ServerState.prototype.toString = function () {
-        return "<ServerState:" + this.name + ">";
-    };
-    ServerState.prototype.toLocaleString = function () {
-        return "<ServerState:" + this.name.toLocaleString() + ">";
-    };
-    ServerState.prototype.onEnter = function (machine) {
-        console.assert(machine !== null, "machine empty");
-        console.log("onEnter: ", this);
-        this.time = new Date();
-    };
-    ServerState.prototype.onExit = function (machine) {
-        console.assert(machine !== null, "machine empty");
-        this.time = null;
-    };
-    ns.network.ServerState = ServerState;
-    ns.network.registers("ServerState");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Transition = sdk.fsm.Transition;
-    var AutoMachine = sdk.fsm.AutoMachine;
-    var DockerStatus = sdk.startrek.port.DockerStatus;
-    var ServerState = ns.network.ServerState;
-    var StateMachine = function (server) {
-        AutoMachine.call(this, ServerState.DEFAULT);
-        this.setDelegate(server);
-        this.__session = null;
+    SessionState.prototype.onPause = function (machine) {};
+    SessionState.prototype.onResume = function (machine) {};
+    ns.network.SessionState = SessionState;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseTransition = ns.fsm.BaseTransition;
+    var AutoMachine = ns.fsm.AutoMachine;
+    var DockerStatus = ns.startrek.port.DockerStatus;
+    var SessionState = ns.network.SessionState;
+    var StateMachine = function (session) {
+        AutoMachine.call(this, SessionState.DEFAULT);
+        this.__session = session;
         set_state(this, default_state());
         set_state(this, connecting_state());
         set_state(this, connected_state());
@@ -841,45 +75,40 @@
         set_state(this, running_state());
         set_state(this, error_state());
     };
-    sdk.Class(StateMachine, AutoMachine, null, {
-        getSessionKey: function () {
-            return this.__session;
-        },
-        setSessionKey: function (session) {
-            this.__session = session;
-        },
-        getServer: function () {
-            return this.getDelegate();
-        },
-        getCurrentUser: function () {
-            var server = this.getServer();
-            return server ? server.getCurrentUser() : null;
-        },
-        getStatus: function () {
-            var server = this.getServer();
-            return server ? server.getStatus() : DockerStatus.ERROR;
-        },
+    Class(StateMachine, AutoMachine, null, {
         getContext: function () {
             return this;
         },
-        getCurrentState: function () {
-            var state = AutoMachine.prototype.getCurrentState.call(this);
-            if (!state) {
-                state = this.getState(ServerState.DEFAULT);
-            }
-            return state;
+        getSessionKey: function () {
+            return this.__session.getKey();
+        },
+        getSessionID: function () {
+            return this.__session.getIdentifier();
+        },
+        getStatus: function () {
+            var gate = this.__session.getGate();
+            var docker = gate.getDocker(
+                this.__session.getRemoteAddress(),
+                null,
+                null
+            );
+            return docker ? docker.getStatus() : DockerStatus.ERROR;
         }
     });
     var set_state = function (fsm, state) {
         fsm.setState(state.name, state);
     };
     var new_transition = function (target, evaluate) {
-        var trans = new Transition(target);
+        var trans = new BaseTransition(target);
         trans.evaluate = evaluate;
         return trans;
     };
+    var is_expired = function (state, now) {
+        var enterTime = state.getEnterTime();
+        return 0 < enterTime && enterTime < now - 30 * 1000;
+    };
     var new_state = function (name, transitions) {
-        var state = new ServerState(name);
+        var state = new SessionState(name);
         for (var i = 1; i < arguments.length; ++i) {
             state.addTransition(arguments[i]);
         }
@@ -887,9 +116,9 @@
     };
     var default_state = function () {
         return new_state(
-            ServerState.DEFAULT,
-            new_transition(ServerState.CONNECTING, function (machine) {
-                if (machine.getCurrentUser() === null) {
+            SessionState.DEFAULT,
+            new_transition(SessionState.CONNECTING, function (machine, now) {
+                if (machine.getSessionID() === null) {
                     return false;
                 }
                 var status = machine.getStatus();
@@ -902,79 +131,107 @@
     };
     var connecting_state = function () {
         return new_state(
-            ServerState.CONNECTING,
-            new_transition(ServerState.CONNECTED, function (machine) {
+            SessionState.CONNECTING,
+            new_transition(SessionState.CONNECTED, function (machine, now) {
                 var status = machine.getStatus();
                 return DockerStatus.READY.equals(status);
             }),
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (is_expired(machine.getCurrentState(), now)) {
+                    return true;
+                }
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !(
+                    DockerStatus.PREPARING.equals(status) ||
+                    DockerStatus.READY.equals(status)
+                );
             })
         );
     };
     var connected_state = function () {
         return new_state(
-            ServerState.CONNECTED,
-            new_transition(ServerState.HANDSHAKING, function (machine) {
-                return machine.getCurrentUser() !== null;
-            }),
-            new_transition(ServerState.ERROR, function (machine) {
-                var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
-            })
-        );
-    };
-    var handshaking_state = function () {
-        return new_state(
-            ServerState.HANDSHAKING,
-            new_transition(ServerState.RUNNING, function (machine) {
-                return machine.getSessionKey() !== null;
-            }),
-            new_transition(ServerState.CONNECTED, function (machine) {
-                var state = machine.getCurrentState();
-                var time = state.time;
-                if (!time) {
-                    return false;
-                }
-                var expired = time.getTime() + 16 * 1000;
-                var now = new Date().getTime();
-                if (now < expired) {
+            SessionState.CONNECTED,
+            new_transition(SessionState.HANDSHAKING, function (machine, now) {
+                if (machine.getSessionID() === null) {
                     return false;
                 }
                 var status = machine.getStatus();
                 return DockerStatus.READY.equals(status);
             }),
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    return true;
+                }
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !DockerStatus.READY.equals(status);
+            })
+        );
+    };
+    var handshaking_state = function () {
+        return new_state(
+            SessionState.HANDSHAKING,
+            new_transition(SessionState.RUNNING, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    return false;
+                }
+                var status = machine.getStatus();
+                if (!DockerStatus.READY.equals(status)) {
+                    return false;
+                }
+                return machine.getSessionKey() !== null;
+            }),
+            new_transition(SessionState.CONNECTED, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    return false;
+                }
+                var status = machine.getStatus();
+                if (!DockerStatus.READY.equals(status)) {
+                    return false;
+                }
+                if (machine.getSessionKey() !== null) {
+                    return false;
+                }
+                return is_expired(machine.getCurrentState(), now);
+            }),
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    return true;
+                }
+                var status = machine.getStatus();
+                return !DockerStatus.READY.equals(status);
             })
         );
     };
     var running_state = function () {
         return new_state(
-            ServerState.RUNNING,
-            new_transition(ServerState.DEFAULT, function (machine) {
+            SessionState.RUNNING,
+            new_transition(SessionState.DEFAULT, function (machine, now) {
+                var status = machine.getStatus();
+                if (!DockerStatus.READY.equals(status)) {
+                    return false;
+                }
+                if (machine.getSessionID() === null) {
+                    return true;
+                }
                 return machine.getSessionKey() === null;
             }),
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !DockerStatus.READY.equals(status);
             })
         );
     };
     var error_state = function () {
         return new_state(
-            ServerState.ERROR,
-            new_transition(ServerState.DEFAULT, function (machine) {
+            SessionState.ERROR,
+            new_transition(SessionState.DEFAULT, function (machine, now) {
                 var status = machine.getStatus();
                 return !DockerStatus.ERROR.equals(status);
             })
         );
     };
     ns.network.StateMachine = StateMachine;
-    ns.network.registers("StateMachine");
-})(SECHAT, DIMSDK);
+})(DIMP);
 (function (ns) {
     var HTTP = {
         get: function (url, callback) {
@@ -1025,9 +282,9 @@
         }
     };
     ns.network.HTTP = HTTP;
-    ns.network.registers("HTTP");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
+})(DIMP);
+(function (ns) {
+    var UTF8 = ns.format.UTF8;
     var HTTP = ns.network.HTTP;
     HTTP.upload = function (url, data, filename, name, callback) {
         var body = http_body(data, filename, name);
@@ -1058,8 +315,8 @@
         var begin = BOUNDARY_BEGIN;
         begin = begin.replace("{filename}", filename);
         begin = begin.replace("{name}", name);
-        begin = sdk.format.UTF8.encode(begin);
-        var end = sdk.format.UTF8.encode(BOUNDARY_END);
+        begin = UTF8.encode(begin);
+        var end = UTF8.encode(BOUNDARY_END);
         var size = begin.length + data.length + end.length;
         var body = new Uint8Array(size);
         body.set(begin, 0);
@@ -1067,1276 +324,1002 @@
         body.set(end, begin.length + data.length);
         return body;
     };
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Storage = sdk.dos.SessionStorage;
-    var get_configuration = function () {
-        return ns.Configuration;
-    };
-    var get_http_client = function () {
-        return ns.network.HTTP;
-    };
-    var md5 = function (data) {
-        var hash = sdk.digest.MD5.digest(data);
-        return sdk.format.Hex.encode(hash);
-    };
-    var fetch_filename = function (url) {
-        var pos;
-        pos = url.indexOf("?");
-        if (pos > 0) {
-            url = url.substr(0, pos);
-        }
-        pos = url.indexOf("#");
-        if (pos > 0) {
-            url = url.substr(0, pos);
-        }
-        pos = url.lastIndexOf("/");
-        if (pos < 0) {
-            pos = url.lastIndexOf("\\");
-            if (pos < 0) {
-                return url;
-            }
-        }
-        return url.substr(pos + 1);
-    };
-    var unique_filename = function (url) {
-        var filename = fetch_filename(url);
-        var pos = filename.indexOf(".");
-        if (pos !== 32) {
-            var utf8 = sdk.format.UTF8.encode(url);
-            if (pos > 0) {
-                filename = md5(utf8) + filename.substr(pos);
-            } else {
-                filename = md5(utf8);
-            }
-        }
-        return filename;
-    };
-    var FtpServer = {
-        uploadAvatar: function (image, user) {
-            var filename = md5(image) + ".jpg";
-            var config = get_configuration();
-            var up = config.getUploadURL();
-            up = up.replace("{ID}", user.getAddress().toString());
-            get_http_client().upload(
-                up,
-                image,
-                filename,
-                "avatar",
-                function (xhr, url) {
-                    var response = new Uint8Array(xhr.response);
-                    upload_success(image, filename, user, url, response);
-                }
-            );
-            var down = config.getAvatarURL();
-            down = down.replace("{ID}", user.getAddress.toString());
-            down = down.replace("{filename}", filename);
-            return down;
-        },
-        downloadAvatar: function (url, identifier) {
-            return url;
-        },
-        uploadEncryptedData: function (data, filename, sender) {
-            var pos = filename.indexOf(".");
-            if (pos > 0) {
-                filename = md5(data) + filename.substr(pos);
-            } else {
-                filename = md5(data);
-            }
-            var config = get_configuration();
-            var up = config.getUploadURL();
-            up = up.replace("{ID}", sender.getAddress().toString());
-            get_http_client().upload(up, data, filename, "file", function (xhr, url) {
-                var response = new Uint8Array(xhr.response);
-                upload_success(data, filename, sender, url, response);
-            });
-            var down = config.getDownloadURL();
-            down = down.replace("{ID}", sender.getAddress.toString());
-            down = down.replace("{filename}", filename);
-            return down;
-        },
-        downloadEncryptedData: function (url) {
-            var filename = unique_filename(url);
-            var data = this.loadFileData(filename);
-            if (data) {
-                return data;
-            }
-            var ftp = this;
-            get_http_client().download(url, function (xhr, url) {
-                var response = new Uint8Array(xhr.response);
-                if (response.length > 0) {
-                    ftp.saveFileData(response, filename);
-                    download_success(response, url);
-                }
-            });
-            return null;
-        },
-        saveFileData: function (data, filename) {
-            return Storage.saveData(data, filename);
-        },
-        loadFileData: function (filename) {
-            return Storage.loadData(filename);
-        },
-        getFileData: function (content) {
-            var data = content.getData("data");
-            if (data) {
-                return data;
-            }
-            var filename = content.getFilename();
-            if (filename) {
-                data = this.loadFileData(filename);
-                if (data) {
-                    return data;
-                }
-            }
-            var url = content.getURL();
-            if (url) {
-                data = this.downloadEncryptedData(url);
-                if (data) {
-                    return decrypt_file_data(data, content, this);
-                }
-            }
-            return null;
-        }
-    };
-    var decrypt_file_data = function (encrypted, content, ftp) {
-        var filename = content.getFilename();
-        var pwd = content.getPassword();
-        if (!pwd || !filename) {
-            console.error("cannot decrypt file data", content);
-            return null;
-        }
-        var data = pwd.decrypt(encrypted);
-        var pos = filename.indexOf(".");
-        if (pos > 0) {
-            filename = md5(data) + filename.substr(pos);
-        } else {
-            filename = md5(data);
-        }
-        if (ftp.saveFileData(data, filename)) {
-            content.setFilename(filename);
-        }
-        return data;
-    };
-    var upload_success = function (data, filename, sender, url, response) {};
-    var download_success = function (response, url) {};
-    ns.network.FtpServer = FtpServer;
-    ns.network.registers("FtpServer");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ServerDelegate = function () {};
-    sdk.Interface(ServerDelegate, null);
-    ServerDelegate.prototype.onHandshakeAccepted = function (session, server) {
-        console.assert(false, "implement me!");
-    };
-    ns.network.ServerDelegate = ServerDelegate;
-    ns.network.registers("ServerDelegate");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    var Envelope = sdk.protocol.Envelope;
-    var InstantMessage = sdk.protocol.InstantMessage;
-    var HandshakeCommand = sdk.protocol.HandshakeCommand;
-    var HandshakeState = sdk.protocol.HandshakeState;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var StateMachineDelegate = sdk.fsm.Delegate;
-    var DockerStatus = sdk.startrek.port.DockerStatus;
-    var Departure = sdk.startrek.port.Departure;
-    var Station = sdk.mkm.Station;
-    var Transmitter = ns.network.Transmitter;
-    var ServerState = ns.network.ServerState;
-    var StateMachine = ns.network.StateMachine;
-    var MessengerDelegate = ns.MessengerDelegate;
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
-    };
-    var Server = function (identifier, host, port, name) {
-        Station.call(this, identifier, host, port);
-        this.__delegate = null;
-        this.__fsm = new StateMachine(this);
-        this.__fsm.start();
-        this.__name = name ? name : identifier.getName();
-        this.__session = new ns.network.Session(host, port, get_messenger());
-        this.__sessionKey = null;
-        this.__paused = false;
-        this.__currentUser = null;
-    };
-    sdk.Class(
-        Server,
-        Station,
-        [Transmitter, MessengerDelegate, StateMachineDelegate],
-        null
-    );
-    Server.prototype.getName = function () {
-        return this.__name;
-    };
-    Server.prototype.getDelegate = function () {
-        return this.__delegate;
-    };
-    Server.prototype.setDelegate = function (delegate) {
-        this.__delegate = delegate;
-    };
-    Server.prototype.getCurrentUser = function () {
-        return this.__currentUser;
-    };
-    Server.prototype.setCurrentUser = function (user) {
-        if (user.equals(this.__currentUser)) {
-            return;
-        }
-        this.__currentUser = user;
-        this.__fsm.setSessionKey(null);
-    };
-    Server.prototype.getCurrentState = function () {
-        var state = this.__fsm.getCurrentState();
-        if (!state) {
-            state = this.__fsm.getDefaultState();
-        }
-        return state;
-    };
-    Server.prototype.getStatus = function () {
-        return this.__session.getStatus();
-    };
-    var pack = function (cmd) {
-        var currentUser = this.__currentUser;
-        if (!currentUser) {
-            throw new Error("current user not set");
-        }
-        var messenger = get_messenger();
-        var facebook = get_facebook();
-        var receiver = this.getIdentifier();
-        if (!facebook.getPublicKeyForEncryption(receiver)) {
-            cmd.setGroup(ID.EVERYONE);
-        }
-        var sender = currentUser.getIdentifier();
-        var env = Envelope.create(sender, receiver, null);
-        var iMsg = InstantMessage.create(env, cmd);
-        var sMsg = messenger.encryptMessage(iMsg);
-        if (!sMsg) {
-            throw new EvalError("failed to encrypt message: " + iMsg.toMap());
-        }
-        var rMsg = messenger.signMessage(sMsg);
-        if (!rMsg) {
-            throw new EvalError("failed to sign message: " + sMsg.toMap());
-        }
-        return rMsg;
-    };
-    var set_last_time = function (cmd) {};
-    Server.prototype.handshake = function (newSessionKey) {
-        var currentUser = this.__currentUser;
-        if (!currentUser) {
-            return;
-        }
-        var state = this.getCurrentState();
-        if (
-            !state.equals(ServerState.HANDSHAKING) &&
-            !state.equals(ServerState.CONNECTED) &&
-            !state.equals(ServerState.RUNNING)
-        ) {
-            console.log("server state not handshaking", state);
-            return;
-        }
-        var status = this.getStatus();
-        if (!DockerStatus.READY.equals(status)) {
-            console.log("server not connected");
-            return;
-        }
-        if (newSessionKey) {
-            this.__sessionKey = newSessionKey;
-        }
-        this.__fsm.setSessionKey(null);
-        var cmd = HandshakeCommand.restart(this.__sessionKey);
-        set_last_time.call(this, cmd);
-        var rMsg = pack.call(this, cmd);
-        if (cmd.getState().equals(HandshakeState.START)) {
-            var meta = currentUser.getMeta();
-            var visa = currentUser.getVisa();
-            rMsg.setMeta(meta);
-            rMsg.setVisa(visa);
-        }
-        var data = get_messenger().serializeMessage(rMsg);
-        this.__session.sendData(data, Departure.URGENT.valueOf());
-    };
-    Server.prototype.handshakeAccepted = function () {
-        var state = this.getCurrentState();
-        if (!state.equals(ServerState.HANDSHAKING)) {
-            console.log("server state not handshaking", state);
-        }
-        console.log("handshake accepted for user", this.__currentUser);
-        this.__fsm.setSessionKey(this.__sessionKey);
-        var client = this.getDelegate();
-        client.onHandshakeAccepted(this.__sessionKey, this);
-    };
-    Server.prototype.start = function () {
-        get_messenger().setDelegate(this);
-        if (!this.__session.isRunning()) {
-            this.__session.start();
-        }
-    };
-    Server.prototype.end = function () {
-        if (this.__session.isRunning()) {
-            this.__session.close();
-        }
-        this.__fsm.stop();
-    };
-    Server.prototype.pause = function () {
-        if (this.__paused) {
-        } else {
-            this.__fsm.pause();
-            this.__paused = true;
-        }
-    };
-    Server.prototype.resume = function () {
-        if (this.__paused) {
-            this.__fsm.resume();
-            this.__paused = false;
-        }
-    };
-    Server.prototype.sendContent = function (
-        sender,
-        receiver,
-        content,
-        priority
-    ) {
-        return this.__session.sendContent(sender, receiver, content, priority);
-    };
-    Server.prototype.sendInstantMessage = function (iMsg, priority) {
-        return this.__session.sendInstantMessage(iMsg, priority);
-    };
-    Server.prototype.sendReliableMessage = function (rMsg, priority) {
-        return this.__session.sendReliableMessage(rMsg, priority);
-    };
-    Server.prototype.uploadData = function (data, iMsg) {
-        var sender = iMsg.getSender();
-        var content = iMsg.getContent();
-        var filename = content.getFilename();
-        var ftp = ns.network.FtpServer;
-        return ftp.uploadEncryptedData(data, filename, sender);
-    };
-    Server.prototype.downloadData = function (url, iMsg) {
-        var ftp = ns.network.FtpServer;
-        return ftp.downloadEncryptedData(url);
-    };
-    Server.prototype.enterState = function (next, machine) {};
-    Server.prototype.exitState = function (previous, machine) {
-        var current = machine.getCurrentState();
-        console.info("server state changed:", previous, current);
-        if (!current) {
-            return;
-        }
-        var stateName = current.name;
-        var info = { state: stateName };
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationServerStateChanged, this, info);
-        if (stateName === ServerState.HANDSHAKING) {
-            this.handshake(null);
-        } else {
-            if (stateName === ServerState.RUNNING) {
-            } else {
-                if (stateName === ServerState.ERROR) {
-                    console.error("Station connection error!");
-                }
-            }
-        }
-    };
-    Server.prototype.pauseState = function (current, machine) {};
-    Server.prototype.resumeState = function (current, machine) {
-        var stateName = current.toString();
-        if (stateName === ServerState.RUNNING) {
-            this.__fsm.setSessionKey(null);
-        }
-    };
-    ns.network.Server = Server;
-    ns.network.registers("Server");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Thread = sdk.threading.Thread;
-    var InetSocketAddress = sdk.startrek.type.InetSocketAddress;
-    var WSGate = sdk.startrek.WSGate;
-    var GateKeeper = ns.network.GateKeeper;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var Thread = ns.fsm.threading.Thread;
+    var DockerStatus = ns.startrek.port.DockerStatus;
     var BaseSession = ns.network.BaseSession;
-    var ClientGateKeeper = function (host, port, delegate, messenger) {
-        GateKeeper.call(this, host, port, delegate, messenger);
+    var ClientSession = function (server, db) {
+        BaseSession.call(this, server.getHost(), server.getPort(), db);
+        this.__station = server;
+        this.__key = null;
         this.__thread = null;
     };
-    sdk.Class(ClientGateKeeper, GateKeeper, null, {
-        createGate: function (host, port, delegate) {
-            var remote = new InetSocketAddress(host, port);
-            return new WSGate(delegate, remote, null);
-        }
-    });
-    var Session = function (host, port, messenger) {
-        BaseSession.call(this, host, port, messenger);
-    };
-    sdk.Class(Session, BaseSession, null, {
-        createGateKeeper: function (host, port, messenger) {
-            return new ClientGateKeeper(host, port, this, messenger);
-        },
-        start: function () {
-            var thread = new Thread(this);
-            thread.start();
-            this.__thread = thread;
-        },
+    Class(ClientSession, BaseSession, null, {
         setup: function () {
-            this.setActive(true);
+            this.setActive(true, 0);
             return BaseSession.prototype.setup.call(this);
         },
         finish: function () {
-            var ok = BaseSession.prototype.finish.call(this);
-            this.setActive(false);
-            return ok;
+            this.setActive(false, 0);
+            return BaseSession.prototype.finish.call(this);
+        },
+        onDockerStatusChanged: function (previous, current, docker) {
+            if (!current || DockerStatus.ERROR.equals(current)) {
+                this.setActive(false, 0);
+            } else {
+                if (DockerStatus.READY.equals(current)) {
+                    this.setActive(true, 0);
+                }
+            }
+        },
+        onDockerReceived: function (arrival, docker) {
+            var all_responses = [];
+            var messenger = this.getMessenger();
+            var packages = get_data_packages(arrival);
+            var pack;
+            var responses;
+            var res;
+            for (var i = 0; i < packages.length; ++i) {
+                pack = packages[i];
+                try {
+                    responses = messenger.processPackage(pack);
+                    if (responses === null) {
+                        continue;
+                    }
+                    for (var j = 0; j < responses.length; ++j) {
+                        res = responses[j];
+                        if (!res || res.length === 0) {
+                            continue;
+                        }
+                        all_responses.push(res);
+                    }
+                } catch (e) {
+                    console.error("ClientSession::onDockerReceived()", e, pack);
+                }
+            }
+            var gate = this.getGate();
+            var source = docker.getRemoteAddress();
+            var destination = docker.getLocalUsers();
+            for (var k = 0; i < all_responses.length; ++k) {
+                gate.sendMessage(all_responses[k], source, destination);
+            }
         }
     });
-    ns.network.Session = Session;
-    ns.network.registers("Session");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var BaseLoginCommand = sdk.dkd.BaseLoginCommand;
-    var ServerDelegate = ns.network.ServerDelegate;
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
+    ClientSession.prototype.getStatus = function () {
+        return this.__station;
     };
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
+    ClientSession.prototype.getKey = function () {
+        return this.__key;
     };
-    var Terminal = function () {
-        Object.call(this);
-        this.__server = null;
-        var messenger = get_messenger();
-        messenger.setTerminal(this);
+    ClientSession.prototype.setKey = function (sessionKey) {
+        this.__key = sessionKey;
     };
-    sdk.Class(Terminal, Object, [ServerDelegate], null);
+    ClientSession.prototype.start = function () {
+        force_stop.call(this);
+        var thread = new Thread(this);
+        thread.start();
+        this.__thread = thread;
+    };
+    ClientSession.prototype.stop = function () {
+        BaseSession.prototype.stop.call(this);
+        force_stop.call(this);
+    };
+    var force_stop = function () {
+        var thread = this.__thread;
+        if (thread) {
+            this.__thread = null;
+            thread.stop();
+        }
+    };
+    var get_data_packages = function (arrival) {
+        var payload = arrival.getPackage();
+        if (!payload || payload.length === 0) {
+            return [];
+        } else {
+            if (payload[0] === "{".charCodeAt(0)) {
+                return payload.split("\n".charCodeAt(0));
+            } else {
+                return [payload];
+            }
+        }
+    };
+    ns.network.ClientSession = ClientSession;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var EntityType = ns.protocol.EntityType;
+    var Station = ns.mkm.Station;
+    var Runner = ns.fsm.skywalker.Runner;
+    var Thread = ns.fsm.threading.Thread;
+    var StateDelegate = ns.fsm.Delegate;
+    var StateMachine = ns.network.StateMachine;
+    var ClientSession = ns.network.ClientSession;
+    var SessionState = ns.network.SessionState;
+    var Terminal = function (facebook, db) {
+        Runner.call(this);
+        this.__facebook = facebook;
+        this.__db = db;
+        this.__messenger = null;
+        this.__fsm = null;
+        this.__last_time = 0;
+    };
+    Class(Terminal, Runner, [StateDelegate], null);
     Terminal.prototype.getUserAgent = function () {
         return navigator.userAgent;
     };
-    Terminal.prototype.getCurrentServer = function () {
-        return this.__server;
+    Terminal.prototype.getMessenger = function () {
+        return this.__messenger;
     };
-    var set_server = function (server) {
-        var current = this.__server;
-        if (current) {
-            if (!server || !current.equals(server)) {
-                current.end();
+    Terminal.prototype.getSession = function () {
+        var messenger = this.__messenger;
+        if (!messenger) {
+            return null;
+        }
+        return messenger.getSession();
+    };
+    Terminal.prototype.getState = function () {
+        var machine = this.__fsm;
+        if (!machine) {
+            return null;
+        }
+        return machine.getCurrentState();
+    };
+    Terminal.prototype.connect = function (host, port) {
+        var station, session;
+        var messenger = this.__messenger;
+        if (messenger) {
+            session = messenger.getSession();
+            if (session.isActive()) {
+                station = session.getStation();
+                if (station.getHost() === host && station.getPort() === port) {
+                    return messenger;
+                }
             }
         }
-        this.__server = server;
+        var machine = this.__fsm;
+        if (machine) {
+            this.__fsm = null;
+            machine.stop();
+        }
+        var facebook = this.__facebook;
+        station = this.createStation(host, port);
+        session = this.createSession(station);
+        messenger = this.createMessenger(session, facebook);
+        var packer = this.createPacker(facebook, messenger);
+        var processor = this.createProcessor(facebook, messenger);
+        messenger.setPacker(packer);
+        messenger.setProcessor(processor);
+        session.setMessenger(messenger);
+        machine = new StateMachine(session);
+        machine.setDelegate(this);
+        this.__messenger = messenger;
+        this.__fsm = machine;
+        machine.start();
+        return messenger;
     };
-    var is_new_server = function (host, port) {
-        var current = this.__server;
-        if (!current) {
+    Terminal.prototype.createStation = function (host, port) {
+        var station = new Station(host, port);
+        station.setDataSource(this.__facebook);
+        return station;
+    };
+    Terminal.prototype.createSession = function (station) {
+        var session = new ClientSession(station, this.__db);
+        var user = this.__facebook.getCurrentUser();
+        if (user) {
+            session.setIdentifier(user.getIdentifier());
+        }
+        session.start();
+        return session;
+    };
+    Terminal.prototype.createPacker = function (facebook, messenger) {
+        return new ns.ClientMessagePacker(facebook, messenger);
+    };
+    Terminal.prototype.createProcessor = function (facebook, messenger) {
+        return new ns.ClientMessageProcessor(facebook, messenger);
+    };
+    Terminal.prototype.createMessenger = function (session, facebook) {
+        throw new Error("NotImplemented");
+    };
+    Terminal.prototype.login = function (current) {
+        var session = this.getSession();
+        if (session) {
+            session.setIdentifier(current);
             return true;
-        }
-        return current.getPort() !== port || current.getHost() !== host;
-    };
-    Terminal.prototype.getCurrentUser = function () {
-        var current = this.__server;
-        if (!current) {
-            return null;
-        }
-        return current.getCurrentUser();
-    };
-    var start = function (identifier, host, port, name) {
-        var facebook = get_facebook();
-        var server = this.__server;
-        if (is_new_server.call(this, host, port)) {
-            set_server.call(this, null);
-            server = new ns.network.Server(identifier, host, port, name);
-            server.setDataSource(facebook);
-            server.setDelegate(this);
-            server.start();
-            set_server.call(this, server);
-        }
-        var user = facebook.getCurrentUser();
-        if (user && server) {
-            server.setCurrentUser(user);
-            server.handshake(null);
-        }
-    };
-    Terminal.prototype.launch = function (options) {
-        var identifier = options["ID"];
-        var host = options["host"];
-        var port = options["port"];
-        var name = options["name"];
-        start.call(this, identifier, host, port, name);
-    };
-    Terminal.prototype.terminate = function () {
-        set_server.call(this, null);
-    };
-    Terminal.prototype.onHandshakeAccepted = function (session, server) {
-        var user = this.getCurrentUser();
-        var login = new BaseLoginCommand(user.getIdentifier());
-        login.setAgent(this.getUserAgent());
-        login.setStation(server);
-        get_messenger().broadcastContent(login);
-    };
-    ns.network.Terminal = Terminal;
-    ns.registers("Terminal");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var Observer = sdk.lnc.Observer;
-    var Terminal = ns.network.Terminal;
-    var Client = function () {
-        Terminal.call(this);
-    };
-    sdk.Class(Client, Terminal, [Observer], null);
-    Client.prototype.onReceiveNotification = function (notification) {
-        console.log("received notification: ", notification);
-    };
-    var s_client = null;
-    Client.getInstance = function () {
-        if (!s_client) {
-            s_client = new Client();
-        }
-        return s_client;
-    };
-    ns.network.Client = Client;
-    ns.network.registers("Client");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var ID = sdk.protocol.ID;
-    var Visa = sdk.protocol.Visa;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var CommonFacebook = ns.CommonFacebook;
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
-    };
-    var ClientFacebook = function () {
-        CommonFacebook.call(this);
-    };
-    sdk.Class(ClientFacebook, CommonFacebook, null);
-    ClientFacebook.prototype.getAvatar = function (identifier) {
-        var avatar = null;
-        var doc = this.getDocument(identifier, "*");
-        if (doc) {
-            if (sdk.Interface.conforms(doc, Visa)) {
-                avatar = doc.getAvatar();
-            } else {
-                avatar = doc.getProperty("avatar");
-            }
-        }
-        if (avatar) {
-            var ftp = ns.network.FtpServer;
-            return ftp.downloadAvatar(avatar, identifier);
         } else {
-            return null;
-        }
-    };
-    ClientFacebook.prototype.saveMeta = function (meta, identifier) {
-        if (!CommonFacebook.prototype.saveMeta.call(this, meta, identifier)) {
             return false;
         }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMetaAccepted, this, {
-            ID: identifier,
-            meta: meta
-        });
-        return true;
     };
-    ClientFacebook.prototype.saveDocument = function (doc) {
-        if (!CommonFacebook.prototype.saveDocument.call(this, doc)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationDocumentUpdated, this, doc.toMap());
-        return true;
+    Terminal.prototype.start = function () {
+        var thread = new Thread(this);
+        thread.start();
     };
-    ClientFacebook.prototype.addContact = function (contact, user) {
-        if (!CommonFacebook.prototype.addContact.call(this, contact, user)) {
-            return false;
+    Terminal.prototype.finish = function () {
+        var machine = this.__fsm;
+        if (machine) {
+            this.__fsm = null;
+            machine.stop();
         }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationContactsUpdated, this, {
-            user: user,
-            contact: contact,
-            action: "add"
-        });
-        return true;
+        var messenger = this.__messenger;
+        if (messenger) {
+            var session = this.getSession();
+            session.stop();
+            this.__messenger = null;
+        }
+        return Runner.prototype.finish.call(this);
     };
-    ClientFacebook.prototype.removeContact = function (contact, user) {
-        if (!CommonFacebook.prototype.removeContact.call(this, contact, user)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationContactsUpdated, this, {
-            user: user,
-            contact: contact,
-            action: "remove"
-        });
-        return true;
-    };
-    ClientFacebook.prototype.addMember = function (member, group) {
-        if (!CommonFacebook.prototype.addMember.call(this, member, group)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMembersUpdated, this, {
-            group: group,
-            member: member,
-            action: "add"
-        });
-        return true;
-    };
-    ClientFacebook.prototype.removeMember = function (member, group) {
-        if (!CommonFacebook.prototype.removeMember.call(this, member, group)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMembersUpdated, this, {
-            group: group,
-            member: member,
-            action: "remove"
-        });
-        return true;
-    };
-    ClientFacebook.prototype.saveMembers = function (members, group) {
-        if (!CommonFacebook.prototype.saveMembers.call(this, members, group)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationMembersUpdated, this, {
-            group: group,
-            members: members,
-            action: "update"
-        });
-        return true;
-    };
-    ClientFacebook.prototype.removeGroup = function (group) {
-        if (!CommonFacebook.prototype.removeGroup.call(this, group)) {
-            return false;
-        }
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationGroupRemoved, this, {
-            group: group,
-            action: "remove"
-        });
-        return true;
-    };
-    ClientFacebook.prototype.getMeta = function (identifier) {
-        var meta = CommonFacebook.prototype.getMeta.call(this, identifier);
-        if (!meta) {
-            if (identifier.isBroadcast()) {
-                return null;
-            }
-            setTimeout(function () {
-                get_messenger().queryMeta(identifier);
-            }, 512);
-        }
-        return meta;
-    };
-    ClientFacebook.prototype.getDocument = function (identifier, type) {
-        var doc = CommonFacebook.prototype.getDocument.call(this, identifier, type);
-        if (!doc || this.isExpiredDocument(doc, true)) {
-            if (identifier.isBroadcast()) {
-                return null;
-            }
-            setTimeout(function () {
-                get_messenger().queryDocument(identifier, type);
-            }, 512);
-        }
-        return doc;
-    };
-    ClientFacebook.prototype.getContacts = function (user) {
-        var contacts = CommonFacebook.prototype.getContacts.call(this, user);
-        if (!contacts || contacts.length === 0) {
-        }
-        return contacts;
-    };
-    ClientFacebook.prototype.getMembers = function (group) {
-        var members = CommonFacebook.prototype.getMembers.call(this, group);
-        if (!members || members.length === 0) {
-            console.log("querying members", group);
-            var gm = new ns.GroupManager(group);
-            gm.query();
-        }
-        return members;
-    };
-    ClientFacebook.prototype.getAssistants = function (group) {
-        var assistants = [
-            "assistant@4WBSiDzg9cpZGPqFrQ4bHcq4U5z9QAQLHS",
-            "assistant@2PpB6iscuBjA15oTjAsiswoX9qis5V3c1Dq"
-        ];
-        return ID.convert(assistants);
-    };
-    var s_facebook = null;
-    ClientFacebook.getInstance = function () {
-        if (!s_facebook) {
-            s_facebook = new ClientFacebook();
-        }
-        return s_facebook;
-    };
-    ns.ClientFacebook = ClientFacebook;
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var MetaCommand = sdk.protocol.MetaCommand;
-    var DocumentCommand = sdk.protocol.DocumentCommand;
-    var GroupCommand = sdk.protocol.GroupCommand;
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
-    };
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    var send_command = function (cmd) {
-        get_messenger().sendCommand(cmd, 0);
-    };
-    var send_group_command = function (cmd, receiver) {
-        var members;
-        if (receiver instanceof Array) {
-            members = receiver;
-        } else {
-            members = [receiver];
-        }
-        var messenger = get_messenger();
-        var facebook = get_messenger();
-        var user = facebook.getCurrentUser();
-        var sender = user.getIdentifier();
-        for (var i = 0; i < members.length; ++i) {
-            messenger.sendContent(sender, members[i], cmd, 0);
-        }
-    };
-    var GroupManager = function (group) {
-        this.__group = group;
-    };
-    GroupManager.prototype.send = function (content) {
-        var facebook = get_facebook();
-        var messenger = get_messenger();
-        var group = content.getGroup();
-        if (!group) {
-            group = this.__group;
-            content.setGroup(group);
-        } else {
-            if (!this.__group.equals(group)) {
-                throw new Error("group ID not match: " + this.__group + ", " + group);
-            }
-        }
-        var members = facebook.getMembers(group);
-        if (!members || members.length === 0) {
-            var bots = facebook.getAssistants(group);
-            if (!bots || bots.length === 0) {
-                throw new Error("failed to get assistants for group: " + group);
-            }
-            messenger.queryGroupInfo(group, bots);
-            return false;
-        }
-        return messenger.sendContent(null, group, content, 0);
-    };
-    GroupManager.prototype.invite = function (newMembers) {
-        var facebook = get_facebook();
-        var group = this.__group;
-        var bots = facebook.getAssistants(group);
-        var members = facebook.getMembers(group);
-        if (!members) {
-            members = [];
-        }
-        var count = members.length;
-        var meta = facebook.getMeta(group);
-        if (!meta) {
-            throw new ReferenceError(
-                "failed to get meta for group: " + group.toString()
-            );
-        }
-        var cmd;
-        var doc = facebook.getDocument(group, "*");
-        if (doc) {
-            cmd = DocumentCommand.response(group, meta, doc);
-        } else {
-            cmd = MetaCommand.response(group, meta);
-        }
-        send_command(cmd);
-        send_group_command(cmd, bots);
-        if (count <= 2) {
-            members = addMembers(newMembers, group);
-            send_group_command(cmd, members);
-            cmd = GroupCommand.invite(group, members);
-            send_group_command(cmd, bots);
-            send_group_command(cmd, members);
-        } else {
-            send_group_command(cmd, newMembers);
-            cmd = GroupCommand.invite(group, newMembers);
-            send_group_command(cmd, bots);
-            send_group_command(cmd, members);
-            members = addMembers(newMembers, group);
-            cmd = GroupCommand.invite(group, members);
-            send_group_command(cmd, newMembers);
-        }
-        return true;
-    };
-    GroupManager.prototype.expel = function (outMembers) {
-        var facebook = get_facebook();
-        var group = this.__group;
-        var owner = facebook.getOwner(group);
-        var bots = facebook.getAssistants(group);
-        var members = facebook.getMembers(group);
-        if (!members) {
-            members = [];
-        }
-        var i;
-        for (i = 0; i < bots.length; ++i) {
-            if (outMembers.indexOf(bots[i]) >= 0) {
-                throw new Error("Cannot expel group assistant: " + bots[i]);
-            }
-        }
-        if (outMembers.indexOf(owner) >= 0) {
-            throw new Error("Cannot expel group owner: " + bots[i]);
-        }
-        var cmd = GroupCommand.expel(group, outMembers);
-        send_group_command(cmd, bots);
-        send_group_command(cmd, members);
-        if (owner && members.indexOf(owner) < 0) {
-            send_group_command(cmd, owner);
-        }
-        return removeMembers(outMembers, group);
-    };
-    GroupManager.prototype.quit = function () {
-        var facebook = get_facebook();
-        var user = facebook.getCurrentUser();
-        if (!user) {
-            throw new ReferenceError("failed to get current user");
-        }
-        var group = this.__group;
-        var owner = facebook.getOwner(group);
-        var bots = facebook.getAssistants(group);
-        var members = facebook.getMembers(group);
-        if (!members) {
-            members = [];
-        }
-        if (bots.indexOf(user.getIdentifier()) >= 0) {
-            throw new Error("Group assistant cannot quit: " + user.getIdentifier());
-        }
-        if (user.getIdentifier().equals(owner)) {
-            throw new Error("Group owner cannot quit: " + user.getIdentifier());
-        }
-        var cmd = GroupCommand.quit(group);
-        send_group_command(cmd, bots);
-        send_group_command(cmd, members);
-        if (owner && members.indexOf(owner) < 0) {
-            send_group_command(cmd, owner);
-        }
-        return facebook.removeGroup(group);
-    };
-    GroupManager.prototype.query = function () {
-        var facebook = get_facebook();
-        var messenger = get_messenger();
-        var group = this.__group;
-        var bots = facebook.getAssistants(group);
-        return messenger.queryGroupInfo(group, bots);
-    };
-    var addMembers = function (newMembers, group) {
-        var facebook = get_facebook();
-        var members = facebook.getMembers(group);
-        var count = 0;
-        var member;
-        for (var i = 0; i < newMembers.length; ++i) {
-            member = newMembers[i];
-            if (members.indexOf(member) < 0) {
-                members.push(member);
-                ++count;
-            }
-        }
-        if (count > 0) {
-            facebook.saveMembers(members, group);
-        }
-        return members;
-    };
-    var removeMembers = function (outMembers, group) {
-        var facebook = get_facebook();
-        var members = facebook.getMembers(group);
-        var count = 0;
-        var pos;
-        for (var i = 0; i < outMembers.length; ++i) {
-            pos = members.indexOf(outMembers[i]);
-            if (pos >= 0) {
-                members.splice(pos, 1);
-                ++count;
-            }
-        }
-        return count > 0 && facebook.saveMembers(members, group);
-    };
-    ns.GroupManager = GroupManager;
-    ns.registers("GroupManager");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var SymmetricKey = sdk.crypto.SymmetricKey;
-    var ID = sdk.protocol.ID;
-    var MetaCommand = sdk.protocol.MetaCommand;
-    var DocumentCommand = sdk.protocol.DocumentCommand;
-    var LoginCommand = sdk.protocol.LoginCommand;
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var QueryCommand = sdk.protocol.group.QueryCommand;
-    var ReportCommand = ns.protocol.ReportCommand;
-    var SearchCommand = ns.protocol.SearchCommand;
-    var CommonFacebook = ns.CommonFacebook;
-    var CommonMessenger = ns.CommonMessenger;
-    var ServerDelegate = ns.network.ServerDelegate;
-    var ClientMessenger = function () {
-        CommonMessenger.call(this);
-        this.__terminal = null;
-        this.__offlineTime = null;
-        this.__metaQueryExpires = {};
-        this.__docQueryExpires = {};
-        this.__groupQueryExpires = {};
-    };
-    sdk.Class(ClientMessenger, CommonMessenger, [ServerDelegate]);
-    var QUERY_INTERVAL = 120 * 1000;
-    ClientMessenger.prototype.getEntityDelegate = function () {
-        if (!this.__barrack) {
-            this.__barrack = ns.ClientFacebook.getInstance();
-        }
-        return this.__barrack;
-    };
-    ClientMessenger.prototype.getProcessor = function () {
-        if (!this.__processor) {
-            this.__processor = new ns.ClientProcessor(this);
-        }
-        return this.__processor;
-    };
-    ClientMessenger.prototype.getDataSource = function () {
-        if (!this.__datasource) {
-            this.__datasource = ns.MessageDataSource;
-        }
-        return this.__datasource;
-    };
-    ClientMessenger.prototype.getTerminal = function () {
-        return this.__terminal;
-    };
-    ClientMessenger.prototype.setTerminal = function (client) {
-        this.__terminal = client;
-    };
-    ClientMessenger.prototype.getCurrentServer = function () {
-        return this.__terminal.getCurrentServer();
-    };
-    ClientMessenger.prototype.getCurrentUser = function () {
-        return this.__terminal.getCurrentUser();
-    };
-    ClientMessenger.prototype.sendCommand = function (cmd, priority) {
-        var server = this.getCurrentServer();
-        if (!server) {
-            console.error("current server not found");
-            return false;
-        }
-        return this.sendContent(null, server.getIdentifier(), cmd, null, priority);
-    };
-    ClientMessenger.prototype.broadcastContent = function (content) {
-        content.setGroup(ID.EVERYONE);
-        return this.sendContent(null, ID.EVERYONE, content, null, 1);
-    };
-    ClientMessenger.prototype.broadcastVisa = function (doc) {
-        var user = this.getCurrentUser();
-        if (!user) {
-            throw new ReferenceError("login first");
-        }
-        var identifier = doc.getIdentifier();
-        if (!user.getIdentifier().equals(identifier)) {
-            throw new ReferenceError("visa document error" + doc.toMap());
-        }
-        doc.setValue(CommonFacebook.EXPIRES_KEY, null);
-        var contacts = user.getContacts();
-        if (contacts && contacts.length > 0) {
-            var cmd = DocumentCommand.response(identifier, null, doc);
-            for (var i = 0; i < contacts.length; ++i) {
-                this.sendContent(identifier, contacts[i], cmd, null, 1);
-            }
-        }
-    };
-    ClientMessenger.prototype.postDocument = function (doc, meta) {
-        doc.setValue(CommonFacebook.EXPIRES_KEY, null);
-        var cmd = DocumentCommand.response(doc.getIdentifier(), meta, doc);
-        return this.sendCommand(cmd, 1);
-    };
-    ClientMessenger.prototype.postContacts = function (contacts) {
-        var facebook = this.getFacebook();
-        var user = facebook.getCurrentUser();
-        if (!user) {
-            throw new Error("login first");
-        }
-        var pwd = SymmetricKey.generate(SymmetricKey.AES);
-        var data = sdk.format.JSON.encode(contacts);
-        data = pwd.encrypt(data);
-        var key = sdk.format.JSON.encode(pwd);
-        key = user.encrypt(key);
-        var cmd = new StorageCommand(StorageCommand.CONTACTS);
-        cmd.setIdentifier(user.getIdentifier());
-        cmd.setData(data);
-        cmd.setKey(key);
-        return this.sendCommand(cmd, 1);
-    };
-    ClientMessenger.prototype.queryContacts = function () {
-        var facebook = this.getFacebook();
-        var user = facebook.getCurrentUser();
-        if (!user) {
-            throw new Error("current user not found");
-        }
-        var cmd = new StorageCommand(StorageCommand.CONTACTS);
-        cmd.setIdentifier(user.getIdentifier());
-        return this.sendCommand(cmd, 1);
-    };
-    ClientMessenger.prototype.queryMeta = function (identifier) {
-        if (identifier.isBroadcast()) {
-            return false;
-        }
+    Terminal.prototype.process = function () {
         var now = new Date().getTime();
-        var expires = this.__metaQueryExpires[identifier];
-        if (expires && now < expires) {
+        if (!this.isExpired(this.__last_time, now)) {
             return false;
         }
-        this.__metaQueryExpires[identifier] = now + QUERY_INTERVAL;
-        console.log("querying meta", identifier);
-        var cmd = new MetaCommand(identifier);
-        return this.sendCommand(cmd, 1);
-    };
-    ClientMessenger.prototype.queryDocument = function (identifier, type) {
-        if (identifier.isBroadcast()) {
+        var messenger = this.getMessenger();
+        if (!messenger) {
             return false;
         }
-        var now = new Date().getTime();
-        var expires = this.__docQueryExpires[identifier];
-        if (expires && now < expires) {
+        var session = messenger.getSession();
+        var uid = session.getIdentifier();
+        if (!uid || !this.getState().equals(SessionState.RUNNING)) {
             return false;
         }
-        this.__docQueryExpires[identifier] = now + QUERY_INTERVAL;
-        console.log("querying document", identifier, type);
-        var cmd = new DocumentCommand(identifier);
-        return this.sendCommand(cmd, 1);
-    };
-    ClientMessenger.prototype.queryGroupInfo = function (group, member) {
-        if (group.isBroadcast()) {
-            return false;
-        }
-        if (members.length === 0) {
-            return false;
-        }
-        var currentUser = this.getCurrentUser();
-        var times = this.__groupQueryExpires[group];
-        if (!times) {
-            times = {};
-            this.__groupQueryExpires[group] = times;
-        }
-        var members;
-        if (member instanceof Array) {
-            members = member;
-        } else {
-            members = [member];
-        }
-        var now = new Date();
-        var checking = false;
-        var user;
-        var expires;
-        var cmd = new QueryCommand(group);
-        for (var i = 0; i < members.length; ++i) {
-            user = members[i];
-            expires = times[user];
-            if (expires && now < expires) {
-                continue;
-            }
-            times[user] = now + QUERY_INTERVAL;
-            console.log("querying group", group, user);
-            if (this.sendContent(currentUser.getIdentifier(), user, cmd, null, 1)) {
-                checking = true;
-            }
-        }
-        return checking;
-    };
-    ClientMessenger.prototype.search = function (keywords) {
-        if (keywords === SearchCommand.ONLINE_USERS) {
-            return this.sendCommand(SearchCommand.search(), 0);
-        } else {
-            var cmd = SearchCommand.search(keywords);
-            var bot = ID.parse("archivist@anywhere");
-            return this.sendContent(null, bot, cmd, null, 0);
-        }
-    };
-    ClientMessenger.prototype.reportOnline = function () {
-        var user = this.getCurrentUser();
-        if (!user) {
-            console.error("current user not set yet");
-            return;
-        }
-        var cmd = ReportCommand.report(ReportCommand.ONLINE);
-        if (this.__offlineTime) {
-            cmd.setValue("last_time", this.__offlineTime.getTime() / 1000);
-        }
-        this.sendCommand(cmd, 0);
-    };
-    ClientMessenger.prototype.reportOffline = function () {
-        var user = this.getCurrentUser();
-        if (!user) {
-            console.error("current user not set yet");
-            return;
-        }
-        var cmd = ReportCommand.report(ReportCommand.OFFLINE);
-        this.__offlineTime = cmd.getTime();
-        this.sendCommand(cmd, 0);
-    };
-    ClientMessenger.prototype.onReceivePackage = function (data, server) {
         try {
-            var res = this.processData(data);
-            if (res && res.length > 0) {
-                server.sendPackage(res, null, 1);
-            }
+            this.keepOnline(uid, messenger);
         } catch (e) {
-            console.error("failed to process data", data, e);
+            console.error("Terminal::process()", e);
+        }
+        this.__last_time = now;
+        return false;
+    };
+    Terminal.prototype.isExpired = function (last, now) {
+        return now < last + 300 * 1000;
+    };
+    Terminal.prototype.keepOnline = function (uid, messenger) {
+        if (EntityType.STATION.equals(uid.getType())) {
+            messenger.reportOnline(uid);
+        } else {
+            messenger.broadcastLogin(uid, this.getUserAgent());
         }
     };
-    ClientMessenger.prototype.didSendPackage = function (data, server) {};
-    ClientMessenger.prototype.didFailToSendPackage = function (
-        error,
-        data,
-        server
-    ) {};
-    ClientMessenger.prototype.onHandshakeAccepted = function (session, server) {
-        var user = this.getCurrentUser();
-        var login = new LoginCommand(user.getIdentifier());
-        login.setAgent(this.getTerminal().getUserAgent());
-        login.setStation(server);
-        this.broadcastContent(login);
-    };
-    var s_messenger = null;
-    ClientMessenger.getInstance = function () {
-        if (!s_messenger) {
-            s_messenger = new ClientMessenger();
+    Terminal.prototype.enterState = function (next, machine) {};
+    Terminal.prototype.exitState = function (previous, machine) {
+        var messenger = this.getMessenger();
+        var current = machine.getCurrentState();
+        if (!current) {
+            return;
         }
-        return s_messenger;
+        if (current.equals(SessionState.HANDSHAKING)) {
+            messenger.handshake(null);
+        } else {
+            if (current.equals(SessionState.RUNNING)) {
+                messenger.handshakeSuccess();
+                this.__last_time = new Date().getTime();
+            }
+        }
     };
-    ns.ClientMessenger = ClientMessenger;
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var NetworkType = sdk.protocol.NetworkType;
-    var TextContent = sdk.protocol.TextContent;
-    var HandshakeCommand = sdk.protocol.HandshakeCommand;
-    var ReceiptCommand = sdk.protocol.ReceiptCommand;
-    var CommonProcessor = ns.CommonProcessor;
-    var ClientProcessor = function (facebook, messenger) {
-        CommonProcessor.call(this, facebook, messenger);
+    Terminal.prototype.pauseState = function (current, machine) {};
+    Terminal.prototype.resumeState = function (current, machine) {};
+    ns.network.Terminal = Terminal;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
+    var HandshakeCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(ClientProcessor, CommonProcessor, null, {
-        createCreator: function () {
+    Class(HandshakeCommandProcessor, BaseCommandProcessor, null, {
+        process: function (content, rMsg) {
+            var messenger = this.getMessenger();
+            var session = messenger.getSession();
+            var station = session.getStation();
+            var oid = station.getIdentifier();
+            var sender = rMsg.getSender();
+            if (!oid || oid.isBroadcast()) {
+                station.setIdentifier(sender);
+            }
+            var title = content.getTitle();
+            var newKey = content.getSessionKey();
+            var oldKey = session.getKey();
+            if (title === "DIM?") {
+                if (!oldKey) {
+                    messenger.handshake(newKey);
+                } else {
+                    if (oldKey === newKey) {
+                        messenger.handshake(newKey);
+                    } else {
+                        messenger.setKey(null);
+                    }
+                }
+            } else {
+                if (title === "DIM!") {
+                    if (!oldKey) {
+                        session.setKey(newKey);
+                    } else {
+                        if (oldKey === newKey) {
+                            console.warn("duplicated handshake", content, rMsg);
+                        } else {
+                            console.error("handshake error", oldKey, content, rMsg);
+                            session.setKey(null);
+                        }
+                    }
+                } else {
+                    console.error("Hello world!", content, rMsg);
+                }
+            }
+            return null;
+        }
+    });
+    ns.cpu.HandshakeCommandProcessor = HandshakeCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
+    var LoginCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
+    LoginCommandProcessor.prototype.process = function (cmd, rMsg) {
+        return null;
+    };
+    ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
+    var ReceiptCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(ReceiptCommandProcessor, BaseCommandProcessor, null, null);
+    ReceiptCommandProcessor.prototype.process = function (cmd, rMsg) {
+        return null;
+    };
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
+    var HistoryCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(HistoryCommandProcessor, BaseCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var text =
+                "History command (name: " + cmd.getCmd() + ") not support yet!";
+            return this.respondText(text, cmd.getGroup());
+        }
+    });
+    ns.cpu.HistoryCommandProcessor = HistoryCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var HistoryCommandProcessor = ns.cpu.HistoryCommandProcessor;
+    var GroupCommandProcessor = function (facebook, messenger) {
+        HistoryCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(GroupCommandProcessor, HistoryCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var text = "Group command (name: " + cmd.getCmd() + ") not support yet!";
+            return this.respondText(text, cmd.getGroup());
+        }
+    });
+    GroupCommandProcessor.prototype.getMembers = function (cmd) {
+        var members = cmd.getMembers();
+        if (members) {
+            return members;
+        }
+        var member = cmd.getMember();
+        if (member) {
+            return [member];
+        } else {
+            return [];
+        }
+    };
+    ns.cpu.GroupCommandProcessor = GroupCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var ResetCommandProcessor = ns.cpu.ResetCommandProcessor;
+    var INVITE_CMD_ERROR = "Invite command error.";
+    var INVITE_NOT_ALLOWED =
+        "Sorry, yo are not allowed to invite new members into this group.";
+    var InviteCommandProcessor = function (facebook, messenger) {
+        ResetCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(InviteCommandProcessor, ResetCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var owner = facebook.getOwner(group);
+            var members = facebook.getMembers(group);
+            if (!owner || !members || members.length === 0) {
+                return this.temporarySave(cmd, rMsg.getSender());
+            }
+            var sender = rMsg.getSender();
+            if (members.indexOf(sender) < 0) {
+                var assistants = facebook.getAssistants(group);
+                if (!assistants || assistants.indexOf(sender) < 0) {
+                    return this.respondText(INVITE_NOT_ALLOWED, group);
+                }
+            }
+            var invites = this.getMembers(cmd);
+            if (invites.length === 0) {
+                return this.respondText(INVITE_CMD_ERROR, group);
+            }
+            if (sender.equals(owner) && invites.indexOf(owner) >= 0) {
+                return this.temporarySave(cmd, rMsg.getSender());
+            }
+            var adds = [];
+            var item, pos;
+            for (var i = 0; i < invites.length; ++i) {
+                item = invites[i];
+                pos = members.indexOf(item);
+                if (pos >= 0) {
+                    continue;
+                }
+                adds.push(item.toString());
+                members.push(item);
+            }
+            if (adds.length > 0) {
+                if (facebook.saveMembers(members, group)) {
+                    cmd.setValue("added", adds);
+                }
+            }
+            return null;
+        }
+    });
+    ns.cpu.InviteCommandProcessor = InviteCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
+    var GROUP_EMPTY = "Group empty.";
+    var EXPEL_CMD_ERROR = "Expel command error.";
+    var EXPEL_NOT_ALLOWED =
+        "Sorry, you are not allowed to expel member from this group.";
+    var CANNOT_EXPEL_OWNER = "Group owner cannot be expelled.";
+    var ExpelCommandProcessor = function (facebook, messenger) {
+        GroupCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(ExpelCommandProcessor, GroupCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var owner = facebook.getOwner(group);
+            var members = facebook.getMembers(group);
+            if (!owner || !members || members.length === 0) {
+                return this.respondText(GROUP_EMPTY, group);
+            }
+            var sender = rMsg.getSender();
+            if (!owner.equals(sender)) {
+                var assistants = facebook.getAssistants(group);
+                if (!assistants || assistants.indexOf(sender) < 0) {
+                    return this.respondText(EXPEL_NOT_ALLOWED, group);
+                }
+            }
+            var expels = this.getMembers(cmd);
+            if (expels.length === 0) {
+                return this.respondText(EXPEL_CMD_ERROR, group);
+            }
+            if (expels.indexOf(owner) >= 0) {
+                return this.respondText(CANNOT_EXPEL_OWNER, group);
+            }
+            var removes = [];
+            var item, pos;
+            for (var i = 0; i < expels.length; ++i) {
+                item = expels[i];
+                pos = members.indexOf(item);
+                if (pos < 0) {
+                    continue;
+                }
+                removes.push(item.toString());
+                members.splice(pos, 1);
+            }
+            if (removes.length > 0) {
+                if (facebook.saveMembers(members, group)) {
+                    cmd.setValue("removed", removes);
+                }
+            }
+            return null;
+        }
+    });
+    ns.cpu.ExpelCommandProcessor = ExpelCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
+    var GROUP_EMPTY = "Group empty.";
+    var OWNER_CANNOT_QUIT = "Sorry, owner cannot quit group.";
+    var ASSISTANT_CANNOT_QUIT = "Sorry, assistant cannot quit group.";
+    var QuitCommandProcessor = function (facebook, messenger) {
+        GroupCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(QuitCommandProcessor, GroupCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var owner = facebook.getOwner(group);
+            var members = facebook.getMembers(group);
+            if (!owner || !members || members.length === 0) {
+                return this.respondText(GROUP_EMPTY, group);
+            }
+            var sender = rMsg.getSender();
+            if (owner.equals(sender)) {
+                return this.respondText(OWNER_CANNOT_QUIT, group);
+            }
+            var assistants = facebook.getAssistants(group);
+            if (assistants && assistants.indexOf(sender) >= 0) {
+                return this.removeAssistant(cmd, rMsg);
+            }
+            var pos = members.indexOf(sender);
+            if (pos > 0) {
+                members.splice(pos, 1);
+                facebook.saveMembers(members, group);
+            }
+            return null;
+        },
+        removeAssistant: function (cmd, rMsg) {
+            return this.respondText(ASSISTANT_CANNOT_QUIT, cmd.getGroup());
+        }
+    });
+    ns.cpu.QuitCommandProcessor = QuitCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var GroupCommand = ns.protocol.GroupCommand;
+    var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
+    var GROUP_EMPTY = "Group empty.";
+    var QUERY_NOT_ALLOWED = "Sorry, you are not allowed to query this group.";
+    var QueryCommandProcessor = function (facebook, messenger) {
+        GroupCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(QueryCommandProcessor, GroupCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var owner = facebook.getOwner(group);
+            var members = facebook.getMembers(group);
+            if (!owner || !members || members.length === 0) {
+                return this.respondText(GROUP_EMPTY, group);
+            }
+            var sender = rMsg.getSender();
+            if (members.indexOf(sender) < 0) {
+                var assistants = facebook.getAssistants(group);
+                if (!assistants || assistants.indexOf(sender) < 0) {
+                    return this.respondText(QUERY_NOT_ALLOWED, group);
+                }
+            }
+            var res = this.respondGroupMembers(owner, group, members);
+            return [res];
+        },
+        respondGroupMembers: function (owner, group, members) {
+            var facebook = this.getFacebook();
+            var user = facebook.getCurrentUser();
+            if (user.getIdentifier().equals(owner)) {
+                return GroupCommand.reset(group, members);
+            } else {
+                return GroupCommand.invite(group, members);
+            }
+        }
+    });
+    ns.cpu.QueryCommandProcessor = QueryCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var GroupCommand = ns.protocol.GroupCommand;
+    var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
+    var RESET_CMD_ERROR = "Reset command error.";
+    var RESET_NOT_ALLOWED = "Sorry, you are not allowed to reset this group.";
+    var ResetCommandProcessor = function (facebook, messenger) {
+        GroupCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(ResetCommandProcessor, GroupCommandProcessor, null, {
+        process: function (cmd, rMsg) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var owner = facebook.getOwner(group);
+            var members = facebook.getMembers(group);
+            if (!owner || !members || members.length === 0) {
+                return this.temporarySave(cmd, rMsg.getSender());
+            }
+            var sender = rMsg.getSender();
+            if (!owner.equals(sender)) {
+                var assistants = facebook.getAssistants(group);
+                if (!assistants || assistants.indexOf(sender) < 0) {
+                    return this.respondText(RESET_NOT_ALLOWED, group);
+                }
+            }
+            var newMembers = this.getMembers(cmd);
+            if (newMembers.length === 0) {
+                return this.respondText(RESET_CMD_ERROR, group);
+            }
+            if (newMembers.indexOf(owner) < 0) {
+                return this.respondText(RESET_CMD_ERROR, group);
+            }
+            var removes = [];
+            var item, i;
+            for (i = 0; i < members.length; ++i) {
+                item = members[i];
+                if (newMembers.indexOf(item) < 0) {
+                    removes.push(item.toString());
+                }
+            }
+            var adds = [];
+            for (i = 0; i < newMembers.length; ++i) {
+                item = newMembers[i];
+                if (members.indexOf(item) < 0) {
+                    adds.push(item.toString());
+                }
+            }
+            if (adds.length > 0 || removes.length > 0) {
+                if (facebook.saveMembers(newMembers, group)) {
+                    if (adds.length > 0) {
+                        cmd.setValue("added", adds);
+                    }
+                    if (removes.length > 0) {
+                        cmd.setValue("removed", removes);
+                    }
+                }
+            }
+            return null;
+        },
+        temporarySave: function (cmd, sender) {
+            var facebook = this.getFacebook();
+            var group = cmd.getGroup();
+            var newMembers = this.getMembers(cmd);
+            if (newMembers.length === 0) {
+                return this.respondText(RESET_CMD_ERROR, group);
+            }
+            var item;
+            for (var i = 0; i < newMembers.length; ++i) {
+                item = newMembers[i];
+                if (!facebook.getMeta(item)) {
+                    continue;
+                } else {
+                    if (!facebook.isOwner(item, group)) {
+                        continue;
+                    }
+                }
+                if (facebook.saveMembers(newMembers, group)) {
+                    if (!item.equals(sender)) {
+                        this.queryOwner(item, group);
+                    }
+                }
+                return null;
+            }
+            var res = GroupCommand.query(group);
+            return [res];
+        },
+        queryOwner: function (owner, group) {}
+    });
+    ns.cpu.ResetCommandProcessor = ResetCommandProcessor;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var ContentType = ns.protocol.ContentType;
+    var Command = ns.protocol.Command;
+    var GroupCommand = ns.protocol.GroupCommand;
+    var BaseContentProcessor = ns.cpu.BaseContentProcessor;
+    var ContentProcessorCreator = ns.cpu.ContentProcessorCreator;
+    var ReceiptCommandProcessor = ns.cpu.ReceiptCommandProcessor;
+    var HandshakeCommandProcessor = ns.cpu.HandshakeCommandProcessor;
+    var LoginCommandProcessor = ns.cpu.LoginCommandProcessor;
+    var HistoryCommandProcessor = ns.cpu.HistoryCommandProcessor;
+    var ClientContentProcessorCreator = function (facebook, messenger) {
+        ContentProcessorCreator.call(this, facebook, messenger);
+    };
+    Class(ClientContentProcessorCreator, ContentProcessorCreator, null, {
+        createContentProcessor: function (type) {
             var facebook = this.getFacebook();
             var messenger = this.getMessenger();
-            return new ns.cpu.ClientProcessorCreator(facebook, messenger);
+            if (ContentType.HISTORY.equals(type)) {
+                return new HistoryCommandProcessor(facebook, messenger);
+            }
+            if (type === 0) {
+                return new BaseContentProcessor(facebook, messenger);
+            }
+            return ContentProcessorCreator.prototype.createContentProcessor.call(
+                this,
+                type
+            );
+        },
+        createCommandProcessor: function (type, cmd) {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            switch (cmd) {
+                case Command.HANDSHAKE:
+                    return new HandshakeCommandProcessor(facebook, messenger);
+                case Command.LOGIN:
+                    return new LoginCommandProcessor(facebook, messenger);
+                case Command.RECEIPT:
+                    return new ReceiptCommandProcessor(facebook, messenger);
+                case "group":
+                    return new ns.cpu.GroupCommandProcessor(facebook, messenger);
+                case GroupCommand.INVITE:
+                    return new ns.cpu.InviteCommandProcessor(facebook, messenger);
+                case GroupCommand.EXPEL:
+                    return new ns.cpu.ExpelCommandProcessor(facebook, messenger);
+                case GroupCommand.QUIT:
+                    return new ns.cpu.QuitCommandProcessor(facebook, messenger);
+                case GroupCommand.QUERY:
+                    return new ns.cpu.QueryCommandProcessor(facebook, messenger);
+                case GroupCommand.RESET:
+                    return new ns.cpu.ResetCommandProcessor(facebook, messenger);
+            }
+            return ContentProcessorCreator.prototype.createCommandProcessor.call(
+                this,
+                type,
+                cmd
+            );
+        }
+    });
+    ns.cpu.ClientContentProcessorCreator = ClientContentProcessorCreator;
+})(DIMP);
+(function (ns) {
+    var Class = ns.type.Class;
+    var ID = ns.protocol.ID;
+    var Envelope = ns.protocol.Envelope;
+    var InstantMessage = ns.protocol.InstantMessage;
+    var MetaCommand = ns.protocol.MetaCommand;
+    var DocumentCommand = ns.protocol.DocumentCommand;
+    var HandshakeCommand = ns.protocol.HandshakeCommand;
+    var LoginCommand = ns.protocol.LoginCommand;
+    var ReportCommand = ns.protocol.ReportCommand;
+    var Station = ns.mkm.Station;
+    var QueryFrequencyChecker = ns.mem.QueryFrequencyChecker;
+    var CommonMessenger = ns.CommonMessenger;
+    var ClientMessenger = function (session, facebook, db) {
+        CommonMessenger.call(this, session, facebook, db);
+    };
+    Class(ClientMessenger, CommonMessenger, null, {
+        handshake: function (sessionKey) {
+            var session = this.getSession();
+            var station = session.getStation();
+            var sid = station.getIdentifier();
+            var cmd;
+            if (sessionKey) {
+                cmd = HandshakeCommand.restart(sessionKey);
+                this.sendContent(null, sid, cmd, -1);
+            } else {
+                var facebook = this.getFacebook();
+                var user = facebook.getCurrentUser();
+                var uid = user.getIdentifier();
+                var meta = user.getMeta();
+                var visa = user.getVisa();
+                var env = Envelope.create(uid, sid, null);
+                cmd = HandshakeCommand.start();
+                cmd.setGroup(Station.EVERY);
+                var iMsg = InstantMessage.create(env, cmd);
+                iMsg.setValue("meta", meta.toMap());
+                iMsg.setValue("visa", visa.toMap());
+                this.sendInstantMessage(iMsg, -1);
+            }
+        },
+        handshakeSuccess: function () {
+            this.broadcastDocument();
+        },
+        broadcastDocument: function () {
+            var facebook = this.getFacebook();
+            var user = facebook.getCurrentUser();
+            var uid = user.getIdentifier();
+            var meta = user.getMeta();
+            var visa = user.getVisa();
+            var cmd = DocumentCommand.response(uid, meta, visa);
+            this.sendContent(uid, ID.EVERYONE, cmd, 1);
+        },
+        broadcastLogin: function (sender, userAgent) {
+            var session = this.getSession();
+            var station = session.getStation();
+            var cmd = LoginCommand.create(sender);
+            cmd.setAgent(userAgent);
+            cmd.setStation(station);
+            this.sendContent(sender, ID.EVERYONE, cmd, 1);
+        },
+        reportOnline: function (sender) {
+            var cmd = ReportCommand.create(ReportCommand.ONLINE);
+            this.sendContent(sender, Station.ANY, cmd, 1);
+        },
+        reportOffline: function (sender) {
+            var cmd = ReportCommand.create(ReportCommand.OFFLINE);
+            this.sendContent(sender, Station.ANY, cmd, 1);
+        },
+        queryMeta: function (identifier) {
+            if (!QueryFrequencyChecker.isMetaQueryExpired(identifier, 0)) {
+                return false;
+            }
+            var cmd = MetaCommand.query(identifier);
+            this.sendContent(null, Station.ANY, cmd, 1);
+            return true;
+        },
+        queryDocument: function (identifier) {
+            if (!QueryFrequencyChecker.isDocumentQueryExpired(identifier, 0)) {
+                return false;
+            }
+            var cmd = DocumentCommand.query(identifier);
+            this.sendContent(null, Station.ANY, cmd, 1);
+            return true;
+        }
+    });
+    ns.ClientMessenger = ClientMessenger;
+})(DIMP);
+(function (ns) {
+    var Interface = ns.type.Interface;
+    var Class = ns.type.Class;
+    var Base64 = ns.format.Base64;
+    var SHA256 = ns.digest.SHA256;
+    var ReliableMessage = ns.protocol.ReliableMessage;
+    var DocumentCommand = ns.protocol.DocumentCommand;
+    var MessagePacker = ns.MessagePacker;
+    var ClientMessagePacker = function (facebook, messenger) {
+        MessagePacker.call(this, facebook, messenger);
+    };
+    Class(ClientMessagePacker, MessagePacker, null, null);
+    var attach = function (rMsg, messenger) {
+        if (!rMsg.getDelegate()) {
+            rMsg.setDelegate(messenger);
+        }
+        if (rMsg.getValue("key")) {
+            return;
+        }
+        var keys = rMsg.getEncryptedKeys();
+        if (!keys) {
+            keys = {};
+        } else {
+            if (keys["digest"]) {
+                return;
+            }
+        }
+        var key;
+        var sender = rMsg.getSender();
+        var group = rMsg.getGroup();
+        if (group) {
+            key = messenger.getCipherKey(sender, group, false);
+        } else {
+            var receiver = rMsg.getReceiver();
+            key = messenger.getCipherKey(sender, receiver, false);
+        }
+        if (!key) {
+            return;
+        }
+        var digest = getKeyDigest(key);
+        if (!digest) {
+            return;
+        }
+        keys["digest"] = digest;
+        rMsg.setValue("keys", keys);
+    };
+    var getKeyDigest = function (key) {
+        var data = key.getData();
+        if (!data || data.length < 6) {
+            return null;
+        }
+        var part = data.subarray(data.length - 6);
+        var digest = SHA256.digest(part);
+        var base64 = Base64.encode(digest);
+        base64 = base64.trim();
+        return base64.substr(base64.length - 8);
+    };
+    ClientMessagePacker.prototype.serializeMessage = function (rMsg) {
+        attach.call(this, rMsg);
+        return MessagePacker.prototype.serializeMessage.call(this, rMsg);
+    };
+    ClientMessagePacker.prototype.deserializeMessage = function (data) {
+        if (!data || data.length < 2) {
+            return null;
+        }
+        return MessagePacker.prototype.deserializeMessage.call(this, data);
+    };
+    ClientMessagePacker.prototype.signMessage = function (sMsg) {
+        if (Interface.conforms(sMsg, ReliableMessage)) {
+            return sMsg;
+        }
+        return MessagePacker.prototype.signMessage.call(this, sMsg);
+    };
+    ClientMessagePacker.prototype.decryptMessage = function (sMsg) {
+        try {
+            return MessagePacker.prototype.decryptMessage.call(this, sMsg);
+        } catch (e) {
+            if (e.toString().indexOf("failed to decrypt key in msg: ") >= 0) {
+                var facebook = this.getFacebook();
+                var user = facebook.getCurrentUser();
+                var visa = user.getVisa();
+                if (!visa || !visa.isValid()) {
+                    throw new ReferenceError("user visa error: " + user.getIdentifier());
+                }
+                var cmd = DocumentCommand.response(user.getIdentifier(), null, visa);
+                var messenger = this.getMessenger();
+                messenger.sendContent(user.getIdentifier(), sMsg.getSender(), cmd, 0);
+            } else {
+                throw e;
+            }
+            return null;
+        }
+    };
+    ns.ClientMessagePacker = ClientMessagePacker;
+})(DIMP);
+(function (ns) {
+    var Interface = ns.type.Interface;
+    var Class = ns.type.Class;
+    var EntityType = ns.protocol.EntityType;
+    var TextContent = ns.protocol.TextContent;
+    var HandshakeCommand = ns.protocol.HandshakeCommand;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
+    var MessageProcessor = ns.MessageProcessor;
+    var ClientMessageProcessor = function (facebook, messenger) {
+        MessageProcessor.call(this, facebook, messenger);
+    };
+    Class(ClientMessageProcessor, MessageProcessor, null, {
+        processSecureMessage: function (sMsg, rMsg) {
+            try {
+                return MessageProcessor.prototype.processSecureMessage.call(
+                    this,
+                    sMsg,
+                    rMsg
+                );
+            } catch (e) {
+                var errMsg = e.toString();
+                if (errMsg && errMsg.indexOf("receiver error") >= 0) {
+                    console.warn("ignore message", rMsg);
+                    return [];
+                } else {
+                    throw e;
+                }
+            }
         },
         processContent: function (content, rMsg) {
-            var responses = CommonProcessor.prototype.processContent.call(
+            var responses = MessageProcessor.prototype.processContent.call(
                 this,
                 content,
                 rMsg
             );
             if (!responses || responses.length === 0) {
-                return null;
+                return responses;
             } else {
-                if (sdk.Interface.conforms(responses[0], HandshakeCommand)) {
+                if (Interface.conforms(responses[0], HandshakeCommand)) {
                     return responses;
                 }
             }
-            var facebook = this.getFacebook();
-            var messenger = this.getMessenger();
             var sender = rMsg.getSender();
             var receiver = rMsg.getReceiver();
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
             var user = facebook.selectLocalUser(receiver);
+            receiver = user.getIdentifier();
+            var network = sender.getType();
             var res;
             for (var i = 0; i < responses.length; ++i) {
                 res = responses[i];
                 if (!res) {
                     continue;
                 } else {
-                    if (sdk.Interface.conforms(res, ReceiptCommand)) {
-                        if (NetworkType.STATION.equals(sender.getType())) {
-                            return null;
-                        }
-                        console.log("receipt to sender", sender);
-                    } else {
-                        if (sdk.Interface.conforms(res, TextContent)) {
-                            if (NetworkType.STATION.equals(sender.getType())) {
-                                return null;
+                    if (Interface.conforms(res, ReceiptCommand)) {
+                        if (EntityType.STATION.equals(network)) {
+                            continue;
+                        } else {
+                            if (EntityType.BOT.equals(network)) {
+                                continue;
                             }
-                            console.log("text to sender", sender);
+                        }
+                    } else {
+                        if (Interface.conforms(res, TextContent)) {
+                            if (EntityType.STATION.equals(network)) {
+                                continue;
+                            } else {
+                                if (EntityType.BOT.equals(network)) {
+                                    continue;
+                                }
+                            }
                         }
                     }
                 }
-                messenger.sendContent(user.getIdentifier(), sender, res, 1);
+                messenger.sendContent(receiver, sender, res, 1);
             }
-            return null;
+            return [];
+        },
+        createCreator: function () {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            return new ns.cpu.ClientContentProcessorCreator(facebook, messenger);
         }
     });
-    ns.ClientProcessor = ClientProcessor;
-    ns.registers("ClientProcessor");
-})(SECHAT, DIMSDK);
-(function (ns, sdk) {
-    var PrivateKey = sdk.crypto.PrivateKey;
-    var ID = sdk.protocol.ID;
-    var NetworkType = sdk.protocol.NetworkType;
-    var MetaType = sdk.protocol.MetaType;
-    var Meta = sdk.protocol.Meta;
-    var BaseVisa = sdk.mkm.BaseVisa;
-    var BaseBulletin = sdk.mkm.BaseBulletin;
-    var get_facebook = function () {
-        return ns.ClientFacebook.getInstance();
-    };
-    var get_messenger = function () {
-        return ns.ClientMessenger.getInstance();
-    };
-    var Register = function (type) {
-        if (type) {
-            this.network = type;
-        } else {
-            this.network = NetworkType.MAIN;
-        }
-        this.__privateKey = null;
-    };
-    Register.prototype.createUser = function (name, avatar) {
-        var facebook = get_facebook();
-        var privateKey = PrivateKey.generate(PrivateKey.RSA);
-        this.__privateKey = privateKey;
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, "web-demo");
-        var uid = ID.generate(meta, NetworkType.MAIN, null);
-        var pKey = privateKey.getPublicKey();
-        var doc = this.createUserDocument(uid, name, avatar, pKey);
-        facebook.saveMeta(meta, uid);
-        facebook.savePrivateKey(uid, privateKey, "M", 0, 0);
-        facebook.saveDocument(doc);
-        return facebook.getUser(uid);
-    };
-    Register.prototype.createGroup = function (founder, name) {
-        var facebook = get_facebook();
-        var privateKey = facebook.getPrivateKeyForVisaSignature(founder);
-        this.__privateKey = privateKey;
-        var r = Math.ceil(Math.random() * 999990000) + 10000;
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, "Group-" + r);
-        var gid = ID.generate(meta, NetworkType.POLYLOGUE, null);
-        var doc = this.createGroupDocument(gid, name);
-        facebook.saveMeta(meta, gid);
-        facebook.saveDocument(doc);
-        facebook.addMember(founder, gid);
-        return facebook.getGroup(gid);
-    };
-    Register.prototype.createUserDocument = function (
-        identifier,
-        name,
-        avatarUrl,
-        pKey
-    ) {
-        var doc = new BaseVisa(identifier);
-        doc.setName(name);
-        doc.setAvatar(avatarUrl);
-        doc.setKey(pKey);
-        doc.sign(this.__privateKey);
-        return doc;
-    };
-    Register.prototype.createGroupDocument = function (identifier, name) {
-        var doc = new BaseBulletin(identifier);
-        doc.setName(name);
-        doc.sign(this.__privateKey);
-        return doc;
-    };
-    Register.prototype.upload = function (identifier, meta, doc) {
-        if (!doc.getIdentifier().equals(identifier)) {
-            throw new Error(
-                "document ID not match: " + identifier.toString() + ", " + doc.toMap()
-            );
-        }
-        return get_messenger().postDocument(doc, meta);
-    };
-    ns.Register = Register;
-    ns.registers("Register");
-})(SECHAT, DIMSDK);
+    ns.ClientMessageProcessor = ClientMessageProcessor;
+})(DIMP);

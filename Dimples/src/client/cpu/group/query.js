@@ -86,6 +86,6 @@
     });
 
     //-------- namespace --------
-    ns.cpu.group.QueryCommandProcessor = QueryCommandProcessor;
+    ns.cpu.QueryCommandProcessor = QueryCommandProcessor;
 
 })(DIMP);

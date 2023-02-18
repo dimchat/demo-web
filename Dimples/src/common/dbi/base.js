@@ -56,13 +56,13 @@
     if (typeof ns.dos !== 'object') {
         ns.dos = sg.dos;
     }
-    if (typeof ns.cpu !== 'object') {
+    if (typeof ns.lnc !== 'object') {
         ns.lnc = sg.lnc;
     }
-    if (typeof ns.cpu !== 'object') {
+    if (typeof ns.network !== 'object') {
         ns.network = sg.network;
     }
-    if (typeof ns.cpu !== 'object') {
+    if (typeof ns.ws !== 'object') {
         ns.ws = sg.ws;
     }
     if (typeof ns.mem !== 'object') {

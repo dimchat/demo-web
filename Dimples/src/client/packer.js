@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DIMPLES: DIMP Library for Easy Startup
+//
+//                               Written in 2021 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -25,7 +30,7 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'common/*.js'
 
 (function (ns) {
     'use strict';
@@ -91,7 +96,6 @@
             return null;
         }
         // get digest for the last 6 bytes of key.data
-        // get digest
         var part = data.subarray(data.length - 6);
         var digest = SHA256.digest(part);
         var base64 = Base64.encode(digest);
@@ -170,4 +174,4 @@
     //-------- namespace --------
     ns.ClientMessagePacker = ClientMessagePacker;
 
-})(SECHAT);
+})(DIMP);

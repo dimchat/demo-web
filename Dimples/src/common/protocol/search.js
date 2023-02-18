@@ -32,11 +32,11 @@
 
 //! require 'namespace.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Interface = ns.typ0e.Interface;
-    var Command = sdk.protocol.Command;
+    var Interface = ns.type.Interface;
+    var Command = ns.protocol.Command;
 
     /**
      *  Command message: {

@@ -89,6 +89,6 @@
     });
 
     //-------- namespace --------
-    ns.cpu.group.QuitCommandProcessor = QuitCommandProcessor;
+    ns.cpu.QuitCommandProcessor = QuitCommandProcessor;
 
 })(DIMP);

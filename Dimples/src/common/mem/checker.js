@@ -68,21 +68,25 @@
         isMetaQueryExpired: function (identifier, now) {
             return this.metaQueries.isExpired(identifier, now);
         },
-        metaQueries: new FrequencyChecker(this.QUERY_EXPIRES),
+        metaQueries: null,
 
         isDocumentQueryExpired: function (identifier, now) {
             return this.documentQueries.isExpired(identifier, now);
         },
-        documentQueries: new FrequencyChecker(this.QUERY_EXPIRES),
+        documentQueries: null,
 
         isMembersQueryExpired: function (identifier, now) {
             return this.membersQueries.isExpired(identifier, now);
         },
-        membersQueries: new FrequencyChecker(this.QUERY_EXPIRES),
+        membersQueries: null,
 
         // each query will be expired after 10 minutes
         QUERY_EXPIRES: 600 * 1000
     };
+
+    QueryFrequencyChecker.metaQueries = new FrequencyChecker(QueryFrequencyChecker.QUERY_EXPIRES);
+    QueryFrequencyChecker.documentQueries = new FrequencyChecker(QueryFrequencyChecker.QUERY_EXPIRES);
+    QueryFrequencyChecker.membersQueries = new FrequencyChecker(QueryFrequencyChecker.QUERY_EXPIRES);
 
     //-------- namespace --------
     ns.mem.FrequencyChecker = FrequencyChecker;

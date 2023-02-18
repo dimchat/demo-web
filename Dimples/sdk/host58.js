@@ -32,9 +32,10 @@
 (function (ns, sys) {
     'use strict';
 
-    var Host = ns.Host;
-    var IPv4 = ns.IPv4;
-    var IPv6 = ns.IPv6;
+    var Class = sys.type.Class;
+    var Host = ns.network.Host;
+    var IPv4 = ns.network.IPv4;
+    var IPv6 = ns.network.IPv6;
 
     var Host58 = function (host) {
         var ipv;
@@ -65,7 +66,7 @@
         Host.call(this, ipv.ip, ipv.port, ipv.data);
         this.ipv = ipv;
     };
-    sys.Class(Host58, Host, null);
+    Class(Host58, Host, null, null);
 
     Host58.prototype.valueOf = function () {
         return this.ipv.valueOf();
@@ -76,8 +77,6 @@
     };
 
     //-------- namespace --------
-    ns.Host58 = Host58;
-
-    ns.registers('Host58');
+    ns.network.Host58 = Host58;
 
 })(StarGate, MONKEY);

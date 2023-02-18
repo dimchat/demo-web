@@ -158,6 +158,6 @@
     });
 
     //-------- namespace --------
-    ns.cpu.group.ResetCommandProcessor = ResetCommandProcessor;
+    ns.cpu.ResetCommandProcessor = ResetCommandProcessor;
 
 })(DIMP);

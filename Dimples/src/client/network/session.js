@@ -1,7 +1,7 @@
 ;
 // license: https://mit-license.org
 //
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//  DIMPLES: DIMP Library for Easy Startup
 //
 //                               Written in 2021 by Moky <albert.moky@gmail.com>
 //
@@ -30,8 +30,7 @@
 // =============================================================================
 //
 
-//! require 'common/network/gatekeeper.js'
-//! require 'common/network/session.js'
+//! require 'common/*.js'
 
 (function (ns) {
     'use strict';
@@ -166,4 +165,4 @@
     //-------- namespace --------
     ns.network.ClientSession = ClientSession;
 
-})(SECHAT);
+})(DIMP);

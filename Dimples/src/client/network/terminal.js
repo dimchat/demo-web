@@ -1,7 +1,7 @@
 ;
 // license: https://mit-license.org
 //
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//  DIMPLES: DIMP Library for Easy Startup
 //
 //                               Written in 2020 by Moky <albert.moky@gmail.com>
 //
@@ -30,9 +30,8 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
-//! require 'delegate.js'
-//! require 'server.js'
+//! require 'fsm.js'
+//! require 'session.js'
 
 (function (ns) {
     'use strict';
@@ -46,8 +45,8 @@
     var StateMachine = ns.network.StateMachine;
     var ClientSession = ns.network.ClientSession;
     var SessionState = ns.network.SessionState;
-    var ClientMessagePacker = ns.ClientMessagePacker;
-    var ClientMessageProcessor = ns.ClientMessageProcessor;
+    // var ClientMessagePacker = ns.ClientMessagePacker;
+    // var ClientMessageProcessor = ns.ClientMessageProcessor;
 
     /**
      *  DIM Client
@@ -148,11 +147,11 @@
     };
     // protected
     Terminal.prototype.createPacker = function (facebook, messenger) {
-        return new ClientMessagePacker(facebook, messenger);
+        return new ns.ClientMessagePacker(facebook, messenger);
     };
     // protected
     Terminal.prototype.createProcessor = function (facebook, messenger) {
-        return new ClientMessageProcessor(facebook, messenger);
+        return new ns.ClientMessageProcessor(facebook, messenger);
     };
     // protected
     Terminal.prototype.createMessenger = function (session, facebook) {
@@ -284,4 +283,4 @@
     //-------- namespace --------
     ns.network.Terminal = Terminal;
 
-})(SECHAT);
+})(DIMP);

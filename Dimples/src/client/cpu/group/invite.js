@@ -108,6 +108,6 @@
     });
 
     //-------- namespace --------
-    ns.cpu.group.InviteCommandProcessor = InviteCommandProcessor;
+    ns.cpu.InviteCommandProcessor = InviteCommandProcessor;
 
 })(DIMP);

@@ -106,6 +106,6 @@
     });
 
     //-------- namespace --------
-    ns.cpu.group.ExpelCommandProcessor = ExpelCommandProcessor;
+    ns.cpu.ExpelCommandProcessor = ExpelCommandProcessor;
 
 })(DIMP);

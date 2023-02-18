@@ -1,7 +1,7 @@
 ;
 // license: https://mit-license.org
 //
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//  DIMPLES: DIMP Library for Easy Startup
 //
 //                               Written in 2020 by Moky <albert.moky@gmail.com>
 //
@@ -117,7 +117,7 @@
     //-------- namespace --------
     ns.network.SessionState = SessionState;
 
-})(SECHAT);
+})(DIMP);
 
 (function (ns) {
     'use strict';
@@ -368,4 +368,4 @@
     //-------- namespace --------
     ns.network.StateMachine = StateMachine;
 
-})(SECHAT);
+})(DIMP);
