@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -25,93 +30,60 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
+    var Interface = ns.type.Interface;
 
-    var Storage = ns.db.LocalStorage;
+    /**
+     *  Account DBI
+     *  ~~~~~~~~~~~
+     */
+    var UserDBI = Interface(null, null);
 
-    ns.db.UserTable = {
-
-        allUsers: function () {
-            this.load();
-            return this.__users;
-        },
-
-        addUser: function (user) {
-            var list = this.allUsers();
-            if (list.indexOf(user) < 0) {
-                list.push(user);
-                return this.save();
-            } else {
-                console.error('user already exists', user);
-                return false;
-            }
-        },
-
-        removeUser: function (user) {
-            var list = this.allUsers();
-            var index = list.indexOf(user);
-            if (index < 0) {
-                console.error('user not exists', user);
-                return true;
-            } else {
-                list.splice(index, 1);
-                return this.save();
-            }
-        },
-
-        setCurrentUser: function (user) {
-            var list = this.allUsers();
-            var index = list.indexOf(user);
-            if (index === 0) {
-                // already the first user
-                return true;
-            } else if (index > 0) {
-                // already exists, but not the first user
-                list.splice(index, 1);
-            }
-            list.unshift(user);
-            return this.save();
-        },
-
-        getCurrentUser: function () {
-            var list = this.allUsers();
-            if (list.length > 0) {
-                return list[0];
-            } else {
-                return null;
-            }
-        },
-
-        load: function () {
-            if (!this.__users) {
-                this.__users = convert(Storage.loadJSON('UserTable'));
-            }
-        },
-        save: function () {
-            return Storage.saveJSON(revert(this.__users), 'UserTable');
-        },
-
-        __users: null
+    /**
+     *  Get local user ID list
+     *
+     * @return {ID[]} user ID list
+     */
+    UserDBI.prototype.getLocalUsers = function () {
+        throw new Error('NotImplemented');
     };
 
-    var convert = function (list) {
-        if (list) {
-            return ID.convert(list);
-        } else {
-            return [];
-        }
-    };
-    var revert = function (list) {
-        if (list) {
-            return ID.revert(list);
-        } else {
-            return [];
-        }
+    /**
+     *  Save local user ID list
+     *
+     * @param {ID[]} users - user ID list
+     * @return {boolean} false on error
+     */
+    UserDBI.prototype.saveLocalUsers = function (users) {
+        throw new Error('NotImplemented');
     };
 
-})(SECHAT);
+    /**
+     *  Get contact ID list
+     *
+     * @param {ID} user - user ID
+     * @return {ID[]} contact ID list
+     */
+    UserDBI.prototype.getContacts = function (user) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Save contact ID list
+     *
+     * @param {ID} user       - user ID
+     * @param {ID[]} contacts - contact ID list
+     * @return {boolean} false on error
+     */
+    UserDBI.prototype.saveContacts = function (contacts, user) {
+        throw new Error('NotImplemented');
+    };
+
+    //-------- namespace --------
+    ns.dbi.UserDBI = UserDBI;
+
+})(DIMP);

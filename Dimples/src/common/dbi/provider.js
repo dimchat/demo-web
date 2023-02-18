@@ -38,57 +38,55 @@
     var Interface = ns.type.Interface;
 
     /**
-     *  Account DBI
+     *  Session DBI
      *  ~~~~~~~~~~~
      */
-    var PrivateKeyDBI = Interface(null, null);
-
-    PrivateKeyDBI.META = 'M';
-    PrivateKeyDBI.VISA = 'V';
+    var ProviderDBI = Interface(null, null);
 
     /**
-     *  Save private key for user
+     *  Get all neighbor stations
      *
-     * @param {PrivateKey} key - private key
-     * @param {string} type    - 'M' for matching meta.key; or 'D' for matching visa.key
-     * @param {ID} user        - user ID
+     * @return {Dictionary<string, number, ID>[]} a set of (host, port, ID)
+     */
+    ProviderDBI.prototype.allNeighbors = function () {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Get neighbor station ID
+     *
+     * @param {string} ip   - station host
+     * @param {number} port - station port
+     * @return {ID} station ID
+     */
+    ProviderDBI.prototype.getNeighbor = function (ip, port) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Save station info
+     *
+     * @param {string} ip     - station host
+     * @param {number} port   - station port
+     * @param {ID} identifier - station ID
      * @return {boolean} false on error
      */
-    PrivateKeyDBI.prototype.savePrivateKey = function (key, type, user) {
+    ProviderDBI.prototype.addNeighbor = function (ip, port, identifier) {
         throw new Error('NotImplemented');
     };
 
     /**
-     *  Get private keys for user
+     *  Delete station info
      *
-     * @param {ID} user - user ID
-     * @return {DecryptKey[]} all keys marked for decryption
+     * @param {string} ip     - station host
+     * @param {number} port   - station port
+     * @return {boolean} false on error
      */
-    PrivateKeyDBI.prototype.getPrivateKeysForDecryption = function (user) {
-        throw new Error('NotImplemented');
-    };
-
-    /**
-     *  Get private key for user
-     *
-     * @param {ID} user - user ID
-     * @return {PrivateKey} first key marked for signature
-     */
-    PrivateKeyDBI.prototype.getPrivateKeyForSignature = function (user) {
-        throw new Error('NotImplemented');
-    };
-
-    /**
-     *  Get private key for user
-     *
-     * @param {ID} user - user ID
-     * @return {PrivateKey} the private key matched with meta.key
-     */
-    PrivateKeyDBI.prototype.getPrivateKeyForVisaSignature = function (user) {
+    ProviderDBI.prototype.removeNeighbor = function (ip, port) {
         throw new Error('NotImplemented');
     };
 
     //-------- namespace --------
-    ns.dbi.PrivateKeyDBI = PrivateKeyDBI;
+    ns.dbi.ProviderDBI = ProviderDBI;
 
 })(DIMP);

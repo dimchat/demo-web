@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -30,82 +35,36 @@
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
-    var Meta = ns.protocol.Meta;
+    var Interface = ns.type.Interface;
 
-    var Storage = ns.db.LocalStorage;
-    var NotificationCenter = ns.lnc.NotificationCenter;
+    /**
+     *  Account DBI
+     *  ~~~~~~~~~~~
+     */
+    var MetaDBI = Interface(null, null);
 
-    ns.db.MetaTable = {
-
-        getMeta: function (identifier) {
-            this.load();
-            return this.__metas[identifier];
-        },
-
-        saveMeta: function (meta, identifier) {
-            if (!meta.matches(identifier)) {
-                console.error('meta mot match', identifier, meta);
-                return false;
-            }
-            this.load();
-            if (this.__metas[identifier]) {
-                console.log('meta already exists', identifier);
-                return true;
-            }
-            this.__metas[identifier] = meta;
-            console.log('saving meta', identifier);
-            if (this.save()) {
-                var nc = NotificationCenter.getInstance();
-                nc.postNotification(ns.kNotificationMetaAccepted, this,
-                    {'ID': identifier, 'meta': meta});
-                return true;
-            } else {
-                console.error('failed to save meta', identifier, meta);
-                return false;
-            }
-        },
-
-        load: function () {
-            if (!this.__metas) {
-                this.__metas = convert(Storage.loadJSON('MetaTable'));
-            }
-        },
-        save: function () {
-            return Storage.saveJSON(revert(this.__metas), 'MetaTable');
-        },
-
-        __metas: null  // ID => Meta
+    /**
+     *  Get meta for entity ID
+     *
+     * @param {ID} entity
+     * @return {Meta}
+     */
+    MetaDBI.prototype.getMeta = function (entity) {
+        throw new Error('NotImplemented');
     };
 
-    var convert = function (map) {
-        var results = {};
-        if (map) {
-            var id;
-            var list = Object.keys(map);
-            for (var i = 0; i < list.length; ++i) {
-                id = list[i];
-                results[ID.parse(id)] = Meta.parse(map[id]);
-            }
-        }
-        return results;
-    };
-    var revert = function (map) {
-        var results = {};
-        if (map) {
-            var id, m;
-            var list = Object.keys(map);
-            for (var i = 0; i < list.length; ++i) {
-                id = list[i];
-                m = map[id];
-                if (!m) {
-                    // FIXME: meta error?
-                    continue;
-                }
-                results[id.toString()] = m.toMap();
-            }
-        }
-        return results;
+    /**
+     *  Save meta with entity ID
+     *
+     * @param {Meta} meta
+     * @param {ID} entity
+     * @return {boolean} false on error
+     */
+    MetaDBI.prototype.saveMeta = function (meta, entity) {
+        throw new Error('NotImplemented');
     };
 
-})(SECHAT);
+    //-------- namespace --------
+    ns.dbi.MetaDBI = MetaDBI;
+
+})(DIMP);

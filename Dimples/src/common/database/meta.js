@@ -1,9 +1,14 @@
 ;
 // license: https://mit-license.org
+//
+//  DIMPLES: DIMP Library for Easy Startup
+//
+//                               Written in 2023 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
-// Copyright (c) 2020 Albert Moky
+// Copyright (c) 2023 Albert Moky
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,27 +30,45 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'dbi/*.js'
 
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
-    var Storage = ns.db.LocalStorage;
+    var Class = ns.type.Class;
+    var Meta = ns.protocol.Meta;
+    var LocalStorage = ns.dos.LocalStorage;
+    var MetaDBI = ns.dbi.MetaDBI;
 
-    ns.db.MsgKeyTable = {
+    /**
+     *  Meta for Entities (User/Group)
+     *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *  storage path: 'dim.fs.pub.{ADDRESS}.meta'
+     */
+    var MetaStorage = function () {
+        Object.call(this);
+    };
+    Class(MetaStorage, Object, [MetaDBI], null);
 
-        getKey: function (from, to) {
-            // TODO:
-            return null;
-        },
-
-        addKey: function (from, to, key) {
-            // TODO:
-            return true;
-        },
-
-        __keys: null
+    // Override
+    MetaStorage.prototype.saveMeta = function (meta, entity) {
+        var path = meta_path(entity);
+        return LocalStorage.saveJSON(meta.toMap(), path);
     };
 
-})(SECHAT);
+    // Override
+    MetaStorage.prototype.getMeta = function (entity) {
+        var path = meta_path(entity);
+        var info = LocalStorage.loadJSON(path);
+        return Meta.parse(info);
+    };
+
+    var meta_path = function (entity) {
+        return 'pub.' + entity.getRemoteAddress().toString() + '.meta';
+    };
+
+    //-------- namespace --------
+    ns.database.MetaStorage = MetaStorage;
+
+})(DIMP);

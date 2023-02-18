@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DIMPLES: DIMP Library for Easy Startup
+//
+//                               Written in 2021 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -208,4 +213,4 @@
     //-------- namespace --------
     ns.network.GateKeeper = GateKeeper;
 
-})(SECHAT);
+})(DIMP);

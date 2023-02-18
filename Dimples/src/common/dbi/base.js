@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2021 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -31,10 +36,6 @@
 //! require <startrek.js>
 //! require <stargate.js>
 
-if (typeof SECHAT !== 'object') {
-    SECHAT = DIMP;
-}
-
 (function (ns, fsm, startrek) {
     'use strict';
 
@@ -46,7 +47,7 @@ if (typeof SECHAT !== 'object') {
         ns.startrek = startrek;
     }
 
-})(SECHAT, FiniteStateMachine, StarTrek);
+})(DIMP, FiniteStateMachine, StarTrek);
 
 (function (ns, sg) {
     'use strict';
@@ -64,20 +65,14 @@ if (typeof SECHAT !== 'object') {
     if (typeof ns.cpu !== 'object') {
         ns.ws = sg.ws;
     }
-    if (typeof ns.db !== 'object') {
-        ns.db = {};
-    }
     if (typeof ns.mem !== 'object') {
         ns.mem = {};
     }
+    if (typeof ns.dbi !== 'object') {
+        ns.dbi = {};
+    }
+    if (typeof ns.database !== 'object') {
+        ns.database = {};
+    }
 
-})(SECHAT, StarGate);
-
-(function (ns, sg) {
-    'use strict';
-
-    //-------- namespace --------
-    ns.db.LocalStorage = sg.dos.LocalStorage;
-    ns.db.SessionStorage = sg.dos.SessionStorage;
-
-})(SECHAT, StarGate);
+})(DIMP, StarGate);

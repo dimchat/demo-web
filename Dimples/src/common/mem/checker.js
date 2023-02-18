@@ -1,7 +1,7 @@
 ;
 // license: https://mit-license.org
 //
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//  DIMPLES: DIMP Library for Easy Startup
 //
 //                               Written in 2023 by Moky <albert.moky@gmail.com>
 //
@@ -88,4 +88,4 @@
     ns.mem.FrequencyChecker = FrequencyChecker;
     ns.mem.QueryFrequencyChecker = QueryFrequencyChecker;
 
-})(SECHAT);
+})(DIMP);

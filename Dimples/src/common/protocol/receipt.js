@@ -1,7 +1,7 @@
 ;
 // license: https://mit-license.org
 //
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
+//  DIMP : Decentralized Instant Messaging Protocol
 //
 //                               Written in 2020 by Moky <albert.moky@gmail.com>
 //

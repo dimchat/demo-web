@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -25,93 +30,41 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
-    var Document = ns.protocol.Document;
+    var Interface = ns.type.Interface;
 
-    var Storage = ns.db.LocalStorage;
-    var NotificationCenter = ns.lnc.NotificationCenter;
+    /**
+     *  Account DBI
+     *  ~~~~~~~~~~~
+     */
+    var DocumentDBI = Interface(null, null);
 
-    ns.db.DocumentTable = {
-
-        getDocument: function (identifier, type) {
-            this.load();
-            return this.__docs[identifier];
-        },
-
-        saveDocument: function (doc) {
-            if (!doc.isValid()) {
-                console.error('document not valid', doc);
-                return false;
-            }
-            var identifier = doc.getIdentifier();
-            if (!identifier) {
-                throw new Error('entity ID error: ' + doc);
-            }
-            this.load();
-            this.__docs[identifier] = doc;
-            console.log('saving document', identifier);
-            if (this.save()) {
-                var nc = NotificationCenter.getInstance();
-                nc.postNotification(ns.kNotificationDocumentUpdated, this, doc);
-                return true;
-            } else {
-                throw new Error('failed to save document: '
-                    + identifier + ' -> '
-                    + doc.getValue('data'));
-            }
-        },
-
-        load: function () {
-            if (!this.__docs) {
-                this.__docs = convert(Storage.loadJSON('DocumentTable'));
-            }
-        },
-        save: function () {
-            return Storage.saveJSON(revert(this.__docs), 'DocumentTable');
-        },
-
-        __docs: null  // ID => Document
+    /**
+     *  Get contact ID list
+     *
+     * @param {ID} entity   - user/group ID
+     * @param {string} type - document type
+     * @return {Document}
+     */
+    DocumentDBI.prototype.getDocument = function (entity, type) {
+        throw new Error('NotImplemented');
     };
 
-    var convert = function (map) {
-        var results = {};
-        if (map) {
-            var list = Object.keys(map);
-            var id, doc;
-            for (var i = 0; i < list.length; ++i) {
-                id = list[i];
-                doc = Document.parse(map[id]);
-                if (!doc) {
-                    // FIXME: document error?
-                    continue;
-                }
-                doc.__status = 1;  // trust all document saved
-                results[ID.parse(id)] = doc;
-            }
-        }
-        return results;
-    };
-    var revert = function (map) {
-        var results = {};
-        if (map) {
-            var list = Object.keys(map);
-            var id, doc;
-            for (var i = 0; i < list.length; ++i) {
-                id = list[i];
-                doc = map[id];
-                if (!doc) {
-                    // FIXME: document error
-                    continue;
-                }
-                results[id.toString()] = doc.toMap();
-            }
-        }
-        return results;
+    /**
+     *  Save contact ID list
+     *
+     * @param {Document} doc - document
+     * @return {boolean} false on error
+     */
+    DocumentDBI.prototype.saveDocument = function (doc) {
+        throw new Error('NotImplemented');
     };
 
-})(SECHAT);
+    //-------- namespace --------
+    ns.dbi.DocumentDBI = DocumentDBI;
+
+})(DIMP);

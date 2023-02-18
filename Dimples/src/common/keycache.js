@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DIMPLES: DIMP Library for Easy Startup
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //

@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -25,115 +30,82 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'base.js'
 
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
+    var Interface = ns.type.Interface;
 
-    var Storage = ns.db.LocalStorage;
-    var NotificationCenter = ns.lnc.NotificationCenter;
+    /**
+     *  Account DBI
+     *  ~~~~~~~~~~~
+     */
+    var GroupDBI = Interface(null, null);
 
-    ns.db.GroupTable = {
-
-        getFounder: function (group) {
-            return null;
-        },
-
-        getOwner: function (group) {
-            return null;
-        },
-
-        getMembers: function (group) {
-            this.load()
-            return this.__members[group];
-        },
-
-        addMember: function (member, group) {
-            var members = this.getMembers(group);
-            if (members) {
-                if (members.indexOf(member) >= 0) {
-                    return false;
-                }
-                members.push(member);
-            } else {
-                members = [member];
-            }
-            return this.saveMembers(members, group);
-        },
-
-        removeMember: function (member, group) {
-            var members = this.getMembers(group);
-            if (!members) {
-                return false;
-            }
-            var pos = members.indexOf(member);
-            if (pos < 0) {
-                return false;
-            }
-            members.splice(pos, 1);
-            return this.saveMembers(members, group);
-        },
-
-        saveMembers: function (members, group) {
-            this.load()
-            this.__members[group] = members;
-            console.log('saving members for group', group);
-            if (this.save()) {
-                var nc = NotificationCenter.getInstance();
-                nc.postNotification('MembersUpdated', this,
-                    {'group': group, 'members': members});
-                return true;
-            } else {
-                throw new Error('failed to save members: ' + group + ' -> ' + members);
-            }
-        },
-
-        removeGroup: function (group) {
-            this.load();
-            if (this.__members[group]) {
-                delete this.__members[group]
-                return this.save();
-            } else {
-                console.error('group not exists: ' + group);
-                return false;
-            }
-        },
-
-        load: function () {
-            if (!this.__members) {
-                this.__members = convert(Storage.loadJSON('GroupTable'));
-            }
-        },
-        save: function () {
-            return Storage.saveJSON(revert(this.__members), 'GroupTable');
-        },
-
-        __members: null  // ID => Array<ID>
+    /**
+     *  Get founder ID
+     *
+     * @param {ID} group - group ID
+     * @return {ID} group founder
+     */
+    GroupDBI.prototype.getFounder = function (group) {
+        throw new Error('NotImplemented');
     };
 
-    var convert = function (map) {
-        var results = {};
-        if (map) {
-            var g;
-            var groups = Object.keys(map);
-            for (var i = 0; i < groups.length; ++i) {
-                g = groups[i];
-                results[ID.parse(g)] = ID.convert(map[g]);
-            }
-        }
-        return results;
-    };
-    var revert = function (map) {
-        var results = {};
-        var g;
-        var groups = Object.keys(map);
-        for (var i = 0; i < groups.length; ++i) {
-            g = groups[i];
-            results[g.toString()] = ID.revert(map[g]);
-        }
-        return results;
+    /**
+     *  Get owner ID
+     *
+     * @param {ID} group - group ID
+     * @return {ID} group owner
+     */
+    GroupDBI.prototype.getOwner = function (group) {
+        throw new Error('NotImplemented');
     };
 
-})(SECHAT);
+    /**
+     *  Get member ID list
+     *
+     * @param {ID} group - group ID
+     * @return {ID[]} member ID list
+     */
+    GroupDBI.prototype.getMembers = function (group) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Save member ID list
+     *
+     * @param {ID} group     - group ID
+     * @param {ID[]} members - member ID list
+     * @return {boolean} false on error
+     */
+    GroupDBI.prototype.saveMembers = function (members, group) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Get bot ID list
+     *
+     * @param {ID} group - group ID
+     * @return {ID[]} bot ID list
+     */
+    GroupDBI.prototype.getAssistants = function (group) {
+        throw new Error('NotImplemented');
+    };
+
+    /**
+     *  Save bot ID list
+     *
+     * @param {ID} group  - group ID
+     * @param {ID[]} bots - bot ID list
+     * @return {boolean} false on error
+     */
+    GroupDBI.prototype.saveAssistants = function (bots, group) {
+        throw new Error('NotImplemented');
+    };
+
+    //-------- namespace --------
+    ns.dbi.GroupDBI = GroupDBI;
+
+})(DIMP);

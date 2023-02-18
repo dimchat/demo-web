@@ -1,5 +1,10 @@
 ;
 // license: https://mit-license.org
+//
+//  DBI : Database Interface
+//
+//                               Written in 2020 by Moky <albert.moky@gmail.com>
+//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -30,31 +35,37 @@
 (function (ns) {
     'use strict';
 
-    var ID = ns.protocol.ID;
+    var Interface = ns.type.Interface;
 
-    var Storage = ns.db.LocalStorage;
+    /**
+     *  Session DBI
+     *  ~~~~~~~~~~~
+     */
+    var LoginDBI = Interface(null, null);
 
-    ns.db.LoginTable = {
-
-        /**
-         *  Get last login command for user
-         *
-         * @param {ID} user - user ID
-         * @return {LoginCommand}
-         */
-        getLoginCommand: function (user) {
-        },
-
-        /**
-         *  Save last login command for user
-         *
-         * @param {LoginCommand} cmd - login command with user ID
-         * @return {boolean} false on failed
-         */
-        saveLoginCommand: function (cmd) {
-        },
-
-        __docs: null
+    /**
+     *  Get login command and its message
+     *
+     * @param {ID} user - user ID
+     * @return {[LoginCommand,ReliableMessage]}
+     */
+    LoginDBI.prototype.getLoginCommandMessage = function (user) {
+        throw new Error('NotImplemented');
     };
 
-})(SECHAT);
+    /**
+     *  Save login command and its message
+     *
+     * @param {ID} user                 - sender ID
+     * @param {LoginCommand} command    - login command
+     * @param {ReliableMessage} message - network message
+     * @return {boolean} false on error
+     */
+    LoginDBI.prototype.saveLoginCommandMessage = function (user, command, message) {
+        throw new Error('NotImplemented');
+    };
+
+    //-------- namespace --------
+    ns.dbi.LoginDBI = LoginDBI;
+
+})(DIMP);
