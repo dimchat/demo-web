@@ -30,13 +30,13 @@
 // =============================================================================
 //
 
-//! require 'group.js'
+//! require '../group.js'
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var GroupCommand = ns.protocol.GroupCommand;
-
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     var RESET_CMD_ERROR = 'Reset command error.';
@@ -45,7 +45,8 @@
     var ResetCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(ResetCommandProcessor, GroupCommandProcessor, null, {
+    Class(ResetCommandProcessor, GroupCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
             var facebook = this.getFacebook();
@@ -147,7 +148,7 @@
             // NOTICE: this is a partial member-list
             //         query the sender for full-list
             var res = GroupCommand.query(group);
-            return this.respondContent(res);
+            return [res];
         },
 
         // protected
@@ -159,6 +160,4 @@
     //-------- namespace --------
     ns.cpu.group.ResetCommandProcessor = ResetCommandProcessor;
 
-    ns.cpu.group.registers('ResetCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);

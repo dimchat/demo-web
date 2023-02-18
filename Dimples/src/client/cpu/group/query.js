@@ -30,11 +30,12 @@
 // =============================================================================
 //
 
-//! require 'group.js'
+//! require '../group.js'
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var GroupCommand = ns.protocol.GroupCommand;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
@@ -44,7 +45,8 @@
     var QueryCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(QueryCommandProcessor, GroupCommandProcessor, null, {
+    Class(QueryCommandProcessor, GroupCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
             var facebook = this.getFacebook();
@@ -68,20 +70,22 @@
             }
 
             // 2. respond
-            var res;
+            var res = this.respondGroupMembers(owner, group, members);
+            return [res];
+        },
+
+        respondGroupMembers: function (owner, group, members) {
+            var facebook = this.getFacebook();
             var user = facebook.getCurrentUser();
             if (user.getIdentifier().equals(owner)) {
-                res = GroupCommand.reset(group, members);
+                return GroupCommand.reset(group, members);
             } else {
-                res = GroupCommand.invite(group, members);
+                return GroupCommand.invite(group, members);
             }
-            return this.respondContent(res);
         }
     });
 
     //-------- namespace --------
     ns.cpu.group.QueryCommandProcessor = QueryCommandProcessor;
 
-    ns.cpu.group.registers('QueryCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);

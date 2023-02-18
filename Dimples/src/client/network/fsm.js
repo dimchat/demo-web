@@ -30,84 +30,148 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require 'common/*.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var State = sdk.fsm.State;
+    var Class = ns.type.Class;
+    var BaseState = ns.fsm.BaseState;
 
     /**
-     *  Server state
+     *  Session State
+     *  ~~~~~~~~~~~~~
+     *  Defined for indicating session states
+     *
+     *      DEFAULT     - initialized
+     *      CONNECTING  - connecting to station
+     *      CONNECTED   - connected to station
+     *      HANDSHAKING - trying to log in
+     *      RUNNING     - handshake accepted
+     *      ERROR       - network error
      */
-    var ServerState = function(name) {
-        State.call(this);
-        this.name = name;
-        this.time = null;  // enter time
+    var SessionState = function(name) {
+        BaseState.call(this);
+        this.__name = name;
+        this.__enterTime = 0;  // timestamp (milliseconds)
     };
-    sdk.Class(ServerState, State, null);
+    Class(SessionState, BaseState, null);
 
     //-------- state names --------
-    ServerState.DEFAULT     = 'default';
-    ServerState.CONNECTING  = 'connecting';
-    ServerState.CONNECTED   = 'connected';
-    ServerState.HANDSHAKING = 'handshaking';
-    ServerState.RUNNING     = 'running';
-    ServerState.ERROR       = 'error';
+    SessionState.DEFAULT     = 'default';
+    SessionState.CONNECTING  = 'connecting';
+    SessionState.CONNECTED   = 'connected';
+    SessionState.HANDSHAKING = 'handshaking';
+    SessionState.RUNNING     = 'running';
+    SessionState.ERROR       = 'error';
 
-    ServerState.prototype.equals = function (state) {
-        if (state instanceof ServerState) {
-            return this.name === state.name;
-        } else if (typeof state === 'string') {
-            return this.name === state;
+    // Override
+    SessionState.prototype.equals = function (other) {
+        if (this === other) {
+            return true;
+        } else if (!other) {
+            return false;
+        } else if (other instanceof SessionState) {
+            return this.__name === other.toString();
         } else {
-            throw new Error('state error: ' + state);
+            return this.__name === other;
         }
     };
 
-    ServerState.prototype.toString = function () {
-        return '<ServerState:' + this.name + '>';
-    };
-    ServerState.prototype.toLocaleString = function () {
-        return '<ServerState:' + this.name.toLocaleString() + '>';
+    // Override
+    SessionState.prototype.valueOf = function () {
+        return this.__name;
     };
 
-    ServerState.prototype.onEnter = function(machine) {
-        console.assert(machine !== null, "machine empty");
-        console.log('onEnter: ', this);
-        this.time = new Date();
+    // Override
+    SessionState.prototype.toString = function () {
+        return this.__name;
     };
-    ServerState.prototype.onExit = function(machine) {
-        console.assert(machine !== null, "machine empty");
-        this.time = null;
+
+    SessionState.prototype.getName = function () {
+        return this.__name;
+    };
+
+    SessionState.prototype.getEnterTime = function () {
+        return this.__enterTime;
+    };
+
+    // Override
+    SessionState.prototype.onEnter = function (previous, machine, now) {
+        this.__enterTime = now;
+    };
+
+    // Override
+    SessionState.prototype.onExit = function (next, machine, now) {
+        this.__enterTime = 0;
+    };
+
+    // Override
+    SessionState.prototype.onPause = function (machine) {
+    };
+
+    // Override
+    SessionState.prototype.onResume = function (machine) {
     };
 
     //-------- namespace --------
-    ns.network.ServerState = ServerState;
+    ns.network.SessionState = SessionState;
 
-    ns.network.registers('ServerState');
+})(SECHAT);
 
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Transition = sdk.fsm.Transition;
-    var AutoMachine = sdk.fsm.AutoMachine;
-    var DockerStatus = sdk.startrek.port.DockerStatus;
-
-    var ServerState = ns.network.ServerState;
+    var Class = ns.type.Class;
+    var BaseTransition = ns.fsm.BaseTransition;
+    var AutoMachine = ns.fsm.AutoMachine;
+    var DockerStatus = ns.startrek.port.DockerStatus;
+    var SessionState = ns.network.SessionState;
 
     /**
-     *  Server state machine
+     *  Session States
+     *  ~~~~~~~~~~~~~~
+     *
+     *      +--------------+                +------------------+
+     *      |  0.Default   | .............> |   1.Connecting   |
+     *      +--------------+                +------------------+
+     *          A       A       ................:       :
+     *          :       :       :                       :
+     *          :       :       V                       V
+     *          :   +--------------+        +------------------+
+     *          :   |   5.Error    | <..... |   2.Connected    |
+     *          :   +--------------+        +------------------+
+     *          :       A       A                   A   :
+     *          :       :       :................   :   :
+     *          :       :                       :   :   V
+     *      +--------------+                +------------------+
+     *      |  4.Running   | <............. |  3.Handshaking   |
+     *      +--------------+                +------------------+
+     *
+     *  Transitions
+     *  ~~~~~~~~~~~
+     *
+     *      0.1 - when session ID was set, change state 'default' to 'connecting';
+     *
+     *      1.2 - when connection built, change state 'connecting' to 'connected';
+     *      1.5 - if connection failed, change state 'connecting' to 'error';
+     *
+     *      2.3 - if no error occurs, change state 'connected' to 'handshaking';
+     *      2.5 - if connection lost, change state 'connected' to 'error';
+     *
+     *      3.2 - if handshaking expired, change state 'handshaking' to 'connected';
+     *      3.4 - when session key was set, change state 'handshaking' to 'running';
+     *      3.5 - if connection lost, change state 'handshaking' to 'error';
+     *
+     *      4.0 - when session ID/key erased, change state 'running' to 'default';
+     *      4.5 - when connection lost, change state 'running' to 'error';
+     *
+     *      5.0 - when connection reset, change state 'error' to 'default'.
      */
-    var StateMachine = function(server) {
-        AutoMachine.call(this, ServerState.DEFAULT);
-
-        this.setDelegate(server);
-        this.__session = null;  // session key
-
-        // add states
+    var StateMachine = function(session) {
+        AutoMachine.call(this, SessionState.DEFAULT);
+        this.__session = session;  // ClientSession
+        // init states
         set_state(this, default_state());
         set_state(this, connecting_state());
         set_state(this, connected_state());
@@ -115,35 +179,27 @@
         set_state(this, running_state());
         set_state(this, error_state());
     };
-    sdk.Class(StateMachine, AutoMachine, null, {
-        getSessionKey: function () {
-            return this.__session;
-        },
-        setSessionKey: function (session) {
-            this.__session = session;
-        },
-        getServer: function () {
-            return this.getDelegate();
-        },
-        getCurrentUser: function () {
-            var server = this.getServer();
-            return server ? server.getCurrentUser() : null;
-        },
-        getStatus: function () {
-            var server = this.getServer();
-            return server ? server.getStatus() : DockerStatus.ERROR;
-        },
+    Class(StateMachine, AutoMachine, null, {
+
         // Override
         getContext: function () {
             return this;
         },
-        // Override
-        getCurrentState: function () {
-            var state = AutoMachine.prototype.getCurrentState.call(this);
-            if (!state) {
-                state = this.getState(ServerState.DEFAULT);
-            }
-            return state;
+
+        //getSession: function () {
+        //    return this.__session;
+        //},
+        getSessionKey: function () {
+            return this.__session.getKey();
+        },
+        getSessionID: function () {
+            return this.__session.getIdentifier();
+        },
+
+        getStatus: function () {
+            var gate = this.__session.getGate();
+            var docker = gate.getDocker(this.__session.getRemoteAddress(), null, null);
+            return docker ? docker.getStatus() : DockerStatus.ERROR;
         }
     });
 
@@ -152,13 +208,17 @@
     };
 
     var new_transition = function (target, evaluate) {
-        var trans = new Transition(target);
+        var trans = new BaseTransition(target);
         trans.evaluate = evaluate;
         return trans;
     };
+    var is_expired = function (state, now) {
+        var enterTime = state.getEnterTime();
+        return 0 < enterTime && enterTime < (now - 30 * 1000);
+    };
 
     var new_state = function (name, transitions) {
-        var state = new ServerState(name);
+        var state = new SessionState(name);
         for (var i = 1; i < arguments.length; ++i) {
             state.addTransition(arguments[i]);
         }
@@ -170,10 +230,11 @@
     //
 
     var default_state = function () {
-        return new_state(ServerState.DEFAULT,
+        return new_state(SessionState.DEFAULT,
             // Default -> Connecting
-            new_transition(ServerState.CONNECTING, function (machine) {
-                if (machine.getCurrentUser() === null) {
+            new_transition(SessionState.CONNECTING, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // current user not set yet
                     return false;
                 }
                 var status = machine.getStatus();
@@ -182,83 +243,122 @@
         );
     };
     var connecting_state = function () {
-        return new_state(ServerState.CONNECTING,
+        return new_state(SessionState.CONNECTING,
             // Connecting -> Connected
-            new_transition(ServerState.CONNECTED, function (machine) {
+            new_transition(SessionState.CONNECTED, function (machine, now) {
                 var status = machine.getStatus();
                 return DockerStatus.READY.equals(status);
             }),
             // Connecting -> Error
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (is_expired(machine.getCurrentState(), now)) {
+                    // connecting expired, do it again
+                    return true;
+                }
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !(DockerStatus.PREPARING.equals(status) || DockerStatus.READY.equals(status));
             })
         );
     };
     var connected_state = function () {
-        return new_state(ServerState.CONNECTED,
+        return new_state(SessionState.CONNECTED,
             // Connected -> Handshaking
-            new_transition(ServerState.HANDSHAKING, function (machine) {
-                return machine.getCurrentUser() !== null;
+            new_transition(SessionState.HANDSHAKING, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // FIXME: current user lost?
+                    //        state will be changed to 'error'
+                    return false;
+                }
+                var status = machine.getStatus();
+                return DockerStatus.READY.equals(status);
             }),
             // Connected -> Error
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // FIXME: current user lost?
+                    return true;
+                }
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !DockerStatus.READY.equals(status);
             })
         );
     };
     var handshaking_state = function () {
-        return new_state(ServerState.HANDSHAKING,
+        return new_state(SessionState.HANDSHAKING,
             // Handshaking -> Running
-            new_transition(ServerState.RUNNING, function (machine) {
+            new_transition(SessionState.RUNNING, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // FIXME: current user lost?
+                    //        state will be changed to 'error'
+                    return false;
+                }
+                var status = machine.getStatus();
+                if (!DockerStatus.READY.equals(status)) {
+                    // connection lost, state will be changed to 'error'
+                    return false;
+                }
                 // when current user changed, the server will clear this session, so
                 // if it's set again, it means handshake accepted
                 return machine.getSessionKey() !== null;
             }),
             // Handshaking -> Connected
-            new_transition(ServerState.CONNECTED, function (machine) {
-                var state = machine.getCurrentState();
-                var time = state.time;
-                if (!time) {
-                    // not enter yet
+            new_transition(SessionState.CONNECTED, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // FIXME: current user lost?
+                    //        state will be changed to 'error'
                     return false;
                 }
-                var expired = time.getTime() + 16 * 1000;
-                var now = (new Date()).getTime();
-                if (now < expired) {
-                    // not expired yet
-                    return false;
-                }
-                // handshake expired, return to connected to do it again
                 var status = machine.getStatus();
-                return DockerStatus.READY.equals(status);
+                if (!DockerStatus.READY.equals(status)) {
+                    // connection lost, state will be changed to 'error'
+                    return false;
+                }
+                if (machine.getSessionKey() !== null) {
+                    // session key was set, state will be changed to 'running'
+                    return false;
+                }
+                // handshake expired, do it again
+                return is_expired(machine.getCurrentState(), now);
             }),
             // Handshaking -> Error
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
+                if (machine.getSessionID() === null) {
+                    // FIXME: current user lost?
+                    //        state will be changed to 'error'
+                    return true;
+                }
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !DockerStatus.READY.equals(status);
             })
         );
     };
     var running_state = function () {
-        return new_state(ServerState.RUNNING,
+        return new_state(SessionState.RUNNING,
             // Running -> Default
-            new_transition(ServerState.DEFAULT, function (machine) {
-                // user switched?
+            new_transition(SessionState.DEFAULT, function (machine, now) {
+                var status = machine.getStatus();
+                if (!DockerStatus.READY.equals(status)) {
+                    // connection lost, state will be changed to 'error'
+                    return false;
+                }
+                if (machine.getSessionID() === null) {
+                    // user logout / switched?
+                    return true;
+                }
+                // force user login again?
                 return machine.getSessionKey() === null;
             }),
             // Running -> Error
-            new_transition(ServerState.ERROR, function (machine) {
+            new_transition(SessionState.ERROR, function (machine, now) {
                 var status = machine.getStatus();
-                return DockerStatus.ERROR.equals(status);
+                return !DockerStatus.READY.equals(status);
             })
         );
     };
     var error_state = function () {
-        return new_state(ServerState.ERROR,
+        return new_state(SessionState.ERROR,
             // Error -> Default
-            new_transition(ServerState.DEFAULT, function (machine) {
+            new_transition(SessionState.DEFAULT, function (machine, now) {
                 var status = machine.getStatus();
                 return !DockerStatus.ERROR.equals(status);
             })
@@ -268,6 +368,4 @@
     //-------- namespace --------
     ns.network.StateMachine = StateMachine;
 
-    ns.network.registers('StateMachine');
-
-})(SECHAT, DIMSDK);
+})(SECHAT);

@@ -35,6 +35,7 @@
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var HistoryCommandProcessor = ns.cpu.HistoryCommandProcessor;
 
     /**
@@ -47,10 +48,11 @@
     var GroupCommandProcessor = function (facebook, messenger) {
         HistoryCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(GroupCommandProcessor, HistoryCommandProcessor, null, {
+    Class(GroupCommandProcessor, HistoryCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
-            var text = 'Group command (name: ' + cmd.getCommand() + ') not support yet!';
+            var text = 'Group command (name: ' + cmd.getCmd() + ') not support yet!';
             return this.respondText(text, cmd.getGroup());
         }
     });
@@ -74,6 +76,4 @@
     //-------- namespace --------
     ns.cpu.GroupCommandProcessor = GroupCommandProcessor;
 
-    ns.cpu.registers('GroupCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);

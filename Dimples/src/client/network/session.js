@@ -33,70 +33,137 @@
 //! require 'common/network/gatekeeper.js'
 //! require 'common/network/session.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Thread = sdk.threading.Thread;
-    var InetSocketAddress = sdk.startrek.type.InetSocketAddress;
-    var WSGate = sdk.startrek.WSGate;
-    var GateKeeper = ns.network.GateKeeper;
+    var Class = ns.type.Class;
+    var Thread = ns.fsm.threading.Thread;
+    var DockerStatus = ns.startrek.port.DockerStatus;
     var BaseSession = ns.network.BaseSession;
 
-    var ClientGateKeeper = function (host, port, delegate, messenger) {
-        GateKeeper.call(this, host, port, delegate, messenger);
-        this.__thread = null;
+    var ClientSession = function (server, db) {
+        BaseSession.call(this, server.getHost(), server.getPort(), db);
+        this.__station = server;
+        this.__key = null;     // session key
+        this.__thread = null;  // Thread
     };
-    sdk.Class(ClientGateKeeper, GateKeeper, null, {
-        // Override
-        createGate: function (host, port, delegate) {
-            var remote = new InetSocketAddress(host, port);
-            // FIXME: ClientGate?
-            return new WSGate(delegate, remote, null);
-        }
-    });
-
-    var Session = function (host, port, messenger) {
-        BaseSession.call(this, host, port, messenger);
-    };
-    sdk.Class(Session, BaseSession, null, {
-        // Override
-        createGateKeeper: function (host, port, messenger) {
-            return new ClientGateKeeper(host, port, this, messenger);
-        },
-
-        start: function () {
-            var thread = new Thread(this);
-            thread.start();
-            this.__thread = thread;
-        },
+    Class(ClientSession, BaseSession, null, {
 
         // Override
         setup: function () {
-            this.setActive(true);
+            this.setActive(true, 0);
             return BaseSession.prototype.setup.call(this);
         },
 
+        // Override
         finish: function () {
-            var ok = BaseSession.prototype.finish.call(this);
-            this.setActive(false);
-            return ok;
+            this.setActive(false, 0);
+            return BaseSession.prototype.finish.call(this);
+        },
+
+
+        // Override
+        onDockerStatusChanged: function (previous, current, docker) {
+            //BaseSession.prototype.onDockerStatusChanged.call(this, previous, current, docker);
+            if (!current || DockerStatus.ERROR.equals(current)) {
+                // connection error or session finished
+                // TODO: reconnect?
+                this.setActive(false, 0);
+                // TODO: clear session ID and handshake again
+            } else if (DockerStatus.READY.equals(current)) {
+                // connected/reconnected
+                this.setActive(true, 0);
+            }
+        },
+
+        // Override
+        onDockerReceived: function (arrival, docker) {
+            //BaseSession.prototype.onDockerReceived.call(this, arrival, docker);
+            var all_responses = [];
+            var messenger = this.getMessenger();
+            // 1. get data packages from arrival ship's payload
+            var packages = get_data_packages(arrival);
+            var pack;
+            var responses;
+            var res;
+            for (var i = 0; i < packages.length; ++i) {
+                pack = packages[i];
+                try {
+                    // 2. process each data package
+                    responses = messenger.processPackage(pack);
+                    if (responses === null) {
+                        continue;
+                    }
+                    for (var j = 0; j < responses.length; ++j) {
+                        res = responses[j];
+                        if (!res || res.length === 0) {
+                            // should not happen
+                            continue;
+                        }
+                        all_responses.push(res);
+                    }
+                } catch (e) {
+                    console.error('ClientSession::onDockerReceived()', e, pack);
+                }
+            }
+            var gate = this.getGate();
+            var source = docker.getRemoteAddress();
+            var destination = docker.getLocalUsers();
+            // 3. send responses separately
+            for (var k = 0; i < all_responses.length; ++k) {
+                gate.sendMessage(all_responses[k], source, destination);
+            }
         }
     });
 
-    // // Override
-    // Session.prototype.onDockerStatusChanged = function (previous, current, docker) {
-    //     BaseSession.prototype.onDockerStatusChanged.call(this, previous, current, docker);
-    //     if (current && current.equals(Gate.Status.ERROR)) {
-    //         // connection lost, reconnecting
-    //         var gate = this.getGate();
-    //         var hub = gate.getHub();
-    //         hub.connect(remote, local);
-    //     }
-    // };
+    ClientSession.prototype.getStatus = function () {
+        return this.__station;
+    };
+
+    // Override
+    ClientSession.prototype.getKey = function () {
+        return this.__key;
+    };
+
+    ClientSession.prototype.setKey = function (sessionKey) {
+        this.__key = sessionKey;
+    };
+
+    ClientSession.prototype.start = function () {
+        force_stop.call(this);
+        var thread = new Thread(this);
+        thread.start();
+        this.__thread = thread;
+    };
+    // Override
+    ClientSession.prototype.stop = function () {
+        //GateKeeper.prototype.stop.call(this);
+        BaseSession.prototype.stop.call(this);
+        force_stop.call(this);
+    };
+    var force_stop = function () {
+        var thread = this.__thread;
+        if (thread) {
+            this.__thread = null;
+            thread.stop();
+        }
+    };
+
+    var get_data_packages = function (arrival) {
+        var payload = arrival.getPackage();
+        // check payload
+        if (!payload || payload.length === 0) {
+            return [];
+        } else if (payload[0] === '{'.charCodeAt(0)) {
+            // JsON in lines
+            return payload.split('\n'.charCodeAt(0));
+        } else {
+            // TODO: other format?
+            return [payload];
+        }
+    };
 
     //-------- namespace --------
-    ns.network.Session = Session;
+    ns.network.ClientSession = ClientSession;
 
-    ns.network.registers('Session');
-
-})(SECHAT, DIMSDK);
+})(SECHAT);

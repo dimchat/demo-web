@@ -30,12 +30,13 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimsdk.js>
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
      *  Login Command Processor
@@ -43,7 +44,7 @@
     var LoginCommandProcessor = function (facebook, messenger) {
         BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
+    Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
     LoginCommandProcessor.prototype.process = function (cmd, rMsg) {
@@ -54,6 +55,4 @@
     //-------- namespace --------
     ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
 
-    ns.cpu.registers('LoginCommandProcessor')
-
-})(SECHAT, DIMSDK);
+})(DIMP);

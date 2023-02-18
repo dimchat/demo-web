@@ -30,20 +30,22 @@
 // =============================================================================
 //
 
-//! require 'base.js'
+//! require <dimsdk.js>
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     var HistoryCommandProcessor = function (facebook, messenger) {
         BaseCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(HistoryCommandProcessor, BaseCommandProcessor, null, {
+    Class(HistoryCommandProcessor, BaseCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
-            var text = 'History command (name: ' + cmd.getCommand() + ') not support yet!';
+            var text = 'History command (name: ' + cmd.getCmd() + ') not support yet!';
             return this.respondText(text, cmd.getGroup());
         }
     });
@@ -51,6 +53,4 @@
     //-------- namespace --------
     ns.cpu.HistoryCommandProcessor = HistoryCommandProcessor;
 
-    ns.cpu.registers('HistoryCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);

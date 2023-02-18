@@ -30,11 +30,12 @@
 // =============================================================================
 //
 
-//! require 'group.js'
+//! require 'reset.js'
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var ResetCommandProcessor = ns.cpu.ResetCommandProcessor;
 
     var INVITE_CMD_ERROR = 'Invite command error.';
@@ -43,7 +44,8 @@
     var InviteCommandProcessor = function (facebook, messenger) {
         ResetCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(InviteCommandProcessor, ResetCommandProcessor, null, {
+    Class(InviteCommandProcessor, ResetCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
             var facebook = this.getFacebook();
@@ -108,6 +110,4 @@
     //-------- namespace --------
     ns.cpu.group.InviteCommandProcessor = InviteCommandProcessor;
 
-    ns.cpu.group.registers('InviteCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);

@@ -30,12 +30,13 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimsdk.js>
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
      *  Handshake Command Processor
@@ -43,42 +44,61 @@
     var HandshakeCommandProcessor = function (facebook, messenger) {
         BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(HandshakeCommandProcessor, BaseCommandProcessor, null, null);
+    Class(HandshakeCommandProcessor, BaseCommandProcessor, null, {
 
-    var success = function () {
-        console.log('handshake success!')
-        var messenger = this.getMessenger();
-        var server = messenger.getCurrentServer();
-        server.handshakeAccepted();
-        return null;
-    };
-
-    var restart = function (session) {
-        console.log('handshake again', session);
-        var messenger = this.getMessenger();
-        var server = messenger.getCurrentServer();
-        server.handshake(session);
-        return null;
-    };
-
-    // Override
-    HandshakeCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var message = cmd.getMessage();
-        if (message === 'DIM!' || message === 'OK!') {
-            // S -> C
-            return success.call(this);
-        } else if (message === 'DIM?') {
-            // S -> C
-            return restart.call(this, cmd.getSessionKey());
-        } else {
-            // C -> S: Hello world!
-            throw new Error('handshake command error: ' + cmd);
+        // Override
+        process: function (content, rMsg) {
+            var messenger = this.getMessenger();
+            var session = messenger.getSession();
+            // update station's default ID ('station@anywhere') to sender (real ID)
+            var station = session.getStation();
+            var oid = station.getIdentifier();
+            var sender = rMsg.getSender();
+            if (!oid || oid.isBroadcast()) {
+                station.setIdentifier(sender);
+            }
+            // handle handshake command with title & session key
+            var title = content.getTitle();
+            var newKey = content.getSessionKey();
+            var oldKey = session.getKey();
+            if (title === 'DIM?') {
+                // S -> C: station ask client to handshake again
+                if (!oldKey) {
+                    // first handshake response with new session key
+                    messenger.handshake(newKey);
+                } else if (oldKey === newKey) {
+                    // duplicated handshake response?
+                    // or session expired and the station ask to handshake again?
+                    messenger.handshake(newKey);
+                } else {
+                    // connection changed?
+                    // erase session key to handshake again
+                    messenger.setKey(null);
+                }
+            } else if (title === 'DIM!') {
+                // S -> C: handshake accepted by station
+                if (!oldKey) {
+                    // normal handshake response,
+                    // update session key to change state to 'running'
+                    session.setKey(newKey);
+                } else if (oldKey === newKey) {
+                    // duplicated handshake response?
+                    console.warn('duplicated handshake', content, rMsg);
+                } else {
+                    console.error('handshake error', oldKey, content, rMsg);
+                    // FIXME: handshake error
+                    // erase session key to handshake again
+                    session.setKey(null);
+                }
+            } else {
+                // C -> S: Hello world!
+                console.error('Hello world!', content, rMsg);
+            }
+            return null;
         }
-    };
+    });
 
     //-------- namespace --------
     ns.cpu.HandshakeCommandProcessor = HandshakeCommandProcessor;
 
-    ns.cpu.registers('HandshakeCommandProcessor')
-
-})(SECHAT, DIMSDK);
+})(DIMP);

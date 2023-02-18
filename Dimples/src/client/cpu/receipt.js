@@ -1,10 +1,5 @@
 ;
 // license: https://mit-license.org
-//
-//  DIM-SDK : Decentralized Instant Messaging Software Development Kit
-//
-//                               Written in 2020 by Moky <albert.moky@gmail.com>
-//
 // =============================================================================
 // The MIT License (MIT)
 //
@@ -30,36 +25,29 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimsdk.js>
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var BaseCommandProcessor = sdk.cpu.BaseCommandProcessor;
+    var Class = ns.type.Class;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
-     *  Storage Command Processor
+     *  Receipt Command Processor
      */
-    var StorageCommandProcessor = function (facebook, messenger) {
+    var ReceiptCommandProcessor = function (facebook, messenger) {
         BaseCommandProcessor.call(this, facebook, messenger);
     };
-    sdk.Class(StorageCommandProcessor, BaseCommandProcessor, null, null);
+    Class(ReceiptCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    StorageCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var title = cmd.getTitle();
-        if (title === StorageCommand.CONTACTS) {
-            // process contacts
-        } else if (title === StorageCommand.PRIVATE_KEY) {
-            // process private key
-        }
+    ReceiptCommandProcessor.prototype.process = function (cmd, rMsg) {
+        // no need to response receipt command
         return null;
     };
 
     //-------- namespace --------
-    ns.cpu.StorageCommandProcessor = StorageCommandProcessor;
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor;
 
-    ns.cpu.registers('StorageCommandProcessor')
-
-})(SECHAT, DIMSDK);
+})(DIMP);

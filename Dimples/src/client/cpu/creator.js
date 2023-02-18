@@ -25,72 +25,92 @@
 // =============================================================================
 //
 
+//! require 'default.js'
 //! require 'handshake.js'
 //! require 'login.js'
+//! require 'receipt.js'
+//! require 'mute.js'
+//! require 'block.js'
 //! require 'search.js'
 //! require 'storage.js'
+//! require 'history.js'
+//! require 'group.js'
+//! require 'group/*.js'
 
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
-    var Command = sdk.protocol.Command;
-    var StorageCommand = sdk.protocol.StorageCommand;
-    var SearchCommand = sdk.protocol.SearchCommand;
-    var HandshakeCommandProcessor = ns.cpu.HandshakeCommandProcessor;
-    var LoginCommandProcessor = ns.cpu.LoginCommandProcessor;
-    var StorageCommandProcessor = ns.cpu.StorageCommandProcessor;
-    var SearchCommandProcessor = ns.cpu.SearchCommandProcessor;
-    var CommonProcessorCreator = sdk.cpu.CommonProcessorCreator;
+    var Class = ns.type.Class;
 
-    var ClientProcessorCreator = function (facebook, messenger) {
-        CommonProcessorCreator.call(this, facebook, messenger);
+    var ContentType  = ns.protocol.ContentType;
+    var Command      = ns.protocol.Command;
+    var GroupCommand = ns.protocol.GroupCommand;
+
+    var BaseContentProcessor      = ns.cpu.BaseContentProcessor;
+    var ContentProcessorCreator   = ns.cpu.ContentProcessorCreator;
+    var ReceiptCommandProcessor   = ns.cpu.ReceiptCommandProcessor;
+    var HandshakeCommandProcessor = ns.cpu.HandshakeCommandProcessor;
+    var LoginCommandProcessor     = ns.cpu.LoginCommandProcessor;
+    var HistoryCommandProcessor   = ns.cpu.HistoryCommandProcessor
+
+    var ClientContentProcessorCreator = function (facebook, messenger) {
+        ContentProcessorCreator.call(this, facebook, messenger);
     };
-    sdk.Class(ClientProcessorCreator, CommonProcessorCreator, null, {
+    Class(ClientContentProcessorCreator, ContentProcessorCreator, null, {
+
         // Override
-        createCommandProcessor: function (type, command) {
+        createContentProcessor: function (type) {
             var facebook = this.getFacebook();
             var messenger = this.getMessenger();
-            // handshake
-            if (Command.HANDSHAKE === command) {
-                return new HandshakeCommandProcessor(facebook, messenger);
+            // history command
+            if (ContentType.HISTORY.equals(type)) {
+                return new HistoryCommandProcessor(facebook, messenger);
             }
-            // login
-            if (Command.LOGIN === command) {
-                return new LoginCommandProcessor(facebook, messenger);
-            }
-            // storage (contacts, private_key)
-            if (StorageCommand.STORAGE === command ||
-                StorageCommand.CONTACTS === command ||
-                StorageCommand.PRIVATE_KEY === command) {
-                return new StorageCommandProcessor(facebook, messenger);
-            }
-            // search
-            if (SearchCommand.SEARCH === command ||
-                SearchCommand.ONLINE_USERS === command) {
-                return new SearchCommandProcessor(facebook, messenger);
-            }
-            // group commands
-            if (command === 'group') {
-                return new ns.cpu.GroupCommandProcessor(facebook, messenger);
-            } else if (command === GroupCommand.INVITE) {
-                return new ns.cpu.InviteCommandProcessor(facebook, messenger);
-            } else if (command === GroupCommand.EXPEL) {
-                return new ns.cpu.ExpelCommandProcessor(facebook, messenger);
-            } else if (command === GroupCommand.QUIT) {
-                return new ns.cpu.QuitCommandProcessor(facebook, messenger);
-            } else if (command === GroupCommand.QUERY) {
-                return new ns.cpu.QueryCommandProcessor(facebook, messenger);
-            } else if (command === GroupCommand.RESET) {
-                return new ns.cpu.ResetCommandProcessor(facebook, messenger);
+            // default
+            if (type === 0) {
+                // unknown type?
+                return new BaseContentProcessor(facebook, messenger);
             }
             // others
-            return CommonProcessorCreator.prototype.createCommandProcessor.call(this, type, command);
+            return ContentProcessorCreator.prototype.createContentProcessor.call(this, type);
+        },
+
+        // Override
+        createCommandProcessor: function (type, cmd) {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            switch (cmd) {
+                // handshake
+                case Command.HANDSHAKE:
+                    return new HandshakeCommandProcessor(facebook, messenger);
+                // login
+                case Command.LOGIN:
+                    return new LoginCommandProcessor(facebook, messenger);
+                // receipt
+                case Command.RECEIPT:
+                    return new ReceiptCommandProcessor(facebook, messenger);
+
+                // group commands
+                case 'group':
+                    return new ns.cpu.GroupCommandProcessor(facebook, messenger);
+                case GroupCommand.INVITE:
+                    return new ns.cpu.InviteCommandProcessor(facebook, messenger);
+                case GroupCommand.EXPEL:
+                    return new ns.cpu.ExpelCommandProcessor(facebook, messenger);
+                case GroupCommand.QUIT:
+                    return new ns.cpu.QuitCommandProcessor(facebook, messenger);
+                case GroupCommand.QUERY:
+                    return new ns.cpu.QueryCommandProcessor(facebook, messenger);
+                case GroupCommand.RESET:
+                    return new ns.cpu.ResetCommandProcessor(facebook, messenger);
+            }
+
+            // others
+            return ContentProcessorCreator.prototype.createCommandProcessor.call(this, type, cmd);
         }
     });
 
     //-------- namespace --------
-    ns.cpu.ClientProcessorCreator = ClientProcessorCreator;
+    ns.cpu.ClientContentProcessorCreator = ClientContentProcessorCreator;
 
-    ns.cpu.registers('ClientProcessorCreator')
-
-})(SECHAT, DIMSDK);
+})(DIMP);

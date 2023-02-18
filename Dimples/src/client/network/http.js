@@ -91,13 +91,12 @@
     //-------- namespace --------
     ns.network.HTTP = HTTP;
 
-    ns.network.registers('HTTP');
+})(SECHAT);
 
-})(SECHAT, DIMSDK);
-
-(function (ns, sdk) {
+(function (ns) {
     'use strict';
 
+    var UTF8 = ns.format.UTF8;
     var HTTP = ns.network.HTTP;
 
     /**
@@ -146,8 +145,8 @@
         var begin = BOUNDARY_BEGIN;
         begin = begin.replace('{filename}', filename);
         begin = begin.replace('{name}', name);
-        begin = sdk.format.UTF8.encode(begin);
-        var end = sdk.format.UTF8.encode(BOUNDARY_END);
+        begin = UTF8.encode(begin);
+        var end = UTF8.encode(BOUNDARY_END);
         var size = begin.length + data.length + end.length;
         var body = new Uint8Array(size);
         body.set(begin, 0);
@@ -156,4 +155,4 @@
         return body;
     };
 
-})(SECHAT, DIMSDK);
+})(SECHAT);

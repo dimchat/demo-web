@@ -30,11 +30,12 @@
 // =============================================================================
 //
 
-//! require 'group.js'
+//! require '../group.js'
 
 (function (ns) {
     'use strict';
 
+    var Class = ns.type.Class;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     var GROUP_EMPTY = 'Group empty.';
@@ -45,7 +46,8 @@
     var ExpelCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
-    ns.Class(ExpelCommandProcessor, GroupCommandProcessor, null, {
+    Class(ExpelCommandProcessor, GroupCommandProcessor, null, {
+
         // Override
         process: function (cmd, rMsg) {
             var facebook = this.getFacebook();
@@ -106,6 +108,4 @@
     //-------- namespace --------
     ns.cpu.group.ExpelCommandProcessor = ExpelCommandProcessor;
 
-    ns.cpu.group.registers('ExpelCommandProcessor');
-
-})(DIMSDK);
+})(DIMP);
