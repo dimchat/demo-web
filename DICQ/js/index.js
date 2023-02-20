@@ -178,77 +178,57 @@ if (typeof dicq !== 'object') {
 !function (ns) {
     'use strict';
 
-    var release = true;
-    if ($_GET['debug']) {
-        release = false;
-    }
+    var release = false;
+    // if ($_GET['debug']) {
+    //     release = false;
+    // }
 
     var dim_codes;
     if (release) {
         dim_codes = [
             /* third party cryptography libs */
-            '../Client/sdk/3rd/crypto.min.js',
-            '../Client/sdk/3rd/jsencrypt.min.js',
-            '../Client/sdk/3rd/sha3.min.js',
-            '../Client/sdk/3rd/ecc/bn.js',
-            '../Client/sdk/3rd/ecc/secp256k1.js',
+            '../Dimples/sdk/3rd/crypto.min.js',
+            '../Dimples/sdk/3rd/jsencrypt.min.js',
+            '../Dimples/sdk/3rd/sha3.min.js',
+            '../Dimples/sdk/3rd/ecc/bn.js',
+            '../Dimples/sdk/3rd/ecc/secp256k1.js',
+
+            '../Dimples/sdk/bubble.js',
+            '../Dimples/sdk/clipboard.js',
 
             /* DIM SDK */
-            '../Client/sdk/dimsdk.min.js',
-
-            '../Client/sdk/host58.js',
-            '../Client/sdk/bubble.js',
-            '../Client/sdk/clipboard.js',
-
-            /* DIM Common */
-            '../Client/dist/common.min.js',
-            /* DIM Client */
-            '../Client/dist/client.min.js',
+            '../Dimples/dist/dimples.min.js',
             null
         ];
     } else {
         dim_codes = [
             /* third party cryptography libs */
-            '../Client/sdk/3rd/crypto.js',
-            '../Client/sdk/3rd/jsencrypt.js',
-            '../Client/sdk/3rd/sha3.js',
-            '../Client/sdk/3rd/ecc/bn.js',
-            '../Client/sdk/3rd/ecc/secp256k1.js',
+            '../Dimples/sdk/3rd/crypto.js',
+            '../Dimples/sdk/3rd/jsencrypt.js',
+            '../Dimples/sdk/3rd/sha3.js',
+            '../Dimples/sdk/3rd/ecc/bn.js',
+            '../Dimples/sdk/3rd/ecc/secp256k1.js',
+
+            '../Dimples/sdk/bubble.js',
+            '../Dimples/sdk/clipboard.js',
 
             /* DIM SDK */
-            '../Client/sdk/dimsdk.js',
-
-            '../Client/sdk/host58.js',
-            '../Client/sdk/bubble.js',
-            '../Client/sdk/clipboard.js',
+            '../Dimples/dist/dimples.js',
             null
         ];
-        var item;
-        for (var x = 0; x < dim_common.length; ++x) {
-            item = dim_common[x];
-            if (item) {
-                dim_codes.push('../Client/' + item);
-            }
-        }
-        for (var y = 0; y < dim_client.length; ++y) {
-            item = dim_client[y];
-            if (item) {
-                dim_codes.push('../Client/' + item);
-            }
-        }
     }
 
     var tarsier_ui = [
         // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
         // 'http://apps.dim.chat/Tarsier/tarsier-ui.js',
-        'js/Tarsier/tarsier-ui.js',
+        'sdk/tarsier-ui.js',
         null
     ];
     if (release) {
         tarsier_ui = [
             // 'https://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             // 'http://apps.dim.chat/Tarsier/tarsier-ui.min.js',
-            'js/Tarsier/tarsier-ui.min.js',
+            'sdk/tarsier-ui.min.js',
             null
         ];
     }
@@ -264,6 +244,41 @@ if (typeof dicq !== 'object') {
         null
     ];
     var scripts = [
+        //
+        //  Sechat Client
+        //
+        'js/sechat/namespace.js',
+        'js/sechat/compatible.js',
+        'js/sechat/gman.js',
+        'js/sechat/facebook.js',
+        'js/sechat/messenger.js',
+        'js/sechat/packer.js',
+        'js/sechat/processor.js',
+        'js/sechat/client.js',
+        'js/sechat/shared.js',
+
+        'js/sechat/network/ftp.js',
+
+        'js/sechat/cpu/default.js',
+        'js/sechat/cpu/block.js',
+        'js/sechat/cpu/mute.js',
+        'js/sechat/cpu/search.js',
+        'js/sechat/cpu/storage.js',
+        'js/sechat/cpu/builder.js',
+        'js/sechat/cpu/creator.js',
+
+        'js/sechat/database/user.js',
+        'js/sechat/database/group.js',
+        'js/sechat/database/login.js',
+        'js/sechat/database/message.js',
+        'js/sechat/database/msg_key.js',
+        'js/sechat/database/provider.js',
+
+        'js/sechat/model/configuration.js',
+        'js/sechat/model/conversation.js',
+        'js/sechat/model/amanuensis.js',
+        'js/sechat/model/database.js',
+
         'js/views/ads.js',
         'js/views/fixedtable.js',
         'js/views/maincell.js',

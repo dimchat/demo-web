@@ -49,7 +49,8 @@
     Class(ClientMessagePacker, MessagePacker, null, null);
 
     // attach key digest
-    var attach = function (rMsg, messenger) {
+    var attach = function (rMsg) {
+        var messenger = this.getMessenger();
         // check message delegate
         if (!rMsg.getDelegate()) {
             rMsg.setDelegate(messenger);

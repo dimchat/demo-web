@@ -13,6 +13,7 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
     var Document = sdk.protocol.Document;
     var DocumentCommand = sdk.protocol.DocumentCommand;
@@ -80,13 +81,13 @@
         };
         this.appendChild(button);
     };
-    sdk.Class(AccountWindow, Window, null);
+    Class(AccountWindow, Window, null, null);
 
     AccountWindow.prototype.setIdentifier = function (identifier) {
         if (!identifier || !identifier.isUser()) {
             throw TypeError('ID error: ' + identifier);
         }
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         this.__identifier = identifier;
         this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
@@ -96,19 +97,19 @@
 
     AccountWindow.prototype.submit = function (info) {
         var nickname = info['nickname'];
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var user = facebook.getCurrentUser();
         if (!user) {
             throw Error('Current user not found');
         }
-        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        var privateKey = facebook.getPrivateKeyForSignature(user.getIdentifier());
         if (!privateKey) {
             throw Error('Failed to get private key for current user: ' + user);
         }
         // update visa
         var visa = user.getVisa();
         if (!visa) {
-            visa = Document.create(Document.VISA, user.identifier);
+            visa = Document.create(Document.VISA, user.getIdentifier());
         }
         visa.setName(nickname);
         visa.sign(privateKey);
@@ -122,11 +123,11 @@
     AccountWindow.prototype.onSubmit = function (user) {
         var visa = user.getVisa();
         // post visa
-        var messenger = Messenger.getInstance();
+        var messenger = app.GlobalVariable.getInstance().messenger;
         messenger.postDocument(visa);
         var admin = ID.parse('chatroom');
         if (admin) {
-            var id = user.identifier;
+            var id = user.getIdentifier();
             var meta = user.getMeta();
             var cmd = DocumentCommand.response(id, meta, visa);
             messenger.sendContent(id, admin, cmd, null, 0);
@@ -138,12 +139,12 @@
 
     AccountWindow.show = function (identifier) {
         if (!identifier) {
-            var facebook = Facebook.getInstance();
+            var facebook = app.GlobalVariable.getInstance().facebook;
             var user = facebook.getCurrentUser();
             if (!user) {
                 throw Error('Current user not found');
             }
-            identifier = user.identifier;
+            identifier = user.getIdentifier();
         }
         var box = null;
         var elements = document.getElementsByClassName('accountWindow');
@@ -171,4 +172,4 @@
 
     ns.AccountWindow = AccountWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

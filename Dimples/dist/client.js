@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 18, 2023
+ * @date      Feb. 21, 2023
  * @copyright (c) 2023 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -387,7 +387,7 @@
             }
         }
     });
-    ClientSession.prototype.getStatus = function () {
+    ClientSession.prototype.getStation = function () {
         return this.__station;
     };
     ClientSession.prototype.getKey = function () {
@@ -1153,7 +1153,8 @@
         MessagePacker.call(this, facebook, messenger);
     };
     Class(ClientMessagePacker, MessagePacker, null, null);
-    var attach = function (rMsg, messenger) {
+    var attach = function (rMsg) {
+        var messenger = this.getMessenger();
         if (!rMsg.getDelegate()) {
             rMsg.setDelegate(messenger);
         }

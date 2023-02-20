@@ -25,11 +25,11 @@
         // clear children
         this.removeChildren();
 
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var user = facebook.getCurrentUser();
         var sender = iMsg.getSender();
 
-        if (user.identifier.equals(sender)) {
+        if (user.getIdentifier().equals(sender)) {
             this.setClassName('sent');
         } else {
             this.setClassName('received');
@@ -133,4 +133,4 @@
     //-------- namespace --------
     ns.MessageCell = MessageCell;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

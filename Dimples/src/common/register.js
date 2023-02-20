@@ -80,7 +80,7 @@
         //          don't forget to upload them onto the DIM station
         //
         this.__db.saveMeta(meta, uid);
-        this.__db.savePrivateKey(uid, privateKey, 'M', 1, 1);
+        this.__db.savePrivateKey(privateKey, 'M', uid);
         this.__db.saveDocument(doc);
         return uid;
     };

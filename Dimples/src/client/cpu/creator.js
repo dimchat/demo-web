@@ -30,14 +30,9 @@
 // =============================================================================
 //
 
-//! require 'default.js'
 //! require 'handshake.js'
 //! require 'login.js'
 //! require 'receipt.js'
-//! require 'mute.js'
-//! require 'block.js'
-//! require 'search.js'
-//! require 'storage.js'
 //! require 'history.js'
 //! require 'group.js'
 //! require 'group/*.js'

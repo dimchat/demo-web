@@ -12,6 +12,7 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var Anonymous = app.Anonymous;
     var Facebook = app.Facebook;
 
@@ -72,13 +73,13 @@
         this.appendChild(button);
         this.button = button;
     };
-    sdk.Class(UserWindow, Window, null);
+    Class(UserWindow, Window, null, null);
 
     UserWindow.prototype.setIdentifier = function (identifier) {
         if (!identifier || !identifier.isUser()) {
             throw TypeError('ID error: ' + identifier);
         }
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         this.__identifier = identifier;
         this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
@@ -86,7 +87,7 @@
         this.nickname.setText(facebook.getName(identifier));
         // check contacts
         var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.identifier);
+        var contacts = facebook.getContacts(user.getIdentifier());
         if (contacts && contacts.indexOf(identifier) >= 0) {
             this.button.setText('Chat');
         } else {
@@ -99,14 +100,14 @@
             throw Error('ID error: ' + identifier);
         }
         // check contacts
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.identifier);
+        var contacts = facebook.getContacts(user.getIdentifier());
         if (contacts && contacts.indexOf(identifier) >= 0) {
             ns.PersonalChatWindow.show(identifier);
             this.remove();
         } else {
-            if (facebook.addContact(identifier, user.identifier)) {
+            if (facebook.addContact(identifier, user.getIdentifier())) {
                 this.button.setText('Chat');
             } else {
                 throw Error('Failed to add contact: ' + identifier);
@@ -141,4 +142,4 @@
 
     ns.UserWindow = UserWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

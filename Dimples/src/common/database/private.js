@@ -39,8 +39,15 @@
     var Class = ns.type.Class;
     var DecryptKey = ns.crypto.DecryptKey;
     var PrivateKey = ns.crypto.PrivateKey;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var PrivateKeyDBI = ns.dbi.PrivateKeyDBI;
+
+    var id_key_path = function (user) {
+        return 'pri.' + user.getAddress().toString() + '.secret';
+    };
+    var msg_keys_path = function (user) {
+        return 'pri.' + user.getAddress().toString() + '.secret_keys';
+    };
 
     /**
      *  Private Key Storage
@@ -93,30 +100,23 @@
         }
     });
 
-    var id_key_path = function (user) {
-        return 'pri.' + user.getRemoteAddress().toString() + '.secret';
-    };
-    var msg_keys_path = function (user) {
-        return 'pri.' + user.getRemoteAddress().toString() + '.secret_keys';
-    };
-
     // protected
     PrivateKeyStorage.prototype.loadIdKey = function (user) {
         var path = id_key_path(user);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return PrivateKey.parse(info);
     };
     // protected
     PrivateKeyStorage.prototype.saveIdKey = function (key, user) {
         var path = id_key_path(user);
-        return LocalStorage.saveJSON(key.toMap(), path);
+        return Storage.saveJSON(key.toMap(), path);
     };
 
     // protected
     PrivateKeyStorage.prototype.loadMsgKeys = function (user) {
         var privateKeys = [];
         var path = msg_keys_path(user);
-        var array = LocalStorage.loadJSON(path);
+        var array = Storage.loadJSON(path);
         if (array) {
             var key;
             for (var i = 0; i < array.length; ++i) {
@@ -138,7 +138,7 @@
         }
         var plain = PrivateKeyStorage.revertPrivateKeys(privateKeys);
         var path = msg_keys_path(user);
-        return LocalStorage.saveJSON(plain, path);
+        return Storage.saveJSON(plain, path);
     };
 
     PrivateKeyStorage.revertPrivateKeys = function (privateKeys) {

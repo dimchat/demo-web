@@ -12,20 +12,19 @@
 
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var Gate = sdk.startrek.Gate;
 
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
-    var Messenger = app.Messenger;
 
     var get_facebook = function () {
-        return Facebook.getInstance();
+        return app.GlobalVariable.getInstance().facebook;
     };
     var get_messenger = function () {
-        return Messenger.getInstance();
+        return app.GlobalVariable.getInstance().messenger;
     };
     var get_current_server = function () {
-        return get_messenger().getCurrentServer();
+        return get_messenger().getCurrentStation();
     };
 
     var LoginWindow = function () {
@@ -79,7 +78,7 @@
         var win = this;
         button.onClick = function (ev) {
             if (win.__user) {
-                win.login(win.__user.identifier);
+                win.login(win.__user.getIdentifier());
             } else {
                 alert('User info error');
             }
@@ -88,13 +87,13 @@
         // current user
         this.__user = number;
     };
-    sdk.Class(LoginWindow, Window, null);
+    Class(LoginWindow, Window, null, null);
 
     LoginWindow.prototype.setUser = function (user) {
-        var identifier = user.identifier;
+        var identifier = user.getIdentifier();
         var address = identifier.getAddress();
-        var number = Anonymous.getNumberString(user.identifier);
-        var nickname = get_facebook().getName(user.identifier);
+        var number = Anonymous.getNumberString(user.getIdentifier());
+        var nickname = get_facebook().getName(user.getIdentifier());
         this.address.setText(address);
         this.address.__ie.title = identifier;
         this.number.setText(number);
@@ -121,15 +120,18 @@
         }
         // set current user and login
         facebook.setCurrentUser(user);
-        var server = get_current_server();
-        server.setCurrentUser(user);
-        server.handshake(null);
+        var messenger = get_messenger();
+        var session = messenger.getSession();
+        session.setIdentifier(identifier);
+        messenger.handshake(null);
         // open main window
         ns.MainWindow.show();
         this.remove();
     };
 
     var check_connection = function () {
+        return null;
+        // FIXME:
         var server = get_current_server();
         var status = server.getStatus();
         if (status.equals(Gate.Status.CONNECTED)) {
@@ -162,4 +164,4 @@
 
     ns.LoginWindow = LoginWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

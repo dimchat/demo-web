@@ -41,6 +41,7 @@
 !function (ns, app, sdk) {
     'use strict';
 
+    var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
     var Document = sdk.protocol.Document;
     var Command = sdk.protocol.Command;
@@ -55,7 +56,7 @@
     var Terminal = app.network.Terminal;
 
     var get_facebook = function () {
-        return app.Facebook.getInstance();
+        return app.GlobalVariable.getInstance().facebook;
     };
 
     var Application = function () {
@@ -69,7 +70,7 @@
         nc.addObserver(this, app.kNotificationDocumentUpdated);
         nc.addObserver(this, app.kNotificationMessageUpdated);
     };
-    sdk.Class(Application, Terminal, [StationDelegate]);
+    Class(Application, Terminal, [StationDelegate], null);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -143,11 +144,11 @@
         if (!user) {
             throw Error('current user not set yet');
         }
-        if (user.identifier.equals(sender)) {
+        if (user.getIdentifier().equals(sender)) {
             console.log('it is me!');
             return false;
         }
-        var contacts = facebook.getContacts(user.identifier);
+        var contacts = facebook.getContacts(user.getIdentifier());
         if (!contacts || contacts.indexOf(sender) < 0) {
             return add_contact(sender, ID.ANYONE);
         }
@@ -165,7 +166,7 @@
         if (!members || members.length === 0) {
             return false;
         }
-        var identifier = user.identifier;
+        var identifier = user.getIdentifier();
         var mine = false;
         for (var i = 0; i < members.length; ++i) {
             if (identifier.equals(members[i])) {
@@ -195,13 +196,24 @@
 
     ns.Application = Application;
 
-}(dicq, SECHAT, DIMSDK);
+}(dicq, SECHAT, DIMP);
 
-!function (ns, tui, app) {
+!function (ns, tui, app, sdk) {
     'use strict';
 
+    var Station = sdk.mkm.Station;
+    var ClientSession = sdk.network.ClientSession;
+    var SharedDatabase  = app.SharedDatabase;
+    var SharedFacebook  = app.SharedFacebook;
+    var SharedMessenger = app.SharedMessenger;
+    var SharedPacker    = app.SharedPacker;
+    var SharedProcessor = app.SharedProcessor;
+    var Client          = app.Client;
+    var GlobalVariable  = app.GlobalVariable;
+
     var Main = function () {
-        var facebook = app.Facebook.getInstance();
+        Init();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var user = facebook.getCurrentUser();
         if (user) {
             // login
@@ -212,6 +224,28 @@
         }
     };
 
+    var Init = function () {
+        var shared = GlobalVariable.getInstance();
+        var database = SharedDatabase.getInstance();
+        var facebook = new SharedFacebook(database);
+        shared.database = database;
+        shared.facebook = facebook;
+        // connect
+        // var host = '192.168.31.91';
+        var host = '106.52.25.169';   // gz
+        var port = 9394;
+        var server = new Station(host, port);
+        var session = new ClientSession(server, database);
+        var messenger = new SharedMessenger(session, facebook, database);
+        var packer = new SharedPacker(facebook, messenger);
+        var processor = new SharedProcessor(facebook, messenger);
+        messenger.setPacker(packer);
+        messenger.setProcessor(processor);
+        var client = new Client(facebook, database);
+        shared.messenger = messenger;
+        shared.terminal = client;
+    };
+
     ns.Main = Main;
 
-}(dicq, tarsier.ui, SECHAT);
+}(dicq, tarsier.ui, SECHAT, DIMP);

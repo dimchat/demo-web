@@ -1,5 +1,5 @@
 
-!function (ns, tui, dimp) {
+!function (ns, tui, sdk) {
     'use strict';
 
     var $ = tui.$;
@@ -11,6 +11,8 @@
     var Label = tui.Label;
     var Button = tui.Button;
     var Window = tui.Window;
+
+    var Class = sdk.type.Class;
 
     var AboutWindow = function () {
         var frame = new Rect(0, 0, 240, 360);
@@ -47,7 +49,7 @@
         };
         this.appendChild(button);
     };
-    dimp.Class(AboutWindow, Window, null);
+    Class(AboutWindow, Window, null);
 
     AboutWindow.show = function () {
         var box = document.getElementById('aboutWindow');

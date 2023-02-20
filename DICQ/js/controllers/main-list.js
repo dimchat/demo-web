@@ -11,13 +11,14 @@
     var TableViewDelegate = tui.TableViewDelegate;
     var FixedTableView = tui.FixedTableView;
 
-    var NetworkType = sdk.protocol.NetworkType;
+    var Class = sdk.type.Class;
+    var EntityType = sdk.protocol.EntityType;
     var ID = sdk.protocol.ID;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var get_facebook = function () {
-        return app.Facebook.getInstance();
+        return app.GlobalVariable.getInstance().facebook;
     };
 
     var get_message_db = function () {
@@ -36,7 +37,7 @@
         nc.addObserver(this, app.kNotificationContactsUpdated);
         nc.addObserver(this, app.kNotificationMessageUpdated);
     };
-    sdk.Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate]);
+    Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate], null);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
@@ -61,7 +62,7 @@
         var facebook = get_facebook();
         // 1. fetch contacts
         var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.identifier);
+        var contacts = facebook.getContacts(user.getIdentifier());
         if (contacts && contacts.length > 0) {
             var persons = [];
             var groups = [];
@@ -73,9 +74,9 @@
                     console.error('ID error: ' + contacts[i]);
                     continue;
                 }
-                if (NetworkType.ROBOT.equals(id.getType())) {
+                if (EntityType.BOT.equals(id.getType())) {
                     robots.push(id);
-                } else if (NetworkType.STATION.equals(id.getType())) {
+                } else if (EntityType.STATION.equals(id.getType())) {
                     robots.push(id);
                 } else if (id.isGroup()) {
                     groups.push(id);
@@ -194,4 +195,4 @@
 
     ns.MainListView = MainListView;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

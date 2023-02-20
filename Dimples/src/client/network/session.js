@@ -115,7 +115,7 @@
         }
     });
 
-    ClientSession.prototype.getStatus = function () {
+    ClientSession.prototype.getStation = function () {
         return this.__station;
     };
 

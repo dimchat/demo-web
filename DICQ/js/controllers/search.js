@@ -15,6 +15,7 @@
     var FieldSet = tui.FieldSet;
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var Messenger = app.Messenger;
 
     var SearchWindow = function () {
@@ -56,11 +57,11 @@
         };
         this.appendChild(button);
     };
-    sdk.Class(SearchWindow, Window, null);
+    Class(SearchWindow, Window, null, null);
 
     SearchWindow.prototype.search = function (keywords) {
         ns.SearchResultWindow.show();
-        var messenger = Messenger.getInstance();
+        var messenger = app.GlobalVariable.getInstance().messenger;
         messenger.search(keywords);
         this.remove();
     };
@@ -83,7 +84,7 @@
 
     ns.SearchWindow = SearchWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);
 
 !function (ns, tui, app, sdk) {
     'use strict';
@@ -103,6 +104,7 @@
 
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var SearchResultWindow = function () {
@@ -147,7 +149,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, app.kNotificationMessageUpdated);
     };
-    sdk.Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate]);
+    Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate], null);
 
     SearchResultWindow.prototype.goBack = function () {
         ns.SearchWindow.show();
@@ -204,7 +206,7 @@
 
     ns.SearchResultWindow = SearchResultWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);
 
 !function (ns, tui, app, sdk) {
     'use strict';
@@ -266,4 +268,4 @@
         }
     };
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

@@ -8,6 +8,7 @@
     var View = tui.View;
     var Image = tui.Image;
 
+    var Class = sdk.type.Class;
     var Facebook = app.Facebook;
 
     var PersonalChatWindow = function () {
@@ -36,12 +37,12 @@
 
         this.appendChild(tray);
     };
-    sdk.Class(PersonalChatWindow, ChatWindow, null);
+    Class(PersonalChatWindow, ChatWindow, null, null);
 
     PersonalChatWindow.prototype.setIdentifier = function (identifier) {
         ChatWindow.prototype.setIdentifier.call(this, identifier);
         var avatar = null;
-        var facebook = Facebook.getInstance();
+        var facebook = ns.GlobalVariable.getInstance().facebook;
         var doc = facebook.getDocument(identifier, '*');
         if (doc) {
             avatar = doc.getProperty('avatar');
@@ -64,4 +65,4 @@
 
     ns.PersonalChatWindow = PersonalChatWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

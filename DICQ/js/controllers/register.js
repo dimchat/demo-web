@@ -13,6 +13,7 @@
     var FieldSet = tui.FieldSet;
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var Facebook = app.Facebook;
     var Register = app.Register;
 
@@ -47,11 +48,13 @@
         };
         this.appendChild(button);
     };
-    sdk.Class(RegisterWindow, Window, null);
+    Class(RegisterWindow, Window, null, null);
 
     RegisterWindow.prototype.submit = function (nickname) {
-        var reg = new Register();
-        var user = reg.createUser(nickname);
+        var shared = app.GlobalVariable.getInstance();
+        var reg = new Register(shared.database);
+        var uid = reg.createUser(nickname);
+        var user = shared.facebook.getUser(uid);
         // submit event
         if (this.onSubmit(user)) {
             this.remove();
@@ -60,7 +63,7 @@
 
     RegisterWindow.prototype.onSubmit = function (user) {
         if (user) {
-            var facebook = Facebook.getInstance();
+            var facebook = app.GlobalVariable.getInstance().facebook;
             facebook.setCurrentUser(user);
             // open login window
             ns.Main();
@@ -89,4 +92,4 @@
 
     ns.RegisterWindow = RegisterWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

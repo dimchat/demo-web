@@ -20,7 +20,7 @@
     UserTableViewCell.prototype.constructor = UserTableViewCell;
 
     UserTableViewCell.prototype.setIdentifier = function (identifier) {
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         if (facebook.getPrivateKeyForSignature(identifier)) {
             this.setClassName('me');
         }
@@ -61,7 +61,7 @@
 
     UserTableViewCell.prototype.onClick = function (ev) {
         var identifier = this.__identifier;
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         if (facebook.getPrivateKeyForSignature(identifier)) {
             ns.AccountWindow.show(identifier);
         } else {
@@ -72,4 +72,4 @@
     //-------- namespace --------
     ns.UserTableViewCell = UserTableViewCell;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

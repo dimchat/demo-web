@@ -16,6 +16,7 @@
     var TableViewDelegate = tui.TableViewDelegate;
     var TableView = tui.TableView;
 
+    var Class = sdk.type.Class;
     var TextContent = sdk.protocol.TextContent;
 
     var Gate = sdk.startrek.Gate;
@@ -24,10 +25,10 @@
     var Anonymous = app.Anonymous;
 
     var get_facebook = function () {
-        return app.Facebook.getInstance();
+        return app.GlobalVariable.getInstance().facebook;
     };
     var get_messenger = function () {
-        return app.Messenger.getInstance();
+        return app.GlobalVariable.getInstance().messenger;
     };
 
     var get_message_db = function () {
@@ -93,7 +94,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, app.kNotificationMessageUpdated);
     };
-    sdk.Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate]);
+    Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate], null);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = get_facebook();
@@ -174,9 +175,9 @@
 
     ChatWindow.prototype.sendContent = function (content) {
         var messenger = get_messenger();
-        var server = messenger.getCurrentServer();
+        var server = messenger.getCurrentStation();
         var status = server.getStatus();
-        if (!Gate.Status.CONNECTED.equals(status)) {
+        if (!Gate.Status.S.equals(status)) {
             alert('Station not connect');
             return false;
         }
@@ -243,4 +244,4 @@
 
     ns.ChatWindow = ChatWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

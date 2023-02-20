@@ -7,6 +7,7 @@
 
     var TableView = tui.TableView;
 
+    var Class = sdk.type.Class;
     var Facebook = app.Facebook;
 
     var GroupChatWindow = function () {
@@ -24,11 +25,11 @@
         this.appendChild(table);
         this.membersView = table;
     };
-    sdk.Class(GroupChatWindow, ChatWindow, null);
+    Class(GroupChatWindow, ChatWindow, null, null);
 
     // group owner or admin
     GroupChatWindow.prototype.getAdministratorCount = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var owner = facebook.getOwner(this.__identifier);
         if (owner) {
             return 1;
@@ -37,7 +38,7 @@
         }
     };
     GroupChatWindow.prototype.getAdministrator = function (index) {
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         return facebook.getOwner(this.__identifier);
     };
 
@@ -103,7 +104,7 @@
 
     ns.GroupChatWindow = GroupChatWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);
 
 !function (ns, tui, app, sdk) {
     'use strict';
@@ -117,7 +118,7 @@
 
     // group members
     GroupChatWindow.prototype.getParticipantCount = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var members = facebook.getMembers(this.__identifier);
         if (members) {
             return members.length;
@@ -126,7 +127,7 @@
         }
     };
     GroupChatWindow.prototype.getParticipant = function (index) {
-        var facebook = Facebook.getInstance();
+        var facebook = app.GlobalVariable.getInstance().facebook;
         var members = facebook.getMembers(this.__identifier);
         return members[index];
     };
@@ -157,4 +158,4 @@
         return ChatWindow.show(identifier, clazz);
     };
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

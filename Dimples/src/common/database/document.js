@@ -38,8 +38,12 @@
     var Class = ns.type.Class;
     var ID = ns.protocol.ID;
     var Document = ns.protocol.Document;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+
+    var doc_path = function (entity) {
+        return 'pub.' + entity.getAddress().toString() + '.document';
+    };
 
     /**
      *  Document for Entities (User/Group)
@@ -56,22 +60,18 @@
     DocumentStorage.prototype.saveDocument = function (doc) {
         var entity = doc.getIdentifier();
         var path = doc_path(entity);
-        return LocalStorage.saveJSON(doc.toMap(), path);
+        return Storage.saveJSON(doc.toMap(), path);
     };
 
     // Override
     DocumentStorage.prototype.getDocument = function (entity) {
         var path = doc_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         if (info) {
             return DocumentStorage.parse(info, null, null);
         } else {
             return false;
         }
-    };
-
-    var doc_path = function (entity) {
-        return 'pub.' + entity.getRemoteAddress().toString() + '.document';
     };
 
     DocumentStorage.parse = function (dict, identifier, type) {

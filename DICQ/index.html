@@ -7,7 +7,6 @@
     <meta name="description" content="DIMP Client" />
     <meta name="author" content="Albert Moky" />
     <title>DICQ 2020 - DIM demo</title>
-    <script src="../Client/src/includes.js"></script>
     <style>
         .qrCode {
             position: absolute;
@@ -76,7 +75,7 @@
                     });
                 }
             };
-        x.src = b + 'js/Tarsier/tarsier.min.js';
+        x.src = b + 'sdk/tarsier.min.js';
         (typeof x[e] == 'undefined') ? x.onload = f: x[e] = f;
         d.getElementsByTagName('HEAD')[0].appendChild(x);
 

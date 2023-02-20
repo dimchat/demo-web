@@ -3,16 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 18, 2023
- * @copyright (c) 2023 Albert Moky
- * @license   {@link https://mit-license.org | MIT License}
- */;
-/**
- *  DIM-SDK (v0.2.2)
- *  (DIMP: Decentralized Instant Messaging Protocol)
- *
- * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 13, 2023
+ * @date      Feb. 21, 2023
  * @copyright (c) 2023 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -6839,6 +6830,9 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     var Class = ns.type.Class;
     var Enum = ns.type.Enum;
+    var Base58 = ns.format.Base58;
+    var SHA256 = ns.digest.SHA256;
+    var RIPEMD160 = ns.digest.RIPEMD160;
     var ConstantString = ns.type.ConstantString;
     var EntityType = ns.protocol.EntityType;
     var NetworkType = ns.protocol.NetworkType;
@@ -6869,27 +6863,28 @@ if (typeof DIMP !== "object") {
         if (Enum.isEnum(network)) {
             network = network.valueOf();
         }
-        var digest = ns.digest.RIPEMD160.digest(
-            ns.digest.SHA256.digest(fingerprint)
-        );
+        var digest = RIPEMD160.digest(SHA256.digest(fingerprint));
         var head = [];
         head.push(network);
-        head.push(digest);
+        for (var i = 0; i < digest.length; ++i) {
+            head.push(digest[i]);
+        }
         var cc = check_code(Uint8Array.from(head));
         var data = [];
-        data.push(head);
-        data.push(cc);
-        return new BTCAddress(
-            ns.format.Base58.encode(Uint8Array.from(data)),
-            network
-        );
+        for (var j = 0; j < head.length; ++j) {
+            data.push(head[j]);
+        }
+        for (var k = 0; k < cc.length; ++k) {
+            data.push(cc[k]);
+        }
+        return new BTCAddress(Base58.encode(Uint8Array.from(data)), network);
     };
     BTCAddress.parse = function (string) {
         var len = string.length;
         if (len < 26) {
             return null;
         }
-        var data = ns.format.Base58.decode(string);
+        var data = Base58.decode(string);
         if (data.length !== 25) {
             throw new RangeError("address length error: " + string);
         }
@@ -6903,7 +6898,7 @@ if (typeof DIMP !== "object") {
         }
     };
     var check_code = function (data) {
-        var sha256d = ns.digest.SHA256.digest(ns.digest.SHA256.digest(data));
+        var sha256d = SHA256.digest(SHA256.digest(data));
         return sha256d.subarray(0, 4);
     };
     ns.mkm.BTCAddress = BTCAddress;
@@ -7485,7 +7480,7 @@ if (typeof DIMP !== "object") {
         this.__host = host;
         this.__port = port;
     };
-    Class(Station, BaseUser, [User], {
+    Class(Station, BaseObject, [User], {
         equals: function (other) {
             if (this === other) {
                 return true;
@@ -12549,15 +12544,6 @@ if (typeof StarGate !== "object") {
     });
     ns.WSClientGate = WSClientGate;
 })(StarGate, MONKEY);
-/**
- *  DIM-Common (v0.2.2)
- *  (DIMP: Decentralized Instant Messaging Protocol)
- *
- * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 18, 2023
- * @copyright (c) 2023 Albert Moky
- * @license   {@link https://mit-license.org | MIT License}
- */;
 (function (ns) {
     var Interface = ns.type.Interface;
     var Enum = ns.type.Enum;
@@ -13467,8 +13453,14 @@ if (typeof StarGate !== "object") {
     var Class = ns.type.Class;
     var DecryptKey = ns.crypto.DecryptKey;
     var PrivateKey = ns.crypto.PrivateKey;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var PrivateKeyDBI = ns.dbi.PrivateKeyDBI;
+    var id_key_path = function (user) {
+        return "pri." + user.getAddress().toString() + ".secret";
+    };
+    var msg_keys_path = function (user) {
+        return "pri." + user.getAddress().toString() + ".secret_keys";
+    };
     var PrivateKeyStorage = function () {
         Object.call(this);
     };
@@ -13497,25 +13489,19 @@ if (typeof StarGate !== "object") {
             return this.loadIdKey(user);
         }
     });
-    var id_key_path = function (user) {
-        return "pri." + user.getRemoteAddress().toString() + ".secret";
-    };
-    var msg_keys_path = function (user) {
-        return "pri." + user.getRemoteAddress().toString() + ".secret_keys";
-    };
     PrivateKeyStorage.prototype.loadIdKey = function (user) {
         var path = id_key_path(user);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return PrivateKey.parse(info);
     };
     PrivateKeyStorage.prototype.saveIdKey = function (key, user) {
         var path = id_key_path(user);
-        return LocalStorage.saveJSON(key.toMap(), path);
+        return Storage.saveJSON(key.toMap(), path);
     };
     PrivateKeyStorage.prototype.loadMsgKeys = function (user) {
         var privateKeys = [];
         var path = msg_keys_path(user);
-        var array = LocalStorage.loadJSON(path);
+        var array = Storage.loadJSON(path);
         if (array) {
             var key;
             for (var i = 0; i < array.length; ++i) {
@@ -13535,7 +13521,7 @@ if (typeof StarGate !== "object") {
         }
         var plain = PrivateKeyStorage.revertPrivateKeys(privateKeys);
         var path = msg_keys_path(user);
-        return LocalStorage.saveJSON(plain, path);
+        return Storage.saveJSON(plain, path);
     };
     PrivateKeyStorage.revertPrivateKeys = function (privateKeys) {
         var array = [];
@@ -13574,23 +13560,23 @@ if (typeof StarGate !== "object") {
 (function (ns) {
     var Class = ns.type.Class;
     var Meta = ns.protocol.Meta;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+    var meta_path = function (entity) {
+        return "pub." + entity.getAddress().toString() + ".meta";
+    };
     var MetaStorage = function () {
         Object.call(this);
     };
     Class(MetaStorage, Object, [MetaDBI], null);
     MetaStorage.prototype.saveMeta = function (meta, entity) {
         var path = meta_path(entity);
-        return LocalStorage.saveJSON(meta.toMap(), path);
+        return Storage.saveJSON(meta.toMap(), path);
     };
     MetaStorage.prototype.getMeta = function (entity) {
         var path = meta_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return Meta.parse(info);
-    };
-    var meta_path = function (entity) {
-        return "pub." + entity.getRemoteAddress().toString() + ".meta";
     };
     ns.database.MetaStorage = MetaStorage;
 })(DIMP);
@@ -13598,8 +13584,11 @@ if (typeof StarGate !== "object") {
     var Class = ns.type.Class;
     var ID = ns.protocol.ID;
     var Document = ns.protocol.Document;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+    var doc_path = function (entity) {
+        return "pub." + entity.getAddress().toString() + ".document";
+    };
     var DocumentStorage = function () {
         Object.call(this);
     };
@@ -13607,19 +13596,16 @@ if (typeof StarGate !== "object") {
     DocumentStorage.prototype.saveDocument = function (doc) {
         var entity = doc.getIdentifier();
         var path = doc_path(entity);
-        return LocalStorage.saveJSON(doc.toMap(), path);
+        return Storage.saveJSON(doc.toMap(), path);
     };
     DocumentStorage.prototype.getDocument = function (entity) {
         var path = doc_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         if (info) {
             return DocumentStorage.parse(info, null, null);
         } else {
             return false;
         }
-    };
-    var doc_path = function (entity) {
-        return "pub." + entity.getRemoteAddress().toString() + ".document";
     };
     DocumentStorage.parse = function (dict, identifier, type) {
         var entity = ID.parse(dict["ID"]);
@@ -14330,7 +14316,7 @@ if (typeof StarGate !== "object") {
         var pKey = privateKey.getPublicKey();
         var doc = createVisa(uid, nickname, avatar, pKey, privateKey);
         this.__db.saveMeta(meta, uid);
-        this.__db.savePrivateKey(uid, privateKey, "M", 1, 1);
+        this.__db.savePrivateKey(privateKey, "M", uid);
         this.__db.saveDocument(doc);
         return uid;
     };
@@ -14835,15 +14821,6 @@ if (typeof StarGate !== "object") {
     };
     ns.CommonMessenger = CommonMessenger;
 })(DIMP);
-/**
- *  DIM-Client (v0.2.2)
- *  (DIMP: Decentralized Instant Messaging Protocol)
- *
- * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 18, 2023
- * @copyright (c) 2023 Albert Moky
- * @license   {@link https://mit-license.org | MIT License}
- */;
 (function (ns) {
     var Class = ns.type.Class;
     var BaseState = ns.fsm.BaseState;
@@ -15224,7 +15201,7 @@ if (typeof StarGate !== "object") {
             }
         }
     });
-    ClientSession.prototype.getStatus = function () {
+    ClientSession.prototype.getStation = function () {
         return this.__station;
     };
     ClientSession.prototype.getKey = function () {
@@ -15990,7 +15967,8 @@ if (typeof StarGate !== "object") {
         MessagePacker.call(this, facebook, messenger);
     };
     Class(ClientMessagePacker, MessagePacker, null, null);
-    var attach = function (rMsg, messenger) {
+    var attach = function (rMsg) {
+        var messenger = this.getMessenger();
         if (!rMsg.getDelegate()) {
             rMsg.setDelegate(messenger);
         }

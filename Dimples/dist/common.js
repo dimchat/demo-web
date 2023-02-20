@@ -3,7 +3,7 @@
  *  (DIMP: Decentralized Instant Messaging Protocol)
  *
  * @author    moKy <albert.moky at gmail.com>
- * @date      Feb. 18, 2023
+ * @date      Feb. 21, 2023
  * @copyright (c) 2023 Albert Moky
  * @license   {@link https://mit-license.org | MIT License}
  */;
@@ -916,8 +916,14 @@
     var Class = ns.type.Class;
     var DecryptKey = ns.crypto.DecryptKey;
     var PrivateKey = ns.crypto.PrivateKey;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var PrivateKeyDBI = ns.dbi.PrivateKeyDBI;
+    var id_key_path = function (user) {
+        return "pri." + user.getAddress().toString() + ".secret";
+    };
+    var msg_keys_path = function (user) {
+        return "pri." + user.getAddress().toString() + ".secret_keys";
+    };
     var PrivateKeyStorage = function () {
         Object.call(this);
     };
@@ -946,25 +952,19 @@
             return this.loadIdKey(user);
         }
     });
-    var id_key_path = function (user) {
-        return "pri." + user.getRemoteAddress().toString() + ".secret";
-    };
-    var msg_keys_path = function (user) {
-        return "pri." + user.getRemoteAddress().toString() + ".secret_keys";
-    };
     PrivateKeyStorage.prototype.loadIdKey = function (user) {
         var path = id_key_path(user);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return PrivateKey.parse(info);
     };
     PrivateKeyStorage.prototype.saveIdKey = function (key, user) {
         var path = id_key_path(user);
-        return LocalStorage.saveJSON(key.toMap(), path);
+        return Storage.saveJSON(key.toMap(), path);
     };
     PrivateKeyStorage.prototype.loadMsgKeys = function (user) {
         var privateKeys = [];
         var path = msg_keys_path(user);
-        var array = LocalStorage.loadJSON(path);
+        var array = Storage.loadJSON(path);
         if (array) {
             var key;
             for (var i = 0; i < array.length; ++i) {
@@ -984,7 +984,7 @@
         }
         var plain = PrivateKeyStorage.revertPrivateKeys(privateKeys);
         var path = msg_keys_path(user);
-        return LocalStorage.saveJSON(plain, path);
+        return Storage.saveJSON(plain, path);
     };
     PrivateKeyStorage.revertPrivateKeys = function (privateKeys) {
         var array = [];
@@ -1023,23 +1023,23 @@
 (function (ns) {
     var Class = ns.type.Class;
     var Meta = ns.protocol.Meta;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+    var meta_path = function (entity) {
+        return "pub." + entity.getAddress().toString() + ".meta";
+    };
     var MetaStorage = function () {
         Object.call(this);
     };
     Class(MetaStorage, Object, [MetaDBI], null);
     MetaStorage.prototype.saveMeta = function (meta, entity) {
         var path = meta_path(entity);
-        return LocalStorage.saveJSON(meta.toMap(), path);
+        return Storage.saveJSON(meta.toMap(), path);
     };
     MetaStorage.prototype.getMeta = function (entity) {
         var path = meta_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return Meta.parse(info);
-    };
-    var meta_path = function (entity) {
-        return "pub." + entity.getRemoteAddress().toString() + ".meta";
     };
     ns.database.MetaStorage = MetaStorage;
 })(DIMP);
@@ -1047,8 +1047,11 @@
     var Class = ns.type.Class;
     var ID = ns.protocol.ID;
     var Document = ns.protocol.Document;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+    var doc_path = function (entity) {
+        return "pub." + entity.getAddress().toString() + ".document";
+    };
     var DocumentStorage = function () {
         Object.call(this);
     };
@@ -1056,19 +1059,16 @@
     DocumentStorage.prototype.saveDocument = function (doc) {
         var entity = doc.getIdentifier();
         var path = doc_path(entity);
-        return LocalStorage.saveJSON(doc.toMap(), path);
+        return Storage.saveJSON(doc.toMap(), path);
     };
     DocumentStorage.prototype.getDocument = function (entity) {
         var path = doc_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         if (info) {
             return DocumentStorage.parse(info, null, null);
         } else {
             return false;
         }
-    };
-    var doc_path = function (entity) {
-        return "pub." + entity.getRemoteAddress().toString() + ".document";
     };
     DocumentStorage.parse = function (dict, identifier, type) {
         var entity = ID.parse(dict["ID"]);
@@ -1779,7 +1779,7 @@
         var pKey = privateKey.getPublicKey();
         var doc = createVisa(uid, nickname, avatar, pKey, privateKey);
         this.__db.saveMeta(meta, uid);
-        this.__db.savePrivateKey(uid, privateKey, "M", 1, 1);
+        this.__db.savePrivateKey(privateKey, "M", uid);
         this.__db.saveDocument(doc);
         return uid;
     };

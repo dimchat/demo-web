@@ -13,7 +13,7 @@
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var get_facebook = function () {
-        return app.Facebook.getInstance();
+        return app.GlobalVariable.getInstance().facebook;
     };
 
     var get_message_db = function () {
@@ -191,4 +191,4 @@
     //-------- namespace --------
     ns.MainTableViewCell = MainTableViewCell;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

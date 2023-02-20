@@ -9,9 +9,10 @@
     var Button = tui.Button;
     var Window = tui.Window;
 
+    var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
-    var Facebook = app.Facebook;
-    var facebook = Facebook.getInstance();
+
+    var facebook = app.GlobalVariable.getInstance().facebook;
 
     var MainWindow = function () {
         var frame = new Rect(10, 10, 240, 640);
@@ -87,7 +88,7 @@
         };
         this.appendChild(icon);
     };
-    sdk.Class(MainWindow, Window, null);
+    Class(MainWindow, Window, null, null);
 
     MainWindow.prototype.onClose = function (ev) {
         var user = facebook.getCurrentUser();
@@ -112,4 +113,4 @@
 
     ns.MainWindow = MainWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

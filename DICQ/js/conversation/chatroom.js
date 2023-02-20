@@ -5,6 +5,7 @@
     var ChatWindow = ns.ChatWindow;
     var GroupChatWindow = ns.GroupChatWindow;
 
+    var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
 
     var ForwardContent = sdk.protocol.ForwardContent;
@@ -14,7 +15,7 @@
     var Envelope = sdk.protocol.Envelope;
 
     var get_messenger = function () {
-        return app.Messenger.getInstance();
+        return app.GlobalVariable.getInstance().messenger;
     };
 
     var get_message_db = function () {
@@ -26,7 +27,7 @@
         this.setClassName('chatroomWindow');
         this.setTitle('Chat Room');
     };
-    sdk.Class(ChatroomWindow, GroupChatWindow, null);
+    Class(ChatroomWindow, GroupChatWindow, null, null);
 
     ChatroomWindow.prototype.getMessageCount = function () {
         var db = get_message_db();
@@ -79,7 +80,7 @@
             return ;
         }
         var messenger = get_messenger();
-        var server = messenger.getCurrentServer();
+        var server = messenger.getCurrentStation();
         var user = server.getCurrentUser();
         if (!user) {
             alert('User not login');
@@ -87,7 +88,7 @@
         }
         var content = new TextContent(text);
         content.setGroup(ID.EVERYONE);
-        var env = Envelope.create(user.identifier, ID.EVERYONE, 0);
+        var env = Envelope.create(user.getIdentifier(), ID.EVERYONE, 0);
         var msg = InstantMessage.create(env, content);
         messenger.saveMessage(msg);
         msg = messenger.signMessage(messenger.encryptMessage(msg));
@@ -96,7 +97,7 @@
 
     ns.ChatroomWindow = ChatroomWindow;
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);
 
 !function (ns, tui, app, sdk) {
     'use strict';
@@ -111,7 +112,7 @@
     var ChatroomWindow = ns.ChatroomWindow;
 
     var get_messenger = function () {
-        return app.Messenger.getInstance();
+        return app.GlobalVariable.getInstance().messenger;
     };
 
     // group members
@@ -167,7 +168,7 @@
 
     var query_history = function (admin) {
         var messenger = get_messenger();
-        var server = messenger.getCurrentServer();
+        var server = messenger.getCurrentStation();
         var user = server.getCurrentUser();
         if (user) {
             var content = new TextContent('show history');
@@ -202,7 +203,7 @@
 
     var query_users = function (admin) {
         var messenger = get_messenger();
-        var server = messenger.getCurrentServer();
+        var server = messenger.getCurrentStation();
         var user = server.getCurrentUser();
         if (user) {
             var content = new TextContent('show users');
@@ -227,4 +228,4 @@
         interval = null;
     };
 
-}(dicq, tarsier.ui, SECHAT, DIMSDK);
+}(dicq, tarsier.ui, SECHAT, DIMP);

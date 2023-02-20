@@ -37,8 +37,12 @@
 
     var Class = ns.type.Class;
     var Meta = ns.protocol.Meta;
-    var LocalStorage = ns.dos.LocalStorage;
+    var Storage = ns.dos.LocalStorage;
     var MetaDBI = ns.dbi.MetaDBI;
+
+    var meta_path = function (entity) {
+        return 'pub.' + entity.getAddress().toString() + '.meta';
+    };
 
     /**
      *  Meta for Entities (User/Group)
@@ -54,18 +58,14 @@
     // Override
     MetaStorage.prototype.saveMeta = function (meta, entity) {
         var path = meta_path(entity);
-        return LocalStorage.saveJSON(meta.toMap(), path);
+        return Storage.saveJSON(meta.toMap(), path);
     };
 
     // Override
     MetaStorage.prototype.getMeta = function (entity) {
         var path = meta_path(entity);
-        var info = LocalStorage.loadJSON(path);
+        var info = Storage.loadJSON(path);
         return Meta.parse(info);
-    };
-
-    var meta_path = function (entity) {
-        return 'pub.' + entity.getRemoteAddress().toString() + '.meta';
     };
 
     //-------- namespace --------
