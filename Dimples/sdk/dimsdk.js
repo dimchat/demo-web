@@ -3595,14 +3595,8 @@ if (typeof DIMP !== "object") {
                     BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
                     doc = arguments[1];
                 } else {
-                    if (typeof arguments[1] === "string") {
-                        BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
-                        sig = arguments[1];
-                    } else {
-                        throw new SyntaxError(
-                            "document command arguments error: " + arguments
-                        );
-                    }
+                    BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
+                    sig = arguments[1];
                 }
             } else {
                 if (arguments.length === 3) {
@@ -4344,7 +4338,7 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     var Class = ns.type.Class;
     var Meta = ns.protocol.Meta;
-    var Visa = ns.protocol.Visa;
+    var Document = ns.protocol.Document;
     var SecureMessage = ns.protocol.SecureMessage;
     var ReliableMessage = ns.protocol.ReliableMessage;
     var EncryptedMessage = ns.dkd.EncryptedMessage;
@@ -4381,7 +4375,7 @@ if (typeof DIMP !== "object") {
         getVisa: function () {
             if (this.__visa === null) {
                 var dict = this.getValue("visa");
-                this.__visa = Visa.parse(dict);
+                this.__visa = Document.parse(dict);
             }
             return this.__visa;
         },
@@ -7404,7 +7398,7 @@ if (typeof DIMP !== "object") {
         }
     };
     var general_factory = function () {
-        var man = ns.dkd.FactoryManager;
+        var man = ns.mkm.FactoryManager;
         return man.generalFactory;
     };
     Document.setFactory("*", new GeneralDocumentFactory("*"));
@@ -8926,6 +8920,7 @@ if (typeof FiniteStateMachine !== "object") {
             return false;
         },
         setup: function () {
+            this.__running = true;
             return false;
         },
         handle: function () {
@@ -8941,6 +8936,12 @@ if (typeof FiniteStateMachine !== "object") {
             return false;
         }
     });
+    Runner.prototype.isRunning = function () {
+        return this.__running;
+    };
+    Runner.prototype.stop = function () {
+        this.__running = false;
+    };
     ns.skywalker.Runner = Runner;
 })(FiniteStateMachine, MONKEY);
 (function (ns, sys) {
@@ -9007,7 +9008,6 @@ if (typeof FiniteStateMachine !== "object") {
 (function (ns, sys) {
     var Class = sys.type.Class;
     var Runner = ns.skywalker.Runner;
-    var Ticker = ns.threading.Ticker;
     var Thread = ns.threading.Thread;
     var Metronome = function (millis) {
         Runner.call(this);
@@ -12126,7 +12126,7 @@ if (typeof StarGate !== "object") {
         this.__local = local;
     };
     Socket.prototype.connect = function (remote) {
-        this.__remote = null;
+        this.__remote = remote;
         this.close();
         this.__host = remote.getHost();
         this.__port = remote.getPort();

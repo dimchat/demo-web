@@ -198,7 +198,7 @@
 
         getStatus: function () {
             var gate = this.__session.getGate();
-            var docker = gate.getDocker(this.__session.getRemoteAddress(), null, null);
+            var docker = gate.fetchDocker(this.__session.getRemoteAddress(), null, null);
             return docker ? docker.getStatus() : DockerStatus.ERROR;
         }
     });

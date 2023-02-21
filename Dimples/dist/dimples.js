@@ -3595,14 +3595,8 @@ if (typeof DIMP !== "object") {
                     BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
                     doc = arguments[1];
                 } else {
-                    if (typeof arguments[1] === "string") {
-                        BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
-                        sig = arguments[1];
-                    } else {
-                        throw new SyntaxError(
-                            "document command arguments error: " + arguments
-                        );
-                    }
+                    BaseMetaCommand.call(this, Command.DOCUMENT, arguments[0], null);
+                    sig = arguments[1];
                 }
             } else {
                 if (arguments.length === 3) {
@@ -4344,7 +4338,7 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     var Class = ns.type.Class;
     var Meta = ns.protocol.Meta;
-    var Visa = ns.protocol.Visa;
+    var Document = ns.protocol.Document;
     var SecureMessage = ns.protocol.SecureMessage;
     var ReliableMessage = ns.protocol.ReliableMessage;
     var EncryptedMessage = ns.dkd.EncryptedMessage;
@@ -4381,7 +4375,7 @@ if (typeof DIMP !== "object") {
         getVisa: function () {
             if (this.__visa === null) {
                 var dict = this.getValue("visa");
-                this.__visa = Visa.parse(dict);
+                this.__visa = Document.parse(dict);
             }
             return this.__visa;
         },
@@ -7404,7 +7398,7 @@ if (typeof DIMP !== "object") {
         }
     };
     var general_factory = function () {
-        var man = ns.dkd.FactoryManager;
+        var man = ns.mkm.FactoryManager;
         return man.generalFactory;
     };
     Document.setFactory("*", new GeneralDocumentFactory("*"));
@@ -8926,6 +8920,7 @@ if (typeof FiniteStateMachine !== "object") {
             return false;
         },
         setup: function () {
+            this.__running = true;
             return false;
         },
         handle: function () {
@@ -8941,6 +8936,12 @@ if (typeof FiniteStateMachine !== "object") {
             return false;
         }
     });
+    Runner.prototype.isRunning = function () {
+        return this.__running;
+    };
+    Runner.prototype.stop = function () {
+        this.__running = false;
+    };
     ns.skywalker.Runner = Runner;
 })(FiniteStateMachine, MONKEY);
 (function (ns, sys) {
@@ -9007,7 +9008,6 @@ if (typeof FiniteStateMachine !== "object") {
 (function (ns, sys) {
     var Class = sys.type.Class;
     var Runner = ns.skywalker.Runner;
-    var Ticker = ns.threading.Ticker;
     var Thread = ns.threading.Thread;
     var Metronome = function (millis) {
         Runner.call(this);
@@ -12126,7 +12126,7 @@ if (typeof StarGate !== "object") {
         this.__local = local;
     };
     Socket.prototype.connect = function (remote) {
-        this.__remote = null;
+        this.__remote = remote;
         this.close();
         this.__host = remote.getHost();
         this.__port = remote.getPort();
@@ -14080,12 +14080,13 @@ if (typeof StarGate !== "object") {
         this.__gate.stop();
     };
     GateKeeper.prototype.setup = function () {
-        Runner.prototype.setup.call(this);
+        var again = Runner.prototype.setup.call(this);
         this.__gate.start();
+        return again;
     };
     GateKeeper.prototype.finish = function () {
         this.__gate.stop();
-        Runner.prototype.finish.call(this);
+        return Runner.prototype.finish.call(this);
     };
     GateKeeper.prototype.process = function () {
         var gate = this.__gate;
@@ -14120,6 +14121,8 @@ if (typeof StarGate !== "object") {
         return true;
     };
     GateKeeper.prototype.dockerPack = function (payload, priority) {
+        var docker = this.__gate.fetchDocker(this.__remote, null, null);
+        console.assert(docker, "departure packer error", this.__remote);
         return new PlainDeparture(payload, priority);
     };
     GateKeeper.prototype.queueAppend = function (rMsg, departure) {
@@ -14165,7 +14168,7 @@ if (typeof StarGate !== "object") {
     Class(BaseSession, GateKeeper, [DockerDelegate, Transmitter], {
         queueMessagePackage: function (rMsg, data, priority) {
             var ship = this.dockerPack(data, priority);
-            this.queueAppend(rMsg, ship);
+            return this.queueAppend(rMsg, ship);
         }
     });
     BaseSession.prototype.getDatabase = function () {
@@ -14738,17 +14741,20 @@ if (typeof StarGate !== "object") {
             return true;
         }
         if (receiver.isUser()) {
-            if (this.queryDocument(receiver)) {
-                console.info(
-                    "CommandMessenger::checkReceiver(), queryDocument",
-                    receiver
-                );
+            var visaKey = this.__facebook.getPublicKeyForEncryption(receiver);
+            if (!visaKey) {
+                if (this.queryDocument(receiver)) {
+                    console.info(
+                        "CommandMessenger::checkReceiver(), queryDocument",
+                        receiver
+                    );
+                }
+                iMsg.setValue("error", {
+                    message: "encrypt key not found",
+                    user: receiver.toString()
+                });
+                return false;
             }
-            iMsg.setValue("error", {
-                message: "encrypt key not found",
-                user: receiver.toString()
-            });
-            return false;
         } else {
             var meta = this.__facebook.getMeta(receiver);
             if (!meta) {
@@ -14901,7 +14907,7 @@ if (typeof StarGate !== "object") {
         },
         getStatus: function () {
             var gate = this.__session.getGate();
-            var docker = gate.getDocker(
+            var docker = gate.fetchDocker(
                 this.__session.getRemoteAddress(),
                 null,
                 null
@@ -15195,7 +15201,7 @@ if (typeof StarGate !== "object") {
             }
             var gate = this.getGate();
             var source = docker.getRemoteAddress();
-            var destination = docker.getLocalUsers();
+            var destination = docker.getLocalAddress();
             for (var k = 0; i < all_responses.length; ++k) {
                 gate.sendMessage(all_responses[k], source, destination);
             }
@@ -15233,12 +15239,31 @@ if (typeof StarGate !== "object") {
             return [];
         } else {
             if (payload[0] === "{".charCodeAt(0)) {
-                return payload.split("\n".charCodeAt(0));
+                return split_packages(payload);
             } else {
                 return [payload];
             }
         }
     };
+    var split_packages = function (payload) {
+        var array = [];
+        var i,
+            j = 0;
+        for (i = 1; i < payload.length; ++i) {
+            if (payload[i] !== NEW_LINE) {
+                continue;
+            }
+            if (i > j) {
+                array.push(payload.slice(j, i));
+            }
+            j = i + 1;
+        }
+        if (i > j) {
+            array.push(payload.slice(j, i));
+        }
+        return array;
+    };
+    var NEW_LINE = "\n".charCodeAt(0);
     ns.network.ClientSession = ClientSession;
 })(DIMP);
 (function (ns) {
@@ -15305,12 +15330,12 @@ if (typeof StarGate !== "object") {
         var processor = this.createProcessor(facebook, messenger);
         messenger.setPacker(packer);
         messenger.setProcessor(processor);
+        this.__messenger = messenger;
         session.setMessenger(messenger);
         machine = new StateMachine(session);
         machine.setDelegate(this);
-        this.__messenger = messenger;
-        this.__fsm = machine;
         machine.start();
+        this.__fsm = machine;
         return messenger;
     };
     Terminal.prototype.createStation = function (host, port) {

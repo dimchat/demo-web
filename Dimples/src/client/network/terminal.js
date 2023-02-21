@@ -117,14 +117,14 @@
         var processor = this.createProcessor(facebook, messenger);
         messenger.setPacker(packer);
         messenger.setProcessor(processor);
+        this.__messenger = messenger;
         // set weak reference to messenger
         session.setMessenger(messenger);
         // create & start state machine
         machine = new StateMachine(session);
         machine.setDelegate(this);
-        this.__messenger = messenger;
-        this.__fsm = machine;
         machine.start();
+        this.__fsm = machine;
         return messenger;
     };
 

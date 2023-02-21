@@ -119,14 +119,15 @@
 
     // Override
     GateKeeper.prototype.setup = function () {
-        Runner.prototype.setup.call(this)
+        var again = Runner.prototype.setup.call(this)
         this.__gate.start();
+        return again;
     };
 
     // Override
     GateKeeper.prototype.finish = function () {
         this.__gate.stop();
-        Runner.prototype.finish.call(this)
+        return Runner.prototype.finish.call(this)
     };
 
     // Override
@@ -173,6 +174,8 @@
 
     // protected
     GateKeeper.prototype.dockerPack = function (payload, priority) {
+        var docker = this.__gate.fetchDocker(this.__remote, null, null);
+        console.assert(docker, 'departure packer error', this.__remote);
         return new PlainDeparture(payload, priority);
     };
 

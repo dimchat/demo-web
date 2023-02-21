@@ -107,7 +107,7 @@
             }
             var gate = this.getGate();
             var source = docker.getRemoteAddress();
-            var destination = docker.getLocalUsers();
+            var destination = docker.getLocalAddress();
             // 3. send responses separately
             for (var k = 0; i < all_responses.length; ++k) {
                 gate.sendMessage(all_responses[k], source, destination);
@@ -155,12 +155,32 @@
             return [];
         } else if (payload[0] === '{'.charCodeAt(0)) {
             // JsON in lines
-            return payload.split('\n'.charCodeAt(0));
+            return split_packages(payload);
         } else {
             // TODO: other format?
             return [payload];
         }
     };
+
+    var split_packages = function (payload) {
+        // return payload.split('\n'.charCodeAt(0));
+        var array = [];
+        var i, j = 0;
+        for (i = 1; i < payload.length; ++i) {
+            if (payload[i] !== NEW_LINE) {
+                continue;
+            }
+            if (i > j) {
+                array.push(payload.slice(j, i));
+            }
+            j = i + 1;  // skip '\n'
+        }
+        if (i > j) {
+            array.push(payload.slice(j, i));
+        }
+        return array;
+    };
+    var NEW_LINE = '\n'.charCodeAt(0);
 
     //-------- namespace --------
     ns.network.ClientSession = ClientSession;

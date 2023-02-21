@@ -61,7 +61,7 @@
         // Override
         queueMessagePackage: function (rMsg, data, priority) {
             var ship = this.dockerPack(data, priority);
-            this.queueAppend(rMsg, ship);
+            return this.queueAppend(rMsg, ship);
         }
     });
 

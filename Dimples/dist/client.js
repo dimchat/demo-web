@@ -87,7 +87,7 @@
         },
         getStatus: function () {
             var gate = this.__session.getGate();
-            var docker = gate.getDocker(
+            var docker = gate.fetchDocker(
                 this.__session.getRemoteAddress(),
                 null,
                 null
@@ -381,7 +381,7 @@
             }
             var gate = this.getGate();
             var source = docker.getRemoteAddress();
-            var destination = docker.getLocalUsers();
+            var destination = docker.getLocalAddress();
             for (var k = 0; i < all_responses.length; ++k) {
                 gate.sendMessage(all_responses[k], source, destination);
             }
@@ -419,12 +419,31 @@
             return [];
         } else {
             if (payload[0] === "{".charCodeAt(0)) {
-                return payload.split("\n".charCodeAt(0));
+                return split_packages(payload);
             } else {
                 return [payload];
             }
         }
     };
+    var split_packages = function (payload) {
+        var array = [];
+        var i,
+            j = 0;
+        for (i = 1; i < payload.length; ++i) {
+            if (payload[i] !== NEW_LINE) {
+                continue;
+            }
+            if (i > j) {
+                array.push(payload.slice(j, i));
+            }
+            j = i + 1;
+        }
+        if (i > j) {
+            array.push(payload.slice(j, i));
+        }
+        return array;
+    };
+    var NEW_LINE = "\n".charCodeAt(0);
     ns.network.ClientSession = ClientSession;
 })(DIMP);
 (function (ns) {
@@ -491,12 +510,12 @@
         var processor = this.createProcessor(facebook, messenger);
         messenger.setPacker(packer);
         messenger.setProcessor(processor);
+        this.__messenger = messenger;
         session.setMessenger(messenger);
         machine = new StateMachine(session);
         machine.setDelegate(this);
-        this.__messenger = messenger;
-        this.__fsm = machine;
         machine.start();
+        this.__fsm = machine;
         return messenger;
     };
     Terminal.prototype.createStation = function (host, port) {

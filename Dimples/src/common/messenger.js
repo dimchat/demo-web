@@ -219,14 +219,17 @@
         }
         if (receiver.isUser()) {
             // check user's meta & document
-            if (this.queryDocument(receiver)) {
-                console.info('CommandMessenger::checkReceiver(), queryDocument', receiver);
+            var visaKey = this.__facebook.getPublicKeyForEncryption(receiver);
+            if (!visaKey) {
+                if (this.queryDocument(receiver)) {
+                    console.info('CommandMessenger::checkReceiver(), queryDocument', receiver);
+                }
+                iMsg.setValue('error', {
+                    'message': 'encrypt key not found',
+                    'user': receiver.toString()
+                });
+                return false;
             }
-            iMsg.setValue('error', {
-                'message': 'encrypt key not found',
-                'user': receiver.toString()
-            });
-            return false;
         } else {
             // check group's meta
             var meta = this.__facebook.getMeta(receiver);

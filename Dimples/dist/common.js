@@ -1543,12 +1543,13 @@
         this.__gate.stop();
     };
     GateKeeper.prototype.setup = function () {
-        Runner.prototype.setup.call(this);
+        var again = Runner.prototype.setup.call(this);
         this.__gate.start();
+        return again;
     };
     GateKeeper.prototype.finish = function () {
         this.__gate.stop();
-        Runner.prototype.finish.call(this);
+        return Runner.prototype.finish.call(this);
     };
     GateKeeper.prototype.process = function () {
         var gate = this.__gate;
@@ -1583,6 +1584,8 @@
         return true;
     };
     GateKeeper.prototype.dockerPack = function (payload, priority) {
+        var docker = this.__gate.fetchDocker(this.__remote, null, null);
+        console.assert(docker, "departure packer error", this.__remote);
         return new PlainDeparture(payload, priority);
     };
     GateKeeper.prototype.queueAppend = function (rMsg, departure) {
@@ -1628,7 +1631,7 @@
     Class(BaseSession, GateKeeper, [DockerDelegate, Transmitter], {
         queueMessagePackage: function (rMsg, data, priority) {
             var ship = this.dockerPack(data, priority);
-            this.queueAppend(rMsg, ship);
+            return this.queueAppend(rMsg, ship);
         }
     });
     BaseSession.prototype.getDatabase = function () {
@@ -2201,17 +2204,20 @@
             return true;
         }
         if (receiver.isUser()) {
-            if (this.queryDocument(receiver)) {
-                console.info(
-                    "CommandMessenger::checkReceiver(), queryDocument",
-                    receiver
-                );
+            var visaKey = this.__facebook.getPublicKeyForEncryption(receiver);
+            if (!visaKey) {
+                if (this.queryDocument(receiver)) {
+                    console.info(
+                        "CommandMessenger::checkReceiver(), queryDocument",
+                        receiver
+                    );
+                }
+                iMsg.setValue("error", {
+                    message: "encrypt key not found",
+                    user: receiver.toString()
+                });
+                return false;
             }
-            iMsg.setValue("error", {
-                message: "encrypt key not found",
-                user: receiver.toString()
-            });
-            return false;
         } else {
             var meta = this.__facebook.getMeta(receiver);
             if (!meta) {
