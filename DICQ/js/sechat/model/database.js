@@ -31,6 +31,7 @@
     'use strict';
 
     var SymmetricKey = sdk.crypto.SymmetricKey;
+    var PlainKey = sdk.crypto.PlainKey;
 
     var PrivateKeyStorage = sdk.database.PrivateKeyStorage;
     var MetaStorage       = sdk.database.MetaStorage;
@@ -185,6 +186,10 @@
         },
 
         getCipherKey: function (from, to, generate) {
+            if (to.isBroadcast()) {
+                // broadcast message has no key
+                return PlainKey.getInstance();
+            }
             var key = t_cipher_key.getCipherKey(from, to, generate);
             if (!key && generate) {
                 // generate new key and store it

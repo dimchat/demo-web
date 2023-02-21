@@ -8,7 +8,6 @@
     var TableView = tui.TableView;
 
     var Class = sdk.type.Class;
-    var Facebook = app.Facebook;
 
     var GroupChatWindow = function () {
         ChatWindow.call(this);
@@ -109,10 +108,7 @@
 !function (ns, tui, app, sdk) {
     'use strict';
 
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-
-    var Facebook = app.Facebook;
-
+    var NotificationNames = app.NotificationNames;
     var ChatWindow = ns.ChatWindow;
     var GroupChatWindow = ns.GroupChatWindow;
 
@@ -135,7 +131,7 @@
     GroupChatWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === app.kNotificationMessageUpdated) {
+        if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var content = msg.getContent();
             var identifier = this.__identifier;

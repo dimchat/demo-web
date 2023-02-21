@@ -57,7 +57,7 @@
         parse.call(this, content);
 
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(ns.kNotificationSearchUpdated, this, {
+        nc.postNotification('SearchUpdated', this, {
             'cmd': content,
             'msg': rMsg
         });

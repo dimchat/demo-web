@@ -107,7 +107,7 @@
     var TextContent = sdk.protocol.TextContent;
 
     var SearchCommand = app.protocol.SearchCommand;
-
+    var NotificationNames = app.NotificationNames;
     var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;
 
@@ -126,7 +126,7 @@
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === app.kNotificationMessageUpdated) {
+        if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             if (ID.EVERYONE.equals(msg.getGroup())) {
                 // reload chat history

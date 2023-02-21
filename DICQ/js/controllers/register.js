@@ -14,7 +14,6 @@
     var Window = tui.Window;
 
     var Class = sdk.type.Class;
-    var Facebook = app.Facebook;
     var Register = app.Register;
 
     var RegisterWindow = function () {

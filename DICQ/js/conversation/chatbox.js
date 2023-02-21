@@ -23,6 +23,7 @@
     var NotificationCenter = sdk.lnc.NotificationCenter;
 
     var Anonymous = app.Anonymous;
+    var NotificationNames = app.NotificationNames;
 
     var get_facebook = function () {
         return app.GlobalVariable.getInstance().facebook;
@@ -92,7 +93,7 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, app.kNotificationMessageUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
     Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate], null);
 
@@ -119,7 +120,7 @@
     ChatWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === app.kNotificationMessageUpdated) {
+        if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var env = msg.getEnvelope();
             var identifier = this.__identifier;

@@ -51,6 +51,7 @@
     var MessageBuilder = app.cpu.MessageBuilder;
 
     var Anonymous = app.Anonymous;
+    var NotificationNames = app.NotificationNames;
 
     var StationDelegate = app.network.StationDelegate;
     var Terminal = app.network.Terminal;
@@ -63,12 +64,12 @@
         Terminal.call(this);
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, app.kNotificationStationConnecting);
-        nc.addObserver(this, app.kNotificationStationConnected);
-        nc.addObserver(this, app.kNotificationStationError);
-        nc.addObserver(this, app.kNotificationMetaAccepted);
-        nc.addObserver(this, app.kNotificationDocumentUpdated);
-        nc.addObserver(this, app.kNotificationMessageUpdated);
+        nc.addObserver(this, NotificationNames.StationConnecting);
+        nc.addObserver(this, NotificationNames.StationConnected);
+        nc.addObserver(this, NotificationNames.StationError);
+        nc.addObserver(this, NotificationNames.MetaAccepted);
+        nc.addObserver(this, NotificationNames.DocumentUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
     Class(Application, Terminal, [StationDelegate], null);
 
@@ -87,20 +88,20 @@
         var name = notification.name;
         var userInfo = notification.userInfo;
         var res;
-        if (name === app.kNotificationStationConnecting) {
+        if (name === NotificationNames.StationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
-        } else if (name === app.kNotificationStationConnected) {
+        } else if (name === NotificationNames.StationConnected) {
             res = 'Station connected.';
-        } else if (name === app.kNotificationStationError) {
+        } else if (name === NotificationNames.StationError) {
             res = 'Connection error.';
-        } else if (name === app.kNotificationMetaAccepted) {
+        } else if (name === NotificationNames.MetaAccepted) {
             identifier = userInfo['ID'];
             res = '[Meta saved] ID: ' + identifier;
-        } else if (name === app.kNotificationDocumentUpdated) {
+        } else if (name === NotificationNames.DocumentUpdated) {
             doc = Document.parse(userInfo);
             res = '[Document updated] ID: ' + doc.getIdentifier()
                 + ' -> ' + doc.getValue('data');
-        } else if (name === app.kNotificationMessageUpdated) {
+        } else if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var sender = msg.getSender();
             var username = facebook.getName(sender);
@@ -189,7 +190,7 @@
         if (facebook.addContact(contact, user)) {
             var contacts = facebook.getContacts(user);
             var nc = NotificationCenter.getInstance();
-            nc.postNotification(app.kNotificationContactsUpdated, this,
+            nc.postNotification(NotificationNames.ContactsUpdated, this,
                 {'ID': contact, 'contacts': contacts});
         }
     };
@@ -198,54 +199,61 @@
 
 }(dicq, SECHAT, DIMP);
 
-!function (ns, tui, app, sdk) {
+!function (ns, app) {
     'use strict';
 
-    var Station = sdk.mkm.Station;
-    var ClientSession = sdk.network.ClientSession;
     var SharedDatabase  = app.SharedDatabase;
     var SharedFacebook  = app.SharedFacebook;
-    var SharedMessenger = app.SharedMessenger;
-    var SharedPacker    = app.SharedPacker;
-    var SharedProcessor = app.SharedProcessor;
     var Client          = app.Client;
     var GlobalVariable  = app.GlobalVariable;
 
     var Main = function () {
-        Init();
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = create_facebook();
         var user = facebook.getCurrentUser();
         if (user) {
             // login
+            // connect('127.0.0.1', 9394);
+            // connect('192.168.31.91', 9394);
+            connect('106.52.25.169', 9394);  // gz
             ns.LoginWindow.show(user);
         } else {
             // register new account
             new ns.RegisterWindow.show();
         }
+
+        var json = '"{"type":136,"sn":1475857452,"time":1676958822.808,"cmd":"handshake","title":"Hello world!","group":"stations@everywhere","command":"handshake"}"';
+        var data = app.format.UTF8.encode(json);
+        var string = app.format.UTF8.decode(data);
+        console.warn('test UTF8', data, string);
     };
 
-    var Init = function () {
+    var create_facebook = function () {
         var shared = GlobalVariable.getInstance();
-        var database = SharedDatabase.getInstance();
-        var facebook = new SharedFacebook(database);
-        shared.database = database;
-        shared.facebook = facebook;
-        // connect
-        // var host = '192.168.31.91';
-        var host = '106.52.25.169';   // gz
-        var port = 9394;
-        var server = new Station(host, port);
-        var session = new ClientSession(server, database);
-        var messenger = new SharedMessenger(session, facebook, database);
-        var packer = new SharedPacker(facebook, messenger);
-        var processor = new SharedProcessor(facebook, messenger);
-        messenger.setPacker(packer);
-        messenger.setProcessor(processor);
-        var client = new Client(facebook, database);
-        shared.messenger = messenger;
-        shared.terminal = client;
+        var database = shared.database;
+        var facebook = shared.facebook;
+        if (database === null) {
+            database = SharedDatabase.getInstance();
+            shared.database = database;
+        }
+        if (facebook === null) {
+            facebook = new SharedFacebook(database);
+            shared.facebook = facebook;
+        }
+        return facebook;
     };
+    var connect = function (host, port) {
+        var shared = GlobalVariable.getInstance();
+        var database = shared.database;
+        var facebook = shared.facebook;
+        var client = shared.terminal;
+        if (client === null) {
+            client = new Client(facebook, database);
+            shared.terminal = client;
+        }
+        client.connect(host, port);
+        return client;
+    }
 
     ns.Main = Main;
 
-}(dicq, tarsier.ui, SECHAT, DIMP);
+}(dicq, SECHAT);

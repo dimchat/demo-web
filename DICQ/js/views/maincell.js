@@ -11,6 +11,7 @@
     var TableViewCell = tui.TableViewCell;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationNames = app.NotificationNames;
 
     var get_facebook = function () {
         return app.GlobalVariable.getInstance().facebook;
@@ -100,7 +101,7 @@
     MainTableViewCell.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === app.kNotificationMessageUpdated) {
+        if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             check_unread_msg.call(this, msg);
         }
@@ -108,12 +109,12 @@
 
     MainTableViewCell.prototype.onEnter = function () {
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, app.kNotificationMessageUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
 
     MainTableViewCell.prototype.onExit = function () {
         var nc = NotificationCenter.getInstance();
-        nc.removeObserver(this, app.kNotificationMessageUpdated);
+        nc.removeObserver(this, NotificationNames.MessageUpdated);
         this.stopDancing();
     };
 

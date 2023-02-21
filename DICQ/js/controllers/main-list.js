@@ -16,6 +16,7 @@
     var ID = sdk.protocol.ID;
 
     var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationNames = app.NotificationNames;
 
     var get_facebook = function () {
         return app.GlobalVariable.getInstance().facebook;
@@ -34,16 +35,16 @@
 
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, app.kNotificationContactsUpdated);
-        nc.addObserver(this, app.kNotificationMessageUpdated);
+        nc.addObserver(this, NotificationNames.ContactsUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
     Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate], null);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
-        if (name === app.kNotificationContactsUpdated) {
+        if (name === NotificationNames.ContactsUpdated) {
             this.reloadData();
-        } else if (name === app.kNotificationMessageUpdated) {
+        } else if (name === NotificationNames.MessageUpdated) {
             this.reloadData();
         }
     };

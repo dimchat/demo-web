@@ -106,6 +106,7 @@
 
     var Class = sdk.type.Class;
     var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationNames = app.NotificationNames;
 
     var SearchResultWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
@@ -147,7 +148,7 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, app.kNotificationMessageUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
     Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate], null);
 
@@ -215,12 +216,13 @@
 
     var SearchCommand = app.protocol.SearchCommand;
 
+    var NotificationNames = app.NotificationNames;
     var SearchResultWindow = ns.SearchResultWindow;
 
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === app.kNotificationMessageUpdated) {
+        if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             if (msg.getContent() instanceof SearchCommand) {
                 // var command = msg.getContent().getCommand();
