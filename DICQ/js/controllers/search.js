@@ -16,7 +16,13 @@
     var Window = tui.Window;
 
     var Class = sdk.type.Class;
-    var Messenger = app.Messenger;
+
+    // var get_facebook = function () {
+    //     return app.GlobalVariable.getInstance().facebook;
+    // };
+    var get_messenger = function () {
+        return app.GlobalVariable.getInstance().messenger;
+    };
 
     var SearchWindow = function () {
         var frame = new Rect(0, 0, 480, 360);
@@ -61,7 +67,7 @@
 
     SearchWindow.prototype.search = function (keywords) {
         ns.SearchResultWindow.show();
-        var messenger = app.GlobalVariable.getInstance().messenger;
+        var messenger = get_messenger();
         messenger.search(keywords);
         this.remove();
     };
@@ -148,7 +154,7 @@
         this.appendChild(button);
 
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, NotificationNames.MessageUpdated);
+        nc.addObserver(this, NotificationNames.SearchUpdated);
     };
     Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate], null);
 
@@ -174,6 +180,16 @@
     //
     //  TableViewDataSource/TableViewDelegate
     //
+    SearchResultWindow.prototype.numberOfSections = function (tableView) {
+        return 1;
+    };
+    SearchResultWindow.prototype.titleForHeaderInSection = function(section, tableView) {
+        return null
+    };
+    SearchResultWindow.prototype.titleForFooterInSection = function(section, tableView) {
+        return null
+    };
+
     SearchResultWindow.prototype.numberOfRowsInSection = function (section, tableView) {
         return this.getUserCount();
     };
@@ -184,6 +200,25 @@
         cell.setClassName('userCell');
         cell.setIdentifier(identifier);
         return cell;
+    };
+
+    SearchResultWindow.prototype.heightForHeaderInSection = function(section, tableView) {
+        return 16
+    };
+    SearchResultWindow.prototype.heightForFooterInSection = function(section, tableView) {
+        return 16
+    };
+    SearchResultWindow.prototype.viewForHeaderInSection = function(section, tableView) {
+        return null
+    };
+    SearchResultWindow.prototype.viewForFooterInSection = function(section, tableView) {
+        return null
+    };
+    SearchResultWindow.prototype.heightForRowAtIndexPath = function(indexPath, tableView) {
+        return 64
+    };
+    SearchResultWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+
     };
 
     //
@@ -212,6 +247,7 @@
 !function (ns, tui, app, sdk) {
     'use strict';
 
+    var Interface = sdk.type.Interface;
     var ID = sdk.protocol.ID;
 
     var SearchCommand = app.protocol.SearchCommand;
@@ -222,13 +258,13 @@
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
         var name = notification.name;
         var userInfo = notification.userInfo;
-        if (name === NotificationNames.MessageUpdated) {
-            var msg = userInfo['msg'];
-            if (msg.getContent() instanceof SearchCommand) {
+        if (name === NotificationNames.SearchUpdated) {
+            var content = userInfo['content'];
+            if (Interface.conforms(content, SearchCommand)) {
                 // var command = msg.getContent().getCommand();
                 // if (command === SearchCommand.SEARCH) {
                     // process search result notification
-                    update_users(msg.getContent());
+                    update_users(content);
                     // reload users
                     this.reloadData();
                 // }

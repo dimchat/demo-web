@@ -41,6 +41,7 @@
 !function (ns, app, sdk) {
     'use strict';
 
+    var Interface = sdk.type.Interface;
     var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
     var Document = sdk.protocol.Document;
@@ -59,6 +60,9 @@
     var get_facebook = function () {
         return app.GlobalVariable.getInstance().facebook;
     };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
 
     var Application = function () {
         Terminal.call(this);
@@ -107,7 +111,7 @@
             var username = facebook.getName(sender);
             var content = msg.getContent();
             var text;
-            if (content instanceof Command) {
+            if (Interface.conforms(content, Command)) {
                 text = MessageBuilder.getCommandText(content, sender);
             } else {
                 text = MessageBuilder.getContentText(content, sender);

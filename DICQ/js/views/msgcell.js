@@ -9,11 +9,11 @@
     var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
+    var Interface = sdk.type.Interface;
     var Command = sdk.protocol.Command;
     var ImageContent = sdk.protocol.ImageContent;
     var MessageBuilder = app.cpu.MessageBuilder;
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
 
     var MessageCell = function (cell) {
         TableViewCell.call(this, cell);
@@ -55,12 +55,12 @@
 
         // message content
         var content = iMsg.getContent();
-        if (content instanceof Command) {
+        if (Interface.conforms(content, Command)) {
             this.setClassName('cmd');
         }
 
         var contentView = null;
-        if (content instanceof ImageContent) {
+        if (Interface.conforms(content, ImageContent)) {
             contentView = image_content_view(content, sender);
         }
         if (!contentView) {
@@ -98,7 +98,7 @@
     var text_content_view = function (content, sender) {
         var textView = new Label();
         var text;
-        if (content instanceof Command) {
+        if (Interface.conforms(content, Command)) {
             text = MessageBuilder.getCommandText(content, sender);
         } else {
             text = MessageBuilder.getContentText(content, sender);

@@ -58,8 +58,8 @@
 
         var nc = NotificationCenter.getInstance();
         nc.postNotification('SearchUpdated', this, {
-            'cmd': content,
-            'msg': rMsg
+            'content': content,
+            'envelope': rMsg.getEnvelope()
         });
         return null;
     };

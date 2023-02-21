@@ -16,6 +16,13 @@
     var Class = sdk.type.Class;
     var Register = app.Register;
 
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
+
     var RegisterWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
         Window.call(this, frame);
@@ -62,7 +69,7 @@
 
     RegisterWindow.prototype.onSubmit = function (user) {
         if (user) {
-            var facebook = app.GlobalVariable.getInstance().facebook;
+            var facebook = get_facebook();
             facebook.setCurrentUser(user);
             // open login window
             ns.Main();

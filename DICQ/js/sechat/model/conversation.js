@@ -39,6 +39,9 @@
     var get_facebook = function () {
         return ns.GlobalVariable.getInstance().facebook;
     };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
     var get_conversation_db = function () {
         return ns.GlobalVariable.getInstance().database;
     };

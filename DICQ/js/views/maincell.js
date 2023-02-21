@@ -16,9 +16,11 @@
     var get_facebook = function () {
         return app.GlobalVariable.getInstance().facebook;
     };
-
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
     var get_message_db = function () {
-        return app.db.MessageTable;
+        return app.GlobalVariable.getInstance().database;
     };
 
     var MainTableViewCell = function (cell) {

@@ -35,6 +35,7 @@
     var ID = sdk.protocol.ID;
     var Command = sdk.protocol.Command;
     var DocumentCommand = sdk.protocol.DocumentCommand;
+    var SearchCommand = sdk.protocol.SearchCommand;
     var ClientMessenger = sdk.ClientMessenger;
     var Compatible = ns.Compatible;
 
@@ -153,6 +154,18 @@
         var result = this.sendContent(null, receiver, content, priority);
         return result[1] !== null;
     };
+
+    /**
+     *  Send 'search' command to the SearchEngine
+     *
+     * @param {string} keywords - keyword separated with empty space
+     * @return {boolean} false on error
+     */
+    SharedMessenger.prototype.search = function (keywords) {
+        var cmd = SearchCommand.search(keywords);
+        return send_content.call(this, SE, cmd, 0);
+    };
+    var SE = ID.parse('archivist@anywhere');
 
     //-------- namespace --------
     ns.SharedMessenger = SharedMessenger;

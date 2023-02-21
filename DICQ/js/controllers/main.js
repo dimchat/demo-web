@@ -12,6 +12,13 @@
     var Class = sdk.type.Class;
     var ID = sdk.protocol.ID;
 
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
+
     var MainWindow = function () {
         var frame = new Rect(10, 10, 240, 640);
         Window.call(this, frame);
@@ -89,7 +96,7 @@
     Class(MainWindow, Window, null, null);
 
     MainWindow.prototype.onClose = function (ev) {
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         if (user) {
             ns.LoginWindow.show(user);

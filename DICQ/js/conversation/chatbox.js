@@ -31,9 +31,8 @@
     var get_messenger = function () {
         return app.GlobalVariable.getInstance().messenger;
     };
-
     var get_message_db = function () {
-        return app.db.MessageTable;
+        return app.GlobalVariable.getInstance().database;
     };
 
     var ChatWindow = function () {

@@ -98,7 +98,7 @@
                 text = getLoginCommandText(content, sender);
             } else if (Interface.conforms(content, GroupCommand)) {
                 text = getGroupCommandText(content, sender);
-                //} else if (content instanceof HistoryCommand) {
+            //} else if (Interface.conforms(content, HistoryCommand)) {
                 // TODO: process history command
             } else {
                 text = 'Current version doesn\'t support this command: ' + content.getCmd();

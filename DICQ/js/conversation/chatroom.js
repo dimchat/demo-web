@@ -14,12 +14,14 @@
     var InstantMessage = sdk.protocol.InstantMessage;
     var Envelope = sdk.protocol.Envelope;
 
+    // var get_facebook = function () {
+    //     return app.GlobalVariable.getInstance().facebook;
+    // };
     var get_messenger = function () {
         return app.GlobalVariable.getInstance().messenger;
     };
-
     var get_message_db = function () {
-        return app.db.MessageTable;
+        return app.GlobalVariable.getInstance().database;
     };
 
     var ChatroomWindow = function () {
@@ -102,6 +104,7 @@
 !function (ns, tui, app, sdk) {
     'use strict';
 
+    var Interface = sdk.type.Interface;
     var ID = sdk.protocol.ID;
 
     var TextContent = sdk.protocol.TextContent;
@@ -111,6 +114,9 @@
     var GroupChatWindow = ns.GroupChatWindow;
     var ChatroomWindow = ns.ChatroomWindow;
 
+    // var get_facebook = function () {
+    //     return app.GlobalVariable.getInstance().facebook;
+    // };
     var get_messenger = function () {
         return app.GlobalVariable.getInstance().messenger;
     };
@@ -128,13 +134,14 @@
         var userInfo = notification.userInfo;
         if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
+            var content = msg.getContent();
             if (ID.EVERYONE.equals(msg.getGroup())) {
                 // reload chat history
                 this.historyView.reloadData();
                 this.historyView.scrollToBottom();
-            } else if (msg.getContent() instanceof SearchCommand) {
-                var command = msg.getContent().getCommand();
-                if (command === SearchCommand.ONLINE_USERS) {
+            } else if (Interface.conforms(content, SearchCommand)) {
+                var cmd = content.getCmd();
+                if (cmd === SearchCommand.ONLINE_USERS) {
                     // process chatroom users updated notification
                     update_users(msg.getContent());
                     // reload online users

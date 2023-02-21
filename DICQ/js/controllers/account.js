@@ -19,8 +19,13 @@
     var DocumentCommand = sdk.protocol.DocumentCommand;
 
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
-    var Messenger = app.Messenger;
+
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    var get_messenger = function () {
+        return app.GlobalVariable.getInstance().messenger;
+    };
 
     var AccountWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -87,7 +92,7 @@
         if (!identifier || !identifier.isUser()) {
             throw TypeError('ID error: ' + identifier);
         }
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         this.__identifier = identifier;
         this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
@@ -97,7 +102,7 @@
 
     AccountWindow.prototype.submit = function (info) {
         var nickname = info['nickname'];
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         if (!user) {
             throw Error('Current user not found');
@@ -123,7 +128,7 @@
     AccountWindow.prototype.onSubmit = function (user) {
         var visa = user.getVisa();
         // post visa
-        var messenger = app.GlobalVariable.getInstance().messenger;
+        var messenger = get_messenger();
         messenger.postDocument(visa);
         var admin = ID.parse('chatroom');
         if (admin) {
@@ -139,7 +144,7 @@
 
     AccountWindow.show = function (identifier) {
         if (!identifier) {
-            var facebook = app.GlobalVariable.getInstance().facebook;
+            var facebook = get_facebook();
             var user = facebook.getCurrentUser();
             if (!user) {
                 throw Error('Current user not found');

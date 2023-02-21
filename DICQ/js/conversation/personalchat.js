@@ -9,7 +9,13 @@
     var Image = tui.Image;
 
     var Class = sdk.type.Class;
-    var Facebook = app.Facebook;
+
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
 
     var PersonalChatWindow = function () {
         ChatWindow.call(this);
@@ -42,7 +48,7 @@
     PersonalChatWindow.prototype.setIdentifier = function (identifier) {
         ChatWindow.prototype.setIdentifier.call(this, identifier);
         var avatar = null;
-        var facebook = ns.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var doc = facebook.getDocument(identifier, '*');
         if (doc) {
             avatar = doc.getProperty('avatar');

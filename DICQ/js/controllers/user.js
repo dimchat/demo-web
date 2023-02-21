@@ -14,7 +14,13 @@
 
     var Class = sdk.type.Class;
     var Anonymous = app.Anonymous;
-    var Facebook = app.Facebook;
+
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
 
     var UserWindow = function () {
         var frame = new Rect(0, 0, 320, 240);
@@ -79,7 +85,7 @@
         if (!identifier || !identifier.isUser()) {
             throw TypeError('ID error: ' + identifier);
         }
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         this.__identifier = identifier;
         this.address.setText(identifier.getAddress());
         this.address.__ie.title = identifier;
@@ -100,7 +106,7 @@
             throw Error('ID error: ' + identifier);
         }
         // check contacts
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.getIdentifier());
         if (contacts && contacts.indexOf(identifier) >= 0) {

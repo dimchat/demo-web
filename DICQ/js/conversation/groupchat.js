@@ -9,6 +9,13 @@
 
     var Class = sdk.type.Class;
 
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
+
     var GroupChatWindow = function () {
         ChatWindow.call(this);
         this.setClassName('groupChatWindow');
@@ -28,7 +35,7 @@
 
     // group owner or admin
     GroupChatWindow.prototype.getAdministratorCount = function () {
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var owner = facebook.getOwner(this.__identifier);
         if (owner) {
             return 1;
@@ -37,7 +44,7 @@
         }
     };
     GroupChatWindow.prototype.getAdministrator = function (index) {
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         return facebook.getOwner(this.__identifier);
     };
 
@@ -112,9 +119,16 @@
     var ChatWindow = ns.ChatWindow;
     var GroupChatWindow = ns.GroupChatWindow;
 
+    var get_facebook = function () {
+        return app.GlobalVariable.getInstance().facebook;
+    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getInstance().messenger;
+    // };
+
     // group members
     GroupChatWindow.prototype.getParticipantCount = function () {
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var members = facebook.getMembers(this.__identifier);
         if (members) {
             return members.length;
@@ -123,7 +137,7 @@
         }
     };
     GroupChatWindow.prototype.getParticipant = function (index) {
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = get_facebook();
         var members = facebook.getMembers(this.__identifier);
         return members[index];
     };
