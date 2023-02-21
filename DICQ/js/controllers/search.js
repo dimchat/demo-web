@@ -189,11 +189,9 @@
     SearchResultWindow.prototype.titleForFooterInSection = function(section, tableView) {
         return null
     };
-
     SearchResultWindow.prototype.numberOfRowsInSection = function (section, tableView) {
         return this.getUserCount();
     };
-
     SearchResultWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
         var identifier = this.getUser(indexPath.row);
         var cell = new UserTableViewCell();

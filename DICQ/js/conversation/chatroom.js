@@ -88,11 +88,10 @@
             alert('User not login');
             return false;
         }
-        var content = new TextContent(text);
+        var content = TextContent.create(text);
         content.setGroup(ID.EVERYONE);
         var env = Envelope.create(user.getIdentifier(), ID.EVERYONE, 0);
         var msg = InstantMessage.create(env, content);
-        messenger.saveMessage(msg);
         msg = messenger.signMessage(messenger.encryptMessage(msg));
         return this.sendContent(new ForwardContent(msg));
     };
@@ -178,7 +177,7 @@
         var server = messenger.getCurrentStation();
         var user = server.getCurrentUser();
         if (user) {
-            var content = new TextContent('show history');
+            var content = TextContent.create('show history');
             messenger.sendContent(null, admin, content, null, 0);
         }
     };
@@ -213,7 +212,7 @@
         var server = messenger.getCurrentStation();
         var user = server.getCurrentUser();
         if (user) {
-            var content = new TextContent('show users');
+            var content = TextContent.create('show users');
             messenger.sendContent(null, admin, content, null, 0);
         }
     };

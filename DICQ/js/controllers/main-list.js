@@ -134,7 +134,6 @@
     MainListView.prototype.numberOfSections = function (tableView) {
         return 4;
     };
-
     MainListView.prototype.titleForHeaderInSection = function (section, tableView) {
         if (section === 0) {
             return 'Contacts';
@@ -146,18 +145,9 @@
             return 'Strangers';
         }
     };
-
-    MainListView.prototype.viewForHeaderInSection = function (section, tableView) {
-        var button = new Button();
-        button.setClassName('sectionHeader buttonNormal');
-        button.onClick = function () {
-            tableView.selectedIndex = section;
-            tableView.reloadData();
-        };
-        button.setText(this.titleForHeaderInSection(section, tableView));
-        return button;
+    MainListView.prototype.titleForFooterInSection = function(section, tableView) {
+        return null
     };
-
     MainListView.prototype.numberOfRowsInSection = function (section, tableView) {
         if (tableView.selectedIndex !== section) {
             return 0;
@@ -172,7 +162,6 @@
             return s_strangers.length;
         }
     };
-
     MainListView.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
         var clazz;
         var identifier;
@@ -194,6 +183,32 @@
         cell.setClassName(clazz);
         cell.setIdentifier(identifier);
         return cell;
+    };
+
+    MainListView.prototype.heightForHeaderInSection = function(section, tableView) {
+        return 16
+    };
+    MainListView.prototype.heightForFooterInSection = function(section, tableView) {
+        return 16
+    };
+    MainListView.prototype.viewForHeaderInSection = function (section, tableView) {
+        var button = new Button();
+        button.setClassName('sectionHeader buttonNormal');
+        button.onClick = function () {
+            tableView.selectedIndex = section;
+            tableView.reloadData();
+        };
+        button.setText(this.titleForHeaderInSection(section, tableView));
+        return button;
+    };
+    MainListView.prototype.viewForFooterInSection = function(section, tableView) {
+        return null
+    };
+    MainListView.prototype.heightForRowAtIndexPath = function(indexPath, tableView) {
+        return 64
+    };
+    MainListView.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+
     };
 
     ns.MainListView = MainListView;

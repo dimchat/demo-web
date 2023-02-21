@@ -246,6 +246,9 @@
                     'ID': entity,
                     'msg': iMsg
                 });
+                console.info('message saved', iMsg, entity);
+            } else {
+                console.error('failed to save message', iMsg, entity);
             }
             return ok;
         },

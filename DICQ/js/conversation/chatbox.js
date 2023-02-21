@@ -139,15 +139,23 @@
     };
 
     //
-    //  TableViewDataSource
+    //  TableViewDataSource/TableViewDelegate
     //
+    ChatWindow.prototype.numberOfSections = function (tableView) {
+        return 1;
+    };
+    ChatWindow.prototype.titleForHeaderInSection = function(section, tableView) {
+        return null
+    };
+    ChatWindow.prototype.titleForFooterInSection = function(section, tableView) {
+        return null
+    };
     ChatWindow.prototype.numberOfRowsInSection = function (section, tableView) {
         if (tableView !== this.historyView) {
             throw Error('table view error');
         }
         return this.getMessageCount();
     };
-
     ChatWindow.prototype.cellForRowAtIndexPath = function (indexPath, tableView) {
         if (tableView !== this.historyView) {
             throw Error('table view error');
@@ -161,6 +169,25 @@
         return cell;
     };
 
+    ChatWindow.prototype.heightForHeaderInSection = function(section, tableView) {
+        return 16
+    };
+    ChatWindow.prototype.heightForFooterInSection = function(section, tableView) {
+        return 16
+    };
+    ChatWindow.prototype.viewForHeaderInSection = function(section, tableView) {
+        return null
+    };
+    ChatWindow.prototype.viewForFooterInSection = function(section, tableView) {
+        return null
+    };
+    ChatWindow.prototype.heightForRowAtIndexPath = function(indexPath, tableView) {
+        return 64
+    };
+    ChatWindow.prototype.didSelectRowAtIndexPath = function(indexPath, tableView) {
+
+    };
+
     //
     //  Send message
     //
@@ -169,23 +196,24 @@
         if (!text) {
             return ;
         }
-        var content = new TextContent(text);
+        var content = TextContent.create(text);
         this.sendContent(content);
     };
 
     ChatWindow.prototype.sendContent = function (content) {
         var messenger = get_messenger();
-        var server = messenger.getCurrentStation();
-        var status = server.getStatus();
-        if (!Gate.Status.S.equals(status)) {
-            alert('Station not connect');
-            return false;
-        }
-        var user = server.getCurrentUser();
-        if (!user) {
-            alert('User not login');
-            return false;
-        }
+        // TODO: check whether login
+        // var server = messenger.getCurrentStation();
+        // var status = server.getStatus();
+        // if (!Gate.Status.S.equals(status)) {
+        //     alert('Station not connect');
+        //     return false;
+        // }
+        // var user = server.getCurrentUser();
+        // if (!user) {
+        //     alert('User not login');
+        //     return false;
+        // }
         var receiver = this.__identifier;
         if (receiver.isGroup()) {
             var facebook = get_facebook();

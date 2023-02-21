@@ -165,6 +165,10 @@
             //     return true;
             // }
             // console.log('target message not found for receipt', receipt);
+        },
+
+        getInstance: function () {
+            return this;
         }
     };
 

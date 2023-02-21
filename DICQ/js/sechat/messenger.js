@@ -145,6 +145,25 @@
             // TODO:
         }
     });
+
+    // Override
+    SharedMessenger.prototype.sendInstantMessage = function (iMsg, priority) {
+        var rMsg = ClientMessenger.prototype.sendInstantMessage.call(this, iMsg, priority);
+        if (rMsg) {
+            console.info('message sent', iMsg, priority);
+            var clerk = ns.Amanuensis.getInstance();
+            clerk.saveMessage(iMsg);
+        }
+        return rMsg;
+    };
+
+    // Override
+    SharedMessenger.prototype.processInstantMessage = function (iMsg, rMsg) {
+        var clerk = ns.Amanuensis.getInstance();
+        clerk.saveMessage(iMsg);
+        console.info('message received', iMsg, rMsg);
+        return ClientMessenger.prototype.processInstantMessage.call(this, iMsg, rMsg);
+    };
     
     var send_content = function (receiver, content, priority) {
         var session = this.getSession();
