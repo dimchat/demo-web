@@ -187,33 +187,35 @@ if (typeof dicq !== 'object') {
     if (release) {
         dim_codes = [
             /* third party cryptography libs */
-            '../Dimples/sdk/3rd/crypto.min.js',
-            '../Dimples/sdk/3rd/jsencrypt.min.js',
-            '../Dimples/sdk/3rd/sha3.min.js',
-            '../Dimples/sdk/3rd/ecc/bn.js',
-            '../Dimples/sdk/3rd/ecc/secp256k1.js',
+            'sdk/3rd/crypto.min.js',
+            'sdk/3rd/jsencrypt.min.js',
+            'sdk/3rd/sha3.min.js',
+            'sdk/3rd/ecc/bn.js',
+            'sdk/3rd/ecc/secp256k1.js',
 
-            '../Dimples/sdk/bubble.js',
-            '../Dimples/sdk/clipboard.js',
+            'sdk/bubble.js',
+            'sdk/clipboard.js',
 
             /* DIM SDK */
-            '../Dimples/dist/dimples.min.js',
+            'libs/dimples.min.js',
+            'libs/sechat.min.js',
             null
         ];
     } else {
         dim_codes = [
             /* third party cryptography libs */
-            '../Dimples/sdk/3rd/crypto.js',
-            '../Dimples/sdk/3rd/jsencrypt.js',
-            '../Dimples/sdk/3rd/sha3.js',
-            '../Dimples/sdk/3rd/ecc/bn.js',
-            '../Dimples/sdk/3rd/ecc/secp256k1.js',
+            'sdk/3rd/crypto.js',
+            'sdk/3rd/jsencrypt.js',
+            'sdk/3rd/sha3.js',
+            'sdk/3rd/ecc/bn.js',
+            'sdk/3rd/ecc/secp256k1.js',
 
-            '../Dimples/sdk/bubble.js',
-            '../Dimples/sdk/clipboard.js',
+            'sdk/bubble.js',
+            'sdk/clipboard.js',
 
             /* DIM SDK */
-            '../Dimples/dist/dimples.js',
+            'libs/dimples.js',
+            'libs/sechat.js',
             null
         ];
     }
@@ -221,14 +223,14 @@ if (typeof dicq !== 'object') {
     var tarsier_ui = [
         // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
         // 'http://apps.dim.chat/Tarsier/tarsier-ui.js',
-        'sdk/tarsier-ui.js',
+        'libs/tarsier-ui.js',
         null
     ];
     if (release) {
         tarsier_ui = [
             // 'https://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             // 'http://apps.dim.chat/Tarsier/tarsier-ui.min.js',
-            'sdk/tarsier-ui.min.js',
+            'libs/tarsier-ui.min.js',
             null
         ];
     }
@@ -244,41 +246,6 @@ if (typeof dicq !== 'object') {
         null
     ];
     var scripts = [
-        //
-        //  Sechat Client
-        //
-        'js/sechat/namespace.js',
-        'js/sechat/compatible.js',
-        'js/sechat/gman.js',
-        'js/sechat/facebook.js',
-        'js/sechat/messenger.js',
-        'js/sechat/packer.js',
-        'js/sechat/processor.js',
-        'js/sechat/client.js',
-        'js/sechat/shared.js',
-
-        'js/sechat/network/ftp.js',
-
-        'js/sechat/cpu/default.js',
-        'js/sechat/cpu/block.js',
-        'js/sechat/cpu/mute.js',
-        'js/sechat/cpu/search.js',
-        'js/sechat/cpu/storage.js',
-        'js/sechat/cpu/builder.js',
-        'js/sechat/cpu/creator.js',
-
-        'js/sechat/database/user.js',
-        'js/sechat/database/group.js',
-        'js/sechat/database/login.js',
-        'js/sechat/database/message.js',
-        'js/sechat/database/msg_key.js',
-        'js/sechat/database/provider.js',
-
-        'js/sechat/model/configuration.js',
-        'js/sechat/model/conversation.js',
-        'js/sechat/model/amanuensis.js',
-        'js/sechat/model/database.js',
-
         'js/views/ads.js',
         'js/views/fixedtable.js',
         'js/views/maincell.js',
@@ -297,7 +264,6 @@ if (typeof dicq !== 'object') {
         'js/controllers/account.js',
         'js/controllers/search.js',
         'js/controllers/user.js',
-
         'js/controllers/about.js',
 
         'js/app.js',
