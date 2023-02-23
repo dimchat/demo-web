@@ -178,14 +178,14 @@ if (typeof dicq !== 'object') {
 !function (ns) {
     'use strict';
 
-    var release = false;
-    // if ($_GET['debug']) {
-    //     release = false;
-    // }
+    var release = true;
+    if ($_GET['debug']) {
+        release = false;
+    }
 
-    var dim_codes;
+    var dimsdk;
     if (release) {
-        dim_codes = [
+        dimsdk = [
             /* third party cryptography libs */
             'sdk/3rd/crypto.min.js',
             'sdk/3rd/jsencrypt.min.js',
@@ -202,7 +202,7 @@ if (typeof dicq !== 'object') {
             null
         ];
     } else {
-        dim_codes = [
+        dimsdk = [
             /* third party cryptography libs */
             'sdk/3rd/crypto.js',
             'sdk/3rd/jsencrypt.js',
@@ -220,17 +220,19 @@ if (typeof dicq !== 'object') {
         ];
     }
 
-    var tarsier_ui = [
-        // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
-        // 'http://apps.dim.chat/Tarsier/tarsier-ui.js',
-        'libs/tarsier-ui.js',
-        null
-    ];
+    var tarsier_ui;
     if (release) {
         tarsier_ui = [
             // 'https://moky.github.io/Tarsier/build/tarsier-ui.min.js',
             // 'http://apps.dim.chat/Tarsier/tarsier-ui.min.js',
             'libs/tarsier-ui.min.js',
+            null
+        ];
+    } else {
+        tarsier_ui = [
+            // 'https://moky.github.io/Tarsier/build/tarsier-ui.js',
+            // 'http://apps.dim.chat/Tarsier/tarsier-ui.js',
+            'libs/tarsier-ui.js',
             null
         ];
     }
@@ -281,7 +283,7 @@ if (typeof dicq !== 'object') {
         scripts = [];
     }
 
-    scripts = [].concat(dim_codes, tarsier_ui, scripts);
+    scripts = [].concat(dimsdk, tarsier_ui, scripts);
 
     var loader = new ns.Loader(tarsier, 'js/index.js');
 

@@ -10430,7 +10430,7 @@ if (typeof StarTrek !== "object") {
             var sent = 0;
             var rest = data.length;
             var cnt;
-            while (true) {
+            while (sock.isOpen()) {
                 cnt = this.tryWrite(data, sock);
                 if (cnt <= 0) {
                     break;
@@ -14255,6 +14255,9 @@ if (typeof StarGate !== "object") {
         getNumber: function (address) {
             if (Interface.conforms(address, ID)) {
                 address = address.getAddress();
+            }
+            if (address.isBroadcast()) {
+                return 0;
             }
             if (address instanceof BTCAddress) {
                 return btc_number(address.toString());

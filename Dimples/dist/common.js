@@ -1719,6 +1719,9 @@
             if (Interface.conforms(address, ID)) {
                 address = address.getAddress();
             }
+            if (address.isBroadcast()) {
+                return 0;
+            }
             if (address instanceof BTCAddress) {
                 return btc_number(address.toString());
             }

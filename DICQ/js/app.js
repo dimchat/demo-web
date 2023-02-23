@@ -224,11 +224,6 @@
             // register new account
             new ns.RegisterWindow.show();
         }
-
-        var json = '"{"type":136,"sn":1475857452,"time":1676958822.808,"cmd":"handshake","title":"Hello world!","group":"stations@everywhere","command":"handshake"}"';
-        var data = app.format.UTF8.encode(json);
-        var string = app.format.UTF8.decode(data);
-        console.warn('test UTF8', data, string);
     };
 
     var create_facebook = function () {
