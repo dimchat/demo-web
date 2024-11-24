@@ -35,8 +35,8 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var Arrays = ns.type.Arrays;
+    var Class          = ns.type.Class;
+    var Arrays         = ns.type.Arrays;
     var MessageWrapper = ns.network.MessageWrapper;
 
     var MessageQueue = function () {
@@ -53,30 +53,49 @@
      * @return {boolean} false on duplicated
      */
     MessageQueue.prototype.append = function (rMsg, departure) {
+        var ok = true;
         // 1. choose an array with priority
         var priority = departure.getPriority();
         var array = this.__fleets[priority];
-        if (array) {
-            // 1.1. check duplicated
+        if (!array || array.length === 0) {
+            // 1.1. create new array for this priority
+            array = [];
+            this.__fleets[priority] = array;
+            // 1.2. insert the priority in a sorted list
+            insert_priority(priority, this.__priorities);
+        } else {
+            // 1.3. check duplicated
             var signature = rMsg.getValue('signature');
             var item;
             for (var i = array.length - 1; i >= 0; --i) {
                 item = array[i].getMessage();
-                if (item && item.getValue('signature') === signature) {
+                if (item && is_duplicated(item, rMsg)) {
                     // duplicated message
-                    return false;
+                    console.warn('[QUEUE] duplicated message', signature);
+                    ok = false;
+                    break;
                 }
             }
-        } else {
-            // 1.2. create new array for this priority
-            array = [];
-            this.__fleets[priority] = array;
-            // 1.3. insert the priority in a sorted list
-            insert_priority(priority, this.__priorities);
         }
-        // 2. append with wrapper
-        array.push(new MessageWrapper(rMsg, departure));
-        return true;
+        if (ok) {
+            // 2. append with wrapper
+            array.push(new MessageWrapper(rMsg, departure));
+        }
+        return ok;
+    };
+    var is_duplicated = function (msg1, msg2) {
+        var sig1 = msg1.getValue('signature');
+        var sig2 = msg2.getValue('signature');
+        if (!sig1 || !sig2) {
+            return false;
+        } else if (sig1 !== sig2) {
+            return false;
+        }
+        // maybe it's a group message split for every members,
+        // so we still need to check receiver here.
+        var to1 = msg1.getReceiver();
+        var to2 = msg2.getReceiver();
+        return to1.equals(to2);
     };
     var insert_priority = function (prior, priorities) {
         var total = priorities.length;

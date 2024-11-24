@@ -38,32 +38,88 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var GroupCommand = ns.protocol.GroupCommand;
-    var Envelope = ns.protocol.Envelope;
+    var Interface      = ns.type.Interface;
+    var Class          = ns.type.Class;
+    var Converter      = ns.type.Converter;
+    var Command        = ns.protocol.Command;
+    var Envelope       = ns.protocol.Envelope;
     var InstantMessage = ns.protocol.InstantMessage;
-    var QueryFrequencyChecker = ns.mem.QueryFrequencyChecker;
-    var Messenger = ns.Messenger;
+    var Compatible     = ns.Compatible;
+    var Messenger      = ns.Messenger;
 
     var CommonMessenger = function (session, facebook, db) {
         Messenger.call(this);
-        this.__session = session;
-        this.__facebook = facebook;
-        this.__db = db;
-        this.__packer = null;
-        this.__processor = null;
+        this.__session = session;    // Session
+        this.__facebook = facebook;  // CommonFacebook
+        this.__db = db;              // CipherKeyDelegate
+        this.__packer = null;        // Packer
+        this.__processor = null;     // Processor
     };
     Class(CommonMessenger, Messenger, null, {
+
+        // Override
+        encryptKey: function (keyData, receiver, iMsg) {
+            try {
+                return Messenger.prototype.encryptKey.call(this, keyData, receiver, iMsg);
+            } catch (e) {
+                // FIXME:
+                console.error('failed to encrypt key for receiver', receiver, e);
+            }
+        },
+
+        // Override
+        serializeKey: function (password, iMsg) {
+            // TODO: reuse message key
+
+            // 0. check message key
+            var reused = password.getValue('reused');
+            var digest = password.getValue('digest');
+            if (reused === null && digest === null) {
+                // flags not exist, serialize it directly
+                return Messenger.prototype.serializeKey.call(this, password, iMsg);
+            }
+            // 1. remove before serializing key
+            password.removeValue('reused');
+            password.removeValue('digest');
+            // 2. serialize key without flags
+            var data = Messenger.prototype.serializeKey.call(this, password, iMsg);
+            // 3. put them back after serialized
+            if (Converter.getBoolean(reused, false)) {
+                password.setValue('reused', true);
+            }
+            if (digest) {
+                password.setValue('digest', digest);
+            }
+            // OK
+            return data;
+        },
+
+        // Override
+        serializeContent: function (content, password, iMsg) {
+            if (Interface.conforms(content, Command)) {
+                content = Compatible.fixCommand(content);
+            }
+            return Messenger.prototype.serializeContent.call(this, content, password, iMsg);
+        },
+
+        // Override
+        deserializeContent: function (data, password, sMsg) {
+            var content = Messenger.prototype.deserializeContent.call(this, data, password, sMsg);
+            if (Interface.conforms(content, Command)) {
+                content = Compatible.fixCommand(content);
+            }
+            return content;
+        },
 
         //
         //  Interfaces for Transmitting Message
         //
 
         // Override
-        sendContent: function (sender, receiver, content, priority) {
+        sendContent: function (content, sender, receiver, priority) {
             if (!sender) {
-                var current = this.__facebook.getCurrentUser();
+                var facebook = this.getFacebook();
+                var current = facebook.getCurrentUser();
                 sender = current.getIdentifier();
             }
             var env = Envelope.create(sender, receiver, null);
@@ -72,35 +128,90 @@
             return [iMsg, rMsg];
         },
 
-        // Override
         sendInstantMessage: function (iMsg, priority) {
-            // send message (secured + certified) to target station
+            var sender = iMsg.getSender();
+            var receiver = iMsg.getReceiver();
+            //
+            //  0. check cycled message
+            //
+            if (sender.equals(receiver)) {
+                console.warn('drop cycled message', iMsg.getContent(), sender, receiver, iMsg.getGroup());
+                return null;
+            } else {
+                console.debug('send instant message, type:' + iMsg.getContent().getType(), sender, receiver, iMsg.getGroup());
+                // attach sender's document times
+                // for the receiver to check whether user info synchronized
+                attachVisaTime.call(this, sender, iMsg);
+            }
+            //
+            //  1. encrypt message
+            //
             var sMsg = this.encryptMessage(iMsg);
             if (!sMsg) {
-                // public key not found?
+                // assert(false, 'public key not found?');
                 return null;
             }
+            //
+            //  2. sign message
+            //
             var rMsg = this.signMessage(sMsg);
             if (!rMsg) {
                 // TODO: set msg.state = error
-                throw new ReferenceError('failed to sign message: ' + iMsg);
+                throw new Error('failed to sign message: ' + sMsg.toString());
             }
+            //
+            //  3. send message
+            //
             if (this.sendReliableMessage(rMsg, priority)) {
                 return rMsg;
+            } else {
+                // failed
+                return null;
             }
-            // failed
-            return null;
         },
 
-        // Override
         sendReliableMessage: function (rMsg, priority) {
+            var sender = rMsg.getSender();
+            var receiver = rMsg.getReceiver();
+            //
+            //  0. check cycled message
+            //
+            if (sender.equals(receiver)) {
+                console.warn('drop cycled message', sender, receiver, rMsg.getGroup());
+                return false;
+            }
             // 1. serialize message
             var data = this.serializeMessage(rMsg);
+            if (!data || data.length === 0) {
+                console.error('failed to serialize message', rMsg);
+                return false;
+            }
             // 2. call gate keeper to send the message data package
             //    put message package into the waiting queue of current session
-            return this.__session.queueMessagePackage(rMsg, data, priority);
+            var session = this.getSession();
+            return session.queueMessagePackage(rMsg, data, priority);
         }
     });
+
+    // private
+    var attachVisaTime = function (sender, iMsg) {
+        if (Interface.conforms(iMsg.getContent(), Command)) {
+            // no need to attach times for command
+            return false;
+        }
+        var facebook = this.getFacebook();
+        var doc = facebook.getVisa(sender);
+        if (!doc) {
+            console.warn('failed to get visa document for sender', sender);
+            return false;
+        }
+        // attach sender document time
+        var lastDocumentTime = doc.getTime();
+        if (lastDocumentTime) {
+            iMsg.setDateTime('SDT', lastDocumentTime);
+        }
+        return true;
+    };
 
     CommonMessenger.prototype.getSession = function () {
         return this.__session;
@@ -138,187 +249,6 @@
     };
     CommonMessenger.prototype.setProcessor = function (processor) {
         this.__processor = processor;
-    };
-
-    /**
-     *  Request for meta with entity ID
-     *
-     * @param {ID} identifier - entity ID
-     * @return {boolean} false on duplicated
-     */
-    CommonMessenger.prototype.queryMeta = function (identifier) {
-        throw new Error('NotImplemented');
-    };
-
-    /**
-     *  Request for meta & visa document with entity ID
-     *
-     * @param identifier - entity ID
-     * @return {boolean} false on duplicated
-     */
-    CommonMessenger.prototype.queryDocument = function (identifier) {
-        throw new Error('NotImplemented');
-    };
-
-    /**
-     *  Request for group members with group ID
-     *
-     * @param identifier - group ID
-     * @return {boolean} false on duplicated
-     */
-    CommonMessenger.prototype.queryMembers = function (identifier) {
-        if (QueryFrequencyChecker.isMembersQueryExpired(identifier, 0)) {
-            // query not expired yet
-            return false;
-        }
-        var bots = this.__facebook.getAssistants(identifier);
-        if (!bots || bots.length === 0) {
-            // group assistants not found
-            return false;
-        }
-        // querying members from bots
-        var cmd = GroupCommand.query(identifier);
-        send_group_command.call(this, cmd, bots);
-        return true;
-    };
-    var send_group_command = function (cmd, members) {
-        for (var i = 0; i < members.length; ++i) {
-            this.sendContent(null, members[i], cmd, 0);
-        }
-    }
-
-    // protected
-    CommonMessenger.prototype.checkSender = function (rMsg) {
-        var sender = rMsg.getSender();
-        var visa = rMsg.getVisa();
-        if (visa) {
-            // first handshake?
-            return true;
-        }
-        var visaKey = this.__facebook.getPublicKeyForEncryption(sender);
-        if (visaKey) {
-            // sender is OK
-            return visaKey;
-        }
-        if (this.queryDocument(sender)) {
-            console.info('CommandMessenger::checkSender(), queryDocument', sender);
-        }
-        rMsg.setValue('error', {
-            'message': 'verify key not found',
-            'user': sender.toString()
-        });
-        return false;
-    };
-
-    // protected
-    CommonMessenger.prototype.checkReceiver = function (iMsg) {
-        var receiver = iMsg.getReceiver();
-        if (receiver.isBroadcast()) {
-            // broadcast message
-            return true;
-        }
-        if (receiver.isUser()) {
-            // check user's meta & document
-            var visaKey = this.__facebook.getPublicKeyForEncryption(receiver);
-            if (!visaKey) {
-                if (this.queryDocument(receiver)) {
-                    console.info('CommandMessenger::checkReceiver(), queryDocument', receiver);
-                }
-                iMsg.setValue('error', {
-                    'message': 'encrypt key not found',
-                    'user': receiver.toString()
-                });
-                return false;
-            }
-        } else {
-            // check group's meta
-            var meta = this.__facebook.getMeta(receiver);
-            if (!meta) {
-                if (this.queryMeta(receiver)) {
-                    console.info('CommandMessenger::checkReceiver(), queryMeta', receiver);
-                }
-                iMsg.setValue('error', {
-                    'message': 'group meta not found',
-                    'user': receiver.toString()
-                });
-                return false;
-            }
-            // check group members
-            var members = this.__facebook.getMembers(receiver);
-            if (!members || members.length === 0) {
-                if (this.queryMembers(receiver)) {
-                    console.info('CommandMessenger::checkReceiver(), queryMembers', receiver);
-                }
-                iMsg.setValue('error', {
-                    'message': 'members not found',
-                    'user': receiver.toString()
-                });
-                return false;
-            }
-            var waiting = [];
-            var item;
-            for (var i = 0; i < members.length; ++i) {
-                item = members[i];
-                if (this.__facebook.getPublicKeyForEncryption(item)) {
-                    continue;
-                }
-                if (this.queryDocument(item)) {
-                    console.info('CommandMessenger::checkReceiver(), queryDocument for member', item, receiver);
-                }
-                waiting.push(item);
-            }
-            if (waiting.length > 0) {
-                iMsg.setValue('error', {
-                    'message': 'encrypt keys not found',
-                    'group': receiver.toString(),
-                    'members': ID.revert(waiting)
-                });
-                return false;
-            }
-        }
-        // receiver is OK
-        return true;
-    };
-
-    /*/
-    // Override
-    CommonMessenger.prototype.serializeKey = function (password, iMsg) {
-        // try to reuse message key
-        var reused = password.getValue('reused');
-        if (reused) {
-            var receiver = iMsg.getReceiver();
-            if (receiver.isGroup()) {
-                // reuse key for grouped message
-                return null;
-            }
-            // remove before serialize key
-            password.removeValue('reused');
-        }
-        var data = Messenger.prototype.serializeKey.call(this, password, iMsg);
-        if (reused) {
-            // put it back
-            password.setValue('reused', reused);
-        }
-        return data;
-    };
-    /*/
-
-    // Override
-    CommonMessenger.prototype.encryptMessage = function (iMsg) {
-        if (!this.checkReceiver(iMsg)) {
-            console.warn('receiver not ready', iMsg.getReceiver());
-            return null;
-        }
-        return Messenger.prototype.encryptMessage.call(this, iMsg);
-    };
-
-    // Override
-    CommonMessenger.prototype.verifyMessage = function (rMsg) {
-        if (!this.checkSender(rMsg)) {
-            console.warn('sender not ready', rMsg.getReceiver());
-            return null;
-        }
-        return Messenger.prototype.verifyMessage.call(this, rMsg);
     };
 
     //-------- namespace --------

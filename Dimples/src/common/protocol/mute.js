@@ -36,16 +36,16 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var ID        = ns.protocol.ID;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd  : "mute",
-     *      list : []      // mute-list
+     *      command : "mute",
+     *      list    : []       // mute-list
      *  }
      */
     var MuteCommand = Interface(null, [Command]);
@@ -57,11 +57,15 @@
      *
      * @param {ID[]} list
      */
-    MuteCommand.prototype.setMuteCList = function (list) {
-        throw new Error('NotImplemented');
-    };
-    MuteCommand.prototype.getMuteCList = function () {
-        throw new Error('NotImplemented');
+    MuteCommand.prototype.setMuteCList = function (list) {};
+    MuteCommand.prototype.getMuteCList = function () {};
+
+    //
+    //  factory method
+    //
+
+    MuteCommand.fromList = function (contacts) {
+        return new ns.dkd.cmd.BaseMuteCommand(contacts);
     };
 
     //-------- namespace --------
@@ -72,9 +76,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var Class       = ns.type.Class;
+    var ID          = ns.protocol.ID;
+    var Command     = ns.protocol.Command;
     var MuteCommand = ns.protocol.MuteCommand;
     var BaseCommand = ns.dkd.cmd.BaseCommand;
 
@@ -129,15 +133,7 @@
         }
     });
 
-    //
-    //  Factory
-    //
-
-    MuteCommand.create = function (list) {
-        return new BaseMuteCommand(list);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.MuteCommand = BaseMuteCommand;
+    ns.dkd.cmd.BaseMuteCommand = BaseMuteCommand;
 
 })(DIMP);

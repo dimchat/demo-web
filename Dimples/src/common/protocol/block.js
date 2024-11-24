@@ -36,16 +36,16 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var ID        = ns.protocol.ID;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd  : "block",
-     *      list : []      // block-list
+     *      command : "block",
+     *      list    : []       // block-list
      *  }
      */
     var BlockCommand = Interface(null, [Command]);
@@ -57,11 +57,15 @@
      *
      * @param {ID[]} list
      */
-    BlockCommand.prototype.setBlockCList = function (list) {
-        throw new Error('NotImplemented');
-    };
-    BlockCommand.prototype.getBlockCList = function () {
-        throw new Error('NotImplemented');
+    BlockCommand.prototype.setBlockCList = function (list) {};
+    BlockCommand.prototype.getBlockCList = function () {};
+
+    //
+    //  factory method
+    //
+
+    BlockCommand.fromList = function (contacts) {
+        return new ns.dkd.cmd.BaseBlockCommand(contacts);
     };
 
     //-------- namespace --------
@@ -72,11 +76,11 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var Class        = ns.type.Class;
+    var ID           = ns.protocol.ID;
+    var Command      = ns.protocol.Command;
     var BlockCommand = ns.protocol.BlockCommand;
-    var BaseCommand = ns.dkd.cmd.BaseCommand;
+    var BaseCommand  = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create block command
@@ -129,15 +133,7 @@
         }
     });
 
-    //
-    //  Factory
-    //
-
-    BlockCommand.create = function (list) {
-        return new BaseBlockCommand(list);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.BlockCommand = BaseBlockCommand;
+    ns.dkd.cmd.BaseBlockCommand = BaseBlockCommand;
 
 })(DIMP);

@@ -35,11 +35,11 @@
 (function (ns) {
     'use strict';
 
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var DecryptKey = ns.crypto.DecryptKey;
-    var PrivateKey = ns.crypto.PrivateKey;
-    var Storage = ns.dos.LocalStorage;
+    var Interface     = ns.type.Interface;
+    var Class         = ns.type.Class;
+    var DecryptKey    = ns.crypto.DecryptKey;
+    var PrivateKey    = ns.crypto.PrivateKey;
+    var Storage       = ns.dos.LocalStorage;
     var PrivateKeyDBI = ns.dbi.PrivateKeyDBI;
 
     var id_key_path = function (user) {
@@ -81,7 +81,7 @@
             // so we append it to the decrypt keys here
             var idKey = this.loadIdKey(user);
             if (Interface.conforms(idKey, DecryptKey)) {
-                if (PrivateKeyStorage.findKey(idKey, privateKeys) < 0) {
+                if (PrivateKeyDBI.findKey(idKey, privateKeys) < 0) {
                     privateKeys.push(idKey);
                 }
             }
@@ -131,46 +131,14 @@
     // protected
     PrivateKeyStorage.prototype.saveMsgKey = function (key, user) {
         var privateKeys = this.loadMsgKeys(user);
-        privateKeys = PrivateKeyStorage.insertKey(key, privateKeys);
+        privateKeys = PrivateKeyDBI.insertKey(key, privateKeys);
         if (!privateKeys) {
             // nothing changed
             return false;
         }
-        var plain = PrivateKeyStorage.revertPrivateKeys(privateKeys);
+        var plain = PrivateKeyDBI.revertPrivateKeys(privateKeys);
         var path = msg_keys_path(user);
         return Storage.saveJSON(plain, path);
-    };
-
-    PrivateKeyStorage.revertPrivateKeys = function (privateKeys) {
-        var array = [];
-        for (var i = 0; i < privateKeys.length; ++i) {
-            array.push(privateKeys[i].toMap());
-        }
-        return array;
-    };
-    PrivateKeyStorage.insertKey = function (key, privateKeys) {
-        var index = PrivateKeyStorage.findKey(key, privateKeys);
-        if (index === 0) {
-            // nothing change
-            return null;
-        } else if (index > 0) {
-            // move to the front
-            privateKeys.splice(index, 1);
-        } else if (privateKeys.length > 2) {
-            // keep only last three records
-            privateKeys.pop();
-        }
-        privateKeys.unshift(key);
-        return privateKeys;
-    };
-    PrivateKeyStorage.findKey = function (key, privateKeys) {
-        var data = key.getString('data');
-        for (var i = 0; i < privateKeys.length; ++i) {
-            if (privateKeys[i].getString('data') === data) {
-                return i;
-            }
-        }
-        return -1;
     };
 
     //-------- namespace --------

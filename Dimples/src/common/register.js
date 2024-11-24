@@ -35,12 +35,12 @@
 (function (ns) {
     'use strict';
 
-    var PrivateKey = ns.crypto.PrivateKey;
-    var ID = ns.protocol.ID;
-    var EntityType = ns.protocol.EntityType;
-    var MetaType = ns.protocol.MetaType;
-    var Meta = ns.protocol.Meta;
-    var BaseVisa = ns.mkm.BaseVisa;
+    var PrivateKey   = ns.crypto.PrivateKey;
+    var ID           = ns.protocol.ID;
+    var EntityType   = ns.protocol.EntityType;
+    var MetaType     = ns.protocol.MetaType;
+    var Meta         = ns.protocol.Meta;
+    var BaseVisa     = ns.mkm.BaseVisa;
     var BaseBulletin = ns.mkm.BaseBulletin;
 
     /**
@@ -110,7 +110,7 @@
         //
         //  Step 4. generate bulletin with ID and sign with founder's private key
         //
-        var doc = createBulletin(gid, title, privateKey);
+        var doc = createBulletin(gid, title, founder, privateKey);
         //
         //  Step 5. save meta & document in local storage
         //          don't forget to upload them onto the DIM station
@@ -120,21 +120,24 @@
         //
         //  Step 6. add founder as first member
         //
-        this.__db.addMember(founder, gid);
+        this.__db.saveMembers([founder], gid);
         return gid;
     };
 
     var createVisa = function (identifier, name, avatarUrl, pKey, sKey) {
         var doc = new BaseVisa(identifier);
+        doc.setProperty('app_id', 'chat.dim.web');
         doc.setName(name);
         doc.setAvatar(avatarUrl);
-        doc.setKey(pKey);
+        doc.setPublicKey(pKey);
         doc.sign(sKey);
         return doc;
     };
 
-    var createBulletin = function (identifier, name, sKey) {
+    var createBulletin = function (identifier, name, founder, sKey) {
         var doc = new BaseBulletin(identifier);
+        doc.setProperty('app_id', 'chat.dim.web');
+        doc.setProperty('founder', founder.toString());
         doc.setName(name);
         doc.sign(sKey);
         return doc;

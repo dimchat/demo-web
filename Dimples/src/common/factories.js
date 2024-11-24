@@ -36,7 +36,7 @@
     'use strict';
 
     var Command = ns.protocol.Command;
-    var CommandFactory = ns.CommandFactory;
+    var CommandParser = ns.CommandParser;
 
     var HandshakeCommand = ns.dkd.cmd.HandshakeCommand;
     var ReceiptCommand = ns.dkd.cmd.ReceiptCommand;
@@ -48,42 +48,50 @@
     var SearchCommand = ns.dkd.cmd.SearchCommand;
     var StorageCommand = ns.dkd.cmd.StorageCommand;
 
-    var registerAllFactories = ns.registerAllFactories;
-
     var registerExtraCommandFactories = function () {
 
         // Handshake
-        Command.setFactory(Command.HANDSHAKE, new CommandFactory(HandshakeCommand));
+        Command.setFactory(Command.HANDSHAKE, new CommandParser(HandshakeCommand));
         // Receipt
-        Command.setFactory(Command.RECEIPT, new CommandFactory(ReceiptCommand));
+        Command.setFactory(Command.RECEIPT, new CommandParser(ReceiptCommand));
         // Login
-        Command.setFactory(Command.LOGIN, new CommandFactory(LoginCommand));
+        Command.setFactory(Command.LOGIN, new CommandParser(LoginCommand));
         // Report (online, offline)
-        Command.setFactory(Command.REPORT, new CommandFactory(ReportCommand));
-        Command.setFactory('broadcast', new CommandFactory(ReportCommand));
-        Command.setFactory(Command.ONLINE, new CommandFactory(ReportCommand));
-        Command.setFactory(Command.OFFLINE, new CommandFactory(ReportCommand));
+        Command.setFactory(Command.REPORT, new CommandParser(ReportCommand));
+        Command.setFactory('broadcast', new CommandParser(ReportCommand));
+        Command.setFactory(Command.ONLINE, new CommandParser(ReportCommand));
+        Command.setFactory(Command.OFFLINE, new CommandParser(ReportCommand));
 
         // Mute
-        Command.setFactory(Command.MUTE, new CommandFactory(MuteCommand));
+        Command.setFactory(Command.MUTE, new CommandParser(MuteCommand));
         // Block
-        Command.setFactory(Command.BLOCK, new CommandFactory(BlockCommand));
+        Command.setFactory(Command.BLOCK, new CommandParser(BlockCommand));
         // Search (users)
-        Command.setFactory(Command.SEARCH, new CommandFactory(SearchCommand));
-        Command.setFactory(Command.ONLINE_USERS, new CommandFactory(SearchCommand));
+        Command.setFactory(Command.SEARCH, new CommandParser(SearchCommand));
+        Command.setFactory(Command.ONLINE_USERS, new CommandParser(SearchCommand));
         // Storage (contacts, private_key)
-        Command.setFactory(Command.STORAGE, new CommandFactory(StorageCommand));
-        Command.setFactory(Command.CONTACTS, new CommandFactory(StorageCommand));
-        Command.setFactory(Command.PRIVATE_KEY, new CommandFactory(StorageCommand));
+        Command.setFactory(Command.STORAGE, new CommandParser(StorageCommand));
+        Command.setFactory(Command.CONTACTS, new CommandParser(StorageCommand));
+        Command.setFactory(Command.PRIVATE_KEY, new CommandParser(StorageCommand));
     };
 
     //
     //  Register core factories
     //
-    registerAllFactories();
+    ns.registerAllFactories();
     //
     //  Register extra command factories
     //
     registerExtraCommandFactories();
+    //
+    //  Register plugins
+    //
+    ns.registerPlugins();
+    //
+    //  Register compatibles
+    //
+    ns.registerEntityIDFactory();
+    ns.registerCompatibleAddressFactory();
+    ns.registerCompatibleMetaFactory();
 
 })(DIMP);

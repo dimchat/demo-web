@@ -35,46 +35,57 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Document = ns.protocol.Document;
-    var Storage = ns.dos.LocalStorage;
-    var MetaDBI = ns.dbi.MetaDBI;
+    var Class       = ns.type.Class;
+    var ID          = ns.protocol.ID;
+    var Document    = ns.protocol.Document;
+    var Storage     = ns.dos.LocalStorage;
+    var DocumentDBI = ns.dbi.DocumentDBI;
 
     var doc_path = function (entity) {
-        return 'pub.' + entity.getAddress().toString() + '.document';
+        return 'pub.' + entity.getAddress().toString() + '.docs';
     };
 
     /**
      *  Document for Entities (User/Group)
      *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
-     *  storage path: 'dim.fs.pub.{ADDRESS}.document'
+     *  storage path: 'dim.fs.pub.{ADDRESS}.docs'
      */
     var DocumentStorage = function () {
         Object.call(this);
     };
-    Class(DocumentStorage, Object, [MetaDBI], null);
+    Class(DocumentStorage, Object, [DocumentDBI], null);
 
     // Override
     DocumentStorage.prototype.saveDocument = function (doc) {
         var entity = doc.getIdentifier();
+        var type = doc.getString('type', '');
+        // 1. check old records
+        var documents = this.getDocuments(entity);
+        var index = find_document(documents, entity, type);
+        if (index < 0) {
+            documents.unshift(doc);
+        } else if (documents[index].equals(doc)) {
+            // same document, no need to update
+            return true;
+        } else {
+            documents.splice(index, 1);
+            documents.unshift(doc);
+        }
+        // 2. save as JsON
+        var array = revert_documents(documents);
         var path = doc_path(entity);
-        return Storage.saveJSON(doc.toMap(), path);
+        return Storage.saveJSON(array, path);
     };
 
     // Override
-    DocumentStorage.prototype.getDocument = function (entity) {
+    DocumentStorage.prototype.getDocuments = function (entity) {
         var path = doc_path(entity);
-        var info = Storage.loadJSON(path);
-        if (info) {
-            return DocumentStorage.parse(info, null, null);
-        } else {
-            return false;
-        }
+        var array = Storage.loadJSON(path);
+        return !array ? [] : convert_documents(array);
     };
 
-    DocumentStorage.parse = function (dict, identifier, type) {
+    var parse_document = function (dict, identifier, type) {
         // check document ID
         var entity = ID.parse(dict['ID']);
         if (!identifier) {
@@ -103,6 +114,40 @@
         }
         return Document.create(type, identifier, data, signature);
     };
+
+    var convert_documents = function (array) {
+        var documents = [];
+        var doc;
+        for (var i = 0; i < array.length; ++i) {
+            doc = parse_document(array[i]);
+            if (doc) {
+                documents.push(doc);
+            }
+        }
+        return documents;
+    };
+
+    var revert_documents = function (documents) {
+        var array = [];
+        for (var i = 0; i < documents.length; ++i) {
+            array.push(documents[i].toMap());
+        }
+        return array;
+    };
+
+    var find_document = function (documents, identifier, type) {
+        var item;  // Document
+        for (var i = 0; i < documents.length; ++i) {
+            item = documents[i];
+            if (item.getIdentifier().equals(identifier) &&
+                item.getString('type', '') === type) {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    DocumentStorage.parse = parse_document;
 
     //-------- namespace --------
     ns.database.DocumentStorage = DocumentStorage;

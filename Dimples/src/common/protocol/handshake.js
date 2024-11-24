@@ -36,15 +36,27 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var Enum = ns.type.Enum;
-    var Command = ns.protocol.Command;
+    var Enum      = ns.type.Enum;
+    var Command   = ns.protocol.Command;
 
-    var HandshakeState = Enum(null, {
+    var HandshakeState = Enum('HandshakeState', {
         START:   0, // C -> S, without session key(or session expired)
         AGAIN:   1, // S -> C, with new session key
         RESTART: 2, // C -> S, with new session key
         SUCCESS: 3  // S -> C, handshake accepted
     });
+
+    HandshakeState.checkState = function (title, session) {
+        if (title === 'DIM!'/* || title === 'OK!'*/) {
+            return HandshakeState.SUCCESS;
+        } else if (title === 'DIM?') {
+            return HandshakeState.AGAIN;
+        } else if (!session) {
+            return HandshakeState.START;
+        } else {
+            return HandshakeState.RESTART;
+        }
+    };
 
     Command.HANDSHAKE = 'handshake';
 
@@ -53,7 +65,7 @@
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd     : "handshake",    // command name
+     *      command : "handshake",    // command name
      *      title   : "Hello world!", // "DIM?", "DIM!"
      *      session : "{SESSION_KEY}" // session key
      *  }
@@ -65,26 +77,40 @@
      *
      * @returns {string}
      */
-    HandshakeCommand.prototype.getTitle = function () {
-        throw new Error('NotImplemented');
-    };
+    HandshakeCommand.prototype.getTitle = function () {};
 
     /**
      *  Get session key
      *
      * @returns {string}
      */
-    HandshakeCommand.prototype.getSessionKey = function () {
-        throw new Error('NotImplemented');
-    };
+    HandshakeCommand.prototype.getSessionKey = function () {};
 
     /**
      *  Get handshake state
      *
      * @return {HandshakeState}
      */
-    HandshakeCommand.prototype.getState = function () {
-        throw new Error('NotImplemented');
+    HandshakeCommand.prototype.getState = function () {};
+
+    //
+    //  Factories
+    //
+
+    HandshakeCommand.start = function () {
+        return new ns.dkd.cmd.BaseHandshakeCommand('Hello world!', null);
+    };
+
+    HandshakeCommand.restart = function (sessionKey) {
+        return new ns.dkd.cmd.BaseHandshakeCommand('Hello world!', sessionKey);
+    };
+
+    HandshakeCommand.again = function (sessionKey) {
+        return new ns.dkd.cmd.BaseHandshakeCommand('DIM?', sessionKey);
+    };
+
+    HandshakeCommand.success = function (sessionKey) {
+        return new ns.dkd.cmd.BaseHandshakeCommand('DIM!', sessionKey);
     };
 
     //-------- namespace --------
@@ -96,11 +122,11 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var Command = ns.protocol.Command;
+    var Class            = ns.type.Class;
+    var Command          = ns.protocol.Command;
     var HandshakeCommand = ns.protocol.HandshakeCommand;
-    var HandshakeState = ns.protocol.HandshakeState;
-    var BaseCommand = ns.dkd.cmd.BaseCommand;
+    var HandshakeState   = ns.protocol.HandshakeState;
+    var BaseCommand      = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create handshake command
@@ -146,46 +172,11 @@
 
         // Override
         getState: function () {
-            return get_state(this.getTitle(), this.getSessionKey());
+            return HandshakeState.checkState(this.getTitle(), this.getSessionKey());
         }
     });
 
-    var get_state = function (text, session) {
-        if (text === SUCCESS_MESSAGE/* || text === 'OK!'*/) {
-            return HandshakeState.SUCCESS;
-        } else if (text === AGAIN_MESSAGE) {
-            return HandshakeState.AGAIN;
-            //} else if (text !== START_MESSAGE) {
-            //    // error!
-            //    return HandshakeState.INIT;
-        } else if (session) {
-            return HandshakeState.RESTART;
-        } else {
-            return HandshakeState.START;
-        }
-    };
-    var START_MESSAGE = 'Hello world!';
-    var AGAIN_MESSAGE = 'DIM?';
-    var SUCCESS_MESSAGE = 'DIM!';
-
-    //
-    //  Factories
-    //
-
-    HandshakeCommand.start = function () {
-        return new BaseHandshakeCommand(START_MESSAGE, null);
-    };
-    HandshakeCommand.restart = function (session) {
-        return new BaseHandshakeCommand(START_MESSAGE, session);
-    };
-    HandshakeCommand.again = function (session) {
-        return new BaseHandshakeCommand(AGAIN_MESSAGE, session);
-    };
-    HandshakeCommand.success = function () {
-        return new BaseHandshakeCommand(SUCCESS_MESSAGE, null);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.HandshakeCommand = BaseHandshakeCommand;
+    ns.dkd.cmd.BaseHandshakeCommand = BaseHandshakeCommand;
 
 })(DIMP);

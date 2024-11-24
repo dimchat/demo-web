@@ -31,19 +31,20 @@
 //
 
 //! require 'queue.js'
+//! require 'gate.js'
 
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class  = ns.type.Class;
     var Runner = ns.fsm.skywalker.Runner;
-    var InetSocketAddress = ns.startrek.type.InetSocketAddress;
-    var DockerDelegate = ns.startrek.port.DockerDelegate;
-    var PlainDeparture = ns.startrek.PlainDeparture;
-    var WSClientGate = ns.startrek.WSClientGate;
-    var ClientHub = ns.ws.ClientHub;
 
-    var MessageQueue = ns.network.MessageQueue;
+    var InetSocketAddress = ns.startrek.type.InetSocketAddress;
+    var PorterDelegate    = ns.startrek.port.PorterDelegate;
+    var ClientHub         = ns.ws.ClientHub;
+
+    var AckEnableGate     = ns.network.AckEnableGate;
+    var MessageQueue      = ns.network.MessageQueue;
 
     /**
      *  Gate Keeper
@@ -58,12 +59,13 @@
         this.__queue = new MessageQueue();
         this.__active = false;   // session status
         this.__last_active = 0;  // last update time
+        this.__reconnect_time = 0;
     };
-    Class(GateKeeper, Runner, [DockerDelegate], null);
+    Class(GateKeeper, Runner, [PorterDelegate], null);
 
     // protected
     GateKeeper.prototype.createGate = function (remote) {
-        var gate = new WSClientGate(this);
+        var gate = new AckEnableGate(this);
         var hub = this.createHub(gate, remote);
         gate.setHub(hub);
         return gate;
@@ -73,6 +75,7 @@
     GateKeeper.prototype.createHub = function (delegate, remote) {
         var hub = new ClientHub(delegate);
         hub.connect(remote, null);
+        // TODO: reset send buffer size
         return hub;
     };
 
@@ -92,9 +95,12 @@
             // flag not changed
             return false;
         }
-        if (!when || when <= 0) {
+        if (!when || when === 0) {
             when = (new Date()).getTime();
-        } else if (when <= this.__last_active) {
+        } else if (when instanceof Date) {
+            when = when.getTime();
+        }
+        if (when <= this.__last_active) {
             return false;
         }
         this.__active = active;
@@ -132,7 +138,24 @@
 
     // Override
     GateKeeper.prototype.process = function () {
-        var gate = this.__gate;
+        // check docker for remote address
+        var gate = this.getGate();
+        var remote = this.getRemoteAddress();
+        var docker = gate.getPorter(remote, null);
+        if (!docker) {
+            var now = (new Date()).getTime();
+            if (now < this.__reconnect_time) {
+                return false;
+            }
+            console.info('fetch docker', remote);
+            docker = gate.fetchPorter(remote, null);
+            if (!docker) {
+                console.error('gate error', remote);
+                this.__reconnect_time = now + 8000;
+                return false;
+            }
+        }
+        // try to process income/outgo packages
         var hub = gate.getHub();
         try {
             var incoming = hub.process();
@@ -145,16 +168,17 @@
             console.error('GateKeeper::process()', e);
             return false;
         }
+        var queue = this.__queue;
         if (!this.isActive()) {
             // inactive, wait a while to check again
-            this.__queue.purge();
+            queue.purge();
             return false;
         }
         // get next message
-        var wrapper = this.__queue.next();
+        var wrapper = queue.next();
         if (!wrapper) {
             // no more new message
-            this.__queue.purge();
+            queue.purge();
             return false;
         }
         // if msg in this wrapper is null (means sent successfully),
@@ -165,23 +189,24 @@
             return true;
         }
         // try to push
-        var ok = gate.sendShip(wrapper, this.__remote, null);
+        var ok = gate.sendShip(wrapper, remote, null);
         if (!ok) {
-            console.error('gate error, failed to send data', this.__remote);
+            console.error('gate error, failed to send data', remote);
         }
         return true;
     };
 
-    // protected
-    GateKeeper.prototype.dockerPack = function (payload, priority) {
-        var docker = this.__gate.fetchDocker(this.__remote, null, null);
-        console.assert(docker, 'departure packer error', this.__remote);
-        return new PlainDeparture(payload, priority);
-    };
+    // // protected
+    // GateKeeper.prototype.dockerPack = function (payload, priority) {
+    //     var docker = this.__gate.fetchPorter(this.__remote, null, null);
+    //     console.assert(docker, 'departure packer error', this.__remote);
+    //     return new PlainDeparture(payload, priority);
+    // };
 
-    // Override
+    // protected
     GateKeeper.prototype.queueAppend = function (rMsg, departure) {
-        return this.__queue.append(rMsg, departure);
+        var queue = this.__queue;
+        return queue.append(rMsg, departure);
     };
 
     //
@@ -189,28 +214,28 @@
     //
 
     // Override
-    GateKeeper.prototype.onDockerStatusChanged = function (previous, current, docker) {
-        console.info('GateKeeper::onDockerStatusChanged()', previous, current, docker);
+    GateKeeper.prototype.onPorterStatusChanged = function (previous, current, docker) {
+        console.info('GateKeeper::onPorterStatusChanged()', previous, current, docker);
     };
 
     // Override
-    GateKeeper.prototype.onDockerReceived = function (arrival, docker) {
-        console.info('GateKeeper::onDockerReceived()', arrival, docker);
+    GateKeeper.prototype.onPorterReceived = function (arrival, docker) {
+        console.info('GateKeeper::onPorterReceived()', arrival, docker);
     };
 
     // Override
-    GateKeeper.prototype.onDockerSent = function (departure, docker) {
+    GateKeeper.prototype.onPorterSent = function (departure, docker) {
         // TODO: remove sent message from local cache
     };
 
     // Override
-    GateKeeper.prototype.onDockerFailed = function (error, departure, docker) {
-        console.info('GateKeeper::onDockerFailed()', error, departure, docker);
+    GateKeeper.prototype.onPorterFailed = function (error, departure, docker) {
+        console.info('GateKeeper::onPorterFailed()', error, departure, docker);
     };
 
     // Override
-    GateKeeper.prototype.onDockerError = function (error, departure, docker) {
-        console.info('GateKeeper::onDockerError()', error, departure, docker);
+    GateKeeper.prototype.onPorterError = function (error, departure, docker) {
+        console.info('GateKeeper::onPorterError()', error, departure, docker);
     };
 
     //-------- namespace --------

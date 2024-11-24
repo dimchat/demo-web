@@ -36,19 +36,19 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var ID        = ns.protocol.ID;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd   : "storage",
-     *      title : "key name",  // "contacts", "private_key", ...
+     *      command : "storage",
+     *      title   : "key name",  // "contacts", "private_key", ...
      *
-     *      data  : "...",       // base64_encode(symmetric)
-     *      key   : "...",       // base64_encode(asymmetric)
+     *      data    : "...",       // base64_encode(symmetric)
+     *      key     : "...",       // base64_encode(asymmetric)
      *
      *      // -- extra info
      *      //...
@@ -66,24 +66,16 @@
      *
      * @param {string} title
      */
-    StorageCommand.prototype.setTitle = function (title) {
-        throw new Error('NotImplemented');
-    };
-    StorageCommand.prototype.getTitle = function () {
-        throw new Error('NotImplemented');
-    };
+    StorageCommand.prototype.setTitle = function (title) {};
+    StorageCommand.prototype.getTitle = function () {};
 
     /**
      *  Set user ID
      *
      * @param {ID} identifier
      */
-    StorageCommand.prototype.setIdentifier = function (identifier) {
-        throw new Error('NotImplemented');
-    };
-    StorageCommand.prototype.getIdentifier = function () {
-        throw new Error('NotImplemented');
-    };
+    StorageCommand.prototype.setIdentifier = function (identifier) {};
+    StorageCommand.prototype.getIdentifier = function () {};
 
     /**
      *  Set encrypted data
@@ -91,21 +83,15 @@
      *
      * @param {Uint8Array} data
      */
-    StorageCommand.prototype.setData = function (data) {
-        throw new Error('NotImplemented');
-    };
-    StorageCommand.prototype.getData = function () {
-        throw new Error('NotImplemented');
-    };
+    StorageCommand.prototype.setData = function (data) {};
+    StorageCommand.prototype.getData = function () {};
 
     /**
      *  Decryption
      *
      * @param {SymmetricKey|PrivateKey} key
      */
-    StorageCommand.prototype.decrypt = function (key) {
-        throw new Error('NotImplemented');
-    };
+    StorageCommand.prototype.decrypt = function (key) {};
 
     /**
      *  Set password (symmetric key) for decrypting data
@@ -114,12 +100,8 @@
      *
      * @param {Uint8Array} data
      */
-    StorageCommand.prototype.setKey = function (data) {
-        throw new Error('NotImplemented');
-    };
-    StorageCommand.prototype.getKey = function () {
-        throw new Error('NotImplemented');
-    };
+    StorageCommand.prototype.setKey = function (data) {};
+    StorageCommand.prototype.getKey = function () {};
 
     //-------- namespace --------
     ns.protocol.StorageCommand = StorageCommand;
@@ -177,7 +159,7 @@
 
         // Override
         getTitle: function () {
-            return this.getString('title');
+            return this.getString('title', null);
         },
 
         // Override

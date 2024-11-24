@@ -44,7 +44,7 @@
             now = (new Date()).getTime();
         }
         this.__expired = now + lifeSpan;
-        this.__deprecated = now + (lifeSpan << 1);
+        this.__deprecated = now + lifeSpan * 2;
     };
 
     CacheHolder.prototype.getValue = function () {
@@ -57,7 +57,7 @@
             now = (new Date()).getTime();
         }
         this.__expired = now + this.__lifeSpan;
-        this.__deprecated = now + (this.__lifeSpan << 1);
+        this.__deprecated = now + this.__lifeSpan * 2;
     };
 
     CacheHolder.prototype.isAlive = function (now) {
@@ -82,7 +82,7 @@
             now = (new Date()).getTime();
         }
         this.__expired = now + duration;
-        this.__deprecated = now + (this.__lifeSpan << 1);
+        this.__deprecated = now + this.__lifeSpan * 2;
     };
 
     var CachePair = function (value, holder) {
@@ -103,6 +103,9 @@
     };
 
     CachePool.prototype.update = function (key, value, lifeSpan, now) {
+        if (!lifeSpan || lifeSpan <= 0) {
+            lifeSpan = 3600 * 1000;
+        }
         var holder;
         if (value instanceof CacheHolder) {
             holder = value;

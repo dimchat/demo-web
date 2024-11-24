@@ -42,44 +42,36 @@
      *  Message DBI
      *  ~~~~~~~~~~~
      */
-    var ReliableMessageDBI = Interface(null, null);
+    var GroupKeysDBI = Interface(null, null);
 
-    /**
-     *  Get network messages
-     *
-     * @param {ID} receiver  - actual receiver
-     * @param {number} start - start position for loading message
-     * @param {number} limit - max count for loading message
-     * @return {[ReliableMessage[],number]} partial messages and remaining count, 0 means there are all messages cached
-     */
-    ReliableMessageDBI.prototype.getReliableMessages = function (receiver, start, limit) {
-        throw new Error('NotImplemented');
-    };
+    GroupKeysDBI.prototype.getGroupKeys = function (group, sender) {};
 
-    /**
-     *  Save network message
-     *
-     * @param {ID} receiver
-     * @param {ReliableMessage} rMsg
-     * @return {boolean} false on error
-     */
-    ReliableMessageDBI.prototype.cacheReliableMessage = function (receiver, rMsg) {
-        throw new Error('NotImplemented');
-    };
-
-    /**
-     *  Delete network message
-     *
-     * @param {ID} receiver
-     * @param {ReliableMessage} rMsg
-     * @return {boolean} false on error
-     */
-    ReliableMessageDBI.prototype.removeReliableMessage = function (receiver, rMsg) {
-        throw new Error('NotImplemented');
-    };
+    GroupKeysDBI.prototype.saveGroupKeys = function (group, sender, keys) {};
 
     //-------- namespace --------
-    ns.dbi.ReliableMessageDBI = ReliableMessageDBI;
     ns.dbi.CipherKeyDBI = CipherKeyDBI;
+    ns.dbi.GroupKeysDBI = GroupKeysDBI;
+
+})(DIMP);
+
+(function (ns) {
+    'use strict';
+
+    var Interface = ns.type.Interface;
+
+    var CipherKeyDBI = ns.dbi.CipherKeyDBI;
+    var GroupKeysDBI = ns.dbi.GroupKeysDBI;
+
+    /**
+     *  Message DBI
+     *  ~~~~~~~~~~~
+     */
+    var MessageDBI = Interface(null, [
+        CipherKeyDBI,
+        GroupKeysDBI
+    ]);
+
+    //-------- namespace --------
+    ns.dbi.MessageDBI = MessageDBI;
 
 })(DIMP);

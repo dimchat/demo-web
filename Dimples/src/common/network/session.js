@@ -36,31 +36,29 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var DockerDelegate = ns.startrek.port.DockerDelegate;
-    var Transmitter = ns.network.Transmitter;
-    var MessageWrapper = ns.network.MessageWrapper;
-    var GateKeeper = ns.network.GateKeeper;
-    var EntityType = ns.protocol.EntityType;
+    var Class          = ns.type.Class;
+    var PlainDeparture = ns.startrek.PlainDeparture;
+    var Session        = ns.network.Session;
+    var GateKeeper     = ns.network.GateKeeper;
 
     /**
      *  Create session
      *
-     * @param {string} host  - remote host
-     * @param {uint} port    - remote port
-     * @param {SessionDB} db - messenger
+     * @param {string} host   - remote host
+     * @param {uint} port     - remote port
+     * @param {SessionDBI} db - messenger
      */
     var BaseSession = function (host, port, db) {
         GateKeeper.call(this, host, port);
-        this.__db = db;
-        this.__id = null;  // login user ID
-        this.__messenger = null;
+        this.__db = db;           // SessionDBI
+        this.__id = null;         // login user ID
+        this.__messenger = null;  // CommonMessenger
     };
-    Class(BaseSession, GateKeeper, [DockerDelegate, Transmitter], {
+    Class(BaseSession, GateKeeper, [Session], {
 
         // Override
         queueMessagePackage: function (rMsg, data, priority) {
-            var ship = this.dockerPack(data, priority);
+            var ship = new PlainDeparture(data, priority);
             return this.queueAppend(rMsg, ship);
         }
     });
@@ -76,8 +74,17 @@
     };
 
     // Override
-    BaseSession.prototype.setIdentifier = function (identifier) {
-        this.__id = identifier;
+    BaseSession.prototype.setIdentifier = function (user) {
+        var identifier = this.__id;
+        if (!identifier) {
+            if (!user) {
+                return false;
+            }
+        } else if (identifier.equals(user)) {
+            return false;
+        }
+        this.__id = user;
+        return true;
     };
 
     BaseSession.prototype.getMessenger = function () {
@@ -93,9 +100,9 @@
     //
 
     // Override
-    BaseSession.prototype.sendContent = function (sender, receiver, content, priority) {
+    BaseSession.prototype.sendContent = function (content, sender, receiver, priority) {
         var messenger = this.getMessenger();
-        return messenger.sendContent(sender, receiver, content, priority);
+        return messenger.sendContent(content, sender, receiver, priority);
     };
 
     // Override
@@ -108,38 +115,6 @@
     BaseSession.prototype.sendReliableMessage = function (rMsg, priority) {
         var messenger = this.getMessenger();
         return messenger.sendReliableMessage(rMsg, priority);
-    };
-
-    //
-    //  Docker Delegate
-    //
-
-    // Override
-    BaseSession.prototype.onDockerSent = function (departure, docker) {
-        if (departure instanceof MessageWrapper) {
-            var rMsg = departure.getMessage();
-            if (rMsg) {
-                var messenger = this.getMessenger();
-                // remove from database for actual receiver
-                removeReliableMessage(rMsg, this.getIdentifier(), messenger.getDatabase());
-            }
-        }
-    };
-    var removeReliableMessage = function (rMsg, receiver, db) {
-        // 0. if session ID is empty, means user not login;
-        //    this message must be a handshake command, and
-        //    its receiver must be the targeted user.
-        // 1. if this session is a station, check original receiver;
-        //    a message to station won't be stored.
-        // 2. if the msg.receiver is a different user ID, means it's
-        //    a roaming message, remove it for actual receiver.
-        // 3. if the original receiver is a group, it must had been
-        //    replaced to the group assistant ID by GroupDeliver.
-        if (!receiver || EntityType.STATION.equals(receiver.getType())) {
-            receiver = rMsg.getReceiver();
-        }
-        // TODO:
-        //db.removeReliableMessage(receiver, msg);
     };
 
     //-------- namespace --------

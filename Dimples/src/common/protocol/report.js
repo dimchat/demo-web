@@ -30,23 +30,23 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimp.js>
 
 (function (ns) {
     'use strict';
 
     var Interface = ns.type.Interface;
-    var Command = ns.protocol.Command;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd   : "report",
-     *      title : "online",      // or "offline"
+     *      command : "report",
+     *      title   : "online",      // or "offline"
      *      //---- extra info
-     *      time  : 1234567890,    // timestamp
+     *      time    : 1234567890,    // timestamp
      *  }
      */
     var ReportCommand = Interface(null, [Command]);
@@ -57,11 +57,15 @@
 
     //-------- setter/getter --------
 
-    ReportCommand.prototype.setTitle = function (title) {
-        throw new Error('NotImplemented');
-    };
-    ReportCommand.prototype.getTitle = function () {
-        throw new Error('NotImplemented');
+    ReportCommand.prototype.setTitle = function (title) {};
+    ReportCommand.prototype.getTitle = function () {};
+
+    //
+    //  Factory
+    //
+
+    ReportCommand.fromTitle = function (title) {
+        return new ns.dkd.cmd.BaseReportCommand(title);
     };
 
     //-------- namespace --------
@@ -72,9 +76,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class         = ns.type.Class;
     var ReportCommand = ns.protocol.ReportCommand;
-    var BaseCommand = ns.dkd.cmd.BaseCommand;
+    var BaseCommand   = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create report command
@@ -106,18 +110,11 @@
 
         // Override
         getTitle: function () {
-            return this.getString('title');
+            return this.getString('title', null);
         }
     });
 
-    //
-    //  Factory
-    //
-    ReportCommand.create = function (title) {
-        return new BaseReportCommand(title);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.ReportCommand = BaseReportCommand;
+    ns.dkd.cmd.BaseReportCommand = BaseReportCommand;
 
 })(DIMP);

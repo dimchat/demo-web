@@ -30,28 +30,27 @@
 // =============================================================================
 //
 
-//! require 'namespace.js'
+//! require <dimp.js>
 
 (function (ns) {
     'use strict';
 
     var Interface = ns.type.Interface;
-    var Command = ns.protocol.Command;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd      : "search",        // or "users"
+     *      command  : "search",        // or "users"
      *      keywords : "keywords",      // keyword string
      *
      *      start    : 0,
-     *      limit    : 20,
+     *      limit    : 50,
      *
      *      station  : "STATION_ID",    // station ID
-     *      users    : ["ID"],          // user ID list
-     *      results  : {"ID": {meta}, } // user's meta map
+     *      users    : ["{ID}"]         // user ID list
      *  }
      */
     var SearchCommand = Interface(null, [Command]);
@@ -64,19 +63,14 @@
      *
      * @param {string} keywords
      */
-    SearchCommand.prototype.setKeywords = function (keywords) {
-        throw new Error('NotImplemented');
-    };
-    SearchCommand.prototype.getKeywords = function () {
-        throw new Error('NotImplemented');
-    };
+    SearchCommand.prototype.setKeywords = function (keywords) {};
+    SearchCommand.prototype.getKeywords = function () {};
 
-    SearchCommand.prototype.setRange = function (start, limit) {
-        throw new Error('NotImplemented');
-    };
-    SearchCommand.prototype.getRange = function () {
-        throw new Error('NotImplemented');
-    };
+    SearchCommand.prototype.setRange = function (start, limit) {};
+    SearchCommand.prototype.getRange = function () {};
+
+    SearchCommand.prototype.setStation = function (sid) {};
+    SearchCommand.prototype.getStation = function () {};
 
     /**
      *  Get user ID list
@@ -87,13 +81,12 @@
         throw new Error('NotImplemented');
     };
 
-    /**
-     *  Get user metas mapping to IDs
-     *
-     * @returns {{}} meta dictionary
-     */
-    SearchCommand.prototype.getResults = function () {
-        throw new Error('NotImplemented');
+    //
+    //  Factory
+    //
+
+    SearchCommand.fromKeywords = function (keywords) {
+        return new ns.dkd.cmd.BaseSearchCommand(keywords);
     };
 
     //-------- namespace --------
@@ -104,11 +97,11 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
+    var Class         = ns.type.Class;
+    var ID            = ns.protocol.ID;
+    var Command       = ns.protocol.Command;
     var SearchCommand = ns.protocol.SearchCommand;
-    var BaseCommand = ns.dkd.cmd.BaseCommand;
+    var BaseCommand   = ns.dkd.cmd.BaseCommand;
 
     /**
      *  Create search command
@@ -132,18 +125,27 @@
             BaseCommand.call(this, arguments[0]);
         }
         if (keywords) {
-            this.setValue('keywords', keywords);
+            this.setKeywords(keywords);
         }
     };
     Class(BaseSearchCommand, BaseCommand, [SearchCommand], {
 
         // Override
         setKeywords: function (keywords) {
+            if (keywords instanceof Array) {
+                keywords = keywords.join(' ');
+            } else if (typeof keywords !== 'string') {
+                throw new TypeError('keywords error: ' + keywords);
+            }
             this.setValue('keywords', keywords);
         },
         // Override
         getKeywords: function () {
-            return this.getValue('keywords');
+            var words = this.getValue('keywords', null);
+            if (!words && this.getCmd() === Command.ONLINE_USERS) {
+                words = Command.ONLINE_USERS;
+            }
+            return words;
         },
 
         // Override
@@ -153,9 +155,19 @@
         },
         // Override
         getRange: function () {
-            var start = this.getNumber('start');
-            var limit = this.getNumber('limit');
+            var start = this.getInt('start', 0);
+            var limit = this.getInt('limit', 50);
             return [start, limit];
+        },
+
+        // Override
+        setStation: function (sid) {
+            return this.setString('station', sid);
+        },
+
+        // Override
+        getStation: function () {
+            return ID.parse(this.getValue('results'));
         },
 
         // Override
@@ -166,28 +178,10 @@
             } else {
                 return null;
             }
-        },
-
-        // Override
-        getResults: function () {
-            return this.getValue('results');
         }
     });
 
-    //
-    //  Factory
-    //
-    SearchCommand.search = function (keywords) {
-        if (keywords instanceof Array) {
-            keywords = keywords.join(' ');
-        } else if (typeof keywords !== 'string') {
-            throw new TypeError('keywords error: ' + keywords);
-        }
-        // new BaseSearchCommand(keywords);
-        return new BaseSearchCommand(keywords);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.SearchCommand = BaseSearchCommand;
+    ns.dkd.cmd.BaseSearchCommand = BaseSearchCommand;
 
 })(DIMP);

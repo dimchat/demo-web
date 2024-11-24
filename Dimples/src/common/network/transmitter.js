@@ -30,7 +30,7 @@
 // =============================================================================
 //
 
-//! require 'db/*.js'
+//! require <dimsdk.js>
 
 (function (ns) {
     'use strict';
@@ -42,95 +42,71 @@
     /**
      *  Send content from sender to receiver with priority
      *
-     * @param {ID} sender
-     * @param {ID} receiver
-     * @param {Content} content
-     * @param {int} priority
+     * @param {Content} content - message content
+     * @param {ID} sender       - from where, null for current user
+     * @param {ID} receiver     - to where
+     * @param {int} priority    - smaller is faster
+     * @return {[InstantMessage, ReliableMessage]} (iMsg, None) on error
+     */
+    Transmitter.prototype.sendContent = function (content, sender, receiver, priority) {};
+
+    /**
+     *  Send instant message with priority
+     *
+     * @param {InstantMessage} iMsg - plain message
+     * @param {int} priority        - smaller is faster
+     * @return {ReliableMessage} null on error
+     */
+    Transmitter.prototype.sendInstantMessage = function (iMsg, priority) {};
+
+    /**
+     *  Send reliable message with priority
+     *
+     * @param {ReliableMessage} rMsg - encrypted & signed message
+     * @param {int} priority         - smaller is faster
      * @return {boolean} false on error
      */
-    Transmitter.prototype.sendContent = function (sender, receiver, content, priority) {
-        throw new Error('NotImplemented');
-    };
-
-    Transmitter.prototype.sendInstantMessage = function (iMsg, priority) {
-        throw new Error('NotImplemented');
-    };
-
-    Transmitter.prototype.sendReliableMessage = function (rMsg, priority) {
-        throw new Error('NotImplemented');
-    };
-
-    //-------- namespace --------
-    ns.network.Transmitter = Transmitter;
-
-})(DIMP);
-
-(function (ns) {
-    'use strict';
-
-    var Interface = ns.type.Interface;
-    var Transmitter = ns.network.Transmitter;
+    Transmitter.prototype.sendReliableMessage = function (rMsg, priority) {};
 
     var Session = Interface(null, [Transmitter]);
 
-    Session.prototype.getDatabase = function () {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.getDatabase = function () {};  // SessionDBI
 
-    /**
-     *  Get remote socket address
-     *
-     * @return {SocketAddress} host & port
-     */
-    Session.prototype.getRemoteAddress = function () {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.getRemoteAddress = function () {};  // SocketAddress
 
-    // session key
-    Session.prototype.getKey = function () {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.getSessionKey = function () {};  // String
 
     /**
      *  Update user ID
      *
-     * @param {ID} identifier - login user ID
+     * @param {ID} user - login user ID
      * @return {boolean} true on changed
      */
-    Session.prototype.setIdentifier = function (identifier) {
-        throw new Error('NotImplemented');
-    };
-    Session.prototype.getIdentifier = function () {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.setIdentifier = function (user) {};
+    Session.prototype.getIdentifier = function () {};
 
     /**
-     *  Update active float
+     *  Update active flag
      *
-     * @param {boolean} active - active flag
-     * @param {number} when    - current timestamp (milliseconds)
+     * @param {boolean} flag
+     * @param {Date} when
      * @return {boolean} true on changed
      */
-    Session.prototype.setActive = function (active, when) {
-        throw new Error('NotImplemented');
-    };
-    Session.prototype.isActive = function () {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.setActive = function (flag, when) {};
+    Session.prototype.isActive = function () {};
 
     /**
      *  Pack message into a waiting queue
      *
      * @param {ReliableMessage} rMsg - network message
      * @param {Uint8Array} data      - serialized message
-     * @param {number} priority      - smaller is faster
+     * @param {int} priority         - smaller is faster
      * @return {boolean} false on error
      */
-    Session.prototype.queueMessagePackage = function (rMsg, data, priority) {
-        throw new Error('NotImplemented');
-    };
+    Session.prototype.queueMessagePackage = function (rMsg, data, priority) {};
 
     //-------- namespace --------
-    ns.network.Session = Session;
+    ns.network.Transmitter = Transmitter;
+    ns.network.Session     = Session;
 
 })(DIMP);

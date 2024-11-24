@@ -30,21 +30,20 @@
 // =============================================================================
 //
 
-
 //! require <dimp.js>
 
 (function (ns) {
     'use strict';
 
     var Interface = ns.type.Interface;
-    var Command = ns.protocol.Command;
+    var Command   = ns.protocol.Command;
 
     /**
      *  Command message: {
      *      type : 0x88,
      *      sn   : 123,
      *
-     *      cmd      : "login",
+     *      command  : "login",
      *      time     : 0,
      *      //---- client info ----
      *      ID       : "{UserID}",
@@ -72,43 +71,33 @@
      *
      * @returns {ID}
      */
-    LoginCommand.prototype.getIdentifier = function () {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.getIdentifier = function () {};
 
     /**
      *  Get device ID
      *
      * @returns {string}
      */
-    LoginCommand.prototype.getDevice = function () {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.getDevice = function () {};
     /**
      *  Set device ID
      *
      * @param {string} device
      */
-    LoginCommand.prototype.setDevice = function (device) {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.setDevice = function (device) {};
 
     /**
      *  Get user agent
      *
      * @returns {string}
      */
-    LoginCommand.prototype.getAgent = function () {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.getAgent = function () {};
     /**
      *  Set user agent
      *
      * @param {string} UA
      */
-    LoginCommand.prototype.setAgent = function (UA) {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.setAgent = function (UA) {};
 
     //-------- server info --------
 
@@ -117,33 +106,33 @@
      *
      * @returns {{}}
      */
-    LoginCommand.prototype.getStation = function () {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.getStation = function () {};
     /**
      *  Set station info
      *
-     * @param {Station|{}} station
+     * @param {*} station
      */
-    LoginCommand.prototype.setStation = function (station) {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.setStation = function (station) {};
 
     /**
      *  Get provider info
      *
      * @returns {{}}
      */
-    LoginCommand.prototype.getProvider = function () {
-        throw new Error('NotImplemented');
-    };
+    LoginCommand.prototype.getProvider = function () {};
     /**
      *  Set provider info
      *
-     * @param {ServiceProvider|{}} provider
+     * @param {*} provider
      */
-    LoginCommand.prototype.setProvider = function (provider) {
-        throw new Error('NotImplemented');
+    LoginCommand.prototype.setProvider = function (provider) {};
+
+    //
+    //  Factory
+    //
+
+    LoginCommand.fromID = function (identifier) {
+        return new ns.dkd.cmd.BaseLoginCommand(identifier);
     };
 
     //-------- namespace --------
@@ -154,14 +143,14 @@
 (function (ns) {
     'use strict';
 
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Wrapper = ns.type.Wrapper;
-    var ID = ns.protocol.ID;
-    var Command = ns.protocol.Command;
-    var LoginCommand = ns.protocol.LoginCommand;
-    var BaseCommand = ns.dkd.cmd.BaseCommand;
-    var Station = ns.mkm.Station;
+    var Interface       = ns.type.Interface;
+    var Class           = ns.type.Class;
+    var Wrapper         = ns.type.Wrapper;
+    var ID              = ns.protocol.ID;
+    var Command         = ns.protocol.Command;
+    var LoginCommand    = ns.protocol.LoginCommand;
+    var BaseCommand     = ns.dkd.cmd.BaseCommand;
+    var Station         = ns.mkm.Station;
     var ServiceProvider = ns.mkm.ServiceProvider;
 
     /**
@@ -190,7 +179,7 @@
 
         // Override
         getDevice: function () {
-            return this.getString('device');
+            return this.getString('device', null);
         },
 
         // Override
@@ -200,7 +189,7 @@
 
         // Override
         getAgent: function () {
-            return this.getString('agent');
+            return this.getString('agent', null);
         },
 
         // Override
@@ -219,10 +208,18 @@
             if (!station) {
                 info = null;
             } else if (station instanceof Station) {
-                info = {
-                    'host': station.getHost(),
-                    'port': station.getPort(),
-                    'ID': station.getIdentifier().toString()
+                var sid = station.getIdentifier();
+                if (sid.isBroadcast()) {
+                    info = {
+                        'host': station.getHost(),
+                        'port': station.getPort()
+                    }
+                } else {
+                    info = {
+                        'ID': sid.toString(),
+                        'host': station.getHost(),
+                        'port': station.getPort()
+                    }
                 }
             } else {
                 info = Wrapper.fetchMap(station);
@@ -255,15 +252,7 @@
         }
     });
 
-    //
-    //  Factory
-    //
-
-    LoginCommand.create = function (identifier) {
-        return new BaseLoginCommand(identifier);
-    };
-
     //-------- namespace --------
-    ns.dkd.cmd.LoginCommand = BaseLoginCommand;
+    ns.dkd.cmd.BaseLoginCommand = BaseLoginCommand;
 
 })(DIMP);
