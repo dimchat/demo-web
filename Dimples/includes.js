@@ -27,13 +27,6 @@ var dim_common = [
     'src/common/database/meta.js',
     'src/common/database/document.js',
 
-    'src/common/network/transmitter.js',
-    'src/common/network/wrapper.js',
-    'src/common/network/queue.js',
-    'src/common/network/gate.js',
-    'src/common/network/gatekeeper.js',
-    'src/common/network/session.js',
-
     'src/common/anonymous.js',
     'src/common/ans.js',
     'src/common/archivist.js',
@@ -44,6 +37,30 @@ var dim_common = [
     'src/common/register.js',
 
     'src/common/factories.js',
+
+    //
+    //  Group
+    //
+
+    'src/group/delegate.js',
+    'src/group/admin.js',     // -> delegate
+    'src/group/helper.js',    // -> delegate
+    'src/group/packer.js',    // -> delegate
+    'src/group/builder.js',   // -> delegate, helper
+    'src/group/emitter.js',   // -> delegate, packer
+    'src/group/manager.js',   // -> delegate, helper, builder, packer
+    'src/group/shared.js',    // -> delegate, admin, emitter, manager
+
+    //
+    //  Network
+    //
+
+    'src/network/wrapper.js',
+    'src/network/queue.js',
+    'src/network/gate.js',
+    'src/network/gatekeeper.js',
+    'src/network/transmitter.js',
+    'src/network/session.js',
 
     null
 ];

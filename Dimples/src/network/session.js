@@ -48,7 +48,7 @@
      * @param {uint} port     - remote port
      * @param {SessionDBI} db - messenger
      */
-    var BaseSession = function (host, port, db) {
+    var BaseSession = function (db, host, port) {
         GateKeeper.call(this, host, port);
         this.__db = db;           // SessionDBI
         this.__id = null;         // login user ID
@@ -65,7 +65,7 @@
 
     // Override
     BaseSession.prototype.getDatabase = function () {
-        return this.__db
+        return this.__db;
     };
 
     // Override

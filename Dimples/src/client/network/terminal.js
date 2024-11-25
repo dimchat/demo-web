@@ -36,30 +36,31 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var EntityType = ns.protocol.EntityType;
-    var Station = ns.mkm.Station;
-    var Runner = ns.fsm.skywalker.Runner;
-    var Thread = ns.fsm.threading.Thread;
-    var StateDelegate = ns.fsm.Delegate;
-    var StateMachine = ns.network.StateMachine;
-    var ClientSession = ns.network.ClientSession;
-    var SessionState = ns.network.SessionState;
+    var Class             = ns.type.Class;
+    var EntityType        = ns.protocol.EntityType;
+    var Station           = ns.mkm.Station;
+    var Runner            = ns.fsm.skywalker.Runner;
+    var Thread            = ns.fsm.threading.Thread;
+    var ClientSession     = ns.network.ClientSession;
+    var SessionState      = ns.network.SessionState;
+    var SessionStateOrder = ns.network.SessionStateOrder;
     // var ClientMessagePacker = ns.ClientMessagePacker;
     // var ClientMessageProcessor = ns.ClientMessageProcessor;
 
     /**
      *  DIM Client
+     *
+     * @param {CommonFacebook} facebook
+     * @param {SessionDBI} db
      */
     var Terminal = function(facebook, db) {
         Runner.call(this);
         this.__facebook = facebook;
         this.__db = db;
-        this.__messenger = null;
-        this.__fsm = null;
-        this.__last_time = 0;  // last online time;
+        this.__messenger = null;  // ClientMessenger
+        this.__last_time = null;  // Date: last online time
     };
-    Class(Terminal, Runner, [StateDelegate], null);
+    Class(Terminal, Runner, [SessionState.Delegate], null);
 
     // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.113 Safari/537.36"
     Terminal.prototype.getUserAgent = function () {
@@ -78,53 +79,46 @@
         return messenger.getSession();
     };
 
-    Terminal.prototype.getState = function () {
-        var machine = this.__fsm;
-        if (!machine) {
-            return null;
-        }
-        return machine.getCurrentState();
-    };
+    //
+    //  Connection
+    //
 
     Terminal.prototype.connect = function (host, port) {
-        var station, session;
+        var station;  // Station
+        var session;  // ClientSession
+        var facebook = this.__facebook;
         var messenger = this.__messenger;
         if (messenger) {
             session = messenger.getSession();
-            if (session.isActive()) {
-                // current session is active
+            if (session.isRunning()) {
+                // current session is running
                 station = session.getStation();
-                if (station.getHost() === host && station.getPort() === port) {
+                if (station.getPort() === port && station.getHost() === host) {
                     // same target
                     return messenger;
                 }
             }
         }
-        // stop the machine & remove old messenger
-        var machine = this.__fsm;
-        if (machine) {
-            this.__fsm = null;
-            machine.stop();
-        }
-        var facebook = this.__facebook;
+        console.info('connecting to ' + host + ':' + port + ' ...');
         // create new messenger with session
         station = this.createStation(host, port);
         session = this.createSession(station);
+        // create new messenger with session
         messenger = this.createMessenger(session, facebook);
+        this.__messenger = messenger;
         // create packer, processor for messenger
         // they have weak references to facebook & messenger
         var packer = this.createPacker(facebook, messenger);
         var processor = this.createProcessor(facebook, messenger);
         messenger.setPacker(packer);
         messenger.setProcessor(processor);
-        this.__messenger = messenger;
-        // set weak reference to messenger
+        // TODO: set weak reference to messenger
         session.setMessenger(messenger);
-        // create & start state machine
-        machine = new StateMachine(session);
-        machine.setDelegate(this);
-        machine.start();
-        this.__fsm = machine;
+        // login with current user
+        var user = facebook.getCurrentUser();
+        if (user) {
+            session.setIdentifier(user.getIdentifier());
+        }
         return messenger;
     };
 
@@ -136,13 +130,8 @@
     };
     // protected
     Terminal.prototype.createSession = function (station) {
-        var session = new ClientSession(station, this.__db);
-        // set current suer for handshaking
-        var user = this.__facebook.getCurrentUser();
-        if (user) {
-            session.setIdentifier(user.getIdentifier());
-        }
-        session.start();
+        var session = new ClientSession(this.__db, station);
+        session.start(this);
         return session;
     };
     // protected
@@ -154,19 +143,11 @@
         return new ns.ClientMessageProcessor(facebook, messenger);
     };
     // protected
-    Terminal.prototype.createMessenger = function (session, facebook) {
-        throw new Error('NotImplemented');
-    };
+    Terminal.prototype.createMessenger = function (session, facebook) {};
 
-    Terminal.prototype.login = function (current) {
-        var session = this.getSession();
-        if (session) {
-            session.setIdentifier(current);
-            return true;
-        } else {
-            return false;
-        }
-    };
+    //
+    //  Threading
+    //
 
     Terminal.prototype.start = function () {
         var thread = new Thread(this);
@@ -175,17 +156,13 @@
 
     // Override
     Terminal.prototype.finish = function () {
-        // stop state machine
-        var machine = this.__fsm;
-        if (machine) {
-            this.__fsm = null;
-            machine.stop();
-        }
         // stop session in messenger
         var messenger = this.__messenger;
         if (messenger) {
             var session = this.getSession();
-            session.stop();
+            if (session) {
+                session.stop();
+            }
             this.__messenger = null;
         }
         return Runner.prototype.finish.call(this);
@@ -193,52 +170,61 @@
 
     // Override
     Terminal.prototype.process = function () {
-        // check timeout
-        var now = (new Date()).getTime();
-        if (!this.isExpired(this.__last_time, now)) {
+        // 1. check connection
+        var session = this.getSession();
+        var state = !session ? null : session.getState();
+        var ss_index = !state ? -1 : state.getIndex();
+        if (SessionStateOrder.RUNNING.equals(ss_index)) {
+            // handshake not accepted
+            return false;
+        } else if (!(session && session.isReady())) {
+            // session not ready
+            return false;
+        }
+        // 2. check timeout
+        var now = new Date();
+        if (this.needsKeepOnline(this.__last_time, now)) {
+            // update last online time
+            this.__last_time = now;
+        } else {
             // not expired yet
             return false;
         }
-        // check session state
-        var messenger = this.getMessenger();
-        if (!messenger) {
-            // not connect
-            return false;
-        }
-        var session = messenger.getSession();
-        var uid = session.getIdentifier();
-        if (!uid || !this.getState().equals(SessionState.RUNNING)) {
-            // handshake not accepted
-            return false;
-        }
-        // report every 6 minutes to keep user online
+        // 3. try to report every 5 minutes to keep user online
         try {
-            this.keepOnline(uid, messenger);
+            this.keepOnline();
         } catch (e) {
             console.error('Terminal::process()', e);
         }
-        // update last online time
-        this.__last_time = now;
         return false;
     };
 
     // protected
-    Terminal.prototype.isExpired = function (last, now) {
+    Terminal.prototype.needsKeepOnline = function (last, now) {
+        if (!last) {
+            // not login yet
+            return false;
+        }
         // keep online every 5 minutes
-        return now < (last + 300 * 1000);
+        return (last.getTime() + 300 * 1000) < now.getTime();
     };
 
     // protected
-    Terminal.prototype.keepOnline = function (uid, messenger) {
-        if (EntityType.STATION.equals(uid.getType())) {
+    Terminal.prototype.keepOnline = function () {
+        var messenger = this.__messenger;
+        var facebook = this.__facebook;
+        var user = facebook.getCurrentUser();
+        if (!user) {
+            console.error('failed to get current user');
+        } else if (EntityType.STATION.equals(user.getType())) {
             // a station won't login to another station, if here is a station,
             // it must be a station bridge for roaming messages, we just send
             // report command to the target station to keep session online.
-            messenger.reportOnline(uid);
+            messenger.reportOnline(user.getIdentifier());
         } else {
             // send login command to everyone to provide more information.
             // this command can keep the user online too.
-            messenger.broadcastLogin(uid, this.getUserAgent());
+            messenger.broadcastLogin(user.getIdentifier(), this.getUserAgent());
         }
     };
 
@@ -247,36 +233,60 @@
     //
 
     // Override
-    Terminal.prototype.enterState = function (next, machine) {
+    Terminal.prototype.enterState = function (next, ctx, now) {
         // called before state changed
     };
 
     // Override
-    Terminal.prototype.exitState = function (previous, machine) {
+    Terminal.prototype.exitState = function (previous, ctx, now) {
         // called after state changed
-        var messenger = this.getMessenger();
-        var current = machine.getCurrentState();
-        if (!current) {
+        var current = ctx.getCurrentState();
+        var index = !current ? -1 : current.getIndex();
+        if (index === -1 || SessionStateOrder.ERROR.equals(index)) {
+            this.__last_time = null;
             return;
         }
-        if (current.equals(SessionState.HANDSHAKING)) {
+        var messenger = this.getMessenger();
+        var session = this.getSession();
+        if (SessionStateOrder.DEFAULT.equals(index) ||
+            SessionStateOrder.CONNECTING.equals(index)) {
+            // check current user
+            var user = ctx.getSessionID();
+            if (!user) {
+                console.warn('current user not set');
+                return;
+            }
+            console.info('connect for user: ' + user.toString());
+            var remote = !session ? null : session.getRemoteAddress();
+            if (!remote) {
+                console.warn('failed to get remote address', session);
+                return;
+            }
+            var gate = !session ? null : session.getGate();
+            var docker = !gate ? null : gate.fetchPorter(remote, null);
+            if (docker) {
+                console.info('connected to: ' + remote.toString());
+            } else {
+                console.error('failed to connect: ' + remote.toString());
+            }
+        } else if (SessionStateOrder.HANDSHAKING.equals(index)) {
             // start handshake
             messenger.handshake(null);
-        } else if (current.equals(SessionState.RUNNING)) {
+        } else if (SessionStateOrder.RUNNING.equals(index)) {
             // broadcast current meta & visa document to all stations
             messenger.handshakeSuccess();
             // update last online time
-            this.__last_time = (new Date()).getTime();
+            this.__last_time = now;
         }
     };
 
     // Override
-    Terminal.prototype.pauseState = function (current, machine) {
+    Terminal.prototype.pauseState = function (current, ctx, now) {
 
     };
 
     // Override
-    Terminal.prototype.resumeState = function (current, machine) {
+    Terminal.prototype.resumeState = function (current, ctx, now) {
         // TODO: clear session key for re-login?
     };
 

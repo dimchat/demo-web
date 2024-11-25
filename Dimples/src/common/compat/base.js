@@ -71,6 +71,9 @@
     if (typeof ns.dbi !== 'object') {
         ns.dbi = {};
     }
+    if (typeof ns.group !== 'object') {
+        ns.group = {};
+    }
     if (typeof ns.database !== 'object') {
         ns.database = {};
     }

@@ -55,7 +55,7 @@
      *
      * @param {string} nickname - user name
      * @param {string} avatar   - photo URL
-     * @returns {User}
+     * @returns {ID}
      */
     Register.prototype.createUser = function (nickname, avatar) {
         //
@@ -90,7 +90,7 @@
      *
      * @param {ID} founder   - founder ID
      * @param {String} title - group name
-     * @returns {Group}
+     * @returns {ID}
      */
     Register.prototype.createGroup = function (founder, title) {
         var r = Math.ceil(Math.random() * 999990000) + 10000; // 10,000 ~ 999,999,999
