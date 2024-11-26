@@ -35,53 +35,89 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var GroupCommand = ns.protocol.GroupCommand;
+    var Class                 = ns.type.Class;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
-    var GROUP_EMPTY = 'Group empty.';
-    var QUERY_NOT_ALLOWED = 'Sorry, you are not allowed to query this group.';
-
+    ///  Query Group Command Processor
+    ///  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ///
+    ///      1. query for group members-list
+    ///      2. any existed member or assistant can query group members-list
     var QueryCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
     Class(QueryCommandProcessor, GroupCommandProcessor, null, {
 
         // Override
-        process: function (cmd, rMsg) {
-            var facebook = this.getFacebook();
+        process: function (content, rMsg) {
+            var errors;  // List<Content>
 
-            // 0. check group
-            var group = cmd.getGroup();
-            var owner = facebook.getOwner(group);
-            var members = facebook.getMembers(group);
-            if (!owner || !members || members.length === 0) {
-                return this.respondText(GROUP_EMPTY, group);
+            // 0. check command
+            var pair = this.checkCommandExpired(content, rMsg);
+            var group = pair[0];
+            if (!group) {
+                // ignore expired command
+                errors = pair[1];
+                return !errors ? [] : errors;
             }
 
-            // 1. check permission
+            // 1. check group
+            var trip = this.checkGroupMembers(content, rMsg);
+            var owner = trip[0];
+            var members = trip[1];
+            if (!(owner && members && members.length > 0)) {
+                errors = pair[2];
+                return !errors ? [] : errors;
+            }
+            var text;
+
             var sender = rMsg.getSender();
-            if (members.indexOf(sender) < 0) {
-                // not a member? check assistants
-                var assistants = facebook.getAssistants(group);
-                if (!assistants || assistants.indexOf(sender) < 0) {
-                    return this.respondText(QUERY_NOT_ALLOWED, group);
+            var bots = this.getAssistants(group);
+            var isMember = members.indexOf(sender) >= 0;
+            var isBot = bots.indexOf(sender) >= 0;
+
+            // 2. check permission
+            var canQuery = isMember || isBot;
+            if (!canQuery) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Not allowed to query members of group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
+            }
+            var facebook = this.getFacebook();
+            var archivist = facebook.getArchivist();
+
+            // check last group time
+            var queryTime = content.getDateTime('last_time', null);  // content.getLastTime();
+            if (queryTime) {
+                // check last group history time
+                var lastTime = archivist.getLastGroupHistoryTime(group);
+                if (!lastTime) {
+                    console.error('group history error', group);
+                } else if (lastTime.getTime() <= queryTime.getTime()) {
+                    // group history not updated
+                    text = 'Group history not updated.';
+                    return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                        'template': 'Group history not updated: ${ID}, last time: ${time}',
+                        'replacements': {
+                            'ID': group.toString(),
+                            'time': lastTime.getTime() / 1000.0
+                        }
+                    });
                 }
             }
 
-            // 2. respond
-            var res = this.respondGroupMembers(owner, group, members);
-            return [res];
-        },
-
-        respondGroupMembers: function (owner, group, members) {
-            var facebook = this.getFacebook();
-            var user = facebook.getCurrentUser();
-            if (user.getIdentifier().equals(owner)) {
-                return GroupCommand.reset(group, members);
-            } else {
-                return GroupCommand.invite(group, members);
+            // 3. send newest group history commands
+            var ok = this.sendGroupHistories(group, sender);
+            if (!ok) {
+                console.error('failed to send history for group', group, sender);
             }
+
+            // no need to response this group command
+            return [];
         }
     });
 

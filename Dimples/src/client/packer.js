@@ -35,142 +35,211 @@
 (function (ns) {
     'use strict';
 
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Base64 = ns.format.Base64;
-    var SHA256 = ns.digest.SHA256;
-    var ReliableMessage = ns.protocol.ReliableMessage;
-    var DocumentCommand = ns.protocol.DocumentCommand;
-    var MessagePacker = ns.MessagePacker;
+    var Interface      = ns.type.Interface;
+    var Class          = ns.type.Class;
+    var ID             = ns.protocol.ID;
+    var InstantMessage = ns.protocol.InstantMessage;
+    var ContentType    = ns.protocol.ContentType;
+    var TextContent    = ns.protocol.TextContent;
+    var FileContent    = ns.protocol.FileContent;
+    var CommonPacker   = ns.CommonPacker;
 
     var ClientMessagePacker = function (facebook, messenger) {
-        MessagePacker.call(this, facebook, messenger);
+        CommonPacker.call(this, facebook, messenger);
     };
-    Class(ClientMessagePacker, MessagePacker, null, null);
+    Class(ClientMessagePacker, CommonPacker, null, {
 
-    // attach key digest
-    var attach = function (rMsg) {
-        var messenger = this.getMessenger();
-        // check message delegate
-        if (!rMsg.getDelegate()) {
-            rMsg.setDelegate(messenger);
-        }
-        // check msg.key
-        if (rMsg.getValue('key')) {
-            // rMsg.getEncryptedKey() !== null
-            return;
-        }
-        // check msg.keys
-        var keys = rMsg.getEncryptedKeys();
-        if (!keys) {
-            keys = {};
-        } else if (keys['digest']) {
-            // key digest already exists
-            return;
-        }
-        // get key with direction
-        var key;
-        var sender = rMsg.getSender();
-        var group = rMsg.getGroup();
-        if (group) {
-            key = messenger.getCipherKey(sender, group, false);
-        } else {
-            var receiver = rMsg.getReceiver();
-            key = messenger.getCipherKey(sender, receiver, false);
-        }
-        if (!key) {
-            // broadcast message has no key
-            return;
-        }
-        var digest = getKeyDigest(key);
-        if (!digest) {
-            // key error
-            return;
-        }
-        keys['digest'] = digest;
-        rMsg.setValue('keys', keys);
-    };
-    // get partially key data for digest
-    var getKeyDigest = function (key) {
-        var data = key.getData();
-        if (!data || data.length < 6) {
-            return null;
-        }
-        // get digest for the last 6 bytes of key.data
-        var part = data.subarray(data.length - 6);
-        var digest = SHA256.digest(part);
-        var base64 = Base64.encode(digest);
-        base64 = base64.trim();
-        return base64.substr(base64.length - 8);
-    };
-
-    // Override
-    ClientMessagePacker.prototype.serializeMessage = function (rMsg) {
-        attach.call(this, rMsg);
-        return MessagePacker.prototype.serializeMessage.call(this, rMsg);
-    };
-
-    // Override
-    ClientMessagePacker.prototype.deserializeMessage = function (data) {
-        if (!data || data.length < 2) {
-            // message data error
-            return null;
-        }
-        return MessagePacker.prototype.deserializeMessage.call(this, data);
-    };
-
-    // Override
-    ClientMessagePacker.prototype.signMessage = function (sMsg) {
-        if (Interface.conforms(sMsg, ReliableMessage)) {
-            // already signed
-            return sMsg;
-        }
-        return MessagePacker.prototype.signMessage.call(this, sMsg);
-    };
-
-    /*/
-    // Override
-    ClientMessagePacker.prototype.encryptMessage = function (iMsg) {
-        // make sure visa.key exists before encrypting message
-        var sMsg = MessagePacker.prototype.encryptMessage.call(this, iMsg);
-        var receiver = iMsg.getReceiver();
-        if (receiver.isGroup()) {
-            // reuse group message keys
-            var messenger = this.getMessenger();
-            var sender = iMsg.getSender();
-            var key = messenger.getCipherKey(sender, receiver, false);
-            key.setValue('reused', true);
-        }
-        // TODO: reuse personal message key?
-        return sMsg;
-    };
-    /*/
-
-    // Override
-    ClientMessagePacker.prototype.decryptMessage = function (sMsg) {
-        try {
-            return MessagePacker.prototype.decryptMessage.call(this, sMsg);
-        } catch (e) {
-            // check exception thrown by DKD: EncryptedMessage.decrypt()
-            if (e.toString().indexOf('failed to decrypt key in msg: ') >= 0) {
-                // visa.key not updated?
-                var facebook = this.getFacebook();
-                var user = facebook.getCurrentUser();
-                var visa = user.getVisa();
-                if (!visa || !visa.isValid()) {
-                    // FIXME: user visa not found?
-                    throw new ReferenceError('user visa error: ' + user.getIdentifier());
-                }
-                var cmd = DocumentCommand.response(user.getIdentifier(), null, visa);
-                var messenger = this.getMessenger();
-                messenger.sendContent(user.getIdentifier(), sMsg.getSender(), cmd, 0);
-            } else {
-                // FIXME: message error? cipher text error?
-                throw e;
+        // Override
+        checkReceiver: function (iMsg) {
+            var receiver = iMsg.getReceiver();
+            if (receiver.isBroadcast()) {
+                // broadcast message
+                return true;
+            } else if (receiver.isUser()) {
+                // check user's meta & document
+                return CommonPacker.prototype.checkReceiver.call(this, iMsg);
             }
-            return null;
+            var error;  // Map
+            //
+            //  check group's meta & members
+            //
+            var members = this.getMembers(receiver);
+            if (!members || members.length === 0) {
+                // group not ready, suspend message for waiting meta/members
+                error = {
+                    'message': 'group members not found',
+                    'group': receiver.toString()
+                };
+                this.suspendInstantMessage(iMsg, error);  // iMsg.put("error", error);
+                return false;
+            }
+            //
+            //  check group members' visa key
+            //
+            var waiting = [];
+            var item;  // ID
+            for (var i = 0; i < members.length; ++i) {
+                item = members[i];
+                if (!this.getVisaKey(item)) {
+                    // member not ready
+                    waiting.push(item);
+                }
+            }
+            if (waiting.length === 0) {
+                // all members' visa keys exist
+                return true;
+            }
+            // members not ready, suspend message for waiting document
+            error = {
+                'message': 'members not ready',
+                'group': receiver.toString(),
+                'members': ID.revert(waiting)
+            };
+            this.suspendInstantMessage(iMsg, error);  // iMsg.put("error", error);
+            // perhaps some members have already disappeared,
+            // although the packer will query document when the member's visa key is not found,
+            // but the station will never respond with the right document,
+            // so we must return true here to let the messaging continue;
+            // when the member's visa is responded, we should send the suspended message again.
+            return waiting.length < members.length;
+        },
+
+        // protected
+        checkGroup: function (sMsg) {
+            var receiver = sMsg.getReceiver();
+            // check group
+            var group = ID.parse(sMsg.getValue('group'));
+            if (!group && receiver.isGroup()) {
+                /// Transform:
+                ///     (B) => (J)
+                ///     (D) => (G)
+                group = receiver;
+            }
+            if (!group || group.isBroadcast()) {
+                /// A, C - personal message (or hidden group message)
+                //      the packer will call the facebook to select a user from local
+                //      for this receiver, if no user matched (private key not found),
+                //      this message will be ignored;
+                /// E, F, G - broadcast group message
+                //      broadcast message is not encrypted, so it can be read by anyone.
+                return true;
+            }
+            /// H, J, K - group message
+            //      check for received group message
+            var members = this.getMembers(group);
+            if (members && members.length > 0) {
+                // group is ready
+                return true;
+            }
+            // group not ready, suspend message for waiting members
+            var error = {
+                'message': 'group not ready',
+                'group': group.toString()
+            };
+            this.suspendReliableMessage(sMsg, error);  // rMsg.put("error", error);
+            return false;
+        },
+
+        // Override
+        verifyMessage: function (rMsg) {
+            // check receiver/group with local user
+            if (this.checkGroup(rMsg)) {
+                // receiver is ready
+            } else {
+                console.warn('receiver not ready', rMsg.getReceiver());
+                return null;
+            }
+            return CommonPacker.prototype.verifyMessage.call(this, rMsg);
+        },
+
+        decryptMessage: function (sMsg) {
+            var iMsg;
+            try {
+                iMsg = CommonPacker.prototype.decryptMessage.call(this, sMsg);
+            } catch (e) {
+                // check exception thrown by DKD: EncryptedMessage.decrypt()
+                var errMsg = e.toString();
+                if (errMsg.indexOf('failed to decrypt key in msg: ') >= 0) {
+                    // Exception from 'SecureMessagePacker::decrypt(sMsg, receiver)'
+                    console.warn('decrypt message error', e);
+                    // visa.key changed?
+                    // push my newest visa to the sender
+                } else if (errMsg.indexOf('receiver error') >= 0) {
+                    // Exception from 'MessagePacker::decryptMessage(sMsg)'
+                    console.warn('decrypt message error', e);
+                    // not for you?
+                    // just ignore it
+                    return null;
+                } else {
+                    throw e;
+                }
+            }
+            if (iMsg) {
+                var content = iMsg.getContent();
+                if (Interface.conforms(content, FileContent)) {
+                    if (!content.getPassword() && content.getURL()) {
+                        // now received file content with remote data,
+                        // which must be encrypted before upload to CDN;
+                        // so keep the password here for decrypting after downloaded.
+                        var messenger = this.getMessenger();
+                        var key = messenger.getDecryptKey(sMsg);
+                        // keep password to decrypt data after downloaded
+                        content.setPassword(key);
+                    }
+                }
+            } else {
+                // failed to decrypt message, visa.key changed?
+                // 1. push new visa document to this message sender
+                /*await */this.pushVisa(sMsg.getSender());
+                // 2. build 'failed' message
+                iMsg = this.getFailedMessage(sMsg);
+            }
+            return iMsg;
+        },
+
+        // protected
+        pushVisa: function (receiver) {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            var user = !facebook ? null : facebook.getCurrentUser();
+            if (!user) {
+                return false;
+            }
+            var visa = user.getVisa();
+            if (visa && visa.isValid()) {} else {
+                // FIXME: user visa not found?
+                throw new ReferenceError('user visa error' + user.toString());
+            }
+            return messenger.sendVisa(visa, receiver, false);
+        },
+
+        // protected
+        getFailedMessage: function (sMsg) {
+            var sender = sMsg.getSender();
+            var group = sMsg.getGroup();
+            var type = sMsg.getType();
+            if (ContentType.COMMAND.equals(type) || ContentType.HISTORY.equals(type)) {
+                console.warn('ignore message unable to decrypt', type, sender);
+                return null;
+            }
+            // create text content
+            var content = TextContent.create('Failed to decrypt message.');
+            content.setValue('template', 'Failed to decrypt message (type=${type}) from "${sender}".');
+            content.setValue('replacements', {
+                'type': type,
+                'sender': sender.toString(),
+                'group': !group ? null : group.toString()
+            });
+            if (group) {
+                content.setGroup(group);
+            }
+            // pack instant message
+            var info = sMsg.copyMap(false);
+            delete info['data'];
+            info['content'] = content.toMap();
+            return InstantMessage.parse(info);
         }
-    };
+    });
 
     //-------- namespace --------
     ns.ClientMessagePacker = ClientMessagePacker;

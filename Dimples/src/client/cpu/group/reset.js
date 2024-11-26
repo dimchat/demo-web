@@ -35,127 +35,142 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var GroupCommand = ns.protocol.GroupCommand;
+    var Class                 = ns.type.Class;
+    var ID                    = ns.protocol.ID;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
-    var RESET_CMD_ERROR = 'Reset command error.';
-    var RESET_NOT_ALLOWED = 'Sorry, you are not allowed to reset this group.';
-
+    ///  Reset Group Command Processor
+    ///  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ///
+    ///      1. reset group members
+    ///      2. only group owner or assistant can reset group members
     var ResetCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
     Class(ResetCommandProcessor, GroupCommandProcessor, null, {
 
         // Override
-        process: function (cmd, rMsg) {
-            var facebook = this.getFacebook();
+        process: function (content, rMsg) {
+            var errors;  // List<Content>
 
-            // 0. check group
-            var group = cmd.getGroup();
-            var owner = facebook.getOwner(group);
-            var members = facebook.getMembers(group);
-            if (!owner || !members || members.length === 0) {
-                // FIXME: group info lost?
-                // FIXME: how to avoid strangers impersonating group member?
-                return this.temporarySave(cmd, rMsg.getSender());
+            // 0. check command
+            var pair = this.checkCommandExpired(content, rMsg);
+            var group = pair[0];
+            if (!group) {
+                // ignore expired command
+                errors = pair[1];
+                return errors ? errors : [];
+            }
+            var pair1 = this.checkCommandMembers(content, rMsg);
+            var newMembers = pair1[0];
+            if (!newMembers || newMembers.length === 0) {
+                // command error
+                errors = pair[1];
+                return errors ? errors : [];
             }
 
-            // 1. check permission
+            // 1. check group
+            var trip = this.checkGroupMembers(content, rMsg);
+            var owner = trip[0];
+            var members = trip[1];
+            if (!(owner && members && members.length > 0)) {
+                errors = pair[2];
+                return errors ? errors : [];
+            }
+            var text;
+
             var sender = rMsg.getSender();
-            if (!owner.equals(sender)) {
-                // not the owner? check assistants
-                var assistants = facebook.getAssistants(group);
-                if (!assistants || assistants.indexOf(sender) < 0) {
-                    return this.respondText(RESET_NOT_ALLOWED, group);
-                }
-            }
+            var admins = this.getAdministrators(group);
+            var isOwner = owner.equals(sender);
+            var isAdmin = admins.contains(sender);
 
-            // 2. resetting members
-            var newMembers = this.getMembers(cmd);
-            if (newMembers.length === 0) {
-                return this.respondText(RESET_CMD_ERROR, group);
+            // 2. check permission
+            var canReset = isOwner || isAdmin;
+            if (!canReset) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Not allowed to reset members of group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
             }
             // 2.1. check owner
-            if (newMembers.indexOf(owner) < 0) {
-                return this.respondText(RESET_CMD_ERROR, group);
-            }
-            // 2.2. build expel list
-            var removes = [];
-            var item, i;
-            for (i = 0; i < members.length; ++i) {
-                item = members[i];
-                if (newMembers.indexOf(item) < 0) {
-                    // got removing member
-                    removes.push(item.toString());
-                }
-            }
-            // 2.3. build invite list
-            var adds = [];
-            for (i = 0; i < newMembers.length; ++i) {
-                item = newMembers[i];
-                if (members.indexOf(item) < 0) {
-                    // got new member
-                    adds.push(item.toString());
-                }
-            }
-            // 2.4. do resetting
-            if (adds.length > 0 || removes.length > 0) {
-                if (facebook.saveMembers(newMembers, group)) {
-                    if (adds.length > 0) {
-                        cmd.setValue('added', adds);
+            if (!newMembers[0].equals(owner)) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Owner must be the first member of group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
                     }
-                    if (removes.length > 0) {
-                        cmd.setValue('removed', removes);
-                    }
+                });
+            }
+            // 2.2. check admins
+            var expelAdmin = false;
+            for (var i = 0; i < admins.length; ++i) {
+                if (newMembers.indexOf(admins[i]) < 0) {
+                    expelAdmin = true;
+                    break;
                 }
+            }
+            if (expelAdmin) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Not allowed to expel administrator of group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
             }
 
-            // 3. response (no need to response this group command)
-            return null;
-        },
-
-        // protected
-        temporarySave: function (cmd, sender) {
-            var facebook = this.getFacebook();
-            var group = cmd.getGroup();
-            // check whether the owner contained in the new members
-            var newMembers = this.getMembers(cmd);
-            if (newMembers.length === 0) {
-                return this.respondText(RESET_CMD_ERROR, group);
-            }
-            var item;
-            for (var i = 0; i < newMembers.length; ++i) {
-                item = newMembers[i];
-                if (!facebook.getMeta(item)) {
-                    // TODO: waiting for member's meta?
-                    continue;
-                } else if (!facebook.isOwner(item, group)) {
-                    // not owner, skip it
-                    continue;
+            // 3. do reset
+            var memPair = ResetCommandProcessor.calculateReset(members, newMembers);
+            var addList = memPair[0];
+            var removeList = memPair[1];
+            if (!this.saveGroupHistory(group, content, rMsg)) {
+                // here try to save the 'reset' command to local storage as group history
+                // it should not failed unless the command is expired
+                console.error('failed to save "reset" command for group', group);
+            } else if (addList.length === 0 && removeList.length === 0) {
+                // nothing changed
+            } else if (this.saveMembers(group, newMembers)) {
+                console.info('new members saved in group', group);
+                if (addList.length > 0) {
+                    content.setValue('added', ID.revert(addList));
                 }
-                // it's a full list, save it now
-                if (facebook.saveMembers(newMembers, group)) {
-                    if (!item.equals(sender)) {
-                        // NOTICE: to prevent counterfeit,
-                        //         query the owner for newest member-list
-                        this.queryOwner(item, group);
-                    }
+                if (removeList.length > 0) {
+                    content.setValue('removed', ID.revert(removeList));
                 }
-                // response (no need to respond this group command)
-                return null;
+            } else {
+                // DB error?
+                console.error('failed to save members in group', group);
             }
-            // NOTICE: this is a partial member-list
-            //         query the sender for full-list
-            var res = GroupCommand.query(group);
-            return [res];
-        },
 
-        // protected
-        queryOwner: function (owner, group) {
-            // TODO: send QueryCommand to the group owner
+            // no need to response this group command
+            return [];
         }
     });
+
+    ResetCommandProcessor.calculateReset = function (oldMembers, newMembers) {
+        var addList = [];     // List<ID>
+        var removeList = [];  // List<ID>
+        var item;             // ID
+        // build invited-list
+        for (var i = 0; i < newMembers.length; ++i) {
+            item = newMembers[i];
+            if (oldMembers.indexOf(item) < 0) {
+                addList.push(item);
+            }
+        }
+        // build expelled-list
+        for (var j = 0; j < oldMembers.length; ++j) {
+            item = oldMembers[j];
+            if (newMembers.indexOf(item) < 0) {
+                removeList.push(item);
+            }
+        }
+        return [addList, removeList];
+    };
 
     //-------- namespace --------
     ns.cpu.ResetCommandProcessor = ResetCommandProcessor;

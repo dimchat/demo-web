@@ -30,82 +30,133 @@
 // =============================================================================
 //
 
-//! require 'reset.js'
+//! require '../group.js'
 
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ResetCommandProcessor = ns.cpu.ResetCommandProcessor;
+    var Class                 = ns.type.Class;
+    var ID                    = ns.protocol.ID;
+    var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
-    var INVITE_CMD_ERROR = 'Invite command error.';
-    var INVITE_NOT_ALLOWED = 'Sorry, yo are not allowed to invite new members into this group.';
-
+    ///  Invite Group Command Processor
+    ///  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ///
+    ///      1. add new member(s) to the group
+    ///      2. any member can invite new member
+    ///      3. invited by ordinary member should be reviewed by owner/administrator
     var InviteCommandProcessor = function (facebook, messenger) {
-        ResetCommandProcessor.call(this, facebook, messenger);
+        GroupCommandProcessor.call(this, facebook, messenger);
     };
-    Class(InviteCommandProcessor, ResetCommandProcessor, null, {
+    Class(InviteCommandProcessor, GroupCommandProcessor, null, {
 
         // Override
-        process: function (cmd, rMsg) {
-            var facebook = this.getFacebook();
+        process: function (content, rMsg) {
+            var errors;  // List<Content>
 
-            // 0. check group
-            var group = cmd.getGroup();
-            var owner = facebook.getOwner(group);
-            var members = facebook.getMembers(group);
+            // 0. check command
+            var pair = this.checkCommandExpired(content, rMsg);
+            var group = pair[0];
+            if (!group) {
+                // ignore expired command
+                errors = pair[1];
+                return !errors ? [] : errors;
+            }
+            var pair1 = this.checkCommandMembers(content, rMsg);
+            var inviteList = pair1[0];
+            if (!inviteList || inviteList.length === 0) {
+                // command error
+                errors = pair[1];
+                return !errors ? [] : errors;
+            }
+
+            // 1. check group
+            var trip = this.checkGroupMembers(content, rMsg);
+            var owner = trip[0];
+            var members = trip[1];
             if (!owner || !members || members.length === 0) {
-                // NOTICE: group membership lost?
-                //         reset group members
-                return this.temporarySave(cmd, rMsg.getSender());
+                errors = pair[2];
+                return !errors ? [] : errors;
             }
+            var text;
 
-            // 1. check permission
             var sender = rMsg.getSender();
-            if (members.indexOf(sender) < 0) {
-                // not a member? check assistants
-                var assistants = facebook.getAssistants(group);
-                if (!assistants || assistants.indexOf(sender) < 0) {
-                    return this.respondText(INVITE_NOT_ALLOWED, group);
+            var admins = this.getAdministrators(group);
+            var isOwner = owner.equals(sender);
+            var isAdmin = admins.indexOf(sender) >= 0;
+            var isMember = members.indexOf(sender) >= 0;
+
+            // 2. check permission
+            if (!isMember) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Not allowed to invite member into group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
+            }
+            var canReset = isOwner || isAdmin;
+
+            // 3. do invite
+            var memPair = InviteCommandProcessor.calculateInvited(members, inviteList);
+            var newMembers = memPair[0];
+            var addedList = memPair[1];
+            if (!addedList || addedList.length === 0) {
+                // maybe those users are already become members,
+                // but if it can still receive an 'invite' command here,
+                // we should respond the sender with the newest membership again.
+                var facebook = this.getFacebook();
+                var user = facebook.getCurrentUser();
+                if (!canReset && user.getIdentifier().equals(owner)) {
+                    // the sender cannot reset the group, means it's an ordinary member now,
+                    // and if I am the owner, then send the group history commands
+                    // to update the sender's memory.
+                    var ok = this.sendGroupHistories(group, sender);
+                    if (!ok) {
+                        console.error('failed to send history for group', group, sender);
+                    }
                 }
+            } else if (!this.saveGroupHistory(group, content, rMsg)) {
+                // here try to append the 'invite' command to local storage as group history
+                // it should not failed unless the command is expired
+                console.error('failed to save "invite" command', group);
+            } else if (!canReset) {
+                // the sender cannot reset the group, means it's invited by ordinary member,
+                // and the 'invite' command was saved, now waiting for review.
+            } else if (this.saveMembers(group, newMembers)) {
+                // FIXME: this sender has permission to reset the group,
+                //        means it must be the owner or an administrator,
+                //        usually it should send a 'reset' command instead;
+                //        if we received the 'invite' command here, maybe it was confused,
+                //        anyway, we just append the new members directly.
+                console.warn('invited by administrator', sender, group);
+                content.setValue('added', ID.revert(addedList));
+            } else {
+                // DB error?
+                console.error('failed to save members for group', group);
             }
 
-            // 2. inviting members
-            var invites = this.getMembers(cmd);
-            if (invites.length === 0) {
-                return this.respondText(INVITE_CMD_ERROR, group);
-            }
-            // 2.1. check for reset
-            if (sender.equals(owner) && invites.indexOf(owner) >= 0) {
-                // NOTICE: owner invites owner?
-                //         it means this should be a 'reset' command
-                return this.temporarySave(cmd, rMsg.getSender());
-            }
-            // 2.2. build invite list
-            var adds = [];
-            var item, pos;
-            for (var i = 0; i < invites.length; ++i) {
-                item = invites[i];
-                pos = members.indexOf(item);
-                if (pos >= 0) {
-                    // member already exist
-                    continue;
-                }
-                // got new member
-                adds.push(item.toString());
-                members.push(item);
-            }
-            // 2.3. do inviting
-            if (adds.length > 0) {
-                if (facebook.saveMembers(members, group)) {
-                    cmd.setValue('added', adds);
-                }
-            }
-
-            // 3. response (no need to response this group command)
-            return null;
+            // no need to response this group command
+            return [];
         }
     });
+
+    // protected
+    InviteCommandProcessor.calculateInvited = function (members, inviteList) {
+        var newMembers = members.slice();  // copy
+        var addedList = [];  // List<ID>
+        var item;            // ID
+        for (var i = 0; i < inviteList.length; ++i) {
+            item = inviteList[i];
+            if (newMembers.indexOf(item) >= 0) {
+                continue;
+            }
+            newMembers.push(item);
+            addedList.push(item);
+        }
+        return [newMembers, addedList];
+    };
 
     //-------- namespace --------
     ns.cpu.InviteCommandProcessor = InviteCommandProcessor;

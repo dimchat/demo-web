@@ -30,10 +30,8 @@
 // =============================================================================
 //
 
+//! require 'commands.js'
 //! require 'handshake.js'
-//! require 'login.js'
-//! require 'receipt.js'
-//! require 'history.js'
 //! require 'group.js'
 //! require 'group/*.js'
 
@@ -96,6 +94,7 @@
                 case GroupCommand.INVITE:
                     return new ns.cpu.InviteCommandProcessor(facebook, messenger);
                 case GroupCommand.EXPEL:
+                    /// Deprecated (use 'reset' instead)
                     return new ns.cpu.ExpelCommandProcessor(facebook, messenger);
                 case GroupCommand.QUIT:
                     return new ns.cpu.QuitCommandProcessor(facebook, messenger);

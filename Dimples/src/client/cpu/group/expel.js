@@ -38,70 +38,19 @@
     var Class = ns.type.Class;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
-    var GROUP_EMPTY = 'Group empty.';
-    var EXPEL_CMD_ERROR = 'Expel command error.';
-    var EXPEL_NOT_ALLOWED = 'Sorry, you are not allowed to expel member from this group.';
-    var CANNOT_EXPEL_OWNER = 'Group owner cannot be expelled.';
-
+    ///  Expel Group Command Processor
+    ///  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ///  Deprecated (use 'reset' instead)
     var ExpelCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
     Class(ExpelCommandProcessor, GroupCommandProcessor, null, {
 
         // Override
-        process: function (cmd, rMsg) {
-            var facebook = this.getFacebook();
+        process: function (content, rMsg) {
 
-            // 0. check group
-            var group = cmd.getGroup();
-            var owner = facebook.getOwner(group);
-            var members = facebook.getMembers(group);
-            if (!owner || !members || members.length === 0) {
-                return this.respondText(GROUP_EMPTY, group);
-            }
-
-            // 1. check permission
-            var sender = rMsg.getSender();
-            if (!owner.equals(sender)) {
-                // not the owner? check assistants
-                var assistants = facebook.getAssistants(group);
-                if (!assistants || assistants.indexOf(sender) < 0) {
-                    return this.respondText(EXPEL_NOT_ALLOWED, group);
-                }
-            }
-
-            // 2. expelling members
-            var expels = this.getMembers(cmd);
-            if (expels.length === 0) {
-                return this.respondText(EXPEL_CMD_ERROR, group);
-            }
-            // 2.1. check owner
-            if (expels.indexOf(owner) >= 0) {
-                return this.respondText(CANNOT_EXPEL_OWNER, group);
-            }
-            // 2.2. build expel list
-            var removes = [];
-            var item, pos;
-            for (var i = 0; i < expels.length; ++i) {
-                item = expels[i];
-                pos = members.indexOf(item);
-                if (pos < 0) {
-                    // member not exists
-                    continue;
-                }
-                // got removing member
-                removes.push(item.toString());
-                members.splice(pos, 1);
-            }
-            // 2.3. do expelling
-            if (removes.length > 0) {
-                if (facebook.saveMembers(members, group)) {
-                    cmd.setValue('removed', removes);
-                }
-            }
-
-            // 3. response (no need to response this group command)
-            return null;
+            // no need to response this group command
+            return [];
         }
     });
 

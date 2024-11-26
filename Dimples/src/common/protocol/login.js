@@ -131,7 +131,7 @@
     //  Factory
     //
 
-    LoginCommand.fromID = function (identifier) {
+    LoginCommand.create = function (identifier) {
         return new ns.dkd.cmd.BaseLoginCommand(identifier);
     };
 

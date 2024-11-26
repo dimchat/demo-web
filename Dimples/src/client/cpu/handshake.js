@@ -56,45 +56,52 @@
             var sender = rMsg.getSender();
             if (!oid || oid.isBroadcast()) {
                 station.setIdentifier(sender);
+                console.info('update station ID', oid, sender);
             }
             // handle handshake command with title & session key
             var title = content.getTitle();
             var newKey = content.getSessionKey();
-            var oldKey = session.getKey();
+            var oldKey = session.getSessionKey();
             if (title === 'DIM?') {
                 // S -> C: station ask client to handshake again
                 if (!oldKey) {
                     // first handshake response with new session key
+                    console.info('[DIM] handshake with session key', newKey);
                     messenger.handshake(newKey);
                 } else if (oldKey === newKey) {
                     // duplicated handshake response?
                     // or session expired and the station ask to handshake again?
+                    console.warn('[DIM] handshake response duplicated', newKey);
                     messenger.handshake(newKey);
                 } else {
                     // connection changed?
                     // erase session key to handshake again
-                    messenger.setKey(null);
+                    console.warn('[DIM] handshake again', oldKey, newKey);
+                    messenger.setSessionKey(null);
                 }
             } else if (title === 'DIM!') {
                 // S -> C: handshake accepted by station
                 if (!oldKey) {
                     // normal handshake response,
                     // update session key to change state to 'running'
-                    session.setKey(newKey);
+                    console.info('[DIM] handshake success with session key', newKey);
+                    session.setSessionKey(newKey);
                 } else if (oldKey === newKey) {
                     // duplicated handshake response?
-                    console.warn('duplicated handshake', content, rMsg);
+                    console.warn('[DIM] handshake success duplicated', newKey);
+                    // // set it again here to invoke the flutter channel
+                    // session.setSessionKey(newKey);
                 } else {
-                    console.error('handshake error', oldKey, content, rMsg);
                     // FIXME: handshake error
                     // erase session key to handshake again
-                    session.setKey(null);
+                    console.error('[DIM] handshake again', oldKey, newKey);
+                    session.setSessionKey(null);
                 }
             } else {
                 // C -> S: Hello world!
-                console.error('Hello world!', content, rMsg);
+                console.error('Handshake from other user?', sender, content);
             }
-            return null;
+            return [];
         }
     });
 

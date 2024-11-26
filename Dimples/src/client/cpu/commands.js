@@ -35,7 +35,7 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class                = ns.type.Class;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
@@ -44,15 +44,58 @@
     var LoginCommandProcessor = function (facebook, messenger) {
         BaseCommandProcessor.call(this, facebook, messenger);
     };
-    Class(LoginCommandProcessor, BaseCommandProcessor, null, null);
+    Class(LoginCommandProcessor, BaseCommandProcessor, null, {
 
-    // Override
-    LoginCommandProcessor.prototype.process = function (cmd, rMsg) {
-        // no need to response login command
-        return null;
-    };
+        // Override
+        process: function (content, rMsg) {
+            var sender = content.getIdentifier();
+            // save login command to session db
+            var db = this.getDatabase();
+            if (db.saveLoginCommandMessage(sender, content, rMsg)) {
+                console.info('save login command for user', sender);
+            } else {
+                console.error('failed to save login command', sender, console);
+            }
+            // no need to response login command
+            return [];
+        }
+    });
 
     //-------- namespace --------
     ns.cpu.LoginCommandProcessor = LoginCommandProcessor;
+
+})(DIMP);
+
+(function (ns) {
+    'use strict';
+
+    var Interface            = ns.type.Interface;
+    var Class                = ns.type.Class;
+    var ReceiptCommand       = ns.protocol.ReceiptCommand;
+    var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
+
+    /**
+     *  Receipt Command Processor
+     */
+    var ReceiptCommandProcessor = function (facebook, messenger) {
+        BaseCommandProcessor.call(this, facebook, messenger);
+    };
+    Class(ReceiptCommandProcessor, BaseCommandProcessor, null, null);
+
+    // Override
+    ReceiptCommandProcessor.prototype.process = function (content, rMsg) {
+        // check & update respond time
+        if (Interface.conforms(content, ReceiptCommand)) {
+            var envelope = rMsg.getEnvelope();
+            var groupManager = ns.group.SharedGroupManager;
+            var delegate = groupManager.getGroupDelegate();
+            delegate.updateRespondTime(content, envelope);
+        }
+        // no need to response receipt command
+        return [];
+    };
+
+    //-------- namespace --------
+    ns.cpu.ReceiptCommandProcessor = ReceiptCommandProcessor;
 
 })(DIMP);

@@ -35,56 +35,91 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class                 = ns.type.Class;
+    var Arrays                = ns.type.Arrays;
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
-    var GROUP_EMPTY = 'Group empty.';
-    var OWNER_CANNOT_QUIT = 'Sorry, owner cannot quit group.';
-    var ASSISTANT_CANNOT_QUIT = 'Sorry, assistant cannot quit group.';
-
+    ///  Quit Group Command Processor
+    ///  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ///
+    ///      1. remove the sender from members of the group
+    ///      2. owner and administrator cannot quit
     var QuitCommandProcessor = function (facebook, messenger) {
         GroupCommandProcessor.call(this, facebook, messenger);
     };
     Class(QuitCommandProcessor, GroupCommandProcessor, null, {
 
         // Override
-        process: function (cmd, rMsg) {
-            var facebook = this.getFacebook();
+        process: function (content, rMsg) {
+            var errors;  // List<Content>
 
-            // 0. check group
-            var group = cmd.getGroup();
-            var owner = facebook.getOwner(group);
-            var members = facebook.getMembers(group);
+            // 0. check command
+            var pair = this.checkCommandExpired(content, rMsg);
+            var group = pair[0];
+            if (!group) {
+                // ignore expired command
+                errors = pair[1];
+                return errors ? errors : [];
+            }
+
+            // 1. check group
+            var trip = this.checkGroupMembers(content, rMsg);
+            var owner = trip[0];
+            var members = trip[1];
             if (!owner || !members || members.length === 0) {
-                return this.respondText(GROUP_EMPTY, group);
+                errors = pair[2];
+                return errors ? errors : [];
             }
+            var text;
 
-            // 1. check permission
             var sender = rMsg.getSender();
-            if (owner.equals(sender)) {
-                return this.respondText(OWNER_CANNOT_QUIT, group);
+            var admins = this.getAdministrators(group);
+            var isOwner = owner.equals(sender);
+            var isAdmin = admins.indexOf(sender) >= 0;
+            var isMember = members.indexOf(sender) >= 0;
+
+            // 2. check permissions
+            if (isOwner) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Owner cannot quit from group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
             }
-            var assistants = facebook.getAssistants(group);
-            if (assistants && assistants.indexOf(sender) >= 0) {
-                return this.removeAssistant(cmd, rMsg);
+            if (isAdmin) {
+                text = 'Permission denied.';
+                return this.respondReceipt(text, rMsg.getEnvelope(), content, {
+                    'template': 'Administrator cannot quit from group: ${ID}',
+                    'replacements': {
+                        'ID': group.toString()
+                    }
+                });
             }
 
-            // 2. remove the sender from group members
-            var pos = members.indexOf(sender);
-            if (pos > 0) {
-                // NOTICE: the first member must be the owner
-                members.splice(pos, 1);
-                facebook.saveMembers(members, group);
+            // 3. do quit
+            if (!isMember) {
+                // the sender is not a member now,
+                // shall we notify the sender that the member list was updated?
+            } else if (!this.saveGroupHistory(group, content, rMsg)) {
+                // here try to append the 'quit' command to local storage as group history
+                // it should not failed unless the command is expired
+                console.error('failed to save "quit" command for group', group);
+            } else {
+                // here try to remove the sender from member list
+                var newMembers = members.slice();
+                Arrays.remove(newMembers, sender);
+                if (this.saveMembers(newMembers, group)) {
+                    content.setValue('removed', [sender.toString()])
+                } else {
+                    // DB error?
+                    console.error('failed to save members for group', group);
+                }
             }
 
-            // 3. response (no need to response this group command)
-            return null;
-        },
-
-        // protected
-        removeAssistant: function (cmd, rMsg) {
-            // NOTICE: group assistant should be retired by the owner
-            return this.respondText(ASSISTANT_CANNOT_QUIT, cmd.getGroup());
+            // no need to response this group command
+            return [];
         }
     });
 

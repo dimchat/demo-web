@@ -35,12 +35,12 @@
 (function (ns) {
     'use strict';
 
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var EntityType = ns.protocol.EntityType;
-    var TextContent = ns.protocol.TextContent;
+    var Interface        = ns.type.Interface;
+    var Class            = ns.type.Class;
+    var EntityType       = ns.protocol.EntityType;
+    var TextContent      = ns.protocol.TextContent;
     var HandshakeCommand = ns.protocol.HandshakeCommand;
-    var ReceiptCommand = ns.protocol.ReceiptCommand;
+    var ReceiptCommand   = ns.protocol.ReceiptCommand;
     var MessageProcessor = ns.MessageProcessor;
 
     var ClientMessageProcessor = function (facebook, messenger) {
@@ -48,25 +48,60 @@
     };
     Class(ClientMessageProcessor, MessageProcessor, null, {
 
-        // Override
-        processSecureMessage: function (sMsg, rMsg) {
-            try {
-                return MessageProcessor.prototype.processSecureMessage.call(this, sMsg, rMsg);
-            } catch (e) {
-                var errMsg = e.toString();
-                if (errMsg && errMsg.indexOf('receiver error') >= 0) {
-                    // not mine? ignore it
-                    console.warn('ignore message', rMsg);
-                    return [];
-                } else {
-                    throw e;
+        // private
+        checkGroupTimes: function (content, rMsg) {
+            var group = content.getGroup();
+            if (!group) {
+                return false;
+            }
+            var facebook = this.getFacebook();
+            var archivist = facebook.getArchivist();
+            if (!archivist) {
+                return false;
+            }
+            var now = new Date();
+            var docUpdated = false;
+            var memUpdated = false;
+            // check group document time
+            var lastDocumentTime = rMsg.getDateTime('GDT', null);
+            if (lastDocumentTime) {
+                if (lastDocumentTime.getTime() > now.getTime()) {
+                    // calibrate the clock
+                    lastDocumentTime = now;
+                }
+                docUpdated = archivist.setLastDocumentTime(group, lastDocumentTime);
+                // check whether needs update
+                if (docUpdated) {
+                    console.info('checking for new bulletin', group);
+                    facebook.getDocuments(group);
                 }
             }
+            // check group history time
+            var lastHistoryTime = rMsg.getDateTime('GHT', null);
+            if (lastHistoryTime) {
+                if (lastHistoryTime.getTime() > now.getTime()) {
+                    // calibrate the clock
+                    lastHistoryTime = now;
+                }
+                memUpdated = archivist.setLastGroupHistoryTime(group, lastHistoryTime);
+                // check whether needs update
+                if (memUpdated) {
+                    archivist.setLastActiveMember(group, rMsg.getSender());
+                    console.info('checking for group members', group);
+                    facebook.getMembers(group);
+                }
+            }
+            return docUpdated || memUpdated;
         },
 
         // Override
         processContent: function (content, rMsg) {
             var responses = MessageProcessor.prototype.processContent.call(this, content, rMsg);
+
+            // check group's document & history times from the message
+            // to make sure the group info synchronized
+            this.checkGroupTimes(content, rMsg);
+
             if (!responses || responses.length === 0) {
                 // respond nothing
                 return responses;
@@ -74,11 +109,16 @@
                 // urgent command
                 return responses;
             }
-            var sender = rMsg.getSender();
-            var receiver = rMsg.getReceiver();
             var facebook = this.getFacebook();
             var messenger = this.getMessenger();
+
+            var sender = rMsg.getSender();
+            var receiver = rMsg.getReceiver();
             var user = facebook.selectLocalUser(receiver);
+            if (!user) {
+                console.error('receiver error', receiver);
+                return responses;
+            }
             receiver = user.getIdentifier();
             var network = sender.getType();
             // check responses
@@ -106,7 +146,7 @@
                     }
                 }
                 // normal response
-                messenger.sendContent(receiver, sender, res, 1);
+                messenger.sendContent(res, receiver, sender, 1);
             }
             // DON'T respond to station directly
             return [];

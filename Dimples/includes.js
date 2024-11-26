@@ -23,10 +23,6 @@ var dim_common = [
     'src/common/dbi/message.js',
     'src/common/dbi/session.js',
 
-    'src/common/database/private.js',
-    'src/common/database/meta.js',
-    'src/common/database/document.js',
-
     'src/common/anonymous.js',
     'src/common/ans.js',
     'src/common/archivist.js',
@@ -37,6 +33,14 @@ var dim_common = [
     'src/common/register.js',
 
     'src/common/factories.js',
+
+    //
+    //  Database
+    //
+
+    'src/database/private.js',
+    'src/database/meta.js',
+    'src/database/document.js',
 
     //
     //  Group
@@ -68,15 +72,15 @@ var dim_common = [
 var dim_client = [
     /* DIM Client */
 
-    'src/client/network/fsm.js',
+    'src/client/network/fsm_machine.js',
+    'src/client/network/fsm_state.js',
+    'src/client/network/fsm_transition.js',
     'src/client/network/http.js',
     'src/client/network/session.js',
     'src/client/network/terminal.js',
 
+    'src/client/cpu/commands.js',
     'src/client/cpu/handshake.js',
-    'src/client/cpu/login.js',
-    'src/client/cpu/receipt.js',
-    'src/client/cpu/history.js',
     'src/client/cpu/group.js',
     'src/client/cpu/group/invite.js',
     'src/client/cpu/group/expel.js',
@@ -85,6 +89,8 @@ var dim_client = [
     'src/client/cpu/group/reset.js',
     'src/client/cpu/creator.js',
 
+    'src/client/archivist.js',
+    'src/client/facebook.js',
     'src/client/messenger.js',
     'src/client/packer.js',
     'src/client/processor.js',

@@ -35,23 +35,139 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class
-    var ID = ns.protocol.ID;
-    var Envelope = ns.protocol.Envelope;
-    var InstantMessage = ns.protocol.InstantMessage;
-    var MetaCommand = ns.protocol.MetaCommand;
-    var DocumentCommand = ns.protocol.DocumentCommand;
+    var Interface        = ns.type.Interface;
+    var Class            = ns.type.Class
+    var EntityType       = ns.protocol.EntityType;
+    var ID               = ns.protocol.ID;
+    var Envelope         = ns.protocol.Envelope;
+    var InstantMessage   = ns.protocol.InstantMessage;
+    var ContentType      = ns.protocol.ContentType;
+    var Command          = ns.protocol.Command;
+    var DocumentCommand  = ns.protocol.DocumentCommand;
     var HandshakeCommand = ns.protocol.HandshakeCommand;
-    var LoginCommand = ns.protocol.LoginCommand;
-    var ReportCommand = ns.protocol.ReportCommand;
-    var Station = ns.mkm.Station;
-    var QueryFrequencyChecker = ns.mem.QueryFrequencyChecker;
-    var CommonMessenger = ns.CommonMessenger;
+    var ReceiptCommand   = ns.protocol.ReceiptCommand;
+    var LoginCommand     = ns.protocol.LoginCommand;
+    var ReportCommand    = ns.protocol.ReportCommand;
+    var Station          = ns.mkm.Station;
+    var MessageHelper    = ns.msg.MessageHelper;
+    var CommonMessenger  = ns.CommonMessenger;
 
     var ClientMessenger = function (session, facebook, db) {
         CommonMessenger.call(this, session, facebook, db);
     };
     Class(ClientMessenger, CommonMessenger, null, {
+
+        // protected
+        getArchivist: function () {
+            var facebook = this.getFacebook();
+            return facebook.getArchivist();
+        },
+
+        // Override
+        processReliableMessage: function (rMsg) {
+            var responses = CommonMessenger.prototype.processReliableMessage.call(this, rMsg);
+            if (!responses || responses.length === 0) {
+                if (this.needsReceipt(rMsg)) {
+                    var res = this.buildReceipt(rMsg.getEnvelope());
+                    if (res) {
+                        responses = [res];
+                    }
+                }
+            }
+            return responses;
+        },
+
+        // protected
+        buildReceipt: function (originalEnvelope) {
+            var facebook = this.getFacebook();
+            var user = !facebook ? null : facebook.getCurrentUser();
+            if (!user) {
+                console.error('failed to get current user');
+                return null;
+            }
+            var text = 'Message received.';
+            var res = ReceiptCommand.create(text, originalEnvelope, null);
+            var env = Envelope.create(user.getIdentifier(), originalEnvelope.getSender(), null);
+            var iMsg = InstantMessage.create(env, res);
+            var sMsg = this.encryptMessage(iMsg);
+            if (!sMsg) {
+                console.error('failed to encrypt message', user, originalEnvelope.getSender());
+                return null;
+            }
+            var rMsg = this.signMessage(sMsg);
+            if (!rMsg) {
+                console.error('failed to sign message', user, originalEnvelope.getSender());
+            }
+            return rMsg;
+        },
+
+        // protected
+        needsReceipt: function (rMsg) {
+            if (ContentType.COMMAND.equals(rMsg.getType())) {
+                // filter for looping message (receipt for receipt)
+                return false;
+            }
+            var sender = rMsg.getSender();
+            // var receiver = rMsg.getReceiver();
+            // if (EntityType.STATION.equals(receiver.getType()) || EntityType.BOT.equals(receiver.getType())) {
+            //     if (EntityType.STATION.equals(sender.getType()) || EntityType.BOT.equals(sender.getType())) {
+            //         // message between bots
+            //         return false;
+            //     }
+            // }
+            if (!EntityType.USER.equals(sender.getType())/* && !EntityType.USER.equals(receiver.getType())*/) {
+                // message between bots
+                return false;
+            }
+            // var facebook = this.getFacebook();
+            // var user = !facebook ? null : facebook.getCurrentUser();
+            // if (!user || !user.getIdentifier().equals(receiver)) {
+            //     // forward message
+            //     return true;
+            // }
+            // TODO: other condition?
+            return true;
+        },
+
+        // Override
+        sendInstantMessage: function (iMsg, priority) {
+            var session = this.getSession();
+            if (session && session.isReady()) {
+                // OK, any message can go out
+            } else {
+                // not login yet
+                var content = iMsg.getContent();
+                if (!Interface.conforms(content, Command)) {
+                    console.warn('not handshake yet, suspend message', content, iMsg);
+                    // TODO: suspend instant message
+                    return null;
+                } else if (content.getCmd() === Command.HANDSHAKE) {
+                    // NOTICE: only handshake message can go out
+                    iMsg.setValue('pass', 'handshaking');
+                } else {
+                    console.warn('not handshake yet, drop command', content, iMsg);
+                    // TODO: suspend instant message
+                    return null;
+                }
+            }
+            return CommonMessenger.prototype.sendInstantMessage.call(this, iMsg, priority);
+        },
+
+        // Override
+        sendReliableMessage: function (rMsg, priority) {
+            var passport = rMsg.removeValue('pass');
+            var session = this.getSession();
+            if (session && session.isReady()) {
+                // OK, any message can go out
+            } else if (passport === 'handshaking') {
+                // not login yet, let the handshake message go out only
+            } else {
+                console.error('not handshake yet, suspemd message', rMsg);
+                // TODO: suspend reliable message
+                return false;
+            }
+            return CommonMessenger.prototype.sendReliableMessage.call(this, rMsg, priority);
+        },
 
         /**
          *  Send handshake command to current station
@@ -62,26 +178,28 @@
             var session = this.getSession();
             var station = session.getStation();
             var sid = station.getIdentifier();
-            var cmd;
+            var content;
             if (sessionKey) {
                 // handshake again
-                cmd = HandshakeCommand.restart(sessionKey);
-                this.sendContent(null, sid, cmd, -1);
+                content = HandshakeCommand.restart(sessionKey);
+                this.sendContent(content, null, sid, -1);
             } else {
                 // first handshake
                 var facebook = this.getFacebook();
                 var user = facebook.getCurrentUser();
-                var uid = user.getIdentifier();
+                var me = user.getIdentifier();
                 var meta = user.getMeta();
                 var visa = user.getVisa();
-                var env = Envelope.create(uid, sid, null);
-                cmd = HandshakeCommand.start();
+                var env = Envelope.create(me, sid, null);
+                content = HandshakeCommand.start();
                 // send first handshake command as broadcast message
-                cmd.setGroup(Station.EVERY);
+                content.setGroup(Station.EVERY);
                 // create instant message with meta & visa
-                var iMsg = InstantMessage.create(env, cmd);
-                iMsg.setValue('meta', meta.toMap());
-                iMsg.setValue('visa', visa.toMap());
+                var iMsg = InstantMessage.create(env, content);
+                MessageHelper.setMeta(meta, iMsg);
+                MessageHelper.setVisa(visa, iMsg);
+                // iMsg.setMap('meta', meta);
+                // iMsg.setMap('visa', visa);
                 this.sendInstantMessage(iMsg, -1);
             }
         },
@@ -90,21 +208,65 @@
          *  Callback for handshake success
          */
         handshakeSuccess: function () {
+            // change the flag of current session
+            console.info('handshake success, change session accepted');
+            var session = this.getSession();
+            session.setAccepted(true);
             // broadcast current documents after handshake success
-            this.broadcastDocument();
+            this.broadcastDocuments();
+            // TODO: let a service bot to do this job
         },
         /**
          *  Broadcast meta & visa document to all stations
          */
-        broadcastDocument: function () {
+        broadcastDocuments: function (updated) {
             var facebook = this.getFacebook();
-            var user = facebook.getCurrentUser();
-            var uid = user.getIdentifier();
-            var meta = user.getMeta();
-            var visa = user.getVisa();
-            var cmd = DocumentCommand.response(uid, meta, visa);
-            // broadcast to 'everyone@everywhere'
-            this.sendContent(uid, ID.EVERYONE, cmd, 1);
+            var user = !facebook ? null : facebook.getCurrentUser();
+            var visa = !user ? null : user.getVisa();
+            if (!visa) {
+                console.error('visa not found', user);
+                return;
+            }
+            var me = user.getIdentifier();
+            //
+            //  send to all contacts
+            //
+            var contacts = facebook.getContacts(me);
+            for (var i = 0; i < contacts.length; ++i) {
+                this.sendVisa(visa, contacts[i], updated);
+            }
+            //
+            //  broadcast to 'everyone@everywhere'
+            //
+            this.sendVisa(visa, ID.EVERYONE, updated);
+        },
+
+        /**
+         *  Send my visa document to contact
+         *      if document is updated, force to send it again.
+         *      else only send once every 10 minutes.
+         *
+         * @param {Visa|Document} visa
+         * @param {ID|*} receiver
+         * @param {Boolean} updated
+         * @return {boolean}
+         */
+        sendVisa: function (visa, receiver, updated) {
+            var me = visa.getIdentifier();
+            if (me.equals(receiver)) {
+                console.warn('skip cycled message', receiver, visa);
+                return false;
+            }
+            var archivist = this.getArchivist();
+            if (!archivist.isDocumentResponseExpired(receiver, updated)) {
+                // response not expired yet
+                console.info('visa response not expired yet', receiver);
+                return false;
+            }
+            console.info('push visa document', me, receiver);
+            var content = DocumentCommand.response(me, null, visa);
+            var pair = this.sendContent(content, me, receiver, 1);
+            return pair && pair[1];
         },
 
         /**
@@ -114,49 +276,27 @@
             var session = this.getSession();
             var station = session.getStation();
             // create login command
-            var cmd = LoginCommand.create(sender);
-            cmd.setAgent(userAgent);
-            cmd.setStation(station);
+            var content = LoginCommand.create(sender);
+            content.setAgent(userAgent);
+            content.setStation(station);
             // broadcast to 'everyone@everywhere'
-            this.sendContent(sender, ID.EVERYONE, cmd, 1);
+            this.sendContent(content, sender, ID.EVERYONE, 1);
         },
 
         /**
          *  Send report command to keep user online
          */
         reportOnline: function (sender) {
-            var cmd = ReportCommand.create(ReportCommand.ONLINE);
-            this.sendContent(sender, Station.ANY, cmd, 1);
+            var content = ReportCommand.create(ReportCommand.ONLINE);
+            this.sendContent(content, sender, Station.ANY, 1);
         },
 
         /**
          *  Send report command to let user offline
          */
         reportOffline: function (sender) {
-            var cmd = ReportCommand.create(ReportCommand.OFFLINE);
-            this.sendContent(sender, Station.ANY, cmd, 1);
-        },
-
-        // Override
-        queryMeta: function (identifier) {
-            if (!QueryFrequencyChecker.isMetaQueryExpired(identifier, 0)) {
-                // query not expired yet
-                return false;
-            }
-            var cmd = MetaCommand.query(identifier);
-            this.sendContent(null, Station.ANY, cmd, 1);
-            return true;
-        },
-
-        // Override
-        queryDocument: function (identifier) {
-            if (!QueryFrequencyChecker.isDocumentQueryExpired(identifier, 0)) {
-                // query not expired yet
-                return false;
-            }
-            var cmd = DocumentCommand.query(identifier);
-            this.sendContent(null, Station.ANY, cmd, 1);
-            return true;
+            var content = ReportCommand.create(ReportCommand.OFFLINE);
+            this.sendContent(content, sender, Station.ANY, 1);
         }
     });
 

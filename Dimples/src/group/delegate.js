@@ -411,11 +411,15 @@
     GroupBotsManager.prototype.process = function () {
         var messenger = this.getMessenger();
         var facebook = this.getFacebook();
+        if (!facebook || !messenger) {
+            return false;
+        }
         //
         //  1. check session
         //
-        var session = !messenger ? null : messenger.getSession();
+        var session = messenger.getSession();
         if (session && session.getSessionKey() && session.isActive()) {
+            // session is active
         } else {
             // not login yet
             return false;
@@ -425,7 +429,7 @@
         //
         var visa;
         try {
-            var me = !facebook ? null : facebook.getCurrentUser();
+            var me = facebook.getCurrentUser();
             visa = !me ? null : me.getVisa();
             if (!visa) {
                 console.error('failed to get visa', me);
@@ -436,16 +440,7 @@
             return false;
         }
         //
-        //  3. get archivist
-        //
-        var archivist = !facebook ? null : facebook.getArchivist();
-        if (archivist instanceof ns.ClientArchivist) {
-        } else {
-            // archivist error
-            return false;
-        }
-        //
-        //  4. check candidates
+        //  3. check candidates
         //
         var bots = this.__candidates;
         this.__candidates = {};
@@ -459,7 +454,7 @@
             }
             // no respond yet, try to push visa to the bot
             try {
-                archivist.sendDocument(visa, item);
+                messenger.sendVisa(visa, item);
             } catch (e) {
                 console.error('failed to query assistant', item, e);
             }
