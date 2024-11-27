@@ -39,7 +39,10 @@
         return 'group.' + group.getAddress().toString() + '.members';
     };
     var bots_path = function (group) {
-        return 'group.' + group.getAddress().toString() + '.assistants';
+        return 'group.' + group.getAddress().toString() + '.bots';
+    };
+    var admins_path = function (group) {
+        return 'group.' + group.getAddress().toString() + '.admins';
     };
 
     /**
@@ -99,6 +102,24 @@
     GroupStorage.prototype.saveAssistants = function (members, group) {
         var path = bots_path(group);
         var array = ID.revert(members);
+        return Storage.saveJSON(array, path);
+    };
+
+    // Override
+    GroupStorage.prototype.getAdministrators = function (group) {
+        var path = admins_path(group);
+        var array = Storage.loadJSON(path);
+        if (array) {
+            return ID.convert(array);
+        } else {
+            return [];
+        }
+    };
+
+    // Override
+    GroupStorage.prototype.saveAdministrators = function (admins, group) {
+        var path = admins_path(group);
+        var array = ID.revert(admins);
         return Storage.saveJSON(array, path);
     };
 

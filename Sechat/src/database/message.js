@@ -193,12 +193,15 @@
         if (!messages/* || messages.length === 0*/) {
             this.__instant_messages[cid] = [iMsg];
             return true;
-        } else if (find_instant(messages, iMsg) >= 0) {
-            // duplicated
-            return false;
         }
-        // insert and sorted by time
-        insert_msg(messages, iMsg);
+        var pos = find_instant(messages, iMsg);
+        if (pos < 0) {
+            // insert and sorted by time
+            insert_msg(messages, iMsg);
+            return true;
+        }
+        // duplicated
+        messages[pos] = iMsg;
         return true;
     };
 

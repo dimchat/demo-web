@@ -4,7 +4,7 @@
 //
 //     var ID = sdk.protocol.ID;
 //
-//     var facebook = app.GlobalVariable.getInstance().facebook;
+//     var facebook = app.GlobalVariable.getFacebook();
 //
 //     // // patch for search number
 //     // var getIdentifier = facebook.getIdentifier;
@@ -92,7 +92,7 @@
     var application = ns.Application.getInstance();
     application.reconnect = function () {
         console.warn('reconnect')
-        var messenger = app.GlobalVariable.getInstance().messenger;
+        var messenger = app.GlobalVariable.getMessenger();
         var server = messenger.getCurrentStation();
         if (server) {
             // FIXME: disconnect DIM station

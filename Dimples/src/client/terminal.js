@@ -253,7 +253,7 @@
             // check current user
             var user = ctx.getSessionID();
             if (!user) {
-                console.warn('current user not set');
+                console.warn('current user not set', current);
                 return;
             }
             console.info('connect for user: ' + user.toString());

@@ -16,11 +16,14 @@
     var Class = sdk.type.Class;
     var Register = app.Register;
 
+    var get_database = function () {
+        return app.GlobalVariable.getDatabase();
+    };
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     var RegisterWindow = function () {
@@ -57,10 +60,11 @@
     Class(RegisterWindow, Window, null, null);
 
     RegisterWindow.prototype.submit = function (nickname) {
-        var shared = app.GlobalVariable.getInstance();
-        var reg = new Register(shared.database);
+        var database = get_database();
+        var facebook = get_facebook();
+        var reg = new Register(database);
         var uid = reg.createUser(nickname);
-        var user = shared.facebook.getUser(uid);
+        var user = facebook.getUser(uid);
         // submit event
         if (this.onSubmit(user)) {
             this.remove();

@@ -18,10 +18,10 @@
     var Class = sdk.type.Class;
 
     // var get_facebook = function () {
-    //     return app.GlobalVariable.getInstance().facebook;
+    //     return app.GlobalVariable.getFacebook();
     // };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
 
     var SearchWindow = function () {
@@ -111,7 +111,8 @@
     var Window = tui.Window;
 
     var Class = sdk.type.Class;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
     var NotificationNames = app.NotificationNames;
 
     var SearchResultWindow = function () {
@@ -156,7 +157,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, NotificationNames.SearchUpdated);
     };
-    Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate], null);
+    Class(SearchResultWindow, Window, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
 
     SearchResultWindow.prototype.goBack = function () {
         ns.SearchWindow.show();
@@ -254,8 +255,8 @@
     var SearchResultWindow = ns.SearchResultWindow;
 
     SearchResultWindow.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         if (name === NotificationNames.SearchUpdated) {
             var content = userInfo['content'];
             if (Interface.conforms(content, SearchCommand)) {

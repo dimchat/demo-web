@@ -11,10 +11,10 @@
     var Class = sdk.type.Class;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     var PersonalChatWindow = function () {

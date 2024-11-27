@@ -58,11 +58,16 @@
 
     var SharedDatabase = {
 
+        //
+        //  PrivateKey Table
+        //
+
         savePrivateKey: function (key, type, user) {
             return t_private_key.savePrivateKey(key, type, user);
         },
         getPrivateKeysForDecryption: function (user) {
-            return t_private_key.getPrivateKeysForDecryption(user);
+            var keys = t_private_key.getPrivateKeysForDecryption(user);
+            return !keys ? [] : keys;
         },
         getPrivateKeyForSignature: function (user) {
             return t_private_key.getPrivateKeyForSignature(user);
@@ -70,6 +75,10 @@
         getPrivateKeyForVisaSignature: function (user) {
             return t_private_key.getPrivateKeyForVisaSignature(user);
         },
+
+        //
+        //  Meta Table
+        //
 
         saveMeta: function (meta, entity) {
             var ok = t_meta.saveMeta(meta, entity);
@@ -85,6 +94,10 @@
             return t_meta.getMeta(entity);
         },
 
+        //
+        //  Document Table
+        //
+
         saveDocument: function (doc) {
             var ok = t_document.saveDocument(doc);
             if (ok) {
@@ -95,8 +108,244 @@
             }
             return ok;
         },
-        getDocument: function (entity) {
-            return t_document.getDocument(entity);
+        getDocuments: function (entity) {
+            var docs = t_document.getDocuments(entity);
+            return !docs ? [] : docs;
+        },
+
+        //
+        //  User Table
+        //
+
+        getLocalUsers: function () {
+            var local_users = t_user.getLocalUsers();
+            return !local_users ? [] : local_users;
+        },
+        saveLocalUsers: function (users) {
+            return t_user.saveLocalUsers(users);
+        },
+        setCurrentUser: function (user) {
+            return t_user.setCurrentUser(user);
+        },
+        getCurrentUser: function () {
+            var local_users = this.getLocalUsers();
+            if (local_users.length === 0) {
+                return null;
+            }
+            return local_users[0];
+        },
+        addUser: function (user) {
+            var local_users = this.getLocalUsers();
+            if (local_users.indexOf(user) >= 0) {
+                return true;
+            }
+            local_users.push(user);
+            return this.saveLocalUsers(local_users);
+        },
+        removeUser: function (user) {
+            var local_users = this.getLocalUsers();
+            var pos = local_users.indexOf(user);
+            if (pos < 0) {
+                return true;
+            }
+            local_users.splice(pos, 1);
+            return this.saveLocalUsers(local_users);
+        },
+
+        //
+        //  Contact Table
+        //
+
+        getContacts: function (user) {
+            var all_contacts = t_user.getContacts(user);
+            return !all_contacts ? [] : all_contacts;
+        },
+        saveContacts: function (contacts, user) {
+            var ok = t_user.saveContacts(contacts, user);
+            if (ok) {
+                post_notification(NotificationNames.ContactsUpdated, this, {
+                    'user': user,
+                    'contacts': contacts
+                });
+            }
+            return ok;
+        },
+        addContact: function (contact, user) {
+            var all_contacts = this.getContacts(user);
+            if (all_contacts.indexOf(contact) >= 0) {
+                return true;
+            }
+            all_contacts.push(contact);
+            return this.saveContacts(all_contacts, user);
+        },
+        removeContact: function (contact, user) {
+            var all_contacts = this.getContacts(user);
+            var pos = all_contacts.indexOf(user);
+            if (pos < 0) {
+                return true;
+            }
+            all_contacts.splice(pos, 1);
+            return this.saveContacts(all_contacts, user);
+        },
+
+        //
+        //  Remark Table
+        //
+
+        // TODO:
+
+        //
+        //  Blocked Table
+        //
+
+        // TODO:
+
+        //
+        //  Muted Table
+        //
+
+        // TODO:
+
+        //
+        //  Group Table
+        //
+
+        getFounder: function (group) {
+            return t_group.getFounder(group);
+        },
+        getOwner: function (group) {
+            return t_group.getOwner(group);
+        },
+        getMembers: function (group) {
+            var all_members = t_group.getMembers(group);
+            return !all_members ? [] : all_members;
+        },
+        saveMembers: function (members, group) {
+            var ok = t_group.saveMembers(members, group);
+            if (ok) {
+                post_notification(NotificationNames.MembersUpdated, this, {
+                    'group': group,
+                    'members': members
+                });
+            }
+            return ok;
+        },
+        addMember: function (member, group) {
+            var all_members = this.getMembers(group);
+            if (all_members.indexOf(member) >= 0) {
+                return true;
+            }
+            all_members.push(member);
+            return this.saveMembers(all_members, group);
+        },
+        removeMember: function (member, group) {
+            var all_members = this.getMembers(group);
+            var pos = all_members.indexOf(member);
+            if (pos < 0) {
+                return true;
+            }
+            all_members.splice(pos, 1);
+            return this.saveMembers(all_members, group);
+        },
+        getAssistants: function (group) {
+            return t_group.getAssistants(group);
+        },
+        saveAssistants: function (members, group) {
+            return t_group.saveAssistants(members, group);
+        },
+        getAdministrators: function (group) {
+            return t_group.getAdministrators(group);
+        },
+        saveAdministrators: function (members, group) {
+            return t_group.saveAdministrators(members, group);
+        },
+        removeGroup: function (group) {
+            // TODO:
+        },
+
+        //
+        //  Group History Table
+        //
+
+        saveGroupHistory: function (content, rMsg, group) {
+            // TODO:
+            return true;
+        },
+        getGroupHistories: function (group) {
+            // TODO:
+            return [];
+        },
+        getResetCommandMessage: function (group) {
+            // TODO:
+            return [];
+        },
+        clearGroupAdminHistories: function (group) {
+            // TODO:
+            return true;
+        },
+        clearGroupMemberHistories: function (group) {
+            // TODO:
+            return true;
+        },
+
+        //
+        //  Login Table
+        //
+
+        getLoginCommandMessage: function (user) {
+            return t_login.getLoginCommandMessage(user);
+        },
+        saveLoginCommandMessage: function (user, command, message) {
+            return t_login.saveLoginCommandMessage(user, command, message);
+        },
+
+        //
+        //  Provider Table
+        //
+
+        allProviders: function () {
+            // TODO:
+            return [];
+        },
+
+        addProvider: function (identifier, chosen) {
+            // TODO:
+            return true;
+        },
+
+        updateProvider: function (identifier, chosen) {
+            // TODO:
+            return true;
+        },
+
+        removeProvider: function (identifier) {
+            // TODO:
+            return true;
+        },
+
+        //
+        //  Station Table
+        //
+
+        allStations: function (provider) {
+            // TODO:
+            return [];
+        },
+        addStation: function (sid, chosen, host, port, provider) {
+            // TODO:
+            return true;
+        },
+        updateStation: function (sid, chosen, host, port, provider) {
+            // TODO:
+            return true;
+        },
+        removeStation: function (host, port, provider) {
+            // TODO:
+            return true;
+        },
+        removeStations: function (provider) {
+            // TODO:
+            return true;
         },
 
         allNeighbors: function () {
@@ -129,61 +378,15 @@
             return ok;
         },
 
-        setCurrentUser: function (user) {
-            return t_user.setCurrentUser(user);
-        },
-        getLocalUsers: function () {
-            return t_user.getLocalUsers();
-        },
-        saveLocalUsers: function (users) {
-            return t_user.saveLocalUsers(users);
-        },
-        getContacts: function (user) {
-            return t_user.getContacts(user);
-        },
-        saveContacts: function (contacts, user) {
-            var ok = t_user.saveContacts(contacts, user);
-            if (ok) {
-                post_notification(NotificationNames.ContactsUpdated, this, {
-                    'user': user,
-                    'contacts': contacts
-                });
-            }
-            return ok;
-        },
+        //
+        //  Speed Table
+        //
 
-        getFounder: function (group) {
-            return t_group.getFounder(group);
-        },
-        getOwner: function (group) {
-            return t_group.getOwner(group);
-        },
-        getMembers: function (group) {
-            return t_group.getMembers(group);
-        },
-        saveMembers: function (members, group) {
-            var ok = t_group.saveMembers(members, group);
-            if (ok) {
-                post_notification(NotificationNames.MembersUpdated, this, {
-                    'group': group,
-                    'members': members
-                });
-            }
-            return ok;
-        },
-        getAssistants: function (group) {
-            return t_group.getAssistants(group);
-        },
-        saveAssistants: function (members, group) {
-            return t_group.saveAssistants(members, group);
-        },
+        // TODO:
 
-        getLoginCommandMessage: function (user) {
-            return t_login.getLoginCommandMessage(user);
-        },
-        saveLoginCommandMessage: function (user, command, message) {
-            return t_login.saveLoginCommandMessage(user, command, message);
-        },
+        //
+        //  MsgKey Table
+        //
 
         getCipherKey: function (from, to, generate) {
             if (to.isBroadcast()) {
@@ -200,6 +403,47 @@
         },
         cacheCipherKey: function (from, to, key) {
             return t_cipher_key.cacheCipherKey(from, to, key);
+        },
+
+        getGroupKeys: function (group, sender) {
+            // TODO: implement getGroupKeys
+            return {};
+        },
+        saveGroupKeys: function (group, sender, keys) {
+            // TODO: implement saveGroupKeys
+            return true;
+        },
+
+        //
+        //  InstantMessage Table
+        //
+
+        getInstantMessages: function (chat, start, limit) {
+            var messages = [];
+            var msg;
+            var count = this.numberOfMessages(chat);
+            for (var index = 0; index < count; ++index) {
+                msg = this.messageAtIndex(index, chat);
+                if (msg) {
+                    messages.push(msg);
+                }
+            }
+            return messages;
+        },
+        saveInstantMessage: function (chat, iMsg) {
+            return this.insertMessage(iMsg, chat);
+        },
+        removeInstantMessage: function (chat, envelope, content) {
+            // TODO:
+            return true;
+        },
+        removeInstantMessages: function (chat) {
+            // TODO:
+            return true;
+        },
+        burnMessages: function (expiredTime) {
+            // TODO:
+            return 0;
         },
 
         getReliableMessages: function (receiver, start, limit) {
@@ -278,6 +522,37 @@
             return t_message.saveReceipt(iMsg, entity);
         },
 
+        //
+        //  Conversation Table
+        //
+
+        getConversations: function () {
+            // TODO:
+            return [];
+        },
+        addConversation: function (chat) {
+            // TODO:
+            return true;
+        },
+        updateConversation: function (chat) {
+            // TODO:
+            return true;
+        },
+        // removeConversation: function (chat) {
+        //     // TODO:
+        //     return true;
+        // },
+        burnConversations: function (expiredTime) {
+            // TODO:
+            return true;
+        },
+
+        //
+        //  Trace Table
+        //
+
+        // TODO:
+
         getInstance: function () {
             return this;
         }
@@ -285,7 +560,8 @@
 
     var post_notification = function (name, sender, userInfo) {
         var nc = NotificationCenter.getInstance();
-        nc.postNotification(name, sender, userInfo);
+        // nc.postNotification(name, sender, userInfo);
+        nc.postNotification(new sdk.lnc.Notification(name, sender, userInfo));
     };
 
     //-------- namespace --------

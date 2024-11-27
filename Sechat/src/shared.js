@@ -65,6 +65,9 @@
             if (!facebook) {
                 facebook = new ns.SharedFacebook();
                 shared.facebook = facebook;
+                // group manager
+                var sgm = sdk.group.SharedGroupManager;
+                sgm.setFacebook(facebook);
             }
             return facebook;
         },
@@ -82,6 +85,9 @@
                 if (session/* && facebook && database*/) {
                     messenger = new ns.SharedMessenger(session, facebook, database);
                     shared.messenger = messenger;
+                    // group manager
+                    var sgm = sdk.group.SharedGroupManager;
+                    sgm.setMessenger(messenger);
                 } else {
                     throw new ReferenceError('session not connected');
                 }
@@ -95,6 +101,7 @@
                 var database = this.getDatabase();
                 var facebook = this.getFacebook();
                 client = new ns.Client(facebook, database);
+                client.start();
                 shared.terminal = client;
             }
             return client;

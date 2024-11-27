@@ -104,7 +104,7 @@
             // broadcast entity has no meta to query
             return false;
         }
-        return ClientArchivist.prototype.checkMeta(identifier, meta);
+        return ClientArchivist.prototype.checkMeta.call(this, identifier, meta);
     };
 
     // Override
@@ -113,7 +113,7 @@
             // broadcast entity has no document to query
             return false;
         }
-        return ClientArchivist.prototype.checkDocuments(identifier, documents);
+        return ClientArchivist.prototype.checkDocuments.call(this, identifier, documents);
     };
 
     // Override
@@ -122,7 +122,7 @@
             // broadcast group has no members to update
             return false;
         }
-        return ClientArchivist.prototype.checkMembers(group, members);
+        return ClientArchivist.prototype.checkMembers.call(this, group, members);
     };
 
     // Override
@@ -132,7 +132,7 @@
             console.warn('querying meta cancel, waiting to connect', identifier, session);
             return false;
         }
-        return ClientArchivist.prototype.queryMeta(identifier);
+        return ClientArchivist.prototype.queryMeta.call(this, identifier);
     };
 
     // Override
@@ -142,7 +142,7 @@
             console.warn('querying documents cancel, waiting to connect', identifier, session);
             return false;
         }
-        return ClientArchivist.prototype.queryDocuments(identifier, docs);
+        return ClientArchivist.prototype.queryDocuments.call(this, identifier, docs);
     };
 
     // Override
@@ -152,7 +152,7 @@
             console.warn('querying members cancel, waiting to connect', group, session);
             return false;
         }
-        return ClientArchivist.prototype.queryMembers(group, members);
+        return ClientArchivist.prototype.queryMembers.call(this, group, members);
     };
 
     //-------- namespace --------

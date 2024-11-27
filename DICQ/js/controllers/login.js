@@ -18,10 +18,10 @@
     var Anonymous = app.Anonymous;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
     var get_current_server = function () {
         return get_messenger().getCurrentStation();

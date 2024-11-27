@@ -19,20 +19,20 @@
     var Class = sdk.type.Class;
     var TextContent = sdk.protocol.TextContent;
 
-    var Gate = sdk.startrek.Gate;
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
 
     var Anonymous = app.Anonymous;
     var NotificationNames = app.NotificationNames;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
     var get_message_db = function () {
-        return app.GlobalVariable.getInstance().database;
+        return app.GlobalVariable.getDatabase();
     };
 
     var ChatWindow = function () {
@@ -94,7 +94,7 @@
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, NotificationNames.MessageUpdated);
     };
-    Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate], null);
+    Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = get_facebook();
@@ -117,8 +117,8 @@
     };
 
     ChatWindow.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var env = msg.getEnvelope();
@@ -230,7 +230,7 @@
             }
             content.setGroup(receiver);
         }
-        if (messenger.sendContent(null, receiver, content, null, 0)) {
+        if (messenger.sendContent(content, null, receiver, null, 0)) {
             console.log('sending message: ', content);
             this.messageView.setValue('');
             this.historyView.reloadData();

@@ -47,21 +47,24 @@
     var Document = sdk.protocol.Document;
     var Command = sdk.protocol.Command;
 
-    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
 
     var MessageBuilder = app.cpu.MessageBuilder;
 
     var Anonymous = app.Anonymous;
     var NotificationNames = app.NotificationNames;
 
-    var StationDelegate = app.network.StationDelegate;
     var Terminal = app.network.Terminal;
 
+    var get_database = function () {
+        return app.GlobalVariable.getDatabase();
+    };
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     var Application = function () {
@@ -75,7 +78,7 @@
         nc.addObserver(this, NotificationNames.DocumentUpdated);
         nc.addObserver(this, NotificationNames.MessageUpdated);
     };
-    Class(Application, Terminal, [StationDelegate], null);
+    Class(Application, Terminal, [NotificationObserver], null);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -89,8 +92,8 @@
         var facebook = get_facebook();
         var identifier;
         var doc;
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         var res;
         if (name === NotificationNames.StationConnecting) {
             res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
@@ -189,13 +192,21 @@
         return add_contact(group, identifier);
     };
 
-    var add_contact = function (contact, user) {
+    var add_contact = function (friend, user) {
         var facebook = get_facebook();
-        if (facebook.addContact(contact, user)) {
-            var contacts = facebook.getContacts(user);
+        var contacts = facebook.getContacts(user);
+        if (!contacts) {
+            contacts = [friend];
+        } else if (contacts.indexOf(friend) < 0) {
+            contacts.push(friend);
+        } else {
+            return false;
+        }
+        var database = get_database();
+        if (database.saveContacts(contacts, user)) {
             var nc = NotificationCenter.getInstance();
             nc.postNotification(NotificationNames.ContactsUpdated, this,
-                {'ID': contact, 'contacts': contacts});
+                {'ID': friend, 'contacts': contacts});
         }
     };
 
@@ -206,19 +217,15 @@
 !function (ns, app) {
     'use strict';
 
-    var SharedDatabase  = app.SharedDatabase;
-    var SharedFacebook  = app.SharedFacebook;
-    var Client          = app.Client;
-    var GlobalVariable  = app.GlobalVariable;
-
     var Main = function () {
-        var facebook = create_facebook();
+        var facebook = app.GlobalVariable.getFacebook();
         var user = facebook.getCurrentUser();
         if (user) {
             // login
             // connect('127.0.0.1', 9394);
             // connect('192.168.31.91', 9394);
             connect('106.52.25.169', 9394);  // gz
+            app.GlobalVariable.setCurrentUser(user.getIdentifier());
             ns.LoginWindow.show(user);
         } else {
             // register new account
@@ -226,29 +233,8 @@
         }
     };
 
-    var create_facebook = function () {
-        var shared = GlobalVariable.getInstance();
-        var database = shared.database;
-        var facebook = shared.facebook;
-        if (database === null) {
-            database = SharedDatabase.getInstance();
-            shared.database = database;
-        }
-        if (facebook === null) {
-            facebook = new SharedFacebook(database);
-            shared.facebook = facebook;
-        }
-        return facebook;
-    };
     var connect = function (host, port) {
-        var shared = GlobalVariable.getInstance();
-        var database = shared.database;
-        var facebook = shared.facebook;
-        var client = shared.terminal;
-        if (client === null) {
-            client = new Client(facebook, database);
-            shared.terminal = client;
-        }
+        var client = app.GlobalVariable.getTerminal();
         client.connect(host, port);
         return client;
     }

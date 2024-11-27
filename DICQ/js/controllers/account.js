@@ -21,10 +21,10 @@
     var Anonymous = app.Anonymous;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
 
     var AccountWindow = function () {
@@ -135,7 +135,7 @@
             var id = user.getIdentifier();
             var meta = user.getMeta();
             var cmd = DocumentCommand.response(id, meta, visa);
-            messenger.sendContent(id, admin, cmd, null, 0);
+            messenger.sendContent(cmd, id, admin, null, 0);
         }
         var text = 'Nickname updated, visa: ' + visa.getValue('data');
         alert(text);

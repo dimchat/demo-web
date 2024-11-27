@@ -245,10 +245,10 @@
         //  3. save 'reset' command, and update new members
         //
         var helper = this.getHelper();
-        if (!helper.saveGroupHistory(group, reset, rMsg)) {
+        if (!helper.saveGroupHistory(reset, rMsg, group)) {
             console.error('failed to save "reset" command', group);
             return false;
-        } else if (!delegate.saveMembers(group, newMembers)) {
+        } else if (!delegate.saveMembers(newMembers, group)) {
             console.error('failed to update members', group);
             return false;
         } else {
@@ -335,7 +335,7 @@
         if (!rMsg) {
             console.error('failed to build "invite" command', group);
             return false;
-        } else if (!helper.saveGroupHistory(group, invite, rMsg)) {
+        } else if (!helper.saveGroupHistory(invite, rMsg, group)) {
             console.error('failed to save "invite" command', group);
             return false;
         }
@@ -408,7 +408,7 @@
             console.warn('quitting group', group);
             members = members.slice();
             Arrays.remove(members, me);
-            var ok = delegate.saveMembers(group, members);
+            var ok = delegate.saveMembers(members, group);
             if (!ok) {
                 console.error('failed to save members', group);
             }

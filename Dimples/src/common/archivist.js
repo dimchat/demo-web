@@ -116,7 +116,7 @@
         // Override
         getContacts: function (user) {
             var db = this.getDatabase();
-            return db.getDocuments(user);
+            return db.getContacts(user);
         },
 
         // Override

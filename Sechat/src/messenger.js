@@ -223,7 +223,7 @@
          * @return {boolean} false on error
          */
         search: function (keywords) {
-            var content = SearchCommand.search(keywords);
+            var content = SearchCommand.fromKeywords(keywords);
             var SE = ID.parse('archivist@anywhere');
             return this.sendContent(content, null, SE, 0);
         }

@@ -56,12 +56,17 @@
     SearchCommandProcessor.prototype.process = function (content, rMsg) {
         parse.call(this, content);
 
-        var nc = NotificationCenter.getInstance();
-        nc.postNotification('SearchUpdated', this, {
+        post_notification('SearchUpdated', this, {
             'content': content,
             'envelope': rMsg.getEnvelope()
         });
         return [];
+    };
+
+    var post_notification = function (name, sender, userInfo) {
+        var nc = NotificationCenter.getInstance();
+        // nc.postNotification(name, sender, userInfo);
+        nc.postNotification(new ns.lnc.Notification(name, sender, userInfo));
     };
 
     var parse = function (command) {

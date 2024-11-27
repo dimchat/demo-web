@@ -15,11 +15,14 @@
     var Class = sdk.type.Class;
     var Anonymous = app.Anonymous;
 
+    var get_database = function () {
+        return app.GlobalVariable.getDatabase();
+    };
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     var UserWindow = function () {
@@ -82,7 +85,7 @@
     Class(UserWindow, Window, null, null);
 
     UserWindow.prototype.setIdentifier = function (identifier) {
-        if (!identifier || !identifier.isUser()) {
+        if (identifier && identifier.isUser()) {} else {
             throw TypeError('ID error: ' + identifier);
         }
         var facebook = get_facebook();
@@ -107,17 +110,25 @@
         }
         // check contacts
         var facebook = get_facebook();
-        var user = facebook.getCurrentUser();
-        var contacts = facebook.getContacts(user.getIdentifier());
-        if (contacts && contacts.indexOf(identifier) >= 0) {
+        var current = facebook.getCurrentUser();
+        var user = current.getIdentifier();
+        var contacts = facebook.getContacts(user);
+
+        if (!contacts) {
+            contacts = [identifier];
+        } else if (contacts.indexOf(identifier) < 0) {
+            contacts.push(identifier);
+        } else {
             ns.PersonalChatWindow.show(identifier);
             this.remove();
+            return;
+        }
+
+        var database = get_database();
+        if (database.saveContacts(contacts, user)) {
+            this.button.setText('Chat');
         } else {
-            if (facebook.addContact(identifier, user.getIdentifier())) {
-                this.button.setText('Chat');
-            } else {
-                throw Error('Failed to add contact: ' + identifier);
-            }
+            throw Error('Failed to add contact: ' + identifier);
         }
     };
 

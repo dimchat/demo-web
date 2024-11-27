@@ -82,7 +82,7 @@
             var sender = rMsg.getSender();
             var admins = this.getAdministrators(group);
             var isOwner = owner.equals(sender);
-            var isAdmin = admins.contains(sender);
+            var isAdmin = admins.indexOf(sender) >= 0;
 
             // 2. check permission
             var canReset = isOwner || isAdmin;
@@ -127,13 +127,13 @@
             var memPair = ResetCommandProcessor.calculateReset(members, newMembers);
             var addList = memPair[0];
             var removeList = memPair[1];
-            if (!this.saveGroupHistory(group, content, rMsg)) {
+            if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to save the 'reset' command to local storage as group history
                 // it should not failed unless the command is expired
                 console.error('failed to save "reset" command for group', group);
             } else if (addList.length === 0 && removeList.length === 0) {
                 // nothing changed
-            } else if (this.saveMembers(group, newMembers)) {
+            } else if (this.saveMembers(newMembers, group)) {
                 console.info('new members saved in group', group);
                 if (addList.length > 0) {
                     content.setValue('added', ID.revert(addList));

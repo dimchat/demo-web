@@ -55,16 +55,14 @@
 
         /// override for customized helper
         createGroupHelper: function () {
-            var facebook = this.getFacebook();
-            var messenger = this.getMessenger();
-            return new ns.group.GroupCommandHelper(facebook, messenger);
+            var delegate = this.getGroupDelegate();
+            return new ns.group.GroupCommandHelper(delegate);
         },
 
         /// override for customized builder
         createGroupBuilder: function () {
-            var facebook = this.getFacebook();
-            var messenger = this.getMessenger();
-            return new ns.group.GroupHistoryBuilder(facebook, messenger);
+            var delegate = this.getGroupDelegate();
+            return new ns.group.GroupHistoryBuilder(delegate);
         },
 
         // Override

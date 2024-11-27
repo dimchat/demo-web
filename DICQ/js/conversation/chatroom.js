@@ -14,14 +14,16 @@
     var InstantMessage = sdk.protocol.InstantMessage;
     var Envelope = sdk.protocol.Envelope;
 
+    var NotificationObserver = sdk.lnc.Observer;
+
     // var get_facebook = function () {
-    //     return app.GlobalVariable.getInstance().facebook;
+    //     return app.GlobalVariable.getFacebook();
     // };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
     var get_message_db = function () {
-        return app.GlobalVariable.getInstance().database;
+        return app.GlobalVariable.getDatabase();
     };
 
     var ChatroomWindow = function () {
@@ -29,7 +31,7 @@
         this.setClassName('chatroomWindow');
         this.setTitle('Chat Room');
     };
-    Class(ChatroomWindow, GroupChatWindow, null, null);
+    Class(ChatroomWindow, GroupChatWindow, [NotificationObserver], null);
 
     ChatroomWindow.prototype.getMessageCount = function () {
         var db = get_message_db();
@@ -114,10 +116,10 @@
     var ChatroomWindow = ns.ChatroomWindow;
 
     // var get_facebook = function () {
-    //     return app.GlobalVariable.getInstance().facebook;
+    //     return app.GlobalVariable.getFacebook();
     // };
     var get_messenger = function () {
-        return app.GlobalVariable.getInstance().messenger;
+        return app.GlobalVariable.getMessenger();
     };
 
     // group members
@@ -129,8 +131,8 @@
     };
 
     ChatroomWindow.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var content = msg.getContent();
@@ -178,7 +180,7 @@
         var user = server.getCurrentUser();
         if (user) {
             var content = TextContent.create('show history');
-            messenger.sendContent(null, admin, content, null, 0);
+            messenger.sendContent(content, null, admin, null, 0);
         }
     };
 
@@ -213,7 +215,7 @@
         var user = server.getCurrentUser();
         if (user) {
             var content = TextContent.create('show users');
-            messenger.sendContent(null, admin, content, null, 0);
+            messenger.sendContent(content, null, admin, null, 0);
         }
     };
 

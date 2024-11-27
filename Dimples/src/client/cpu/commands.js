@@ -46,6 +46,13 @@
     };
     Class(LoginCommandProcessor, BaseCommandProcessor, null, {
 
+        // private
+        getDatabase: function () {
+            var manager = this.getMessenger();
+            var session = manager.getSession();
+            return session.getDatabase();
+        },
+
         // Override
         process: function (content, rMsg) {
             var sender = content.getIdentifier();

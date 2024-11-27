@@ -117,14 +117,14 @@
                         console.error('failed to send history for group', group, sender);
                     }
                 }
-            } else if (!this.saveGroupHistory(group, content, rMsg)) {
+            } else if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to append the 'invite' command to local storage as group history
                 // it should not failed unless the command is expired
                 console.error('failed to save "invite" command', group);
             } else if (!canReset) {
                 // the sender cannot reset the group, means it's invited by ordinary member,
                 // and the 'invite' command was saved, now waiting for review.
-            } else if (this.saveMembers(group, newMembers)) {
+            } else if (this.saveMembers(newMembers, group)) {
                 // FIXME: this sender has permission to reset the group,
                 //        means it must be the owner or an administrator,
                 //        usually it should send a 'reset' command instead;

@@ -38,41 +38,38 @@
     var Command = ns.protocol.Command;
     var CommandParser = ns.CommandParser;
 
-    var HandshakeCommand = ns.dkd.cmd.HandshakeCommand;
-    var ReceiptCommand = ns.dkd.cmd.ReceiptCommand;
-    var LoginCommand = ns.dkd.cmd.LoginCommand;
-    var ReportCommand = ns.dkd.cmd.ReportCommand;
+    var BaseHandshakeCommand = ns.dkd.cmd.BaseHandshakeCommand;
+    var BaseLoginCommand     = ns.dkd.cmd.BaseLoginCommand;
+    var BaseReportCommand    = ns.dkd.cmd.BaseReportCommand;
 
-    var MuteCommand = ns.dkd.cmd.MuteCommand;
-    var BlockCommand = ns.dkd.cmd.BlockCommand;
-    var SearchCommand = ns.dkd.cmd.SearchCommand;
-    var StorageCommand = ns.dkd.cmd.StorageCommand;
+    var BaseMuteCommand      = ns.dkd.cmd.BaseMuteCommand;
+    var BaseBlockCommand     = ns.dkd.cmd.BaseBlockCommand;
+    var BaseSearchCommand    = ns.dkd.cmd.BaseSearchCommand;
+    var BaseStorageCommand   = ns.dkd.cmd.BaseStorageCommand;
 
     var registerExtraCommandFactories = function () {
 
         // Handshake
-        Command.setFactory(Command.HANDSHAKE, new CommandParser(HandshakeCommand));
-        // Receipt
-        Command.setFactory(Command.RECEIPT, new CommandParser(ReceiptCommand));
+        Command.setFactory(Command.HANDSHAKE, new CommandParser(BaseHandshakeCommand));
         // Login
-        Command.setFactory(Command.LOGIN, new CommandParser(LoginCommand));
+        Command.setFactory(Command.LOGIN,     new CommandParser(BaseLoginCommand));
         // Report (online, offline)
-        Command.setFactory(Command.REPORT, new CommandParser(ReportCommand));
-        Command.setFactory('broadcast', new CommandParser(ReportCommand));
-        Command.setFactory(Command.ONLINE, new CommandParser(ReportCommand));
-        Command.setFactory(Command.OFFLINE, new CommandParser(ReportCommand));
+        Command.setFactory(Command.REPORT,    new CommandParser(BaseReportCommand));
+        Command.setFactory('broadcast',       new CommandParser(BaseReportCommand));
+        Command.setFactory(Command.ONLINE,    new CommandParser(BaseReportCommand));
+        Command.setFactory(Command.OFFLINE,   new CommandParser(BaseReportCommand));
 
         // Mute
-        Command.setFactory(Command.MUTE, new CommandParser(MuteCommand));
+        Command.setFactory(Command.MUTE,         new CommandParser(BaseMuteCommand));
         // Block
-        Command.setFactory(Command.BLOCK, new CommandParser(BlockCommand));
+        Command.setFactory(Command.BLOCK,        new CommandParser(BaseBlockCommand));
         // Search (users)
-        Command.setFactory(Command.SEARCH, new CommandParser(SearchCommand));
-        Command.setFactory(Command.ONLINE_USERS, new CommandParser(SearchCommand));
+        Command.setFactory(Command.SEARCH,       new CommandParser(BaseSearchCommand));
+        Command.setFactory(Command.ONLINE_USERS, new CommandParser(BaseSearchCommand));
         // Storage (contacts, private_key)
-        Command.setFactory(Command.STORAGE, new CommandParser(StorageCommand));
-        Command.setFactory(Command.CONTACTS, new CommandParser(StorageCommand));
-        Command.setFactory(Command.PRIVATE_KEY, new CommandParser(StorageCommand));
+        Command.setFactory(Command.STORAGE,      new CommandParser(BaseStorageCommand));
+        Command.setFactory(Command.CONTACTS,     new CommandParser(BaseStorageCommand));
+        Command.setFactory(Command.PRIVATE_KEY,  new CommandParser(BaseStorageCommand));
     };
 
     //

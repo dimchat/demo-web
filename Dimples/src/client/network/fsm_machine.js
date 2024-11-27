@@ -76,7 +76,7 @@
     // protected
     StateMachine.prototype.createStateBuilder = function () {
         var stb = new ns.network.SessionStateTransitionBuilder();
-        return new ns.net.SessionStateBuilder(stb);
+        return new ns.network.SessionStateBuilder(stb);
     };
 
     // Override

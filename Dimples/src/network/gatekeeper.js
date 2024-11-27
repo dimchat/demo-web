@@ -191,7 +191,7 @@
         // try to push
         var ok = gate.sendShip(wrapper, remote, null);
         if (!ok) {
-            console.error('gate error, failed to send data', remote);
+            console.error('gate error, failed to send data', wrapper, remote);
         }
         return true;
     };

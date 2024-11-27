@@ -10,17 +10,19 @@
     var Button = tui.Button;
     var TableViewCell = tui.TableViewCell;
 
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var NotificationNames = app.NotificationNames;
+    var Class                = sdk.type.Class;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
+    var NotificationNames    = app.NotificationNames;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
     var get_message_db = function () {
-        return app.GlobalVariable.getInstance().database;
+        return app.GlobalVariable.getDatabase();
     };
 
     var MainTableViewCell = function (cell) {
@@ -59,8 +61,9 @@
 
         this.__identifier = null;
     };
-    MainTableViewCell.prototype = Object.create(TableViewCell.prototype);
-    MainTableViewCell.prototype.constructor = MainTableViewCell;
+    Class(MainTableViewCell, TableViewCell, [NotificationObserver], null);
+    // MainTableViewCell.prototype = Object.create(TableViewCell.prototype);
+    // MainTableViewCell.prototype.constructor = MainTableViewCell;
 
     MainTableViewCell.prototype.setIdentifier = function (identifier) {
         var facebook = get_facebook();
@@ -101,8 +104,8 @@
     };
 
     MainTableViewCell.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             check_unread_msg.call(this, msg);

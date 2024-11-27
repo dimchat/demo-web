@@ -9,11 +9,13 @@
 
     var Class = sdk.type.Class;
 
+    var Observer = sdk.lnc.Observer;
+
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     var GroupChatWindow = function () {
@@ -31,7 +33,7 @@
         this.appendChild(table);
         this.membersView = table;
     };
-    Class(GroupChatWindow, ChatWindow, null, null);
+    Class(GroupChatWindow, ChatWindow, [Observer], null);
 
     // group owner or admin
     GroupChatWindow.prototype.getAdministratorCount = function () {
@@ -120,10 +122,10 @@
     var GroupChatWindow = ns.GroupChatWindow;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
 
     // group members
@@ -143,8 +145,8 @@
     };
 
     GroupChatWindow.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         if (name === NotificationNames.MessageUpdated) {
             var msg = userInfo['msg'];
             var content = msg.getContent();

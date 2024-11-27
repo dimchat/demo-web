@@ -15,17 +15,18 @@
     var EntityType = sdk.protocol.EntityType;
     var ID = sdk.protocol.ID;
 
-    var NotificationCenter = sdk.lnc.NotificationCenter;
-    var NotificationNames = app.NotificationNames;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
+    var NotificationNames    = app.NotificationNames;
 
     var get_facebook = function () {
-        return app.GlobalVariable.getInstance().facebook;
+        return app.GlobalVariable.getFacebook();
     };
     // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
+    //     return app.GlobalVariable.getMessenger();
     // };
     var get_message_db = function () {
-        return app.GlobalVariable.getInstance().database;
+        return app.GlobalVariable.getDatabase();
     };
 
     var MainListView = function () {
@@ -40,10 +41,10 @@
         nc.addObserver(this, NotificationNames.ContactsUpdated);
         nc.addObserver(this, NotificationNames.MessageUpdated);
     };
-    Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate], null);
+    Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
 
     MainListView.prototype.onReceiveNotification = function (notification) {
-        var name = notification.name;
+        var name = notification.getName();
         if (name === NotificationNames.ContactsUpdated) {
             this.reloadData();
         } else if (name === NotificationNames.MessageUpdated) {

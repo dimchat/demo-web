@@ -102,7 +102,7 @@
             if (!isMember) {
                 // the sender is not a member now,
                 // shall we notify the sender that the member list was updated?
-            } else if (!this.saveGroupHistory(group, content, rMsg)) {
+            } else if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to append the 'quit' command to local storage as group history
                 // it should not failed unless the command is expired
                 console.error('failed to save "quit" command for group', group);

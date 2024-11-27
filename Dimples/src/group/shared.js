@@ -75,16 +75,49 @@
     };
 
     SharedGroupManager.prototype.getGroupDelegate = function () {
-        return this.__delegate;
+        var delegate = this.__delegate;
+        if (!delegate) {
+            var facebook = this.getFacebook();
+            var messenger = this.getMessenger();
+            if (facebook && messenger) {
+                delegate = new ns.group.GroupDelegate(facebook, messenger)
+                this.__delegate = delegate;
+            }
+        }
+        return delegate;
     };
     SharedGroupManager.prototype.getGroupManager = function () {
-        return this.__manager;
+        var man = this.__manager;
+        if (!man) {
+            var delegate = this.getGroupDelegate();
+            if (delegate) {
+                man = new ns.group.GroupManager(delegate);
+                this.__manager = man;
+            }
+        }
+        return man;
     };
     SharedGroupManager.prototype.getAdminManager = function () {
-        return this.__admin_man;
+        var man = this.__admin_man;
+        if (!man) {
+            var delegate = this.getGroupDelegate();
+            if (delegate) {
+                man = new ns.group.AdminManager(delegate);
+                this.__admin_man = man;
+            }
+        }
+        return man;
     };
     SharedGroupManager.prototype.getGroupEmitter = function () {
-        return this.__emitter;
+        var emitter = this.__emitter;
+        if (!emitter) {
+            var delegate = this.getGroupDelegate();
+            if (delegate) {
+                emitter = new ns.group.GroupEmitter(delegate);
+                this.__emitter = emitter;
+            }
+        }
+        return emitter;
     };
 
     SharedGroupManager.prototype.buildGroupName = function (members) {

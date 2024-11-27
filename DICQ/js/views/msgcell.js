@@ -25,7 +25,7 @@
         // clear children
         this.removeChildren();
 
-        var facebook = app.GlobalVariable.getInstance().facebook;
+        var facebook = app.GlobalVariable.getFacebook();
         var user = facebook.getCurrentUser();
         var sender = iMsg.getSender();
 

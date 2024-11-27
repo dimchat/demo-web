@@ -124,8 +124,7 @@
             if (!current) {
                 return;
             }
-            var nc = NotificationCenter.getInstance();
-            nc.postNotification(NotificationNames.SessionStateChanged, this, {
+            post_notification(NotificationNames.SessionStateChanged, this, {
                 'previous': previous,
                 'current': current,
                 'state': current
@@ -140,6 +139,12 @@
             this.connect(host, port);
         }
     });
+
+    var post_notification = function (name, sender, userInfo) {
+        var nc = NotificationCenter.getInstance();
+        // nc.postNotification(name, sender, userInfo);
+        nc.postNotification(new sdk.lnc.Notification(name, sender, userInfo));
+    };
 
     //-------- namespace --------
     ns.Client = Client;
