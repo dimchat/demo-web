@@ -30,172 +30,132 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface = sdk.type.Interface;
-    var Class = sdk.type.Class;
-    var Visa = sdk.protocol.Visa;
-    var Entity = sdk.mkm.Entity;
-    var CommonFacebook = sdk.CommonFacebook;
-    var Anonymous = sdk.Anonymous;
+    var Class          = sdk.type.Class;
+    var ClientFacebook = sdk.ClientFacebook;
 
-    var SharedFacebook = function (db) {
-        CommonFacebook.call(this, db);
+    var SharedFacebook = function () {
+        ClientFacebook.call(this);
     };
-    Class(SharedFacebook, CommonFacebook, null, {
+    Class(SharedFacebook, ClientFacebook, null, {
 
-        getName: function (identifier) {
-            // get name from document
-            var doc = this.getDocument(identifier, '*');
+        getAvatar: function (identifier) {
+            var doc = this.getVisa(identifier);
             if (doc) {
-                var name = doc.getName();
-                if (name && name.length > 0) {
-                    return name;
-                }
+                return doc.getAvatar();
             }
-            // get name from ID
-            return Anonymous.getName(identifier);
-        },
-
-        /**
-         *  Get avatar for user
-         *
-         * @param {ID} user - user ID
-         * @return {string} remote URL
-         */
-        getAvatar: function (user) {
-            var url = null;
-            var doc = this.getDocument(user, '*');
-            if (doc) {
-                if (Interface.conforms(doc, Visa)) {
-                    url = doc.getAvatar();
-                } else {
-                    url = doc.getProperty('avatar');
-                }
-            }
-            return url;
-        },
-
-        saveContacts: function (contacts, user) {
-            var db = this.getDatabase();
-            return db.saveContacts(contacts, user);
-        },
-
-        savePrivateKey: function (key, type, user) {
-            var db = this.getDatabase();
-            return db.savePrivateKey(key, type, user);
-        },
-
-        // Override
-        setCurrentUser: function (user) {
-            var db = this.getDatabase();
-            db.setCurrentUser(user.getIdentifier());
-            CommonFacebook.prototype.setCurrentUser.call(this, user);
-        },
-        addUser: function (user) {
-            if (user instanceof Entity) {
-                user = user.getIdentifier();
-            }
-            var db = this.getDatabase();
-            var allUsers = db.getLocalUsers();
-            if (!allUsers) {
-                allUsers = [user];
-            } else if (find_user(allUsers, user) >= 0) {
-                // already exists
-                return false;
-            } else {
-                allUsers.push(user);
-            }
-            return db.saveLocalUsers(allUsers);
-        },
-        removeUser: function (user) {
-            if (user instanceof Entity) {
-                user = user.getIdentifier();
-            }
-            var db = this.getDatabase();
-            var allUsers = db.getLocalUsers();
-            var pos = !allUsers ? -1 : find_user(allUsers, user);
-            if (pos < 0) {
-                // not exists
-                return false;
-            }
-            allUsers.splice(pos, 1);
-            return db.saveLocalUsers(allUsers);
-        },
-
-        //-------- Contacts
-
-        addContact: function (contact, user) {
-            var allContacts = this.getContacts(user);
-            if (!allContacts) {
-                allContacts = [contact]
-            } else if (find_user(allContacts, contact) >= 0) {
-                // already exists
-                return false;
-            } else {
-                allContacts.push(contact);
-            }
-            return this.saveContacts(allContacts, user);
-        },
-        removeContact: function (contact, user) {
-            var allContacts = this.getContacts(user);
-            var pos = !allContacts ? -1 : find_user(allContacts, contact);
-            if (pos < 0) {
-                // not exists
-                return false;
-            }
-            allContacts.splice(pos, 1);
-            return this.saveContacts(allContacts, user);
-        },
-
-        //-------- Members
-
-        addMember: function (member, group) {
-            var allMembers = this.getMembers(group);
-            if (!allMembers) {
-                allMembers = [member];
-            } else if (find_user(allMembers, member) >= 0) {
-                // already exists
-                return false;
-            } else {
-                allMembers.push(member);
-            }
-            return this.saveMembers(allMembers, group);
-        },
-        removeMember: function (member, group) {
-            var allMembers = this.getMembers(group);
-            var pos = !allMembers ? -1 : find_user(allMembers, member);
-            if (pos < 0) {
-                // not exists
-                return false;
-            }
-            allMembers.splice(pos, 1);
-            return this.saveMembers(allMembers, group);
-        },
-        containsMember: function (member, group) {
-            var allMembers = this.getMembers(group);
-            if (allMembers && find_user(allMembers, member) >= 0) {
-                return true;
-            }
-            var owner = this.getOwner(group);
-            return owner && owner.equals(member);
-        },
-        removeGroup: function (group) {
-            // TODO:
-            console.warn('remove group', group);
-            return false;
+            return null;
         }
     });
 
-    var find_user = function (array, item) {
-        for (var i = 0; i < array.length; ++i) {
-            if (array[i].equals(item)) {
-                // found
-                return i;
+    // Override
+    SharedFacebook.prototype.getArchivist = function () {
+        return ns.GlobalVariable.getArchivist();
+    };
+
+    // Override
+    SharedFacebook.prototype.createGroup = function (identifier) {
+        var group = null;
+        if (!identifier.isBroadcast()) {
+            var man = sdk.group.SharedGroupManager;
+            var doc = man.getBulletin(identifier);
+            if (doc) {
+                group = ClientFacebook.prototype.createGroup.call(this, identifier);
+                group.setDataSource(man);
             }
         }
-        return -1;
+        return group;
     };
 
     //-------- namespace --------
     ns.SharedFacebook = SharedFacebook;
+
+})(SECHAT, DIMP);
+
+(function (ns, sdk) {
+    'use strict';
+
+    var Class           = sdk.type.Class;
+    var ClientArchivist = sdk.ClientArchivist;
+
+    var SharedArchivist = function (db) {
+        ClientArchivist.call(this, db);
+    };
+    Class(SharedArchivist, ClientArchivist, null, null);
+
+    // Override
+    SharedArchivist.prototype.getFacebook = function () {
+        return ns.GlobalVariable.getFacebook();
+    };
+
+    // Override
+    SharedArchivist.prototype.getMessenger = function () {
+        return ns.GlobalVariable.getMessenger();
+    };
+
+    // protected
+    SharedArchivist.prototype.getSession = function () {
+        var messenger = this.getMessenger();
+        return messenger.getSession();
+    };
+
+    // Override
+    SharedArchivist.prototype.checkMeta = function (identifier, meta) {
+        if (identifier.isBroadcast()) {
+            // broadcast entity has no meta to query
+            return false;
+        }
+        return ClientArchivist.prototype.checkMeta(identifier, meta);
+    };
+
+    // Override
+    SharedArchivist.prototype.checkDocuments = function (identifier, documents) {
+        if (identifier.isBroadcast()) {
+            // broadcast entity has no document to query
+            return false;
+        }
+        return ClientArchivist.prototype.checkDocuments(identifier, documents);
+    };
+
+    // Override
+    SharedArchivist.prototype.checkMembers = function (group, members) {
+        if (group.isBroadcast()) {
+            // broadcast group has no members to update
+            return false;
+        }
+        return ClientArchivist.prototype.checkMembers(group, members);
+    };
+
+    // Override
+    SharedArchivist.prototype.queryMeta = function (identifier) {
+        var session = this.getSession();
+        if (!session.isReady()) {
+            console.warn('querying meta cancel, waiting to connect', identifier, session);
+            return false;
+        }
+        return ClientArchivist.prototype.queryMeta(identifier);
+    };
+
+    // Override
+    SharedArchivist.prototype.queryDocuments = function (identifier, docs) {
+        var session = this.getSession();
+        if (!session.isReady()) {
+            console.warn('querying documents cancel, waiting to connect', identifier, session);
+            return false;
+        }
+        return ClientArchivist.prototype.queryDocuments(identifier, docs);
+    };
+
+    // Override
+    SharedArchivist.prototype.queryMembers = function (group, members) {
+        var session = this.getSession();
+        if (!session.isReady()) {
+            console.warn('querying members cancel, waiting to connect', group, session);
+            return false;
+        }
+        return ClientArchivist.prototype.queryMembers(group, members);
+    };
+
+    //-------- namespace --------
+    ns.SharedArchivist = SharedArchivist;
 
 })(SECHAT, DIMP);

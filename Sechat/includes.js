@@ -2,8 +2,6 @@
 var sechat_src = [
 
     'src/namespace.js',
-    'src/compatible.js',
-    'src/gman.js',
     'src/facebook.js',
     'src/messenger.js',
     'src/packer.js',

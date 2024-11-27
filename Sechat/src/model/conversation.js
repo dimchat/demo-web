@@ -30,51 +30,42 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface = sdk.type.Interface;
-    var Enum = sdk.type.Enum;
-    var EntityType = sdk.protocol.EntityType;
+    var Interface   = sdk.type.Interface;
     var ContentType = sdk.protocol.ContentType;
-    var Entity = sdk.mkm.Entity;
+    var Entity      = sdk.mkm.Entity;
 
-    var get_facebook = function () {
-        return ns.GlobalVariable.getInstance().facebook;
-    };
-    // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
-    // };
-    var get_conversation_db = function () {
-        return ns.GlobalVariable.getInstance().database;
-    };
-
-    var ConversationType = Enum(null, {
-        Personal: (EntityType.USER),
-        Group: (EntityType.GROUP)
-    });
-
+    /**
+     *  Chat Info
+     *  ~~~~~~~~~
+     */
     var Conversation = function (entity) {
         if (Interface.conforms(entity, Entity)) {
             entity = entity.getIdentifier();
         }
-        this.identifier = entity;
-        this.type = get_type(entity);
-        this.db = get_conversation_db();
-    };
-    var get_type = function (identifier) {
-        if (identifier.isGroup()) {
-            return ConversationType.Group;
-        }
-        return ConversationType.Personal;
+        this.__identifier = entity;
     };
 
     Conversation.prototype.getIdentifier = function () {
-        return this.identifier;
+        return this.__identifier;
+    };
+
+    Conversation.prototype.isBlocked = function () {
+        return false;
+    };
+
+    Conversation.prototype.isNotFriend = function () {
+        return false;
+    };
+    Conversation.prototype.isFriend = function () {
+        return true;
     };
 
     Conversation.prototype.getTitle = function () {
-        var facebook = get_facebook();
-        var name = facebook.getName(this.identifier);
-        if (this.identifier.isGroup()) {
-            var members = facebook.getMembers(this.identifier);
+        var facebook = ns.GlobalVariable.getFacebook();
+        var identifier = this.getIdentifier();
+        var name = facebook.getName(identifier);
+        if (identifier.isGroup()) {
+            var members = facebook.getMembers(identifier);
             var count = !members ? 0 : members.length;
             if (count === 0) {
                 return name + ' (...)';
@@ -94,7 +85,9 @@
     };
 
     Conversation.prototype.getLastMessage = function () {
-        return this.db.lastMessage(this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.lastMessage(identifier);
     };
     Conversation.prototype.getLastVisibleMessage = function () {
         // return this.db.lastMessage(this.identifier);
@@ -123,30 +116,44 @@
     };
 
     Conversation.prototype.getNumberOfMessages = function () {
-        return this.db.numberOfMessages(this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.numberOfMessages(identifier);
     };
     Conversation.prototype.getNumberOfUnreadMessages = function () {
-        return this.db.numberOfUnreadMessages(this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.numberOfUnreadMessages(identifier);
     };
 
     Conversation.prototype.getMessageAtIndex = function (index) {
-        return this.db.messageAtIndex(index, this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.messageAtIndex(index, identifier);
     };
 
     Conversation.prototype.insertMessage = function (iMsg) {
-        return this.db.insertMessage(iMsg, this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.insertMessage(iMsg, identifier);
     };
 
     Conversation.prototype.removeMessage = function (iMsg) {
-        return this.db.removeMessage(iMsg, this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.removeMessage(iMsg, identifier);
     };
 
     Conversation.prototype.withdrawMessage = function (iMsg) {
-        return this.db.withdrawMessage(iMsg, this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.withdrawMessage(iMsg, identifier);
     };
 
     Conversation.prototype.saveReceipt = function (iMsg) {
-        return this.db.saveReceipt(iMsg, this.identifier);
+        var database = ns.GlobalVariable.getDatabase();
+        var identifier = this.getIdentifier();
+        return database.saveReceipt(iMsg, identifier);
     };
 
     //-------- namespace --------

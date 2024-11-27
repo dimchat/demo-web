@@ -162,12 +162,12 @@
 
         // Override
         getTitle: function () {
-            return this.getString('title');
+            return this.getString('title', null);
         },
 
         // Override
         getSessionKey: function () {
-            return this.getString('session');
+            return this.getString('session', null);
         },
 
         // Override

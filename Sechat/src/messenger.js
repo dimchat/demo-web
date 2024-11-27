@@ -30,14 +30,15 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface = sdk.type.Interface;
-    var Class = sdk.type.Class;
-    var ID = sdk.protocol.ID;
-    var Command = sdk.protocol.Command;
-    var DocumentCommand = sdk.protocol.DocumentCommand;
-    var SearchCommand = sdk.protocol.SearchCommand;
-    var ClientMessenger = sdk.ClientMessenger;
-    var Compatible = ns.Compatible;
+    var Interface        = sdk.type.Interface;
+    var Class            = sdk.type.Class;
+    var ID               = sdk.protocol.ID;
+    var Document         = sdk.protocol.Document;
+    var Visa             = sdk.protocol.Visa;
+    var Command          = sdk.protocol.Command;
+    var HandshakeCommand = sdk.protocol.HandshakeCommand;
+    var SearchCommand    = sdk.protocol.SearchCommand;
+    var ClientMessenger  = sdk.ClientMessenger;
 
     var SharedMessenger = function (session, facebook, db) {
         ClientMessenger.call(this, session, facebook, db);
@@ -45,146 +46,188 @@
     Class(SharedMessenger, ClientMessenger, null, {
 
         // Override
-        serializeContent: function (content, password, iMsg) {
-            if (Interface.conforms(content, Command)) {
-                content = Compatible.fixCommand(content);
+        encryptKey: function (keyData, receiver, iMsg) {
+            try {
+                return ClientMessenger.prototype.encryptKey.call(this, keyData, receiver, iMsg);
+            } catch (e) {
+                console.error('failed to encrypt key for receiver', receiver, e);
+                return null;
             }
-            return ClientMessenger.prototype.serializeContent.call(this, content, password, iMsg);
         },
 
         // Override
         deserializeContent: function (data, password, sMsg) {
             var content = ClientMessenger.prototype.deserializeContent.call(this, data, password, sMsg);
-            if (content && Interface.conforms(content, Command)) {
-                content = Compatible.fixCommand(content);
+            if (Interface.conforms(content, Command)) {
+                // get client IP from handshake response
+                if (Interface.conforms(content, HandshakeCommand)) {
+                    var remote = content.getValue('remote_address');
+                    console.warn('socket address', remote);
+                }
             }
             return content;
         },
 
-        getCurrentUser: function () {
-            return this.getFacebook().getCurrentUser();
-        },
-        getCurrentStation: function () {
-            return this.getSession().getStation();
-        },
+        // // Override
+        // verifyMessage: function (rMsg) {
+        //     // TODO: handling blocked-list here
+        //     return ClientMessenger.prototype.verifyMessage.call(this, rMsg);
+        // },
 
-        /**
-         *  Pack and send command to station
-         *
-         * @param {Command} command - command sending to the neighbor station
-         * @param {number} priority - task priority, smaller is faster
-         * @return {boolean} true on success
-         */
-        sendCommand: function (command, priority) {
-            var sid = this.getCurrentStation().getIdentifier();
-            return send_content.call(this, sid, command, priority);
-        },
+        // // Override
+        // sendContent: function (content, sender, receiver, priority) {
+        //     // TODO: check receiver for ANS
+        //     return ClientMessenger.prototype.sendContent.call(this, content, sender, receiver, priority);
+        // },
 
-        /**
-         *  Pack and broadcast content to everyone
-         *
-         * @param {Content} content - message content
-         * @return {boolean} true on success
-         */
-        broadcastContent: function (content) {
-            var group = content.getGroup();
-            if (!group || !group.isBroadcast()) {
-                group = ID.EVERYONE;
-                content.setGroup(group);
+        // Override
+        sendInstantMessage: function (iMsg, priority) {
+            var rMsg;
+            try {
+                rMsg = ClientMessenger.prototype.sendInstantMessage.call(this, iMsg, priority);
+            } catch (e) {
+                console.error('failed to send message', iMsg, e);
             }
-            return send_content.call(this, group, content, 1);
+            if (rMsg) {
+                // keep signature for checking traces
+                var signature = rMsg.getString('signature', null);
+                iMsg.setValue('signature', signature);
+            }
+            return rMsg;
         },
 
-        broadcastVisa: function (visa) {
-            var user = this.getCurrentUser();
+        // Override
+        handshake: function (sessionKey) {
+            if (!sessionKey || sessionKey.length === 0) {
+                // first handshake, update visa document first
+                console.info('update visa for first handshake');
+                this.updateVisa();
+            } else if (this.getSession().getSessionKey() === sessionKey) {
+                console.warn('duplicated session key', sessionKey);
+            }
+            return ClientMessenger.prototype.handshake.call(this, sessionKey);
+        },
+
+        updateVisa: function () {
+            var facebook = this.getFacebook();
+            var user = facebook.getCurrentUser();
             if (!user) {
-                // TODO: save the message content in waiting queue
-                throw new ReferenceError('login first')
+                console.error('current user not found');
+                return false;
             }
-            var identifier = visa.getIdentifier();
-            if (!user.getIdentifier().equals(identifier)) {
-                throw new ReferenceError('visa document error: ' + visa);
+            // 1. get sign key for current user
+            var sKey = facebook.getPrivateKeyForVisaSignature(user.getIdentifier());
+            if (!sKey) {
+                console.error('private key not found', user);
+                return false;
             }
-            var count = 0;
-            // pack and send user document to every contact
-            var contacts = user.getContacts();
-            if (contacts && contacts.length > 0) {
-                var cmd = DocumentCommand.response(identifier, null, visa);
-                for (var i = 0; i < contacts.length; ++i) {
-                    if (send_content.call(this, contacts[i], cmd, 1)) {
-                        count += 1;
-                    }
+            // 2. get visa document for current user
+            var visa = user.getVisa();
+            if (!visa) {
+                // FIXME: query from station or create a new one?
+                console.error('user error', user);
+                return false;
+            } else {
+                // clone for modifying
+                var doc = Document.parse(visa.copyMap(false));
+                if (Interface.conforms(doc, Visa)) {
+                    visa = doc;
+                } else {
+                    console.error('visa error: $visa', visa);
+                    return false;
                 }
             }
-            return count > 0;
+            // 3. update visa document
+            visa.setProperty('app', this.getAppInfo(visa));
+            visa.setProperty('sys', this.getDeviceInfo(visa));
+            // 4. sign it
+            var sig = visa.sign(sKey);
+            if (!sig) {
+                console.error('failed to sign visa', visa, sKey);
+                return false;
+            }
+            // 5. save it
+            var ok = facebook.saveDocument(visa);
+            if (ok) {
+                console.info('visa updated', visa);
+            } else {
+                console.error('failed to save visa', visa);
+            }
+            return ok;
         },
 
-        postDocument: function (doc, meta) {
-            var identifier = doc.getIdentifier();
-            var cmd = DocumentCommand.response(identifier, meta, doc);
-            return this.sendCommand(cmd, 1);
+        // private
+        getAppInfo: function (visa) {
+            var info = visa.getProperty('app');
+            if (!info) {
+                info = {};
+            } else if (typeof info === 'string') {
+                info = {
+                    'app': info
+                };
+            }
+            info['id'] = 'chat.dim.web';
+            info['name'] = 'WebChat';
+            info['version'] = '2.0.0';
+            // ...
+            return info;
+        },
+        // private
+        getDeviceInfo: function (visa) {
+            var info = visa.getProperty('sys');
+            if (!info) {
+                info = {};
+            } else if (typeof info === 'string') {
+                info = {
+                    'sys': info
+                };
+            }
+            info['os'] = 'WebBrowser';
+            // ...
+            return info;
         },
 
-        postContacts: function (contacts) {
+        // Override
+        handshakeSuccess: function () {
+            // 1. broadcast current documents after handshake success
+            try {
+                ClientMessenger.prototype.handshakeSuccess.call(this);
+            } catch (e) {
+                console.error('failed to broadcast document', e);
+            }
+            var facebook = this.getFacebook();
+            var user = facebook.getCurrentUser();
+            if (!user) {
+                console.error('failed to get current user');
+                return;
+            }
+            // 2. broadcast login command with current station info
+            try {
+                var userAgent = 'Web Browser';  // TODO:
+                this.broadcastLogin(user.getIdentifier(), userAgent);
+            } catch (e) {
+                console.error('failed to broadcast login command')
+            }
+            // 3. broadcast block/mute list
+            // 4. report station speeds to master after tested speeds
+        },
+
+        reportSpeeds: function (meters, provider) {
             // TODO:
-
-            // 1. generate password
-
-            // 2. encrypt contacts list
-
-            // 3. encrypt key
-
-            // 4. pack 'storage' command
         },
 
-        queryContacts: function () {
-            // TODO:
-        },
-
-        queryGroupInfo: function (group, bots) {
-            // TODO:
+        /**
+         *  Send 'search' command to the SearchEngine
+         *
+         * @param {string} keywords - keyword separated with empty space
+         * @return {boolean} false on error
+         */
+        search: function (keywords) {
+            var content = SearchCommand.search(keywords);
+            var SE = ID.parse('archivist@anywhere');
+            return this.sendContent(content, null, SE, 0);
         }
     });
-
-    // Override
-    SharedMessenger.prototype.sendInstantMessage = function (iMsg, priority) {
-        var rMsg = ClientMessenger.prototype.sendInstantMessage.call(this, iMsg, priority);
-        if (rMsg) {
-            console.info('message sent', iMsg, priority);
-            var clerk = ns.Amanuensis.getInstance();
-            clerk.saveMessage(iMsg);
-        }
-        return rMsg;
-    };
-
-    // Override
-    SharedMessenger.prototype.processInstantMessage = function (iMsg, rMsg) {
-        var clerk = ns.Amanuensis.getInstance();
-        clerk.saveMessage(iMsg);
-        console.info('message received', iMsg, rMsg);
-        return ClientMessenger.prototype.processInstantMessage.call(this, iMsg, rMsg);
-    };
-    
-    var send_content = function (receiver, content, priority) {
-        var session = this.getSession();
-        if (!session.isActive()) {
-            return false;
-        }
-        var result = this.sendContent(null, receiver, content, priority);
-        return result[1] !== null;
-    };
-
-    /**
-     *  Send 'search' command to the SearchEngine
-     *
-     * @param {string} keywords - keyword separated with empty space
-     * @return {boolean} false on error
-     */
-    SharedMessenger.prototype.search = function (keywords) {
-        var cmd = SearchCommand.search(keywords);
-        return send_content.call(this, SE, cmd, 0);
-    };
-    var SE = ID.parse('archivist@anywhere');
 
     //-------- namespace --------
     ns.SharedMessenger = SharedMessenger;

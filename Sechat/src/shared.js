@@ -30,46 +30,116 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Station = sdk.mkm.Station;
-    var ClientSession = sdk.network.ClientSession;
-    var SharedFacebook = sdk.SharedFacebook;
+    var shared = {
+        database: null,
+        archivist: null,
+        facebook: null,
+        session: null,
+        messenger: null,
+        terminal: null
+    };
 
     var GlobalVariable = {
 
-        database: null,
-        facebook: null,
-        messenger: null,
-        terminal: null,
+        getDatabase: function () {
+            var database = shared.database;
+            if (!database) {
+                database = ns.SharedDatabase;
+                shared.database = database;
+            }
+            return database;
+        },
 
-        getInstance: function () {
-            return this
+        getArchivist: function () {
+            var archivist = shared.archivist;
+            if (!archivist) {
+                var database = this.getDatabase();
+                archivist = new ns.SharedArchivist(database);
+                shared.archivist = archivist;
+            }
+            return archivist;
+        },
+
+        getFacebook: function () {
+            var facebook = shared.facebook;
+            if (!facebook) {
+                facebook = new ns.SharedFacebook();
+                shared.facebook = facebook;
+            }
+            return facebook;
+        },
+
+        // getSession: function () {
+        //     return shared.session;
+        // },
+
+        getMessenger: function () {
+            var messenger = shared.messenger;
+            if (!messenger) {
+                var database = this.getDatabase();
+                var facebook = this.getFacebook();
+                var session = shared.session;
+                if (session/* && facebook && database*/) {
+                    messenger = new ns.SharedMessenger(session, facebook, database);
+                    shared.messenger = messenger;
+                } else {
+                    throw new ReferenceError('session not connected');
+                }
+            }
+            return messenger;
+        },
+
+        getTerminal: function () {
+            var client = shared.terminal;
+            if (!client) {
+                var database = this.getDatabase();
+                var facebook = this.getFacebook();
+                client = new ns.Client(facebook, database);
+                shared.terminal = client;
+            }
+            return client;
         }
     };
 
-    GlobalVariable.createFacebook = function (database, current_user) {
-        var facebook = new SharedFacebook(database);
-        // make sure private keys exist
-        var sign_key = facebook.getPrivateKeyForVisaSignature(current_user);
-        var msg_keys = facebook.getPrivateKeysForDecryption(current_user);
+    GlobalVariable.setCurrentUser = function (identifier) {
+        var facebook = this.getFacebook();
+        // 1. make sure private keys exist
+        var sign_key = facebook.getPrivateKeyForVisaSignature(identifier);
+        var msg_keys = facebook.getPrivateKeysForDecryption(identifier);
         if (!sign_key || !msg_keys || msg_keys.length === 0) {
-            throw ReferenceError('failed to get private keys for: ' + current_user);
+            throw ReferenceError('failed to get private keys for: ' + identifier);
         }
-        var user = facebook.getUser(current_user);
+        // 2. set to facebook
+        var user = facebook.getUser(identifier);
         facebook.setCurrentUser(user);
+        // 3. set to current session
+        var session = shared.session;
+        if (session) {
+            session.setIdentifier(identifier);
+        }
         return facebook;
     };
 
-    GlobalVariable.createSession = function (database, facebook, host, port) {
-        // 1. create station with remote host & port
-        var station = new Station(host, port);
-        station.setDataSource(facebook);
-        // 2. create session with SessionDB
-        var session = new ClientSession(station, database);
-        // 3. set current user
+    GlobalVariable.setSession = function (session) {
+        var facebook = this.getFacebook();
+        // set current user
         var user = facebook.getCurrentUser();
-        session.setIdentifier(user.getIdentifier());
-        return session;
-    }
+        if (user) {
+            session.setIdentifier(user.getIdentifier());
+        }
+        shared.session = session;
+    };
+
+    // GlobalVariable.connect = function (host, port) {
+    //     var database = this.getDatabase();
+    //     var facebook = this.getFacebook();
+    //     // 1. create station with remote host & port
+    //     var station = new Station(host, port);
+    //     station.setDataSource(facebook);
+    //     // 2. create session with SessionDB
+    //     var session = new ClientSession(station, database);
+    //     this.setSession(session);
+    // };
 
     //-------- namespace --------
     ns.GlobalVariable = GlobalVariable;

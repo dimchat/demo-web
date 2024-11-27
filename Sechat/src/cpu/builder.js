@@ -114,7 +114,7 @@
     };
 
     var getUsername = function (string) {
-        var facebook = ns.GlobalVariable.facebook;
+        var facebook = ns.GlobalVariable.getFacebook();
         return facebook.getName(ID.parse(string));
     };
 

@@ -30,11 +30,10 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface = sdk.type.Interface;
-    var Class = sdk.type.Class;
-    var FileContent = sdk.protocol.FileContent;
+    var Interface           = sdk.type.Interface;
+    var Class               = sdk.type.Class;
+    var FileContent         = sdk.protocol.FileContent;
     var ClientMessagePacker = sdk.ClientMessagePacker;
-    var Compatible = ns.Compatible;
 
     var SharedPacker = function (facebook, messenger) {
         ClientMessagePacker.call(this, facebook, messenger);
@@ -42,42 +41,33 @@
     Class(SharedPacker, ClientMessagePacker, null, {
 
         // Override
-        serializeMessage: function (rMsg) {
-            Compatible.fixMetaAttachment(rMsg);
-            return ClientMessagePacker.prototype.serializeMessage.call(this, rMsg);
-        },
-
-        // Override
-        deserializeMessage: function (data) {
-            if (!data || data.length < 2) {
-                return null;
-            }
-            var rMsg = ClientMessagePacker.prototype.deserializeMessage.call(this, data);
-            if (rMsg) {
-                Compatible.fixMetaAttachment(rMsg);
-            }
-            return rMsg;
-        },
-
-        // Override
         encryptMessage: function (iMsg) {
             var content = iMsg.getContent();
             if (Interface.conforms(content, FileContent)) {
                 // TODO: call emitter to encrypt & upload file data before send out
             }
+
+            // the intermediate node(s) can only get the message's signature,
+            // but cannot know the 'sn' because it cannot decrypt the content,
+            // this is usually not a problem;
+            // but sometimes we want to respond a receipt with original sn,
+            // so I suggest to expose 'sn' here.
+            iMsg.setValue('sn', content.getSerialNumber());
+
+            // check receiver & encrypt
             return ClientMessagePacker.prototype.encryptMessage.call(this, iMsg);
         },
 
         // Override
-        decryptMessage: function (sMsg) {
-            var iMsg = ClientMessagePacker.prototype.decryptMessage.call(this, sMsg);
-            if (iMsg) {
-                var content = iMsg.getContent();
-                if (Interface.conforms(content, FileContent)) {
-                    // TODO: keep password to decrypt data after downloaded
-                }
-            }
-            return iMsg;
+        suspendInstantMessage: function (iMsg, info) {
+            console.info('suspend instant message', iMsg, info);
+            iMsg.setValue('error', info);
+        },
+
+        // Override
+        suspendReliableMessage: function (rMsg, info) {
+            console.info('suspend reliable message', rMsg, info);
+            rMsg.setValue('error', info);
         }
     });
 

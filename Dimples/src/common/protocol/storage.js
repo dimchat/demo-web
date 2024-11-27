@@ -186,7 +186,7 @@
         // Override
         getData: function () {
             if (this.__data === null) {
-                var base64 = this.getString('data');
+                var base64 = this.getString('data', null);
                 if (base64) {
                     this.__data = Base64.decode(base64);
                 }

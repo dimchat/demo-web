@@ -30,7 +30,7 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class                = ns.type.Class;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
@@ -42,9 +42,10 @@
     Class(BlockCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    BlockCommandProcessor.prototype.process = function (cmd, rMsg) {
+    BlockCommandProcessor.prototype.process = function (content, rMsg) {
+
         // no need to response block command
-        return null;
+        return [];
     };
 
     //-------- namespace --------

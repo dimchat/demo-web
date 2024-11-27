@@ -43,6 +43,28 @@
             var facebook = this.getFacebook();
             var messenger = this.getMessenger();
             return new ns.cpu.ClientProcessorCreator(facebook, messenger);
+        },
+
+        // Override
+        processSecureMessage: function (sMsg, rMsg) {
+            try {
+                return ClientMessageProcessor.prototype.processSecureMessage.call(this, sMsg, rMsg);
+            } catch (e) {
+                console.error('failed to process message', rMsg, e);
+                return [];
+            }
+        },
+
+        // Override
+        processInstantMessage: function (iMsg, rMsg) {
+            var responses = ClientMessageProcessor.prototype.processInstantMessage.call(this, iMsg, rMsg);
+            // save instant message
+            var clerk = ns.Amanuensis;
+            if (!clerk.saveInstantMessage(iMsg)) {
+                console.error('failed to save instant message', iMsg);
+                return [];
+            }
+            return responses;
         }
     });
 

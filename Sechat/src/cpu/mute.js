@@ -30,7 +30,7 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class                = ns.type.Class;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
@@ -42,9 +42,10 @@
     Class(MuteCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    MuteCommandProcessor.prototype.process = function (cmd, rMsg) {
+    MuteCommandProcessor.prototype.process = function (content, rMsg) {
+
         // no need to response mute command
-        return null;
+        return [];
     };
 
     //-------- namespace --------

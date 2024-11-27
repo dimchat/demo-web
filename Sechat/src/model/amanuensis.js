@@ -30,18 +30,23 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface = sdk.type.Interface;
-    var ReceiptCommand = sdk.protocol.ReceiptCommand;
-    var Conversation = ns.Conversation;
+    var Interface        = sdk.type.Interface;
+    var Arrays           = sdk.type.Arrays;
+    var EntityType       = sdk.protocol.EntityType;
+    var ReceiptCommand   = sdk.protocol.ReceiptCommand;
+    var HandshakeCommand = sdk.protocol.HandshakeCommand;
+    var ReportCommand    = sdk.protocol.ReportCommand;
+    var LoginCommand     = sdk.protocol.LoginCommand;
+    var MetaCommand      = sdk.protocol.MetaCommand;
+    var SearchCommand    = sdk.protocol.SearchCommand;
+    var ForwardContent   = sdk.protocol.ForwardContent;
+    var InviteCommand    = sdk.protocol.group.InviteCommand;
+    var QueryCommand     = sdk.protocol.group.QueryCommand;
+    var Conversation     = ns.Conversation;
 
-    var get_facebook = function () {
-        return ns.GlobalVariable.getInstance().facebook;
-    };
-    // var get_messenger = function () {
-    //     return app.GlobalVariable.getInstance().messenger;
-    // };
-    var get_conversation_db = function () {
-        return ns.GlobalVariable.getInstance().database;
+    var clerk = {
+        conversations: null,   // List<Conversation>
+        conversationMap: {}  // Map<ID, Conversation>
     };
 
     /**
@@ -54,58 +59,110 @@
      */
     var Amanuensis = {
 
-        /**
-         *  Conversation factory
-         *
-         * @param {ID|*} identifier
-         * @returns {Conversation|*}
-         */
-        getConversation: function (identifier) {
-            var facebook = get_facebook();
-            // create directly if we can find the entity
-            var entity = null;
-            if (identifier.isUser()) {
-                entity = facebook.getUser(identifier);
-            } else if (identifier.isGroup()) {
-                entity = facebook.getGroup(identifier);
+        allConversations: function () {
+            var all = clerk.conversations;
+            if (!array) {
+                return [];
             }
-            if (!entity) {
-                return null;
+            var array = [];  // List<Conversation>
+            var chat;        // Conversation
+            for (var i = 0; i < all.length; ++i) {
+                chat = all[i];
+                if (chat.getIdentifier().isGroup()) {
+                    array.push(chat);
+                } else if (chat.isBlocked()) {
+                    // skip blocked-list
+                } else if (chat.isNotFriend()) {
+                    // skip stranger
+                } else {
+                    array.push(chat);
+                }
             }
-            var chatBox = new Conversation(entity);
-            chatBox.database = get_conversation_db();
-            return chatBox;
+            return array;
         },
 
-        // allConversations: function () {
-        //     var list = [];
-        //     var dict = this.__conversations;
-        //     var keys = Object.keys(dict);
-        //     var chat;
-        //     for (var i = 0; i < keys.length; ++i) {
-        //         chat = dict[keys[i]];
-        //         if (chat instanceof Conversation) {
-        //             list.push(chat);
-        //         }
-        //     }
-        //     return list;
-        // },
-        //
-        // addConversation: function (conversation) {
-        //     if (!conversation.delegate) {
-        //         conversation.delegate = this.__delegate;
-        //     }
-        //     if (!conversation.dataSource) {
-        //         conversation.dataSource = this.__dataSource;
-        //     }
-        //     var identifier = conversation.getIdentifier();
-        //     this.__conversations[identifier] = conversation;
-        // },
-        //
-        // removeConversation: function (conversation) {
-        //     var identifier = conversation.getIdentifier();
-        //     delete this.__conversations[identifier];
-        // },
+        getGroupChats: function () {
+            var all = clerk.conversations;
+            if (!array) {
+                return [];
+            }
+            var array = [];  // List<Conversation>
+            var chat;        // Conversation
+            for (var i = 0; i < all.length; ++i) {
+                chat = all[i];
+                if (chat.getIdentifier().isGroup()) {
+                    array.push(chat);
+                }
+            }
+            return array;
+        },
+
+        getStrangers: function () {
+            var all = clerk.conversations;
+            if (!array) {
+                return [];
+            }
+            var array = [];  // List<Conversation>
+            var chat;        // Conversation
+            for (var i = 0; i < all.length; ++i) {
+                chat = all[i];
+                if (chat.getIdentifier().isGroup()) {
+                    // skip group
+                } else if (EntityType.STATION.equals(chat.getIdentifier().getType())) {
+                    // skip station
+                } else if (chat.isBlocked()) {
+                    // skip blocked-list
+                } else if (chat.isFriend()) {
+                    // skip friends
+                } else {
+                    array.push(chat);
+                }
+            }
+            return array;
+        },
+
+        loadConversations: function () {
+            var array = clerk.conversations;
+            if (!array) {
+                array = [];
+                clerk.conversationMap = {};
+                var database = ns.GlobalVariable.getDatabase();
+                // get ID list from database
+                var count = database.numberOfConversations();
+                var entity;  // ID
+                var chat;    // Conversation
+                for (var index = 0; index < count; ++index) {
+                    entity = database.conversationAtIndex(index);
+                    // build conversations
+                    chat = new Conversation(entity);
+                    array.push(chat);
+                    clerk.conversationMap[entity] = chat;
+                }
+                clerk.conversations = array;
+            }
+            return array;
+        },
+
+        clearConversation: function (identifier) {
+            // 1. clear messages
+            var database = ns.GlobalVariable.getDatabase();
+            database.removeConversation(identifier);
+            // 2. update cache
+            return true;
+        },
+
+        removeConversation: function (identifier) {
+            // 1. clear messages
+            var database = ns.GlobalVariable.getDatabase();
+            database.removeConversation(identifier);
+            // 2. remove from cache
+            var chat = clerk.conversationMap[identifier];
+            if (chat) {
+                Arrays.remove(clerk.conversations, chat);
+                delete clerk.conversationMap[identifier];
+            }
+            return true;
+        },
 
         /**
          *  Save received message
@@ -113,18 +170,75 @@
          * @param {InstantMessage|*} iMsg
          * @returns {boolean}
          */
-        saveMessage: function (iMsg) {
-            if (Interface.conforms(iMsg.getContent(), ReceiptCommand)) {
+        saveInstantMessage: function (iMsg) {
+            var content = iMsg.getContent();
+            if (Interface.conforms(content, ReceiptCommand)) {
                 // it's a receipt
                 return this.saveReceipt(iMsg);
             }
-            var chatBox = get_conversation.call(this, iMsg);
-            if (chatBox) {
-                return chatBox.insertMessage(iMsg);
-            } else {
-                // throw new Error('conversation not found for message: ' + iMsg);
-                return false;
+            // TODO: check message type
+            //       only save normal message and group commands
+            //       ignore 'Handshake', ...
+            //       return true to allow responding
+
+            if (Interface.conforms(content, HandshakeCommand)) {
+                // handshake command will be processed by CPUs
+                // no need to save handshake command here
+                return true;
             }
+            if (Interface.conforms(content, ReportCommand)) {
+                // report command is sent to station,
+                // no need to save report command here
+                return true;
+            }
+            if (Interface.conforms(content, LoginCommand)) {
+                // login command will be processed by CPUs
+                // no need to save login command here
+                return true;
+            }
+            if (Interface.conforms(content, MetaCommand)) {
+                // meta & document command will be checked and saved by CPUs
+                // no need to save meta & document command here
+                return true;
+            }
+            // if (Interface.conforms(content, MuteCommand) ||
+            //     Interface.conforms(content, BlockCommand)) {
+            //     // TODO: create CPUs for mute & block command
+            //     // no need to save mute & block command here
+            //   return true;
+            // }
+            if (Interface.conforms(content, SearchCommand)) {
+                // search result will be parsed by CPUs
+                // no need to save search command here
+                return true;
+            }
+            if (Interface.conforms(content, ForwardContent)) {
+                // forward content will be parsed, if secret message decrypted, save it
+                // no need to save forward content itself
+                return true;
+            }
+
+            var database = ns.GlobalVariable.getDatabase();
+
+            if (Interface.conforms(content, InviteCommand)) {
+                // send keys again
+                var me = iMsg.getReceiver();
+                var group = content.getGroup();
+                var key = database.getCipherKey(me, group, false);
+                if (key) {
+                    key.removeValue('reused');
+                }
+            } else if (Interface.conforms(content, QueryCommand)) {
+                // FIXME: same query command sent to different members?
+                return true;
+            }
+
+            var cid = _cid(iMsg.getEnvelope(), content);
+            var ok = database.insertMessage(iMsg, cid);
+            if (ok) {
+                // TODO: save traces
+            }
+            return ok;
         },
 
         /**
@@ -134,37 +248,14 @@
          * @returns {boolean}
          */
         saveReceipt: function (iMsg) {
-            var chatBox = get_conversation.call(this, iMsg);
-            if (chatBox) {
-                return chatBox.saveReceipt(iMsg);
-            } else {
-                // throw new Error('conversation not found for message: ' + iMsg);
+            var content = iMsg.getContent();
+            if (!Interface.conforms(content, ReceiptCommand)) {
+                console.error('receipt error', content, iMsg);
                 return false;
             }
-
-            // var target = message_matches_receipt(receipt, chat);
-            // if (target) {
-            //     var text = receipt.getMessage();
-            //     if (sender.equals(receiver)) {
-            //         // the receiver's client feedback
-            //         if (text && text.indexOf('read')) {
-            //             target.getContent().setValue('state', 'read')
-            //         } else {
-            //             target.getContent().setValue('state', 'arrived')
-            //         }
-            //     } else if (EntityType.STATION.equals(sender.getType())) {
-            //         // delivering or delivered to receiver (station said)
-            //         if (text && text.indexOf('delivered')) {
-            //             target.getContent().setValue('state', 'delivered')
-            //         } else {
-            //             target.getContent().setValue('state', 'delivering')
-            //         }
-            //     } else {
-            //         throw new Error('unexpect receipt sender: ' + sender);
-            //     }
-            //     return true;
-            // }
-            // console.log('target message not found for receipt', receipt);
+            console.info('saving receipt', content, iMsg);
+            // TODO:
+            return true;
         },
 
         getInstance: function () {
@@ -172,62 +263,38 @@
         }
     };
 
-    var get_conversation = function (iMsg) {
-        // check receiver
-        var receiver = iMsg.getReceiver();
-        if (receiver.isGroup()) {
-            // group chat, get chat box with group ID
-            return this.getConversation(receiver);
-        }
+    /**
+     *  Get conversation ID for message envelope
+     *
+     * @param {Envelope} envelope
+     * @param {Content} content
+     * @return {ID}
+     */
+    var _cid = function (envelope, content) {
         // check group
-        var group = iMsg.getGroup();
+        var group = !content ? null : content.getGroup();
+        if (!group) {
+            group = envelope.getGroup();
+        }
         if (group) {
             // group chat, get chat box with group ID
-            return this.getConversation(group);
+            return group;
         }
-        // personal chat, get chat box with contact ID
-        var facebook = get_facebook();
+        // check receiver
+        var receiver = envelope.getReceiver();
+        if (receiver.isGroup()) {
+            // group chat, get chat box with group ID
+            return receiver;
+        }
+        var facebook = ns.GlobalVariable.getFacebook();
         var user = facebook.getCurrentUser();
-        var sender = iMsg.getSender();
+        var sender = envelope.getSender();
         if (user.getIdentifier().equals(sender)) {
-            return this.getConversation(receiver);
+            return receiver;
         } else {
-            return this.getConversation(sender);
+            return sender;
         }
     };
-
-    // var message_matches_receipt = function (receipt, conversation) {
-    //     var iMsg;
-    //     var count = conversation.getMessageCount();
-    //     for (var index = count - 1; index >= 0; --index) {
-    //         iMsg = conversation.getMessage(index);
-    //         if (is_receipt_match(receipt, iMsg)) {
-    //             return iMsg;
-    //         }
-    //     }
-    //     return null;
-    // };
-    // var is_receipt_match = function (receipt, iMsg) {
-    //     // check signature
-    //     var sig1 = receipt.getValue('signature');
-    //     var sig2 = iMsg.getValue('signature');
-    //     if (sig1 && sig2 && sig1.length >= 8 && sig2.length >= 8) {
-    //         // if contains signature, check it
-    //         return sig1.substring(0, 8) === sig2.substring(0, 8);
-    //     }
-    //
-    //     // check envelope
-    //     var env1 = receipt.getEnvelope();
-    //     var env2 = iMsg.getEnvelope();
-    //     if (env1) {
-    //         // if contains envelope, check it
-    //         return env1.equals(env2);
-    //     }
-    //
-    //     // check serial number
-    //     // (only the original message's receiver can know this number)
-    //     return receipt.sn === iMsg.getContent().getSerialNumber();
-    // };
 
     //-------- namespace --------
     ns.Amanuensis = Amanuensis;

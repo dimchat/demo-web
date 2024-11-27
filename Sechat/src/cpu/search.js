@@ -35,12 +35,12 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Meta = ns.protocol.Meta;
-    var SearchCommand = ns.protocol.SearchCommand;
+    var Class                = ns.type.Class;
+    var ID                   = ns.protocol.ID;
+    var Meta                 = ns.protocol.Meta;
+    var SearchCommand        = ns.protocol.SearchCommand;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
-    var NotificationCenter = ns.lnc.NotificationCenter;
+    var NotificationCenter   = ns.lnc.NotificationCenter;
 
     /**
      *  Search Command Processor
@@ -61,7 +61,7 @@
             'content': content,
             'envelope': rMsg.getEnvelope()
         });
-        return null;
+        return [];
     };
 
     var parse = function (command) {

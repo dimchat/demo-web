@@ -31,14 +31,15 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
+    var Class     = ns.type.Class;
 
-    var FileContent  = ns.protocol.FileContent;
-    var ImageContent = ns.protocol.ImageContent;
-    var AudioContent = ns.protocol.AudioContent;
-    var VideoContent = ns.protocol.VideoContent;
-    var TextContent  = ns.protocol.TextContent;
-    var PageContent  = ns.protocol.PageContent;
+    var FileContent    = ns.protocol.FileContent;
+    var ImageContent   = ns.protocol.ImageContent;
+    var AudioContent   = ns.protocol.AudioContent;
+    var VideoContent   = ns.protocol.VideoContent;
+    var TextContent    = ns.protocol.TextContent;
+    var PageContent    = ns.protocol.PageContent;
+    var ReceiptCommand = ns.protocol.ReceiptCommand;
 
     var BaseContentProcessor = ns.cpu.BaseContentProcessor;
 
@@ -87,10 +88,7 @@
             return null;
         }
         // response
-        var env = rMsg.getEnvelope();
-        var sn = content.getSerialNumber();
-        var signature = rMsg.getString('signature');
-        var receipt = new ns.dkd.cmd.ReceiptCommand(text, env, sn, signature);
+        var receipt = ReceiptCommand.create(text, rMsg.getEnvelope(), content);
         return [receipt];
     };
 

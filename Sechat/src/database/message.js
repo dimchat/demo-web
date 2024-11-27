@@ -31,8 +31,7 @@
     'use strict';
 
     var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var ReliableMessageDBI = ns.dbi.ReliableMessageDBI;
+    var ID    = ns.protocol.ID;
 
     /**
      *  Storage for Conversations
@@ -40,69 +39,13 @@
      */
     var MessageStorage = function () {
         Object.call(this);
-        this.__reliable_messages = {};  // str(receiver) => ReliableMessage[]
         this.__instant_messages = {};   // str(receiver) => InstantMessage[]
     };
-    Class(MessageStorage, Object, [ReliableMessageDBI], null);
-
-    // Override
-    MessageStorage.prototype.getReliableMessages = function (receiver, start, limit) {
-        if (!limit || limit <= 0) {
-            limit = 20;
-        }
-        receiver = receiver.toString();
-        var messages = this.__reliable_messages[receiver];
-        if (!messages/* || messages.length === 0*/) {
-            // no messages for this receiver
-            return [null, 0];
-        }
-        var total = messages.length;
-        if (start < 0) {
-            var offset = start + total;
-            if (offset < 0) {
-                throw RangeError('out of range');
-            }
-            start = offset;
-        } else if (start >= total) {
-            // out of range
-            return [null, 0];
-        }
-        var end = start + limit;
-        var remaining;
-        if (end < total) {
-            remaining = total - end;
-        } else {
-            end = total;
-            remaining = 0;
-        }
-        var partial = messages.slice(start, end);
-        return [partial, remaining];
-    };
-
-    // Override
-    MessageStorage.prototype.cacheReliableMessage = function (receiver, rMsg) {
-        var msg_sig = rMsg.getString('signature');
-        if (!msg_sig) {
-            throw new ReferenceError('message error: ' + rMsg);
-        }
-        receiver = receiver.toString();
-        var messages = this.__reliable_messages[receiver];
-        if (!messages/* || messages.length === 0*/) {
-            // first message for this receiver
-            this.__reliable_messages[receiver] = [rMsg];
-            return true;
-        } else if (find_reliable(messages, rMsg) >= 0) {
-            // duplicated
-            return false;
-        }
-        // insert and sorted by time
-        insert_msg(messages, rMsg);
-        return true;
-    };
+    Class(MessageStorage, Object, null, null);
 
     var insert_msg = function (messages, msg) {
         var pos = messages.length - 1;
-        var msg_time = msg.getNumber('time');
+        var msg_time = msg.getFloat('time', 0);
         if (msg_time === 0) {
             // new message has no time, just append to the tail
             messages.push(msg);
@@ -113,7 +56,7 @@
         var i;
         for (i = pos; i >= 0; --i) {
             item = messages[i];
-            item_time = item.getNumber('time');
+            item_time = item.getFloat('time', 0);
             if (item_time <= 0) {
                 // skip message without time
                 continue;
@@ -128,42 +71,6 @@
         }
         messages.splice(pos + 1, 0, msg);
         return pos + 1;
-    };
-
-    // Override
-    MessageStorage.prototype.removeReliableMessage = function (receiver, rMsg) {
-        var msg_sig = rMsg.getString('signature');
-        if (!msg_sig) {
-            throw new ReferenceError('message error: ' + rMsg);
-        }
-        receiver = receiver.toString();
-        var messages = this.__reliable_messages[receiver];
-        if (!messages/* || messages.length === 0*/) {
-            // no message for this receiver
-            return false;
-        }
-        var pos = find_reliable(messages, rMsg);
-        if (pos < 0) {
-            // not found
-            return false;
-        }
-        if (messages.length === 1) {
-            // only one message
-            delete this.__reliable_messages[receiver];
-        } else {
-            messages.splice(pos, 1);
-        }
-        return true;
-    };
-
-    var find_reliable = function (messages, msg) {
-        var sig = msg.getString('signature');
-        for (var i = messages.length - 1; i >= 0; --i) {
-            if (messages[i].getString('signature') === sig) {
-                return i;
-            }
-        }
-        return -1;
     };
 
     //---- conversations

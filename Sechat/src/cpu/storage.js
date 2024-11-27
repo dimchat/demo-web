@@ -35,8 +35,8 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var StorageCommand = ns.protocol.StorageCommand;
+    var Class                = ns.type.Class;
+    var StorageCommand       = ns.protocol.StorageCommand;
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
@@ -48,14 +48,14 @@
     Class(StorageCommandProcessor, BaseCommandProcessor, null, null);
 
     // Override
-    StorageCommandProcessor.prototype.process = function (cmd, rMsg) {
-        var title = cmd.getTitle();
+    StorageCommandProcessor.prototype.process = function (content, rMsg) {
+        var title = content.getTitle();
         if (title === StorageCommand.CONTACTS) {
             // process contacts
         } else if (title === StorageCommand.PRIVATE_KEY) {
             // process private key
         }
-        return null;
+        return [];
     };
 
     //-------- namespace --------

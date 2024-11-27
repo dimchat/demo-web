@@ -77,7 +77,6 @@ var dim_client = [
     'src/client/network/fsm_transition.js',
     'src/client/network/http.js',
     'src/client/network/session.js',
-    'src/client/network/terminal.js',
 
     'src/client/cpu/commands.js',
     'src/client/cpu/handshake.js',
@@ -94,6 +93,7 @@ var dim_client = [
     'src/client/messenger.js',
     'src/client/packer.js',
     'src/client/processor.js',
+    'src/client/terminal.js',
 
     null
 ];
