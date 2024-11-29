@@ -30,9 +30,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Storage = ns.dos.LocalStorage;
+    var Class    = ns.type.Class;
+    var ID       = ns.protocol.ID;
+    var Storage  = ns.dos.LocalStorage;
     var GroupDBI = ns.dbi.GroupDBI;
 
     var members_path = function (group) {

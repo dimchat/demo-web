@@ -30,11 +30,11 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var Command = ns.protocol.Command;
+    var Class           = ns.type.Class;
+    var Command         = ns.protocol.Command;
     var ReliableMessage = ns.protocol.ReliableMessage;
-    var Storage = ns.dos.LocalStorage;
-    var LoginDBI = ns.dbi.LoginDBI;
+    var Storage         = ns.dos.LocalStorage;
+    var LoginDBI        = ns.dbi.LoginDBI;
 
     var store_path = function (user) {
         return 'user.' + user.getAddress().toString() + '.login';

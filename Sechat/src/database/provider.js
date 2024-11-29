@@ -30,9 +30,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
-    var Storage = ns.dos.LocalStorage;
+    var Class       = ns.type.Class;
+    var ID          = ns.protocol.ID;
+    var Storage     = ns.dos.LocalStorage;
     var ProviderDBI = ns.dbi.ProviderDBI;
 
     var stations_path = function (provider) {

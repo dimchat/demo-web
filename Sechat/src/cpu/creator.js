@@ -34,16 +34,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-
-    var Command      = ns.protocol.Command;
-
+    var Class                         = ns.type.Class;
+    var Command                       = ns.protocol.Command;
     var ClientContentProcessorCreator = ns.cpu.ClientContentProcessorCreator;
-    var AnyContentProcessor     = ns.cpu.AnyContentProcessor;
-    var MuteCommandProcessor    = ns.cpu.MuteCommandProcessor;
-    var BlockCommandProcessor   = ns.cpu.BlockCommandProcessor;
-    var StorageCommandProcessor = ns.cpu.StorageCommandProcessor;
-    var SearchCommandProcessor  = ns.cpu.SearchCommandProcessor;
 
     var ClientProcessorCreator = function (facebook, messenger) {
         ClientContentProcessorCreator.call(this, facebook, messenger);
@@ -59,7 +52,7 @@
             // default
             if (type === 0) {
                 // unknown type?
-                return new AnyContentProcessor(facebook, messenger);
+                return new ns.cpu.AnyContentProcessor(facebook, messenger);
             }
             // others
             return ClientContentProcessorCreator.prototype.createContentProcessor.call(this, type);
@@ -72,19 +65,19 @@
             switch (cmd) {
                 // mute
                 case Command.MUTE:
-                    return new MuteCommandProcessor(facebook, messenger);
+                    return new ns.cpu.MuteCommandProcessor(facebook, messenger);
                 // block
                 case Command.BLOCK:
-                    return new BlockCommandProcessor(facebook, messenger);
+                    return new ns.cpu.BlockCommandProcessor(facebook, messenger);
                 // search (users)
                 case Command.SEARCH:
                 case Command.ONLINE_USERS:
-                    return new SearchCommandProcessor(facebook, messenger);
+                    return new ns.cpu.SearchCommandProcessor(facebook, messenger);
                 // storage (contacts, private_key)
                 case Command.STORAGE:
                 case Command.CONTACTS:
                 case Command.PRIVATE_KEY:
-                    return new StorageCommandProcessor(facebook, messenger);
+                    return new ns.cpu.StorageCommandProcessor(facebook, messenger);
             }
 
             // others

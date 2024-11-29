@@ -30,8 +30,8 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
-    var ID = ns.protocol.ID;
+    var Class   = ns.type.Class;
+    var ID      = ns.protocol.ID;
     var Storage = ns.dos.LocalStorage;
     var UserDBI = ns.dbi.UserDBI;
 

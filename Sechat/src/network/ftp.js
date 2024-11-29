@@ -35,9 +35,9 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Hex = sdk.format.Hex;
-    var UTF8 = sdk.format.UTF8;
-    var MD5 = sdk.digest.MD5;
+    var Hex     = sdk.format.Hex;
+    var UTF8    = sdk.format.UTF8;
+    var MD5     = sdk.digest.MD5;
     var Storage = ns.dos.SessionStorage;
 
     var get_configuration = function () {

@@ -25,12 +25,12 @@
 // =============================================================================
 //
 
-//!require 'compatible.js'
+//!require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
 
-    var Class = sdk.type.Class;
+    var Class                  = sdk.type.Class;
     var ClientMessageProcessor = sdk.ClientMessageProcessor;
 
     var SharedProcessor = function (facebook, messenger) {

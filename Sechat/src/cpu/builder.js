@@ -31,22 +31,22 @@
     'use strict';
 
     var Interface = ns.type.Interface;
-    var ID = ns.protocol.ID;
+    var ID        = ns.protocol.ID;
 
-    var FileContent = ns.protocol.FileContent;
-    var ImageContent = ns.protocol.ImageContent;
-    var AudioContent = ns.protocol.AudioContent;
-    var VideoContent = ns.protocol.VideoContent;
-    var TextContent = ns.protocol.TextContent;
-    var PageContent = ns.protocol.PageContent;
+    var TextContent   = ns.protocol.TextContent;
+    var PageContent   = ns.protocol.PageContent;
+    var FileContent   = ns.protocol.FileContent;
+    var ImageContent  = ns.protocol.ImageContent;
+    var AudioContent  = ns.protocol.AudioContent;
+    var VideoContent  = ns.protocol.VideoContent;
 
-    var LoginCommand = ns.protocol.LoginCommand;
-    var GroupCommand = ns.protocol.GroupCommand;
+    var LoginCommand  = ns.protocol.LoginCommand;
+    var GroupCommand  = ns.protocol.GroupCommand;
     var InviteCommand = ns.protocol.group.InviteCommand;
-    var ExpelCommand = ns.protocol.group.ExpelCommand;
-    var QuitCommand = ns.protocol.group.QuitCommand;
-    var ResetCommand = ns.protocol.group.ResetCommand;
-    var QueryCommand = ns.protocol.group.QueryCommand;
+    var ExpelCommand  = ns.protocol.group.ExpelCommand;
+    var QuitCommand   = ns.protocol.group.QuitCommand;
+    var ResetCommand  = ns.protocol.group.ResetCommand;
+    var QueryCommand  = ns.protocol.group.QueryCommand;
 
     //
     //  Message Text Builder

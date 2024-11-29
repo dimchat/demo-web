@@ -30,9 +30,9 @@
 (function (ns) {
     'use strict';
 
-    var Class = ns.type.Class;
+    var Class        = ns.type.Class;
     var SymmetricKey = ns.crypto.SymmetricKey;
-    var Storage = ns.dos.SessionStorage;
+    var Storage      = ns.dos.SessionStorage;
     var CipherKeyDBI = ns.dbi.CipherKeyDBI;
 
     var msg_key_path = function (from, to) {

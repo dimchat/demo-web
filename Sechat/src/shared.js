@@ -25,7 +25,10 @@
 // =============================================================================
 //
 
+//!require 'database.js'
 //!require 'facebook.js'
+//!require 'messenger.js'
+//!require 'client.js'
 
 (function (ns, sdk) {
     'use strict';
@@ -34,8 +37,12 @@
         database: null,
         archivist: null,
         facebook: null,
+
         session: null,
         messenger: null,
+
+        emitter: null,
+
         terminal: null
     };
 
@@ -95,6 +102,15 @@
             return messenger;
         },
 
+        getEmitter: function () {
+            var emitter = shared.emitter;
+            if (!emitter) {
+                emitter = new ns.Emitter();
+                shared.emitter = emitter;
+            }
+            return emitter;
+        },
+
         getTerminal: function () {
             var client = shared.terminal;
             if (!client) {
@@ -119,7 +135,10 @@
         // 2. set to facebook
         var user = facebook.getUser(identifier);
         facebook.setCurrentUser(user);
-        // 3. set to current session
+        // 3. update database
+        var database = this.getDatabase();
+        database.setCurrentUser(identifier);
+        // 4. set to current session
         var session = shared.session;
         if (session) {
             session.setIdentifier(identifier);

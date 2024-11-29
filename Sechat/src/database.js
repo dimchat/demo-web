@@ -31,7 +31,7 @@
     'use strict';
 
     var SymmetricKey = sdk.crypto.SymmetricKey;
-    var PlainKey = sdk.crypto.PlainKey;
+    var PlainKey     = sdk.crypto.PlainKey;
 
     var PrivateKeyStorage = sdk.database.PrivateKeyStorage;
     var MetaStorage       = sdk.database.MetaStorage;

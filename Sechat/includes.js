@@ -2,12 +2,6 @@
 var sechat_src = [
 
     'src/namespace.js',
-    'src/facebook.js',
-    'src/messenger.js',
-    'src/packer.js',
-    'src/processor.js',
-    'src/client.js',
-    'src/shared.js',
 
     'src/network/ftp.js',
 
@@ -29,7 +23,15 @@ var sechat_src = [
     'src/model/configuration.js',
     'src/model/conversation.js',
     'src/model/amanuensis.js',
-    'src/model/database.js',
+
+    'src/database.js',
+    'src/emitter.js',
+    'src/facebook.js',
+    'src/messenger.js',
+    'src/packer.js',
+    'src/processor.js',
+    'src/client.js',
+    'src/shared.js',
 
     null
 ];

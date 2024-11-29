@@ -25,7 +25,7 @@
 // =============================================================================
 //
 
-//!require 'compatible.js'
+//!require 'namespace.js'
 
 (function (ns, sdk) {
     'use strict';
