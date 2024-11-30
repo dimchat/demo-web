@@ -77,7 +77,7 @@
                     // connection changed?
                     // erase session key to handshake again
                     console.warn('[DIM] handshake again', oldKey, newKey);
-                    messenger.setSessionKey(null);
+                    session.setSessionKey(null);
                 }
             } else if (title === 'DIM!') {
                 // S -> C: handshake accepted by station

@@ -58,7 +58,8 @@ button:focus {
     width: 64px;
     height: 64px;
     margin: 16px auto 2px;
-    border: 1px solid lightgray;
+    /*border: 1px solid lightgray;*/
+    border: 0;
     padding: 0;
     -moz-border-radius: 8px;
     -webkit-border-radius: 8px;
@@ -70,9 +71,12 @@ button:focus {
     width: 64px;
     height: 64px;
     margin: 0;
-    border: 0;
+    border: 1px solid lightgray;
     padding: 0;
     background-color: transparent;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
 }
 
 .mainWindow .mainList .name {

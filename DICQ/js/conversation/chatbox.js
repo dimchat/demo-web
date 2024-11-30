@@ -17,7 +17,6 @@
     var TableView = tui.TableView;
 
     var Class = sdk.type.Class;
-    var TextContent = sdk.protocol.TextContent;
 
     var NotificationCenter   = sdk.lnc.NotificationCenter;
     var NotificationObserver = sdk.lnc.Observer;
@@ -90,11 +89,18 @@
             win.sendText(message.getValue());
         };
         this.appendChild(button);
+    };
+    Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
 
+    ChatWindow.prototype.onEnter = function () {
         var nc = NotificationCenter.getInstance();
         nc.addObserver(this, NotificationNames.MessageUpdated);
     };
-    Class(ChatWindow, Window, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
+
+    ChatWindow.prototype.onExit = function () {
+        var nc = NotificationCenter.getInstance();
+        nc.removeObserver(this, NotificationNames.MessageUpdated);
+    };
 
     ChatWindow.prototype.setIdentifier = function (identifier) {
         var facebook = get_facebook();
@@ -196,24 +202,6 @@
         if (!text) {
             return ;
         }
-        var content = TextContent.create(text);
-        this.sendContent(content);
-    };
-
-    ChatWindow.prototype.sendContent = function (content) {
-        var messenger = get_messenger();
-        // TODO: check whether login
-        // var server = messenger.getCurrentStation();
-        // var status = server.getStatus();
-        // if (!Gate.Status.S.equals(status)) {
-        //     alert('Station not connect');
-        //     return false;
-        // }
-        // var user = server.getCurrentUser();
-        // if (!user) {
-        //     alert('User not login');
-        //     return false;
-        // }
         var receiver = this.__identifier;
         if (receiver.isGroup()) {
             var facebook = get_facebook();
@@ -221,6 +209,7 @@
             if (!members || members.length === 0) {
                 var ass = facebook.getAssistants(receiver);
                 if (ass && ass.length > 0) {
+                    var messenger = get_messenger();
                     messenger.queryGroupInfo(receiver, ass);
                     alert('Querying group members.');
                 } else {
@@ -228,10 +217,10 @@
                 }
                 return false;
             }
-            content.setGroup(receiver);
         }
-        if (messenger.sendContent(content, null, receiver, null, 0)) {
-            console.log('sending message: ', content);
+        var emitter = app.GlobalVariable.getEmitter();
+        if (emitter.sendText(text, receiver)) {
+            console.log('sending message: ', text, receiver);
             this.messageView.setValue('');
             this.historyView.reloadData();
             return true;

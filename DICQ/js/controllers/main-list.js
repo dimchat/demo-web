@@ -38,10 +38,18 @@
 
         // notifications
         var nc = NotificationCenter.getInstance();
+        nc.removeObserver(this, NotificationNames.MessageUpdated);
+        nc.removeObserver(this, NotificationNames.ContactsUpdated);
         nc.addObserver(this, NotificationNames.ContactsUpdated);
         nc.addObserver(this, NotificationNames.MessageUpdated);
     };
     Class(MainListView, FixedTableView, [TableViewDataSource, TableViewDelegate, NotificationObserver], null);
+
+    MainListView.prototype.onExit = function () {
+        var nc = NotificationCenter.getInstance();
+        nc.removeObserver(this, NotificationNames.MessageUpdated);
+        nc.removeObserver(this, NotificationNames.ContactsUpdated);
+    };
 
     MainListView.prototype.onReceiveNotification = function (notification) {
         var name = notification.getName();
@@ -64,14 +72,14 @@
 
     MainListView.prototype.reloadData = function () {
         var facebook = get_facebook();
+        var persons = [];
+        var groups = [];
+        var robots = [];
+        var id;
         // 1. fetch contacts
         var user = facebook.getCurrentUser();
         var contacts = facebook.getContacts(user.getIdentifier());
         if (contacts && contacts.length > 0) {
-            var persons = [];
-            var groups = [];
-            var robots = [];
-            var id;
             for (var i = 0; i < contacts.length; ++i) {
                 id = ID.parse(contacts[i]);
                 if (!id) {
@@ -88,32 +96,34 @@
                     persons.push(id);
                 }
             }
-            // sort by message time
-            s_persons = persons.sort(compare_time);
-            s_groups = groups.sort(compare_time);
-            s_robots = robots.sort(compare_time);
         }
         // 2. fetch strangers
         var strangers = facebook.getContacts(ID.ANYONE);
         if (strangers && strangers.length > 0) {
-            // filter contacts
-            var pos;
-            for (var j = 0; j < s_persons.length; j++) {
-                pos = strangers.indexOf(s_persons[j]);
-                if (pos >= 0) {
-                    s_strangers.splice(pos, 1);
+            for (var j = strangers.length - 1; j >= 0; --j) {
+                id = ID.parse(strangers[j]);
+                if (!id) {
+                    console.error('ID error: ' + strangers[j]);
+                }
+                // filter contacts
+                if (persons.indexOf(id) >= 0) {
+                    strangers.splice(j, 1);
+                } else if (robots.indexOf(id) >= 0) {
+                    strangers.splice(j, 1);
+                } else if (EntityType.BOT.equals(id.getType())) {
+                    robots.push(id);
+                    strangers.splice(j, 1);
                 }
             }
-            for (var k = 0; k < s_robots.length; k++) {
-                pos = strangers.indexOf(s_robots[k]);
-                if (pos >= 0) {
-                    s_strangers.splice(pos, 1);
-                }
-            }
-            // sort by message time
-            s_strangers = strangers.sort(compare_time);
+        } else {
+            strangers = [];
         }
-        // 3. refresh table view
+        // 3. sort by message time
+        s_persons = persons.sort(compare_time);
+        s_groups = groups.sort(compare_time);
+        s_robots = robots.sort(compare_time);
+        s_strangers = strangers.sort(compare_time);
+        // refresh table view
         FixedTableView.prototype.reloadData.call(this);
     };
     var compare_time = function (id1, id2) {
@@ -129,6 +139,15 @@
         return msg.getTime();
     };
 
+    var $ = tarsier.ui.$;
+
+    MainListView.prototype.removeChild = function (child) {
+        if (typeof child.onExit === "function") {
+            child.onExit()
+        }
+        return FixedTableView.prototype.removeChild.call(this, child);
+    };
+
     //
     //  TableViewDataSource/TableViewDelegate
     //
@@ -141,7 +160,7 @@
         } else if (section === 1) {
             return 'Groups';
         } else if (section === 2) {
-            return 'Robots';
+            return 'Bots';
         } else {
             return 'Strangers';
         }

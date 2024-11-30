@@ -197,7 +197,10 @@ if (typeof dicq !== 'object') {
             'sdk/clipboard.js',
 
             /* DIM SDK */
-            'libs/dimples.min.js',
+            'sdk/dimsdk.min.js',
+            'libs/common.min.js',
+            'libs/client.min.js',
+            // 'libs/dimples.min.js',
             'libs/sechat.min.js',
             null
         ];
@@ -214,7 +217,10 @@ if (typeof dicq !== 'object') {
             'sdk/clipboard.js',
 
             /* DIM SDK */
-            'libs/dimples.js',
+            'sdk/dimsdk.js',
+            'libs/common.js',
+            'libs/client.js',
+            // 'libs/dimples.js',
             'libs/sechat.js',
             null
         ];
@@ -268,6 +274,7 @@ if (typeof dicq !== 'object') {
         'js/controllers/user.js',
         'js/controllers/about.js',
 
+        'js/blink.js',
         'js/app.js',
         null
     ];

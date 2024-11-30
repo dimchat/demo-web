@@ -100,23 +100,23 @@
             }
         }
 
-        var results = command.getResults();
-        if (results) {
-            var id, meta;
-            var keys = Object.keys(results);
-            for (var j = 0; j < keys.length; ++j) {
-                id = ID.parse(keys[j]);
-                if (!id) {
-                    continue;
-                }
-                meta = results[id];
-                meta = Meta.parse(meta);
-                if (!meta) {
-                    continue;
-                }
-                facebook.saveMeta(meta, id);
-            }
-        }
+        // var results = command.getResults();
+        // if (results) {
+        //     var id, meta;
+        //     var keys = Object.keys(results);
+        //     for (var j = 0; j < keys.length; ++j) {
+        //         id = ID.parse(keys[j]);
+        //         if (!id) {
+        //             continue;
+        //         }
+        //         meta = results[id];
+        //         meta = Meta.parse(meta);
+        //         if (!meta) {
+        //             continue;
+        //         }
+        //         facebook.saveMeta(meta, id);
+        //     }
+        // }
 
         command.setValue('text', text);
     };

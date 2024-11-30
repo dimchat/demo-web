@@ -97,64 +97,52 @@
 
         // conversation ID
         this.__identifier = identifier;
-        // check for dancing
-        this.__ti = 0;
-        check_unread_msg.call(this);
         return this;
+    };
+
+    MainTableViewCell.prototype.onEnter = function () {
+        var nc = NotificationCenter.getInstance();
+        nc.addObserver(this, NotificationNames.NewMessageDancing);
+    };
+
+    MainTableViewCell.prototype.onExit = function () {
+        var nc = NotificationCenter.getInstance();
+        nc.removeObserver(this, NotificationNames.NewMessageDancing);
     };
 
     MainTableViewCell.prototype.onReceiveNotification = function (notification) {
         var name = notification.getName();
         var userInfo = notification.getUserInfo();
-        if (name === NotificationNames.MessageUpdated) {
-            var msg = userInfo['msg'];
-            check_unread_msg.call(this, msg);
-        }
-    };
-
-    MainTableViewCell.prototype.onEnter = function () {
-        var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, NotificationNames.MessageUpdated);
-    };
-
-    MainTableViewCell.prototype.onExit = function () {
-        var nc = NotificationCenter.getInstance();
-        nc.removeObserver(this, NotificationNames.MessageUpdated);
-        this.stopDancing();
-    };
-
-    var check_unread_msg = function (msg) {
-        var identifier = this.__identifier;
-        if (msg) {
-            if (identifier.isGroup()) {
-                if (!identifier.equals(msg.getGroup())) {
-                    return false;
-                }
-            } else if (identifier.isUser()) {
-                if (!identifier.equals(msg.getSender())) {
-                    return false;
-                }
-                if (msg.getGroup()) {
-                    return false;
-                }
+        if (name === NotificationNames.NewMessageDancing) {
+            var dancing = userInfo['dancing'];
+            var flag = dancing[this.__identifier];
+            if (flag) {
+                this.dancing();
+            } else {
+                this.stopDancing();
             }
+        }
+        // FIXME:
+        remove_zombie.call(this);
+    };
+
+    // private
+    MainTableViewCell.prototype.dancing = function () {
+        // dancing animation
+        var img = this.avatarImage;
+        if (img.__ie.style.visibility === 'hidden') {
+            img.__ie.style.visibility = 'visible';
         } else {
-            var db = get_message_db();
-            var cnt = db.numberOfMessages(this.__identifier);
-            if (cnt < 1) {
-                return false;
-            }
-            msg = db.messageAtIndex(cnt-1, this.__identifier);
-            if (!msg) {
-                return false;
-            }
-            if (msg.getEnvelope().getValue('read')) {
-                return false;
-            }
+            img.__ie.style.visibility = 'hidden';
         }
-        this.startDancing();
-        return true;
     };
+
+    // private
+    MainTableViewCell.prototype.stopDancing = function () {
+        var img = this.avatarImage;
+        img.__ie.style.visibility = 'visible';
+    };
+
     var clear_unread_msg = function (msg) {
         var identifier = this.__identifier;
         if (!msg) {
@@ -173,25 +161,23 @@
         this.stopDancing();
     };
 
-    MainTableViewCell.prototype.startDancing = function () {
-        this.stopDancing();
-        var img = this.avatarImage;
-        this.__ti = setInterval(function () {
-            // TODO: dancing animation
-            if (img.__ie.style.visibility === 'hidden') {
-                img.__ie.style.visibility = 'visible';
-            } else {
-                img.__ie.style.visibility = 'hidden';
-            }
-        }, 500);
-    };
-    MainTableViewCell.prototype.stopDancing = function () {
-        if (this.__ti) {
-            clearInterval(this.__ti);
-            this.__ti = 0;
+    var remove_zombie = function () {
+        if (is_zombie(this.__ie)) {
+            console.warn('remove zombie', this, this.__ie);
+            this.onExit();
+            // this.remove();
         }
-        var img = this.avatarImage;
-        img.__ie.style.visibility = 'visible';
+    };
+    var is_zombie = function (ie) {
+        var parent = ie.parentNode;
+        if (!parent) {
+            return true;
+        } else if (parent === document.body) {
+            return false;
+        } else if (parent === document) {
+            return false;
+        }
+        return is_zombie(parent);
     };
 
     //-------- namespace --------

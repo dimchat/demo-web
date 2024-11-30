@@ -135,7 +135,7 @@
             var id = user.getIdentifier();
             var meta = user.getMeta();
             var cmd = DocumentCommand.response(id, meta, visa);
-            messenger.sendContent(cmd, id, admin, null, 0);
+            messenger.sendContent(cmd, id, admin, 0);
         }
         var text = 'Nickname updated, visa: ' + visa.getValue('data');
         alert(text);

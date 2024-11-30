@@ -141,15 +141,13 @@ if (typeof MONKEY !== 'object') {
         return object instanceof Error
     };
     var IObject = Interface(null, null);
-    IObject.prototype.toString = function () {
-    };
-    IObject.prototype.valueOf = function () {
-    };
-    IObject.prototype.isEmpty = function () {
-    };
     IObject.prototype.getClassName = function () {
     };
     IObject.prototype.equals = function (other) {
+    };
+    IObject.prototype.valueOf = function () {
+    };
+    IObject.prototype.toString = function () {
     };
     IObject.isNull = is_null;
     IObject.isString = is_string;
@@ -161,14 +159,11 @@ if (typeof MONKEY !== 'object') {
         Object.call(this)
     };
     Class(BaseObject, Object, [IObject], null);
-    BaseObject.prototype.equals = function (other) {
-        return this === other
-    };
-    BaseObject.prototype.isEmpty = function () {
-        return false
-    };
     BaseObject.prototype.getClassName = function () {
         return Object.getPrototypeOf(this).constructor.name
+    };
+    BaseObject.prototype.equals = function (other) {
+        return this === other
     };
     ns.type.Object = IObject;
     ns.type.BaseObject = BaseObject
@@ -277,13 +272,14 @@ if (typeof MONKEY !== 'object') {
     'use strict';
     var IObject = ns.type.Object;
     var is_array = function (obj) {
-        if (obj instanceof Array) {
+        return obj instanceof Array || is_number_array(obj)
+    };
+    var is_number_array = function (obj) {
+        if (obj instanceof Uint8ClampedArray) {
             return true
         } else if (obj instanceof Uint8Array) {
             return true
         } else if (obj instanceof Int8Array) {
-            return true
-        } else if (obj instanceof Uint8ClampedArray) {
             return true
         } else if (obj instanceof Uint16Array) {
             return true
@@ -300,12 +296,30 @@ if (typeof MONKEY !== 'object') {
         }
         return false
     };
-    var arrays_equal = function (array1, array2) {
-        if (array1.length !== array2.length) {
+    var number_arrays_equal = function (array1, array2) {
+        var pos = array1.length;
+        if (pos !== array2.length) {
             return false
         }
-        for (var i = 0; i < array1.length; ++i) {
-            if (!objects_equal(array1[i], array2[i])) {
+        while (pos > 0) {
+            pos -= 1;
+            if (array1[pos] !== array2[pos]) {
+                return false
+            }
+        }
+        return true
+    };
+    var arrays_equal = function (array1, array2) {
+        if (is_number_array(array1) || is_number_array(array2)) {
+            return number_arrays_equal(array1, array2)
+        }
+        var pos = array1.length;
+        if (pos !== array2.length) {
+            return false
+        }
+        while (pos > 0) {
+            pos -= 1;
+            if (!objects_equal(array1[pos], array2[pos], false)) {
                 return false
             }
         }
@@ -314,45 +328,51 @@ if (typeof MONKEY !== 'object') {
     var maps_equal = function (dict1, dict2) {
         var keys1 = Object.keys(dict1);
         var keys2 = Object.keys(dict2);
-        var len1 = keys1.length;
-        var len2 = keys2.length;
-        if (len1 !== len2) {
+        var pos = keys1.length;
+        if (pos !== keys2.length) {
             return false
         }
-        var k;
-        for (var i = 0; i < len1; ++i) {
-            k = keys1[i];
-            if (keys2.indexOf(k) < 0) {
-                return false
+        var key;
+        while (pos > 0) {
+            pos -= 1;
+            key = keys1[pos];
+            if (!key || key.length === 0) {
+                continue
             }
-            if (!objects_equal(dict1[k], dict2[k])) {
+            if (!objects_equal(dict1[key], dict2[key], key.charAt(0) === '_')) {
                 return false
             }
         }
         return true
     };
-    var objects_equal = function (obj1, obj2) {
-        if (obj1 === obj2) {
-            return true
-        } else if (!obj1) {
+    var objects_equal = function (obj1, obj2, shallow) {
+        if (!obj1) {
             return !obj2
         } else if (!obj2) {
             return false
-        } else if (typeof obj1['equals'] === 'function') {
+        } else if (obj1 === obj2) {
+            return true
+        }
+        if (typeof obj1['equals'] === 'function') {
             return obj1.equals(obj2)
         } else if (typeof obj2['equals'] === 'function') {
             return obj2.equals(obj1)
-        } else if (IObject.isBaseType(obj1)) {
-            return obj1 === obj2
-        } else if (IObject.isBaseType(obj2)) {
-            return false
-        } else if (is_array(obj1)) {
+        }
+        if (is_array(obj1)) {
             return is_array(obj2) && arrays_equal(obj1, obj2)
         } else if (is_array(obj2)) {
             return false
-        } else {
-            return maps_equal(obj1, obj2)
         }
+        if (obj1 instanceof Date) {
+            return obj2 instanceof Date && obj1.getTime() === obj2.getTime()
+        } else if (obj2 instanceof Date) {
+            return false
+        } else if (IObject.isBaseType(obj1)) {
+            return false
+        } else if (IObject.isBaseType(obj2)) {
+            return false
+        }
+        return !shallow && maps_equal(obj1, obj2)
     };
     var copy_items = function (src, srcPos, dest, destPos, length) {
         if (srcPos !== 0 || length !== src.length) {
@@ -389,7 +409,7 @@ if (typeof MONKEY !== 'object') {
         return true
     };
     var remove_item = function (array, item) {
-        var index = array.indexOf(item);
+        var index = find_item(array, item);
         if (index < 0) {
             return false
         } else if (index === 0) {
@@ -401,13 +421,24 @@ if (typeof MONKEY !== 'object') {
         }
         return true
     };
+    var find_item = function (array, item) {
+        for (var i = 0; i < array.length; ++i) {
+            if (objects_equal(array[i], item, false)) {
+                return i
+            }
+        }
+        return -1
+    };
     ns.type.Arrays = {
         insert: insert_item,
         update: update_item,
         remove: remove_item,
-        equals: objects_equal,
-        isArray: is_array,
-        copy: copy_items
+        find: find_item,
+        equals: function (array1, array2) {
+            return objects_equal(array1, array2, false)
+        },
+        copy: copy_items,
+        isArray: is_array
     }
 })(MONKEY);
 (function (ns) {
@@ -447,13 +478,13 @@ if (typeof MONKEY !== 'object') {
     };
     Class(BaseEnum, BaseObject, null, null);
     BaseEnum.prototype.equals = function (other) {
-        if (!other) {
-            return !this.__value
-        } else if (other instanceof BaseEnum) {
-            return this.__value === other.getValue()
-        } else {
-            return this.__value === other
+        if (other instanceof BaseEnum) {
+            if (this === other) {
+                return true
+            }
+            other = other.valueOf()
         }
+        return this.__value === other
     };
     BaseEnum.prototype.toString = function () {
         return '<' + this.getName() + ': ' + this.getValue() + '>'
@@ -515,7 +546,82 @@ if (typeof MONKEY !== 'object') {
     var Class = ns.type.Class;
     var IObject = ns.type.Object;
     var BaseObject = ns.type.BaseObject;
+    var Arrays = ns.type.Arrays;
+    var Set = Interface(null, [IObject]);
+    Set.prototype.isEmpty = function () {
+    };
+    Set.prototype.getLength = function () {
+    };
+    Set.prototype.contains = function (element) {
+    };
+    Set.prototype.add = function (element) {
+    };
+    Set.prototype.remove = function (element) {
+    };
+    Set.prototype.clear = function () {
+    };
+    Set.prototype.toArray = function () {
+    };
+    var HashSet = function () {
+        BaseObject.call(this);
+        this.__array = []
+    };
+    Class(HashSet, BaseObject, [Set], null);
+    HashSet.prototype.equals = function (other) {
+        if (Interface.conforms(other, Set)) {
+            if (this === other) {
+                return true
+            }
+            other = other.valueOf()
+        }
+        return Arrays.equals(this.__array, other)
+    };
+    HashSet.prototype.valueOf = function () {
+        return this.__array
+    };
+    HashSet.prototype.toString = function () {
+        return this.__array.toString()
+    };
+    HashSet.prototype.isEmpty = function () {
+        return this.__array.length === 0
+    };
+    HashSet.prototype.getLength = function () {
+        return this.__array.length
+    };
+    HashSet.prototype.contains = function (item) {
+        var pos = Arrays.find(this.__array, item);
+        return pos >= 0
+    };
+    HashSet.prototype.add = function (item) {
+        var pos = Arrays.find(this.__array, item);
+        if (pos < 0) {
+            this.__array.push(item);
+            return true
+        } else {
+            return false
+        }
+    };
+    HashSet.prototype.remove = function (item) {
+        return Arrays.remove(this.__array, item)
+    };
+    HashSet.prototype.clear = function () {
+        this.__array = []
+    };
+    HashSet.prototype.toArray = function () {
+        return this.__array.slice()
+    };
+    ns.type.Set = Set;
+    ns.type.HashSet = HashSet
+})(MONKEY);
+(function (ns) {
+    'use strict';
+    var Interface = ns.type.Interface;
+    var Class = ns.type.Class;
+    var IObject = ns.type.Object;
+    var BaseObject = ns.type.BaseObject;
     var Stringer = Interface(null, [IObject]);
+    Stringer.prototype.isEmpty = function () {
+    };
     Stringer.prototype.getLength = function () {
     };
     Stringer.prototype.equalsIgnoreCase = function (other) {
@@ -531,15 +637,13 @@ if (typeof MONKEY !== 'object') {
     };
     Class(ConstantString, BaseObject, [Stringer], null);
     ConstantString.prototype.equals = function (other) {
-        if (this === other) {
-            return true
-        } else if (!other) {
-            return !this.__string
-        } else if (Interface.conforms(other, Stringer)) {
-            return this.__string === other.toString()
-        } else {
-            return this.__string === other
+        if (Interface.conforms(other, Stringer)) {
+            if (this === other) {
+                return true
+            }
+            other = other.valueOf()
         }
+        return this.__string === other
     };
     ConstantString.prototype.valueOf = function () {
         return this.__string
@@ -547,11 +651,11 @@ if (typeof MONKEY !== 'object') {
     ConstantString.prototype.toString = function () {
         return this.__string
     };
-    ConstantString.prototype.getLength = function () {
-        return this.__string.length
-    };
     ConstantString.prototype.isEmpty = function () {
         return this.__string.length === 0
+    };
+    ConstantString.prototype.getLength = function () {
+        return this.__string.length
     };
     ConstantString.prototype.equalsIgnoreCase = function (other) {
         if (this === other) {
@@ -582,9 +686,6 @@ if (typeof MONKEY !== 'object') {
     var IObject = ns.type.Object;
     var BaseObject = ns.type.BaseObject;
     var Converter = ns.type.Converter;
-    var arrays_equals = function (a1, a2) {
-        return ns.type.Arrays.equals(a1, a2)
-    };
     var copy_map = function (map, deep) {
         if (deep) {
             return ns.type.Copier.deepCopyMap(map)
@@ -600,9 +701,11 @@ if (typeof MONKEY !== 'object') {
     };
     Mapper.prototype.copyMap = function (deepCopy) {
     };
-    Mapper.prototype.allKeys = function () {
+    Mapper.prototype.isEmpty = function () {
     };
     Mapper.prototype.getLength = function () {
+    };
+    Mapper.prototype.allKeys = function () {
     };
     Mapper.prototype.getValue = function (key) {
     };
@@ -637,23 +740,13 @@ if (typeof MONKEY !== 'object') {
     };
     Class(Dictionary, BaseObject, [Mapper], null);
     Dictionary.prototype.equals = function (other) {
-        if (this === other) {
-            return true
-        } else if (!other) {
-            return !this.__dictionary
-        } else if (Interface.conforms(other, Mapper)) {
-            return arrays_equals(this.__dictionary, other.toMap())
-        } else {
-            return arrays_equals(this.__dictionary, other)
+        if (Interface.conforms(other, Mapper)) {
+            if (this === other) {
+                return true
+            }
+            other = other.valueOf()
         }
-    };
-    Dictionary.prototype.getLength = function () {
-        var keys = Object.keys(this.__dictionary);
-        return keys.length
-    };
-    Dictionary.prototype.isEmpty = function () {
-        var keys = Object.keys(this.__dictionary);
-        return keys.length === 0
+        return ns.type.Arrays.equals(this.__dictionary, other)
     };
     Dictionary.prototype.valueOf = function () {
         return this.__dictionary
@@ -666,6 +759,14 @@ if (typeof MONKEY !== 'object') {
     };
     Dictionary.prototype.copyMap = function (deepCopy) {
         return copy_map(this.__dictionary, deepCopy)
+    };
+    Dictionary.prototype.isEmpty = function () {
+        var keys = Object.keys(this.__dictionary);
+        return keys.length === 0
+    };
+    Dictionary.prototype.getLength = function () {
+        var keys = Object.keys(this.__dictionary);
+        return keys.length
     };
     Dictionary.prototype.allKeys = function () {
         return Object.keys(this.__dictionary)
@@ -2819,7 +2920,7 @@ if (typeof DIMP !== "object") {
                 this.setData(TransportableData.create(bin))
             }
         }, getFilename: function () {
-            return this.getString('filename', '')
+            return this.getString('filename', null)
         }, setFilename: function (filename) {
             if (!filename) {
                 this.removeValue('filename')
@@ -2827,7 +2928,7 @@ if (typeof DIMP !== "object") {
                 this.setValue('filename', filename)
             }
         }, getURL: function () {
-            return this.getString('URL', '')
+            return this.getString('URL', null)
         }, setURL: function (url) {
             if (!url) {
                 this.removeValue('URL')
@@ -3830,11 +3931,11 @@ if (typeof DIMP !== "object") {
         setCurrency: function (currency) {
             this.setValue('currency', currency)
         }, getCurrency: function () {
-            return this.getString('currency')
+            return this.getString('currency', null)
         }, setAmount: function (amount) {
             this.setValue('amount', amount)
         }, getAmount: function () {
-            return this.getFloat('amount')
+            return this.getFloat('amount', 0)
         }
     });
     var TransferMoneyContent = function () {
@@ -3897,11 +3998,11 @@ if (typeof DIMP !== "object") {
     };
     Class(AppCustomizedContent, BaseContent, [CustomizedContent], {
         getApplication: function () {
-            return this.getString('app')
+            return this.getString('app', null)
         }, getModule: function () {
-            return this.getString('mod')
+            return this.getString('mod', null)
         }, getAction: function () {
-            return this.getString('act')
+            return this.getString('act', null)
         }
     });
     ns.dkd.AppCustomizedContent = AppCustomizedContent
@@ -3916,17 +4017,17 @@ if (typeof DIMP !== "object") {
     var BaseCommand = function () {
         if (arguments.length === 2) {
             BaseContent.call(this, arguments[0]);
-            this.setValue('cmd', arguments[1])
+            this.setValue('command', arguments[1])
         } else if (IObject.isString(arguments[0])) {
             BaseContent.call(this, ContentType.COMMAND);
-            this.setValue('cmd', arguments[0])
+            this.setValue('command', arguments[0])
         } else {
             BaseContent.call(this, arguments[0])
         }
     };
     Class(BaseCommand, BaseContent, [Command], {
         getCmd: function () {
-            var gf = ns.dkd.CommandFactoryManager.generalFactory;
+            var gf = ns.dkd.cmd.CommandFactoryManager.generalFactory;
             return gf.getCmd(this.toMap(), '')
         }
     });
@@ -4168,7 +4269,7 @@ if (typeof DIMP !== "object") {
     var ReceiptCommand = ns.protocol.ReceiptCommand;
     var BaseCommand = ns.dkd.cmd.BaseCommand;
     var BaseReceiptCommand = function () {
-        if (arguments.length === 2) {
+        if (arguments.length === 1) {
             BaseCommand.call(this, arguments[0])
         } else {
             BaseCommand.call(this, Command.RECEIPT);
@@ -4690,7 +4791,6 @@ if (typeof DIMP !== "object") {
     var Class = ns.type.Class;
     var Enum = ns.type.Enum;
     var Dictionary = ns.type.Dictionary;
-    var Base64 = ns.format.Base64;
     var TransportableData = ns.format.TransportableData;
     var PublicKey = ns.crypto.PublicKey;
     var MetaType = ns.protocol.MetaType;
@@ -4719,7 +4819,7 @@ if (typeof DIMP !== "object") {
             seed = arguments[2];
             fingerprint = arguments[3];
             status = 1;
-            meta = {'type': type, 'key': key.toMap(), 'seed': seed, 'fingerprint': Base64.encode(fingerprint)}
+            meta = {'type': type, 'key': key.toMap(), 'seed': seed, 'fingerprint': fingerprint.toObject()}
         } else {
             throw new SyntaxError('meta arguments error: ' + arguments);
         }
@@ -4757,7 +4857,7 @@ if (typeof DIMP !== "object") {
         }, getFingerprint: function () {
             var ted = this.__fingerprint;
             if (!ted && MetaType.hasSeed(this.getType())) {
-                var base64 = this.getString('fingerprint');
+                var base64 = this.getString('fingerprint', null);
                 ted = TransportableData.parse(base64);
                 this.__fingerprint = ted
             }
@@ -4856,7 +4956,7 @@ if (typeof DIMP !== "object") {
         }, getSignature: function () {
             var ted = this.__sig;
             if (!ted) {
-                var base64 = this.getString('signature');
+                var base64 = this.getString('signature', null);
                 ted = TransportableData.parse(base64);
                 this.__sig = ted
             }
@@ -5197,7 +5297,7 @@ if (typeof DIMP !== "object") {
     Class(BaseUser, BaseEntity, [User], {
         getVisa: function () {
             var docs = this.getDocuments();
-            return DocumentHelper.lastBulletin(docs)
+            return DocumentHelper.lastVisa(docs)
         }, getContacts: function () {
             var barrack = this.getDataSource();
             var user = this.getIdentifier();
@@ -7810,8 +7910,8 @@ if (typeof DIMP !== "object") {
         var network = id.getAddress().getType();
         return '<' + clazz + ' id="' + id.toString() + '" network="' + network + '" host="' + this.getHost() + '" port=' + this.getPort() + ' />'
     };
-    Station.ANY = new ns.mkm.Identifier('station', Address.ANYWHERE, null);
-    Station.EVERY = new ns.mkm.Identifier('stations', Address.EVERYWHERE, null);
+    Station.ANY = new ns.mkm.Identifier('station@anywhere', 'station', Address.ANYWHERE, null);
+    Station.EVERY = new ns.mkm.Identifier('stations@everywhere', 'stations', Address.EVERYWHERE, null);
     ns.mkm.Station = Station
 })(DIMP);
 (function (ns) {
@@ -8709,8 +8809,6 @@ if (typeof DIMP !== "object") {
     'use strict';
     var Class = ns.type.Class;
     var EntityType = ns.protocol.EntityType;
-    var ID = ns.protocol.ID;
-    var Meta = ns.protocol.Meta;
     var DocumentHelper = ns.mkm.DocumentHelper;
     var BaseUser = ns.mkm.BaseUser;
     var BaseGroup = ns.mkm.BaseGroup;
@@ -8908,7 +9006,7 @@ if (typeof DIMP !== "object") {
             if (user == null) {
                 throw new ReferenceError('receiver error: $receiver, from ${sMsg.sender}, ${sMsg.group}');
             }
-            return this.securePacker.decryptMessage(sMsg, user.identifier);
+            return this.securePacker.decryptMessage(sMsg, user.getIdentifier());
         }
     });
     ns.MessagePacker = MessagePacker;
@@ -9435,7 +9533,8 @@ if (typeof FiniteStateMachine !== 'object') {
 (function (ns, sys) {
     'use strict';
     var Interface = sys.type.Interface;
-    var Ticker = Interface(null, null);
+    var IObject = sys.type.Object;
+    var Ticker = Interface(null, [IObject]);
     Ticker.prototype.tick = function (now, elapsed) {
     };
     ns.threading.Ticker = Ticker
@@ -9443,6 +9542,7 @@ if (typeof FiniteStateMachine !== 'object') {
 (function (ns, sys) {
     'use strict';
     var Class = sys.type.Class;
+    var HashSet = sys.type.HashSet;
     var Runner = ns.skywalker.Runner;
     var Thread = ns.threading.Thread;
     var Metronome = function (millis) {
@@ -9453,7 +9553,7 @@ if (typeof FiniteStateMachine !== 'object') {
         this.__interval = millis;
         this.__last_time = 0;
         this.__thread = new Thread(this);
-        this.__tickers = []
+        this.__tickers = new HashSet()
     };
     Class(Metronome, Runner, null, null);
     Metronome.MIN_INTERVAL = 100;
@@ -9465,7 +9565,7 @@ if (typeof FiniteStateMachine !== 'object') {
     };
     Metronome.prototype.setup = function () {
         this.__last_time = (new Date()).getTime();
-        return false
+        return Runner.prototype.setup.call(this)
     };
     Metronome.prototype.process = function () {
         var tickers = this.getTickers();
@@ -9487,24 +9587,13 @@ if (typeof FiniteStateMachine !== 'object') {
         return true
     };
     Metronome.prototype.getTickers = function () {
-        return this.__tickers.slice()
+        return this.__tickers.toArray()
     };
     Metronome.prototype.addTicker = function (ticker) {
-        if (this.__tickers.indexOf(ticker) < 0) {
-            this.__tickers.push(ticker);
-            return true
-        } else {
-            return false
-        }
+        return this.__tickers.add(ticker)
     };
     Metronome.prototype.removeTicker = function (ticker) {
-        var index = this.__tickers.indexOf(ticker);
-        if (index < 0) {
-            return false
-        } else {
-            this.__tickers.splice(index, 1);
-            return true
-        }
+        return this.__tickers.remove(ticker)
     };
     var PrimeMetronome = {
         addTicker: function (ticker) {
@@ -9599,10 +9688,10 @@ if (typeof FiniteStateMachine !== 'object') {
                 return true
             }
             other = other.getIndex()
-        } else if (other instanceof Enum) {
+        } else if (Enum.isEnum(other)) {
             other = other.getValue()
         }
-        return this.getIndex() === other
+        return this.__index === other
     };
     BaseState.prototype.toString = function () {
         var clazz = Object.getPrototypeOf(this).constructor.name;
@@ -9632,13 +9721,13 @@ if (typeof FiniteStateMachine !== 'object') {
     };
     var Status = Enum('MachineStatus', {STOPPED: 0, RUNNING: 1, PAUSED: 2});
     var BaseMachine = function () {
-        Object.call(this);
+        BaseObject.call(this);
         this.__states = [];
         this.__current = -1;
         this.__status = Status.STOPPED;
         this.__delegate = null
     };
-    Class(BaseMachine, Object, [Machine], null);
+    Class(BaseMachine, BaseObject, [Machine], null);
     BaseMachine.prototype.setDelegate = function (delegate) {
         this.__delegate = delegate
     };
@@ -9763,8 +9852,8 @@ if (typeof FiniteStateMachine !== 'object') {
     var Class = sys.type.Class;
     var PrimeMetronome = ns.threading.PrimeMetronome;
     var BaseMachine = ns.BaseMachine;
-    var AutoMachine = function (defaultStateName) {
-        BaseMachine.call(this, defaultStateName)
+    var AutoMachine = function () {
+        BaseMachine.call(this)
     };
     Class(AutoMachine, BaseMachine, null, {
         start: function () {
@@ -10336,7 +10425,7 @@ if (typeof StarTrek !== 'object') {
                 return last && enter.getTime() < last.getTime()
             })
         }
-    })
+    });
     ns.net.ConnectionStateTransition = StateTransition;
     ns.net.ConnectionStateTransitionBuilder = TransitionBuilder
 })(StarTrek, FiniteStateMachine, MONKEY);
@@ -11025,10 +11114,10 @@ if (typeof StarTrek !== 'object') {
         last = !last ? 0 : last.getTime();
         return now.getTime() > last + (BaseConnection.EXPIRES << 3)
     };
-    BaseConnection.prototype.enterState = function (next, machine) {
+    BaseConnection.prototype.enterState = function (next, ctx, now) {
     };
-    BaseConnection.prototype.exitState = function (previous, machine) {
-        var current = machine.getCurrentState();
+    BaseConnection.prototype.exitState = function (previous, ctx, now) {
+        var current = ctx.getCurrentState();
         var currentIndex = !current ? -1 : current.getIndex();
         if (StateOrder.READY.equals(currentIndex)) {
             var previousIndex = !previous ? -1 : previous.getIndex();
@@ -11054,9 +11143,9 @@ if (typeof StarTrek !== 'object') {
             this.setChannel(null)
         }
     };
-    BaseConnection.prototype.pauseState = function (current, machine) {
+    BaseConnection.prototype.pauseState = function (current, ctx, now) {
     };
-    BaseConnection.prototype.resumeState = function (current, machine) {
+    BaseConnection.prototype.resumeState = function (current, ctx, now) {
     };
     ns.socket.BaseConnection = BaseConnection
 })(StarTrek, MONKEY);
@@ -12171,7 +12260,7 @@ if (typeof StarGate !== 'object') {
     "use strict";
     var Interface = sys.type.Interface;
     var Class = sys.type.Class;
-    var Arrays = sys.type.Arrays;
+    var HashSet = sys.type.HashSet;
     var Observer = ns.lnc.Observer;
     var BaseCenter = function () {
         Object.call(this);
@@ -12179,14 +12268,14 @@ if (typeof StarGate !== 'object') {
     };
     Class(BaseCenter, Object, null, null);
     BaseCenter.prototype.addObserver = function (observer, name) {
-        var list = this.__observers[name];
-        if (!list) {
-            list = [];
-            this.__observers[name] = list
-        } else if (list.indexOf(observer) >= 0) {
+        var set = this.__observers[name];
+        if (!set) {
+            set = new HashSet();
+            this.__observers[name] = set
+        } else if (set.contains(observer)) {
             return
         }
-        list.push(observer)
+        set.add(observer)
     };
     BaseCenter.prototype.removeObserver = function (observer, name) {
         if (name) {
@@ -12199,21 +12288,20 @@ if (typeof StarGate !== 'object') {
         }
     };
     var remove = function (observer, name) {
-        var list = this.__observers[name];
-        if (list) {
-            Arrays.remove(list, observer);
-            if (list.length === 0) {
+        var set = this.__observers[name];
+        if (set) {
+            set.remove(observer);
+            if (set.isEmpty()) {
                 delete this.__observers[name]
             }
         }
     };
     BaseCenter.prototype.postNotification = function (notification) {
-        var observers = this.__observers[notification.getName()];
-        if (!observers || observers.length === 0) {
+        var set = this.__observers[notification.getName()];
+        if (!set || set.isEmpty()) {
             return
-        } else {
-            observers = observers.slice()
         }
+        var observers = set.toArray();
         var obs;
         for (var i = observers.length - 1; i >= 0; --i) {
             obs = observers[i];
@@ -12245,12 +12333,13 @@ if (typeof StarGate !== 'object') {
             if (notification instanceof Notification) {
                 this.defaultCenter.postNotification(notification)
             } else {
-                this.defaultCenter.postNotification(notification, sender, userInfo)
+                notification = new Notification(notification, sender, userInfo);
+                this.defaultCenter.postNotification(notification)
             }
         }, defaultCenter: new BaseCenter()
     };
     NotificationCenter.getInstance = function () {
-        return NotificationCenter.defaultCenter
+        return this
     };
     ns.lnc.NotificationCenter = NotificationCenter
 })(StarGate);

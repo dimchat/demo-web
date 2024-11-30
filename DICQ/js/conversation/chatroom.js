@@ -180,7 +180,7 @@
         var user = server.getCurrentUser();
         if (user) {
             var content = TextContent.create('show history');
-            messenger.sendContent(content, null, admin, null, 0);
+            messenger.sendContent(content, null, admin, 0);
         }
     };
 
@@ -215,7 +215,7 @@
         var user = server.getCurrentUser();
         if (user) {
             var content = TextContent.create('show users');
-            messenger.sendContent(content, null, admin, null, 0);
+            messenger.sendContent(content, null, admin, 0);
         }
     };
 
