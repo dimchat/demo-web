@@ -22,12 +22,12 @@
         // banner
         var banner = new Image();
         banner.setClassName('banner');
-        banner.setSrc('http://apps.dim.chat/DICQ/images/icon-512.png');
+        banner.setSrc(ns.logoImageURL);
         this.appendChild(banner);
         // link
         var link = new Link();
         link.setText('https://dim.chat/');
-        link.setURL('https://dim.chat/');
+        link.setURL('http://tarsier.dim.chat/');
         this.appendChild(link);
         // version
         var version = new Label();

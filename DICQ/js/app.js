@@ -239,6 +239,9 @@
         return client;
     }
 
+    // ns.logoImageURL = 'https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/2e/d9/b5/2ed9b53a-8cc0-d865-3756-bb51bb2e80b3/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/460x0w.webp';
+    ns.logoImageURL = 'images/icon-512.png';
+
     ns.Main = Main;
 
 }(dicq, SECHAT);

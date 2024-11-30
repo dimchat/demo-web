@@ -82,7 +82,7 @@
             // TODO: build group logo
         }
         if (!image) {
-            image = 'http://apps.dim.chat/DICQ/images/icon-512.png';
+            image = ns.logoImageURL;
         }
         if (image) {
             this.avatarImage.setSrc(image);

@@ -129,15 +129,16 @@
         var visa = user.getVisa();
         // post visa
         var messenger = get_messenger();
-        messenger.postDocument(visa);
-        var admin = ID.parse('chatroom');
-        if (admin) {
-            var id = user.getIdentifier();
-            var meta = user.getMeta();
-            var cmd = DocumentCommand.response(id, meta, visa);
-            messenger.sendContent(cmd, id, admin, 0);
-        }
-        var text = 'Nickname updated, visa: ' + visa.getValue('data');
+        messenger.broadcastDocuments(true);
+        // var admin = ID.parse('chatroom');
+        // if (admin) {
+        //     var id = user.getIdentifier();
+        //     var meta = user.getMeta();
+        //     var visa = user.getVisa();
+        //     var cmd = DocumentCommand.response(id, meta, visa);
+        //     messenger.sendContent(cmd, id, admin, 0);
+        // }
+        var text = 'Nickname updated, visa data: ' + visa.getValue('data');
         alert(text);
         return true;
     };

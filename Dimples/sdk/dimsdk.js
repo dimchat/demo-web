@@ -10025,35 +10025,36 @@ if (typeof StarTrek !== 'object') {
 (function (ns, sys) {
     'use strict';
     var Interface = sys.type.Interface;
-    var IObject = sys.type.Object;
     var Class = sys.type.Class;
+    var IObject = sys.type.Object;
+    var HashSet = sys.type.HashSet;
     var AbstractPairMap = ns.type.AbstractPairMap;
     var HashPairMap = function (any) {
         AbstractPairMap.call(this, any);
-        this.__items = []
+        this.__items = new HashSet()
     };
     Class(HashPairMap, AbstractPairMap, null, null);
     HashPairMap.prototype.items = function () {
-        return this.__items
+        return this.__items.toArray()
     };
     HashPairMap.prototype.set = function (remote, local, value) {
         if (value) {
-            remove_item(this.__items, value);
-            this.__items.push(value)
+            this.__items.remove(value);
+            this.__items.add(value)
         }
         var old = AbstractPairMap.prototype.set.call(this, remote, local, value);
         if (old && !object_equals(old, value)) {
-            remove_item(this.__items, old)
+            this.__items.remove(old)
         }
         return old
     };
     HashPairMap.prototype.remove = function (remote, local, value) {
         var old = AbstractPairMap.prototype.remove.call(this, remote, local, value);
         if (old) {
-            remove_item(this.__items, old)
+            this.__items.remove(old)
         }
         if (value && !object_equals(value, old)) {
-            remove_item(this.__items, value)
+            this.__items.remove(value)
         }
         return old ? old : value
     };
@@ -10070,13 +10071,6 @@ if (typeof StarTrek !== 'object') {
             return b.equals(a)
         } else {
             return false
-        }
-    };
-    var remove_item = function (array, item) {
-        for (var index = array.length - 1; index >= 0; --index) {
-            if (object_equals(array[index], item)) {
-                array.splice(index, 1)
-            }
         }
     };
     ns.type.HashPairMap = HashPairMap
@@ -11399,16 +11393,17 @@ if (typeof StarTrek !== 'object') {
 (function (ns, sys) {
     'use strict';
     var Class = sys.type.Class;
+    var BaseObject = sys.type.BaseObject;
     var Arrival = ns.port.Arrival;
     var ShipStatus = ns.port.ShipStatus;
     var ArrivalShip = function (now) {
-        Object.call(this);
+        BaseObject.call(this);
         if (!now) {
             now = new Date()
         }
         this.__expired = now.getTime() + ArrivalShip.EXPIRED
     };
-    Class(ArrivalShip, Object, [Arrival], null);
+    Class(ArrivalShip, BaseObject, [Arrival], null);
     ArrivalShip.EXPIRES = 300 * 1000;
     ArrivalShip.prototype.touch = function (now) {
         this.__expired = now.getTime() + ArrivalShip.EXPIRES
@@ -11425,11 +11420,11 @@ if (typeof StarTrek !== 'object') {
 (function (ns, sys) {
     'use strict';
     var Class = sys.type.Class;
-    var Arrays = sys.type.Arrays;
+    var HashSet = sys.type.HashSet;
     var ShipStatus = ns.port.ShipStatus;
     var ArrivalHall = function () {
         Object.call(this);
-        this.__arrivals = [];
+        this.__arrivals = new HashSet();
         this.__arrival_map = {};
         this.__finished_times = {}
     };
@@ -11444,7 +11439,7 @@ if (typeof StarTrek !== 'object') {
         if (cached) {
             completed = cached.assemble(income);
             if (completed) {
-                Arrays.remove(this.__arrivals, cached);
+                this.__arrivals.remove(cached);
                 delete this.__arrival_map[sn];
                 this.__finished_times[sn] = new Date()
             } else {
@@ -11457,7 +11452,7 @@ if (typeof StarTrek !== 'object') {
             }
             completed = income.assemble(income);
             if (!completed) {
-                this.__arrivals.push(income);
+                this.__arrivals.add(income);
                 this.__arrival_map[sn] = income
             }
         }
@@ -11470,15 +11465,16 @@ if (typeof StarTrek !== 'object') {
         var count = 0;
         var ship;
         var sn;
-        for (var i = this.__arrivals.length - 1; i >= 0; --i) {
-            ship = this.__arrivals[i];
+        var arrivals = this.__arrivals.toArray();
+        for (var i = arrivals.length - 1; i >= 0; --i) {
+            ship = arrivals[i];
             if (ship.getStatus(now) === ShipStatus.EXPIRED) {
-                this.__arrivals.splice(i, 1);
                 sn = ship.getSN();
                 if (sn) {
                     delete this.__arrival_map[sn]
                 }
-                ++count
+                ++count;
+                this.__arrivals.remove(ship)
             }
         }
         var ago = now.getTime() - 3600 * 1000;
@@ -11499,10 +11495,11 @@ if (typeof StarTrek !== 'object') {
     'use strict';
     var Class = sys.type.Class;
     var Enum = sys.type.Enum;
+    var BaseObject = sys.type.BaseObject;
     var Departure = ns.port.Departure;
     var ShipStatus = ns.port.ShipStatus;
     var DepartureShip = function (priority, maxTries) {
-        Object.call(this);
+        BaseObject.call(this);
         if (priority === null) {
             priority = 0
         } else {
@@ -11515,7 +11512,7 @@ if (typeof StarTrek !== 'object') {
         this.__tries = maxTries;
         this.__expired = 0
     };
-    Class(DepartureShip, Object, [Departure], {
+    Class(DepartureShip, BaseObject, [Departure], {
         getPriority: function () {
             return this.__priority
         }, touch: function (now) {
@@ -11545,10 +11542,11 @@ if (typeof StarTrek !== 'object') {
     'use strict';
     var Class = sys.type.Class;
     var Arrays = sys.type.Arrays;
+    var HashSet = sys.type.HashSet;
     var ShipStatus = ns.port.ShipStatus;
     var DepartureHall = function () {
         Object.call(this);
-        this.__all_departures = [];
+        this.__all_departures = new HashSet();
         this.__new_departures = [];
         this.__fleets = {};
         this.__priorities = [];
@@ -11558,10 +11556,10 @@ if (typeof StarTrek !== 'object') {
     };
     Class(DepartureHall, Object, null, null);
     DepartureHall.prototype.addDeparture = function (outgo) {
-        if (this.__all_departures.indexOf(outgo) >= 0) {
+        if (this.__all_departures.contains(outgo)) {
             return false
         } else {
-            this.__all_departures.push(outgo)
+            this.__all_departures.add(outgo)
         }
         var priority = outgo.getPriority();
         var index = this.__new_departures.length;
@@ -11603,7 +11601,7 @@ if (typeof StarTrek !== 'object') {
         }
         delete this.__departure_map[sn];
         delete this.__departure_level[sn];
-        Arrays.remove(this.__all_departures, ship)
+        this.__all_departures.remove(ship)
     };
     DepartureHall.prototype.getNextDeparture = function (now) {
         var next = getNextNewDeparture.call(this, now);
@@ -11623,7 +11621,7 @@ if (typeof StarTrek !== 'object') {
             insertShip.call(this, outgo, priority, sn);
             this.__departure_map[sn] = outgo
         } else {
-            Arrays.remove(this.__all_departures, outgo)
+            this.__all_departures.remove(outgo)
         }
         outgo.touch(now);
         return outgo
@@ -11679,7 +11677,7 @@ if (typeof StarTrek !== 'object') {
                     fleet.splice(j, 1);
                     delete this.__departure_map[sn];
                     delete this.__departure_level[sn];
-                    Arrays.remove(this.__all_departures, ship);
+                    this.__all_departures.remove(ship);
                     return ship
                 }
             }
@@ -12242,19 +12240,19 @@ if (typeof StarGate !== 'object') {
         return shared.level & flag
     };
     var Log = {
-        debug: function (data) {
+        debug: function (...data) {
             if (check_level(debugFlag)) {
                 shared.logger.debug.apply(shared.logger, arguments)
             }
-        }, info: function (data) {
+        }, info: function (...data) {
             if (check_level(infoFlag)) {
                 shared.logger.info.apply(shared.logger, arguments)
             }
-        }, warning: function (data) {
+        }, warning: function (...data) {
             if (check_level(warningFlag)) {
                 shared.logger.warning.apply(shared.logger, arguments)
             }
-        }, error: function (data) {
+        }, error: function (...data) {
             if (check_level(errorFlag)) {
                 shared.logger.error.apply(shared.logger, arguments)
             }
@@ -12270,13 +12268,13 @@ if (typeof StarGate !== 'object') {
         shared.logger = logger
     };
     var Logger = Interface(null, null);
-    Logger.prototype.debug = function (data) {
+    Logger.prototype.debug = function (...data) {
     };
-    Logger.prototype.info = function (data) {
+    Logger.prototype.info = function (...data) {
     };
-    Logger.prototype.warning = function (data) {
+    Logger.prototype.warning = function (...data) {
     };
-    Logger.prototype.error = function (data) {
+    Logger.prototype.error = function (...data) {
     };
     var DefaultLogger = function () {
         Object.call(this)
@@ -13155,7 +13153,7 @@ if (typeof StarGate !== 'object') {
             }
             var busy = this.process();
             if (busy) {
-                Log.warning('client busy', busy)
+                Log.debug('client busy', busy)
             }
             return true
         }, process: function () {

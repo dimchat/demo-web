@@ -64,7 +64,7 @@
                 // get client IP from handshake response
                 if (Interface.conforms(content, HandshakeCommand)) {
                     var remote = content.getValue('remote_address');
-                    Log.warning('socket address', remote);
+                    Log.info('socket address', remote);
                 }
             }
             return content;

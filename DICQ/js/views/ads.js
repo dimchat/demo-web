@@ -54,8 +54,8 @@
     var Image = tui.Image;
     var ScrollView = tui.ScrollView;
 
-    // var gyLogo = 'https://static.baobeihuijia.com/static/image/common/logo.png';
-    var gyLogo = 'http://desktop.dim.chat/images/gy-logo.png';
+    // var gyLogo = 'http://desktop.dim.chat/images/gy-logo.png';
+    var gyLogo = 'https://static.baobeihuijia.com/static/image/common/logo.png';
     var gyData = 'https://qzonestyle.gtimg.cn/qzone/v6/portal/gy/404/data.js';
 
     var getData = function () {
