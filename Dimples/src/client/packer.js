@@ -35,13 +35,16 @@
 (function (ns) {
     'use strict';
 
-    var Interface      = ns.type.Interface;
-    var Class          = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var ID             = ns.protocol.ID;
     var InstantMessage = ns.protocol.InstantMessage;
     var ContentType    = ns.protocol.ContentType;
     var TextContent    = ns.protocol.TextContent;
     var FileContent    = ns.protocol.FileContent;
+
     var CommonPacker   = ns.CommonPacker;
 
     var ClientMessagePacker = function (facebook, messenger) {
@@ -146,7 +149,7 @@
             if (this.checkGroup(rMsg)) {
                 // receiver is ready
             } else {
-                console.warn('receiver not ready', rMsg.getReceiver());
+                Log.warning('receiver not ready', rMsg.getReceiver());
                 return null;
             }
             return CommonPacker.prototype.verifyMessage.call(this, rMsg);
@@ -161,12 +164,12 @@
                 var errMsg = e.toString();
                 if (errMsg.indexOf('failed to decrypt key in msg: ') >= 0) {
                     // Exception from 'SecureMessagePacker::decrypt(sMsg, receiver)'
-                    console.warn('decrypt message error', e);
+                    Log.warning('decrypt message error', e);
                     // visa.key changed?
                     // push my newest visa to the sender
                 } else if (errMsg.indexOf('receiver error') >= 0) {
                     // Exception from 'MessagePacker::decryptMessage(sMsg)'
-                    console.warn('decrypt message error', e);
+                    Log.warning('decrypt message error', e);
                     // not for you?
                     // just ignore it
                     return null;
@@ -219,7 +222,7 @@
             var group = sMsg.getGroup();
             var type = sMsg.getType();
             if (ContentType.COMMAND.equals(type) || ContentType.HISTORY.equals(type)) {
-                console.warn('ignore message unable to decrypt', type, sender);
+                Log.warning('ignore message unable to decrypt', type, sender);
                 return null;
             }
             // create text content

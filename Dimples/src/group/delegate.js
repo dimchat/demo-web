@@ -35,9 +35,11 @@
 (function (ns) {
     'use strict';
 
-    var Class       = ns.type.Class;
-    var Runner      = ns.fsm.skywalker.Runner;
-    var Thread      = ns.fsm.threading.Thread;
+    var Class  = ns.type.Class;
+    var Log    = ns.lnc.Log;
+    var Runner = ns.fsm.skywalker.Runner;
+    var Thread = ns.fsm.threading.Thread;
+
     var EntityType  = ns.protocol.EntityType;
     var Group       = ns.mkm.Group;
     var TwinsHelper = ns.TwinsHelper;
@@ -170,7 +172,7 @@
             var gMeta = this.getMeta(group);
             var mMeta = this.getMeta(user);
             if (!gMeta || !mMeta) {
-                console.error('failed to get meta for group', group, user);
+                Log.error('failed to get meta for group', group, user);
                 return false;
             }
             return gMeta.matchPublicKey(mMeta.getPublicKey());
@@ -185,14 +187,14 @@
                 // this is a polylogue
                 return this.isFounder(user, group);
             }
-            console.error('only polylogue so far', group);
+            Log.error('only polylogue so far', group);
             return false;
         },
 
         isMember: function (user, group) {
             var members = this.getMembers(group);
             if (!members || members.length === 0) {
-                console.error('group members not ready', group);
+                Log.error('group members not ready', group);
                 return false;
             }
             for (var i = 0; i < members.length; ++i) {
@@ -206,7 +208,7 @@
         isAdministrator: function (user, group) {
             var admins = this.getAdministrators(group);
             if (!admins || admins.length === 0) {
-                console.info('group admins not found', group);
+                Log.info('group admins not found', group);
                 return false;
             }
             for (var i = 0; i < admins.length; ++i) {
@@ -220,7 +222,7 @@
         isAssistant: function (user, group) {
             var bots = this.getAssistants(group);
             if (!bots || bots.length === 0) {
-                console.info('group bots not found', group);
+                Log.info('group bots not found', group);
                 return false;
             }
             for (var i = 0; i < bots.length; ++i) {
@@ -376,7 +378,7 @@
     GroupBotsManager.prototype.getFastestAssistant = function (group) {
         var bots = this.getAssistants(group);
         if (!bots || bots.length === 0) {
-            console.warn('group bots not found: ' + group.toString());
+            Log.warning('group bots not found: ' + group.toString());
             return null;
         }
         var prime = null;   // ID
@@ -387,12 +389,12 @@
             ass = bots[i];
             duration = this.__respondTimes[ass];
             if (!duration) {
-                console.info('group bot not respond yet, ignore it', ass, group);
+                Log.info('group bot not respond yet, ignore it', ass, group);
                 continue;
             } else if (!primeDuration) {
                 // first responded bot
             } else if (primeDuration < duration) {
-                console.info('this bot is slower, skip it', ass, prime, group);
+                Log.info('this bot is slower, skip it', ass, prime, group);
                 continue;
             }
             prime = ass;
@@ -400,9 +402,9 @@
         }
         if (!prime) {
             prime = bots[0];
-            console.info('no bot responded, take the first one', bots, group);
+            Log.info('no bot responded, take the first one', bots, group);
         } else {
-            console.info('got the fastest bot with respond time', primeDuration, prime, group);
+            Log.info('got the fastest bot with respond time', primeDuration, prime, group);
         }
         return prime;
     };
@@ -432,11 +434,11 @@
             var me = facebook.getCurrentUser();
             visa = !me ? null : me.getVisa();
             if (!visa) {
-                console.error('failed to get visa', me);
+                Log.error('failed to get visa', me);
                 return false;
             }
         } catch (e) {
-            console.error('failed to get current user', e);
+            Log.error('failed to get current user', e);
             return false;
         }
         //
@@ -449,14 +451,14 @@
             item = bots[i];
             if (this.__respondTimes[item]) {
                 // no need to check again
-                console.info('group bot already responded', item);
+                Log.info('group bot already responded', item);
                 continue;
             }
             // no respond yet, try to push visa to the bot
             try {
-                messenger.sendVisa(visa, item);
+                messenger.sendVisa(visa, item, false);
             } catch (e) {
-                console.error('failed to query assistant', item, e);
+                Log.error('failed to query assistant', item, e);
             }
         }
         return false;

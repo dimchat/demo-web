@@ -35,7 +35,9 @@
 (function (ns) {
     'use strict';
 
-    var Class                 = ns.type.Class;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     ///  Query Group Command Processor
@@ -96,7 +98,7 @@
                 // check last group history time
                 var lastTime = archivist.getLastGroupHistoryTime(group);
                 if (!lastTime) {
-                    console.error('group history error', group);
+                    Log.error('group history error', group);
                 } else if (lastTime.getTime() <= queryTime.getTime()) {
                     // group history not updated
                     text = 'Group history not updated.';
@@ -113,7 +115,7 @@
             // 3. send newest group history commands
             var ok = this.sendGroupHistories(group, sender);
             if (!ok) {
-                console.error('failed to send history for group', group, sender);
+                Log.error('failed to send history for group', group, sender);
             }
 
             // no need to response this group command

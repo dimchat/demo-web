@@ -37,6 +37,7 @@
     'use strict';
 
     var Class  = ns.type.Class;
+    var Log    = ns.lnc.Log;
     var Runner = ns.fsm.skywalker.Runner;
 
     var InetSocketAddress = ns.startrek.type.InetSocketAddress;
@@ -147,10 +148,9 @@
             if (now < this.__reconnect_time) {
                 return false;
             }
-            console.info('fetch docker', remote);
             docker = gate.fetchPorter(remote, null);
             if (!docker) {
-                console.error('gate error', remote);
+                Log.error('gate error', remote);
                 this.__reconnect_time = now + 8000;
                 return false;
             }
@@ -165,7 +165,7 @@
                 return true;
             }
         } catch (e) {
-            console.error('GateKeeper::process()', e);
+            Log.error('GateKeeper::process()', e);
             return false;
         }
         var queue = this.__queue;
@@ -191,7 +191,7 @@
         // try to push
         var ok = gate.sendShip(wrapper, remote, null);
         if (!ok) {
-            console.error('gate error, failed to send data', wrapper, remote);
+            Log.error('gate error, failed to send data', wrapper, remote);
         }
         return true;
     };
@@ -215,12 +215,12 @@
 
     // Override
     GateKeeper.prototype.onPorterStatusChanged = function (previous, current, docker) {
-        console.info('GateKeeper::onPorterStatusChanged()', previous, current, docker);
+        Log.info('GateKeeper::onPorterStatusChanged()', previous, current, docker);
     };
 
     // Override
     GateKeeper.prototype.onPorterReceived = function (arrival, docker) {
-        console.info('GateKeeper::onPorterReceived()', arrival, docker);
+        Log.info('GateKeeper::onPorterReceived()', arrival, docker);
     };
 
     // Override
@@ -230,12 +230,12 @@
 
     // Override
     GateKeeper.prototype.onPorterFailed = function (error, departure, docker) {
-        console.info('GateKeeper::onPorterFailed()', error, departure, docker);
+        Log.info('GateKeeper::onPorterFailed()', error, departure, docker);
     };
 
     // Override
     GateKeeper.prototype.onPorterError = function (error, departure, docker) {
-        console.info('GateKeeper::onPorterError()', error, departure, docker);
+        Log.info('GateKeeper::onPorterError()', error, departure, docker);
     };
 
     //-------- namespace --------

@@ -31,6 +31,7 @@
     'use strict';
 
     var Interface = ns.type.Interface;
+    var Log       = ns.lnc.Log;
     var ID        = ns.protocol.ID;
 
     var TextContent   = ns.protocol.TextContent;
@@ -121,7 +122,7 @@
     var getLoginCommandText = function (content, sender) {
         var identifier = content.getIdentifier();
         if (!sender.equals(identifier)) {
-            console.error('login command error', content, sender);
+            Log.error('login command error', content, sender);
         }
         var station = content.getStation();
         if (station) {
@@ -151,7 +152,7 @@
         if (Interface.conforms(content, QueryCommand)) {
             return getQueryCommandText(content, sender);
         }
-        console.error('unsupported group command', content);
+        Log.error('unsupported group command', content);
         return 'unsupported group command: ' + content.getCmd();
     };
     var getInviteCommandText = function (content, sender) {

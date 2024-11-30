@@ -36,6 +36,8 @@
     'use strict';
 
     var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
     var Archivist = ns.Archivist;
 
     var CommonArchivist = function (db) {
@@ -79,13 +81,13 @@
         saveDocument: function (doc) {
             var docTime = doc.getTime();
             if (!docTime) {
-                console.warn('document without time', doc);
+                Log.warning('document without time', doc);
             } else {
                 // calibrate the clock
                 // make sure the document time is not in the far future
                 var current = (new Date()).getTime() + 65536;
                 if (docTime.getTime() > current) {
-                    console.error('document time error', docTime, doc);
+                    Log.error('document time error', docTime, doc);
                     return false;
                 }
             }

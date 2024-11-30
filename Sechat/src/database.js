@@ -43,6 +43,7 @@
     var CipherKeyStorage  = sdk.database.CipherKeyStorage;
     var MessageStorage    = sdk.database.MessageStorage;
 
+    var Log                = sdk.lnc.Log;
     var NotificationCenter = sdk.lnc.NotificationCenter;
     var NotificationNames  = ns.NotificationNames;
 
@@ -490,9 +491,9 @@
                     'ID': entity,
                     'msg': iMsg
                 });
-                console.info('message saved', iMsg, entity);
+                Log.info('message saved', iMsg, entity);
             } else {
-                console.error('failed to save message', iMsg, entity);
+                Log.error('failed to save message', iMsg, entity);
             }
             return ok;
         },

@@ -30,8 +30,10 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface      = sdk.type.Interface;
-    var Class          = sdk.type.Class;
+    var Interface = sdk.type.Interface;
+    var Class     = sdk.type.Class;
+    var Log       = sdk.lnc.Log;
+
     var Envelope       = sdk.protocol.Envelope;
     var InstantMessage = sdk.protocol.InstantMessage;
     var TextContent    = sdk.protocol.TextContent;
@@ -72,7 +74,7 @@
         var clerk = ns.Amanuensis;
         var ok = clerk.saveInstantMessage(iMsg);
         if (ok) {
-            console.info('message saved', iMsg.getSender(), iMsg.getReceiver(), iMsg.getGroup());
+            Log.info('message saved', iMsg.getSender(), iMsg.getReceiver(), iMsg.getGroup());
         }
     };
 
@@ -91,7 +93,7 @@
         var facebook = ns.GlobalVariable.getFacebook();
         var user = facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return [null, null];
         }
         var sender = user.getIdentifier();
@@ -109,7 +111,7 @@
         //
         var rMsg = this.sendInstantMessage(iMsg, priority);
         if (!rMsg && receiver.isUser()) {
-            console.warn('not send yet', content, receiver);
+            Log.warning('not send yet', content, receiver);
         }
         return [iMsg, rMsg];
     };
@@ -123,10 +125,10 @@
     Emitter.prototype.sendText = function (text, receiver) {
         var content = TextContent.create(text);
         if (checkMarkdown(text)) {
-            console.info('send text as markdown', text, receiver);
+            Log.info('send text as markdown', text, receiver);
             content.setValue('format', 'markdown');
         } else {
-            console.info('send text as plain', text, receiver);
+            Log.info('send text as plain', text, receiver);
         }
         return this.sendContent(content, receiver, 0);
     };

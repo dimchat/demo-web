@@ -35,8 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Class          = ns.type.Class;
-    var Arrays         = ns.type.Arrays;
+    var Class  = ns.type.Class;
+    var Arrays = ns.type.Arrays;
+    var Log    = ns.lnc.Log;
+
     var MessageWrapper = ns.network.MessageWrapper;
 
     var MessageQueue = function () {
@@ -71,7 +73,7 @@
                 item = array[i].getMessage();
                 if (item && is_duplicated(item, rMsg)) {
                     // duplicated message
-                    console.warn('[QUEUE] duplicated message', signature);
+                    Log.warning('[QUEUE] duplicated message', signature);
                     ok = false;
                     break;
                 }

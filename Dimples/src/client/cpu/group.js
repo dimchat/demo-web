@@ -35,7 +35,8 @@
 (function (ns) {
     'use strict';
 
-    var Class                = ns.type.Class;
+    var Class = ns.type.Class;
+
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     var HistoryCommandProcessor = function (facebook, messenger) {
@@ -104,8 +105,11 @@
 (function (ns) {
     'use strict';
 
-    var Class                   = ns.type.Class;
-    var ForwardContent          = ns.protocol.ForwardContent;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
+    var ForwardContent = ns.protocol.ForwardContent;
+
     var HistoryCommandProcessor = ns.cpu.HistoryCommandProcessor;
 
     /**
@@ -186,7 +190,7 @@
         checkCommandExpired: function (content, rMsg) {
             var group = content.getGroup();
             if (!group) {
-                console.error('group command error', content);
+                Log.error('group command error', content);
                 return [null, null];
             }
             var errors;  // List<Content>
@@ -219,7 +223,7 @@
         checkCommandMembers: function (content, rMsg) {
             var group = content.getGroup();
             if (!group) {
-                console.error('group command error', content);
+                Log.error('group command error', content);
                 return [[], null];
             }
             var errors;  // List<Content>
@@ -250,7 +254,7 @@
         checkGroupMembers: function (content, rMsg) {
             var group = content.getGroup();
             if (!group) {
-                console.error('group command error', content);
+                Log.error('group command error', content);
                 return [null, [], null];
             }
             var errors;  // List<Content>
@@ -282,7 +286,7 @@
         sendGroupHistories: function (group, receiver) {
             var messages = this.getGroupBuilder().buildGroupHistories(group);
             if (messages.length === 0) {
-                console.warn('failed to build history for group', group);
+                Log.warning('failed to build history for group', group);
                 return false;
             }
             var transceiver = this.getMessenger();

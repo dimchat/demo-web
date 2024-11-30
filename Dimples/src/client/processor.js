@@ -35,12 +35,15 @@
 (function (ns) {
     'use strict';
 
-    var Interface        = ns.type.Interface;
-    var Class            = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var EntityType       = ns.protocol.EntityType;
     var TextContent      = ns.protocol.TextContent;
     var HandshakeCommand = ns.protocol.HandshakeCommand;
     var ReceiptCommand   = ns.protocol.ReceiptCommand;
+
     var MessageProcessor = ns.MessageProcessor;
 
     var ClientMessageProcessor = function (facebook, messenger) {
@@ -72,7 +75,7 @@
                 docUpdated = archivist.setLastDocumentTime(group, lastDocumentTime);
                 // check whether needs update
                 if (docUpdated) {
-                    console.info('checking for new bulletin', group);
+                    Log.info('checking for new bulletin', group);
                     facebook.getDocuments(group);
                 }
             }
@@ -87,7 +90,7 @@
                 // check whether needs update
                 if (memUpdated) {
                     archivist.setLastActiveMember(group, rMsg.getSender());
-                    console.info('checking for group members', group);
+                    Log.info('checking for group members', group);
                     facebook.getMembers(group);
                 }
             }
@@ -116,7 +119,7 @@
             var receiver = rMsg.getReceiver();
             var user = facebook.selectLocalUser(receiver);
             if (!user) {
-                console.error('receiver error', receiver);
+                Log.error('receiver error', receiver);
                 return responses;
             }
             receiver = user.getIdentifier();

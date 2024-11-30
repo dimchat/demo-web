@@ -31,9 +31,10 @@
     'use strict';
 
     var Class              = sdk.type.Class;
-    var Terminal           = sdk.network.Terminal;
+    var Log                = sdk.lnc.Log;
     var NotificationCenter = sdk.lnc.NotificationCenter;
     var SessionStateOrder  = sdk.network.SessionStateOrder;
+    var Terminal           = sdk.network.Terminal;
     var NotificationNames  = ns.NotificationNames;
 
     var Client = function (facebook, sdb) {
@@ -81,10 +82,10 @@
 
             var station = this.getNeighborStation();
             if (!station) {
-                console.error('failed to get neighbor station');
+                Log.error('failed to get neighbor station');
                 return null;
             }
-            console.warn('connecting to station', station);
+            Log.warning('connecting to station', station);
             return this.connect(station.getHost(), station.getPort());
         },
 
@@ -120,7 +121,7 @@
             Terminal.prototype.exitState.call(this, previous, machine);
             // called after state changed
             var current = machine.getCurrentState();
-            console.info('session state changed', previous, current);
+            Log.info('session state changed', previous, current);
             if (!current) {
                 return;
             }

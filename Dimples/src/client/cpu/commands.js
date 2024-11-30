@@ -35,7 +35,9 @@
 (function (ns) {
     'use strict';
 
-    var Class                = ns.type.Class;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
     var BaseCommandProcessor = ns.cpu.BaseCommandProcessor;
 
     /**
@@ -59,9 +61,9 @@
             // save login command to session db
             var db = this.getDatabase();
             if (db.saveLoginCommandMessage(sender, content, rMsg)) {
-                console.info('save login command for user', sender);
+                Log.info('save login command for user', sender);
             } else {
-                console.error('failed to save login command', sender, console);
+                Log.error('failed to save login command', sender, content);
             }
             // no need to response login command
             return [];

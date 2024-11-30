@@ -35,11 +35,14 @@
 (function (ns) {
     'use strict';
 
-    var Class           = ns.type.Class;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var Envelope        = ns.protocol.Envelope;
     var InstantMessage  = ns.protocol.InstantMessage;
     var ReliableMessage = ns.protocol.ReliableMessage;
+
     var TripletsHelper  = ns.TripletsHelper;
 
     /**
@@ -70,13 +73,13 @@
         // encrypt for receiver
         var sMsg = !transceiver ? null : transceiver.encryptMessage(iMsg);
         if (!sMsg) {
-            console.error('failed to encrypt message', iMsg.getSender(), iMsg.getReceiver());
+            Log.error('failed to encrypt message', iMsg.getSender(), iMsg.getReceiver());
             return null;
         }
         // sign for sender
         var rMsg = !transceiver ? null : transceiver.signMessage(sMsg);
         if (!rMsg) {
-            console.error('failed to sign message', iMsg.getSender(), iMsg.getReceiver());
+            Log.error('failed to sign message', iMsg.getSender(), iMsg.getReceiver());
             return null;
         }
         // OK
@@ -93,16 +96,16 @@
         for (var i = 0; i < allMembers.length; ++i) {
             receiver = allMembers[i];
             if (receiver.equals(sender)) {
-                // console.info('skip cycled message', receiver);
+                // Log.info('skip cycled message', receiver);
                 continue;
             }
-            console.info('split group message for member', receiver);
+            Log.info('split group message for member', receiver);
             info = iMsg.copyMap(false);
             // replace 'receiver' with member ID
             info['receiver'] = receiver.toString();
             item = InstantMessage.parse(info);
             if (!item) {
-                console.error('failed to repack message', receiver);
+                Log.error('failed to repack message', receiver);
                 continue;
             }
             messages.push(item);
@@ -128,10 +131,10 @@
         for (var i = 0; i < allMembers.length; ++i) {
             receiver = allMembers[i];
             if (sender.equals(receiver)) {
-                console.info('skip cycled message', receiver);
+                Log.info('skip cycled message', receiver);
                 continue;
             }
-            console.info('split group message for member', receiver);
+            Log.info('split group message for member', receiver);
             info = rMsg.copyMap(false);
             // replace 'receiver' with member ID
             info['receiver'] = receiver.toString();
@@ -143,7 +146,7 @@
             }
             item = ReliableMessage.parse(info);
             if (!item) {
-                console.error('failed to repack message', receiver);
+                Log.error('failed to repack message', receiver);
                 continue;
             }
             messages.push(item);

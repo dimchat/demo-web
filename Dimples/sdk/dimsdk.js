@@ -11215,7 +11215,10 @@ if (typeof StarTrek !== 'object') {
                     channel.close()
                 }
             } catch (e) {
-                console.error('ActiveConnection Error', e, this)
+                var delegate = this.getDelegate();
+                if (delegate) {
+                    delegate.onConnectionError(e, this)
+                }
             }
             return true
         }
@@ -11293,7 +11296,6 @@ if (typeof StarTrek !== 'object') {
                 channel.close()
             }
         } catch (e) {
-            console.error(this, 'close channel error', e, this)
         }
     };
     BaseHub.prototype.driveChannel = function (channel) {
@@ -12224,6 +12226,106 @@ if (typeof StarGate !== 'object') {
 })(StarGate, MONKEY);
 (function (ns, sys) {
     "use strict";
+    var Interface = sys.type.Interface;
+    var Class = sys.type.Class;
+    var Enum = sys.type.Enum;
+    var debugFlag = 1 << 0;
+    var infoFlag = 1 << 1;
+    var warningFlag = 1 << 2;
+    var errorFlag = 1 << 3;
+    var LogLevel = Enum('LogLevel', {
+        DEBUG: debugFlag | infoFlag | warningFlag | errorFlag,
+        DEVELOP: infoFlag | warningFlag | errorFlag,
+        RELEASE: warningFlag | errorFlag
+    });
+    var check_level = function (flag) {
+        return shared.level & flag
+    };
+    var Log = {
+        debug: function (data) {
+            if (check_level(debugFlag)) {
+                shared.logger.debug.apply(shared.logger, arguments)
+            }
+        }, info: function (data) {
+            if (check_level(infoFlag)) {
+                shared.logger.info.apply(shared.logger, arguments)
+            }
+        }, warning: function (data) {
+            if (check_level(warningFlag)) {
+                shared.logger.warning.apply(shared.logger, arguments)
+            }
+        }, error: function (data) {
+            if (check_level(errorFlag)) {
+                shared.logger.error.apply(shared.logger, arguments)
+            }
+        }, showTime: false
+    };
+    Log.setLevel = function (level) {
+        if (Enum.isEnum(level)) {
+            level = level.getValue()
+        }
+        shared.level = level
+    };
+    Log.setLogger = function (logger) {
+        shared.logger = logger
+    };
+    var Logger = Interface(null, null);
+    Logger.prototype.debug = function (data) {
+    };
+    Logger.prototype.info = function (data) {
+    };
+    Logger.prototype.warning = function (data) {
+    };
+    Logger.prototype.error = function (data) {
+    };
+    var DefaultLogger = function () {
+        Object.call(this)
+    };
+    Class(DefaultLogger, Object, [Logger], {
+        debug: function () {
+            console.debug.apply(console, _args(arguments))
+        }, info: function () {
+            console.info.apply(console, _args(arguments))
+        }, warning: function () {
+            console.warn.apply(console, _args(arguments))
+        }, error: function () {
+            console.error.apply(console, _args(arguments))
+        }
+    });
+    var _args = function (args) {
+        if (Log.showTime === false) {
+            return args
+        }
+        var array = ['[' + current_time() + ']'];
+        for (var i = 0; i < args.length; ++i) {
+            array.push(args[i])
+        }
+        return array
+    };
+    var current_time = function () {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var date = now.getDate();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+        return year + '-' + _pad(month + 1) + '-' + _pad(date) + ' ' + _pad(hours) + ':' + _pad(minutes) + ':' + _pad(seconds)
+    };
+    var _pad = function (value) {
+        if (value < 10) {
+            return '0' + value
+        } else {
+            return '' + value
+        }
+    };
+    var shared = {logger: new DefaultLogger(), level: LogLevel.RELEASE.getValue()};
+    ns.lnc.LogLevel = LogLevel;
+    ns.lnc.Logger = Logger;
+    ns.lnc.Log = Log
+})(StarGate, MONKEY);
+(function (ns, sys) {
+    "use strict";
     var Class = sys.type.Class;
     var Notification = function (name, sender, userInfo) {
         Object.call(this);
@@ -12261,6 +12363,7 @@ if (typeof StarGate !== 'object') {
     var Interface = sys.type.Interface;
     var Class = sys.type.Class;
     var HashSet = sys.type.HashSet;
+    var Log = ns.lnc.Log;
     var Observer = ns.lnc.Observer;
     var BaseCenter = function () {
         Object.call(this);
@@ -12273,9 +12376,9 @@ if (typeof StarGate !== 'object') {
             set = new HashSet();
             this.__observers[name] = set
         } else if (set.contains(observer)) {
-            return
+            return false
         }
-        set.add(observer)
+        return set.add(observer)
     };
     BaseCenter.prototype.removeObserver = function (observer, name) {
         if (name) {
@@ -12311,10 +12414,10 @@ if (typeof StarGate !== 'object') {
                 } else if (typeof obs === 'function') {
                     obs.call(notification)
                 } else {
-                    console.error('Notification observer error', obs, notification)
+                    Log.error('Notification observer error', obs, notification)
                 }
             } catch (e) {
-                console.error('DefaultCenter::post() error', notification, obs, e)
+                Log.error('DefaultCenter::post() error', notification, obs, e)
             }
         }
     };
@@ -12807,6 +12910,7 @@ if (typeof StarGate !== 'object') {
 (function (ns, sys) {
     "use strict";
     var Class = sys.type.Class;
+    var Log = ns.lnc.Log;
     var BaseChannel = ns.socket.BaseChannel;
     var ActiveConnection = ns.socket.ActiveConnection;
     var StreamHub = ns.ws.StreamHub;
@@ -12839,7 +12943,7 @@ if (typeof StarGate !== 'object') {
                 if (sock) {
                     channel.setSocket(sock)
                 } else {
-                    console.error('[WS] failed to prepare socket', remote, local);
+                    Log.error('[WS] failed to prepare socket', remote, local);
                     this.removeChannel(remote, local, channel)
                 }
             }
@@ -12874,7 +12978,6 @@ if (typeof StarGate !== 'object') {
         return null
     };
     PlainArrival.prototype.assemble = function (arrival) {
-        console.assert(arrival === this, 'plain arrival error', arrival, this);
         return arrival
     };
     ns.PlainArrival = PlainArrival
@@ -12980,6 +13083,7 @@ if (typeof StarGate !== 'object') {
 (function (ns, sys) {
     "use strict";
     var Class = sys.type.Class;
+    var Log = ns.lnc.Log;
     var ActiveConnection = ns.socket.ActiveConnection;
     var StarGate = ns.StarGate;
     var BaseGate = function (keeper) {
@@ -13010,10 +13114,10 @@ if (typeof StarGate !== 'object') {
         }, sendResponse: function (payload, ship, remote, local) {
             var docker = this.getPorter(remote, local);
             if (!docker) {
-                console.error('docker not found', remote, local);
+                Log.error('docker not found', remote, local);
                 return false
             } else if (!docker.isAlive()) {
-                console.error('docker not alive', remote, local);
+                Log.error('docker not alive', remote, local);
                 return false
             }
             return docker.sendData(payload)
@@ -13028,6 +13132,7 @@ if (typeof StarGate !== 'object') {
 (function (ns, fsm, sys) {
     "use strict";
     var Class = sys.type.Class;
+    var Log = ns.lnc.Log;
     var Runnable = fsm.skywalker.Runnable;
     var Thread = fsm.threading.Thread;
     var BaseGate = ns.BaseGate;
@@ -13050,7 +13155,7 @@ if (typeof StarGate !== 'object') {
             }
             var busy = this.process();
             if (busy) {
-                console.warn('client busy', busy)
+                Log.warning('client busy', busy)
             }
             return true
         }, process: function () {
@@ -13060,7 +13165,7 @@ if (typeof StarGate !== 'object') {
                 var outgoing = BaseGate.prototype.process.call(this);
                 return incoming || outgoing
             } catch (e) {
-                console.error('client process error', e)
+                Log.error('client process error', e)
             }
         }, getChannel: function (remote, local) {
             var hub = this.getHub();
@@ -13072,6 +13177,7 @@ if (typeof StarGate !== 'object') {
 (function (ns, sys) {
     "use strict";
     var Class = sys.type.Class;
+    var Log = ns.lnc.Log;
     var AutoGate = ns.AutoGate;
     var PlainPorter = ns.PlainPorter;
     var WSClientGate = function (delegate) {
@@ -13085,10 +13191,10 @@ if (typeof StarGate !== 'object') {
         }, sendMessage: function (payload, remote, local) {
             var docker = this.fetchPorter(remote, local);
             if (!docker) {
-                console.error('docker not found', remote, local);
+                Log.error('docker not found', remote, local);
                 return false
             } else if (!docker.isAlive()) {
-                console.error('docker not alive', remote, local);
+                Log.error('docker not alive', remote, local);
                 return false
             }
             return docker.sendData(payload)

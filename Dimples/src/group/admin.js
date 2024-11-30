@@ -35,9 +35,12 @@
 (function (ns) {
     'use strict';
 
-    var Class           = ns.type.Class;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var DocumentCommand = ns.protocol.DocumentCommand;
+
     var Station         = ns.mkm.Station;
     var TripletsHelper  = ns.TripletsHelper;
 
@@ -67,7 +70,7 @@
         //
         var user = !barrack ? null : barrack.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -88,19 +91,19 @@
         var doc = delegate.getBulletin(group);
         if (!doc) {
             // TODO: create new one?
-            console.error('failed to get group document', group);
+            Log.error('failed to get group document', group);
             return false;
         }
         doc.setProperty('administrators', ID.revert(newAdmins));
         var signature = !sKey ? null : doc.sign(sKey);
         if (!signature) {
-            console.error('failed to sign document for group', group, me);
+            Log.error('failed to sign document for group', group, me);
             return false;
         } else if (!delegate.saveDocument(doc)) {
-            console.error('failed to save document for group', group);
+            Log.error('failed to save document for group', group);
             return false;
         } else {
-            console.info('group document updated', group);
+            Log.info('group document updated', group);
         }
 
         //
@@ -125,7 +128,7 @@
         //
         var user = !barrack ? null : barrack.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -148,7 +151,7 @@
             for (var i = 0; i < bots.length; ++i) {
                 item = bots[i];
                 if (item.equals(me)) {
-                    console.error('should not be a bot here', me);
+                    Log.error('should not be a bot here', me);
                     continue;
                 }
                 transceiver.sendContent(content, me, item, 1);
@@ -161,13 +164,13 @@
         //
         var members = delegate.getMembers(group);
         if (!members || members.length === 0) {
-            console.error('failed to get group members', group);
+            Log.error('failed to get group members', group);
             return false;
         }
         for (var j = 0; j < members.length; ++j) {
             item = members[j];
             if (item.equals(me)) {
-                console.info('skip cycled message', item, group);
+                Log.info('skip cycled message', item, group);
                 continue;
             }
             transceiver.sendContent(content, me, item, 1);

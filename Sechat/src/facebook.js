@@ -74,7 +74,8 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Class           = sdk.type.Class;
+    var Class = sdk.type.Class;
+    var Log   = sdk.lnc.Log;
     var ClientArchivist = sdk.ClientArchivist;
 
     var SharedArchivist = function (db) {
@@ -129,7 +130,7 @@
     SharedArchivist.prototype.queryMeta = function (identifier) {
         var session = this.getSession();
         if (!session.isReady()) {
-            console.warn('querying meta cancel, waiting to connect', identifier, session);
+            Log.warning('querying meta cancel, waiting to connect', identifier, session);
             return false;
         }
         return ClientArchivist.prototype.queryMeta.call(this, identifier);
@@ -139,7 +140,7 @@
     SharedArchivist.prototype.queryDocuments = function (identifier, docs) {
         var session = this.getSession();
         if (!session.isReady()) {
-            console.warn('querying documents cancel, waiting to connect', identifier, session);
+            Log.warning('querying documents cancel, waiting to connect', identifier, session);
             return false;
         }
         return ClientArchivist.prototype.queryDocuments.call(this, identifier, docs);
@@ -149,7 +150,7 @@
     SharedArchivist.prototype.queryMembers = function (group, members) {
         var session = this.getSession();
         if (!session.isReady()) {
-            console.warn('querying members cancel, waiting to connect', group, session);
+            Log.warning('querying members cancel, waiting to connect', group, session);
             return false;
         }
         return ClientArchivist.prototype.queryMembers.call(this, group, members);

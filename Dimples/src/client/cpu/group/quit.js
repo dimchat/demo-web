@@ -35,8 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Class                 = ns.type.Class;
-    var Arrays                = ns.type.Arrays;
+    var Class  = ns.type.Class;
+    var Arrays = ns.type.Arrays;
+    var Log    = ns.lnc.Log;
+
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     ///  Quit Group Command Processor
@@ -105,7 +107,7 @@
             } else if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to append the 'quit' command to local storage as group history
                 // it should not failed unless the command is expired
-                console.error('failed to save "quit" command for group', group);
+                Log.error('failed to save "quit" command for group', group);
             } else {
                 // here try to remove the sender from member list
                 var newMembers = members.slice();
@@ -114,7 +116,7 @@
                     content.setValue('removed', [sender.toString()])
                 } else {
                     // DB error?
-                    console.error('failed to save members for group', group);
+                    Log.error('failed to save members for group', group);
                 }
             }
 

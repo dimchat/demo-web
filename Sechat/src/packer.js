@@ -30,8 +30,10 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface           = sdk.type.Interface;
-    var Class               = sdk.type.Class;
+    var Interface = sdk.type.Interface;
+    var Class     = sdk.type.Class;
+    var Log       = sdk.lnc.Log;
+
     var FileContent         = sdk.protocol.FileContent;
     var ClientMessagePacker = sdk.ClientMessagePacker;
 
@@ -60,13 +62,13 @@
 
         // Override
         suspendInstantMessage: function (iMsg, info) {
-            console.info('suspend instant message', iMsg, info);
+            Log.info('suspend instant message', iMsg, info);
             iMsg.setValue('error', info);
         },
 
         // Override
         suspendReliableMessage: function (rMsg, info) {
-            console.info('suspend reliable message', rMsg, info);
+            Log.info('suspend reliable message', rMsg, info);
             rMsg.setValue('error', info);
         }
     });

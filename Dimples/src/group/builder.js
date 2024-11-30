@@ -35,8 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Interface       = ns.type.Interface;
-    var Class           = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var DocumentCommand = ns.protocol.DocumentCommand;
     var GroupCommand    = ns.protocol.GroupCommand;
@@ -44,6 +46,7 @@
     var ResignCommand   = ns.protocol.group.ResignCommand
     var Envelope        = ns.protocol.Envelope;
     var InstantMessage  = ns.protocol.InstantMessage;
+
     var DocumentHelper  = ns.mkm.DocumentHelper;
     var TripletsHelper  = ns.TripletsHelper;
 
@@ -89,7 +92,7 @@
         doc = docPair[0];
         rMsg = docPair[1];
         if (!doc || !rMsg) {
-            console.warn('failed to build "document" command for group', group);
+            Log.warning('failed to build "document" command for group', group);
             return messages;
         } else {
             messages.push(rMsg);
@@ -102,7 +105,7 @@
         reset = resPair[0];
         rMsg = resPair[1];
         if (!reset || !rMsg) {
-            console.warn('failed to get "reset" command for group', group);
+            Log.warning('failed to get "reset" command for group', group);
             return messages;
         } else {
             messages.push(rMsg);
@@ -121,18 +124,18 @@
             if (Interface.conforms(first, ResetCommand)) {
                 // 'reset' command already add to the front
                 // assert(messages.length == 2, 'group history error: $group, ${history.length}');
-                console.info('skip "reset" command for group', group);
+                Log.info('skip "reset" command for group', group);
                 continue;
             } else if (Interface.conforms(first, ResignCommand)) {
                 // 'resign' command, comparing it with document time
                 if (DocumentHelper.isBefore(doc.getTime(), first.getTime())) {
-                    console.warn('expired command in group', group);
+                    Log.warning('expired command in group', group);
                     continue;
                 }
             } else {
                 // other commands('invite', 'join', 'quit'), comparing with 'reset' time
                 if (DocumentHelper.isBefore(reset.getTime(), first.getTime())) {
-                    console.warn('expired command in group', group);
+                    Log.warning('expired command in group', group);
                     continue;
                 }
             }
@@ -154,7 +157,7 @@
         var user = !facebook ? null : facebook.getCurrentUser();
         var doc = !delegate ? null : delegate.getBulletin(group);
         if (!user || !doc) {
-            console.error('document not found for group', group);
+            Log.error('document not found for group', group);
             return [null, null];
         }
         var me = user.getIdentifier();
@@ -177,14 +180,14 @@
         var user = !facebook ? null : facebook.getCurrentUser();
         var owner = !delegate ? null : delegate.getOwner(group);
         if (!user || !owner) {
-            console.error('owner not found for group', group);
+            Log.error('owner not found for group', group);
             return [null, null];
         }
         var me = user.getIdentifier();
         if (!owner.equals(me)) {
             var admins = delegate.getAdministrators(group);
             if (!admins || admins.indexOf(me) < 0) {
-                console.warn('not permit to build "reset" command for group"', group, me);
+                Log.warning('not permit to build "reset" command for group"', group, me);
                 return [null, null];
             }
         }
@@ -203,12 +206,12 @@
         var iMsg = InstantMessage.create(envelope, content);
         var sMsg = !messenger ? null : messenger.encryptMessage(iMsg);
         if (!sMsg) {
-            console.error('failed to encrypt message', envelope);
+            Log.error('failed to encrypt message', envelope);
             return null;
         }
         var rMsg = !messenger ? null : messenger.signMessage(sMsg);
         if (!rMsg) {
-            console.error('failed to sign message', envelope);
+            Log.error('failed to sign message', envelope);
         }
         return rMsg;
     };

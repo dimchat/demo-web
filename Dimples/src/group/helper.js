@@ -35,11 +35,14 @@
 (function (ns) {
     'use strict';
 
-    var Interface       = ns.type.Interface;
-    var Class           = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var ResetCommand    = ns.protocol.group.ResetCommand;
     var ResignCommand   = ns.protocol.group.ResignCommand;
+
     var DocumentHelper  = ns.mkm.DocumentHelper;
     var TripletsHelper  = ns.TripletsHelper;
 
@@ -62,26 +65,26 @@
      */
     GroupCommandHelper.prototype.saveGroupHistory = function (content, rMsg, group) {
         if (this.isCommandExpired(content)) {
-            console.warn('drop expired command', content.getCmd(), rMsg.getSender(), group);
+            Log.warning('drop expired command', content.getCmd(), rMsg.getSender(), group);
             return false;
         }
         // check command time
         var cmdTime = content.getTime();
         if (!cmdTime) {
-            console.error('group command error: ' + content.toString());
+            Log.error('group command error: ' + content.toString());
         } else {
             // calibrate the clock
             // make sure the command time is not in the far future
             var current = (new Date()).getTime() + 65536;
             if (cmdTime.getTime() > current) {
-                console.error('group command time error', cmdTime, content);
+                Log.error('group command time error', cmdTime, content);
                 return false;
             }
         }
         // update group history
         var db = this.getDatabase();
         if (Interface.conforms(content, ResetCommand)) {
-            console.warn('cleaning group history for "reset" command', rMsg.getSender(), group);
+            Log.warning('cleaning group history for "reset" command', rMsg.getSender(), group);
             return db.clearGroupMemberHistories(group);
         }
         return db.saveGroupHistory(content, rMsg, group);
@@ -114,7 +117,7 @@
     GroupCommandHelper.prototype.isCommandExpired = function (content) {
         var group = content.getGroup();
         if (!group) {
-            console.assert(false, 'group content error: ' + content.toString());
+            Log.error('group content error: ' + content.toString());
             return true;
         }
         if (Interface.conforms(content, ResignCommand)) {
@@ -122,7 +125,7 @@
             var delegate = this.getDelegate();
             var doc = delegate.getBulletin(group);
             if (!doc) {
-                console.assert(false, 'group document not exists: ' + group.toString());
+                Log.error('group document not exists: ' + group.toString());
                 return true;
             }
             return DocumentHelper.isBefore(doc.getTime(), content.getTime());

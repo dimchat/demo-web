@@ -35,14 +35,17 @@
 (function (ns) {
     'use strict';
 
-    var Interface       = ns.type.Interface;
-    var Class           = ns.type.Class;
-    var Arrays          = ns.type.Arrays;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Arrays    = ns.type.Arrays;
+    var Log       = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var MetaCommand     = ns.protocol.MetaCommand
     var DocumentCommand = ns.protocol.DocumentCommand;
     var ForwardContent  = ns.protocol.ForwardContent;
     var GroupCommand    = ns.protocol.GroupCommand;
+
     var Station         = ns.mkm.Station;
     var TripletsHelper  = ns.TripletsHelper;
 
@@ -105,7 +108,7 @@
         //
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return null;
         }
         var founder = user.getIdentifier();
@@ -132,7 +135,7 @@
         //
         var register = new ns.Register(database);
         var group = register.createGroup(founder, groupName);
-        console.info('new group with founder', group, founder);
+        Log.info('new group with founder', group, founder);
 
         //
         //  3. upload meta+document to neighbor station(s)
@@ -146,21 +149,21 @@
         } else if (meta) {
             content = MetaCommand.response(group, meta);
         } else {
-            console.error('failed to get group info', groupName);
+            Log.error('failed to get group info', groupName);
             return null;
         }
         var ok = sendCommand.call(this, content, Station.ANY);  // to neighbor(s)
         if (!ok) {
-            console.error('failed to upload meta/document to neighbor station');
+            Log.error('failed to upload meta/document to neighbor station');
         }
 
         //
         //  4. create & broadcast 'reset' group command with new members
         //
         if (this.resetMembers(group, members)) {
-            console.info('created group with members', group, members.length);
+            Log.info('created group with members', group, members.length);
         } else {
-            console.error('failed to create group with members', group, members.length);
+            Log.error('failed to create group with members', group, members.length);
         }
 
         return group;
@@ -193,7 +196,7 @@
         //
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -202,7 +205,7 @@
         var first = newMembers[0];
         var ok = delegate.isOwner(first, group);
         if (!ok) {
-            console.error('group owner must be the first member', first, group);
+            Log.error('group owner must be the first member', first, group);
             return false;
         }
         // member list OK, check expelled members
@@ -224,7 +227,7 @@
         // var isBot = delegate.isAssistant(me, group);
         var canReset = isOwner || isAdmin;
         if (!canReset) {
-            console.error('cannot reset members', group);
+            Log.error('cannot reset members', group);
             return false;
         }
         // only the owner or admin can reset group members
@@ -237,7 +240,7 @@
         var reset = pair[0];
         var rMsg = pair[1];
         if (!reset || !rMsg) {
-            console.error('failed to build "reset" command', group);
+            Log.error('failed to build "reset" command', group);
             return false;
         }
 
@@ -246,13 +249,13 @@
         //
         var helper = this.getHelper();
         if (!helper.saveGroupHistory(reset, rMsg, group)) {
-            console.error('failed to save "reset" command', group);
+            Log.error('failed to save "reset" command', group);
             return false;
         } else if (!delegate.saveMembers(newMembers, group)) {
-            console.error('failed to update members', group);
+            Log.error('failed to update members', group);
             return false;
         } else {
-            console.info('group members updated', group, newMembers.length);
+            Log.info('group members updated', group, newMembers.length);
         }
 
         //
@@ -291,7 +294,7 @@
         //
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            // console.error('failed to get current user');
+            // Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -319,7 +322,7 @@
             }
             return this.resetMembers(group, members);
         } else if (!isMember) {
-            console.error('cannot invite member', group);
+            Log.error('cannot invite member', group);
             return false;
         }
         // invited by ordinary member
@@ -333,10 +336,10 @@
         var invite = GroupCommand.invite(group, newMembers);
         var rMsg = packer.packMessage(invite, me);
         if (!rMsg) {
-            console.error('failed to build "invite" command', group);
+            Log.error('failed to build "invite" command', group);
             return false;
         } else if (!helper.saveGroupHistory(invite, rMsg, group)) {
-            console.error('failed to save "invite" command', group);
+            Log.error('failed to save "invite" command', group);
             return false;
         }
         var forward = ForwardContent.create(rMsg);
@@ -378,7 +381,7 @@
         //
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -394,10 +397,10 @@
         //  1. check permission
         //
         if (isOwner) {
-            console.error('owner cannot quit from group', group);
+            Log.error('owner cannot quit from group', group);
             return false;
         } else if (isAdmin) {
-            console.error('administrator cannot quit from group', group);
+            Log.error('administrator cannot quit from group', group);
             return false;
         }
 
@@ -405,15 +408,15 @@
         //  2. update local storage
         //
         if (isMember) {
-            console.warn('quitting group', group);
+            Log.warning('quitting group', group);
             members = members.slice();
             Arrays.remove(members, me);
             var ok = delegate.saveMembers(members, group);
             if (!ok) {
-                console.error('failed to save members', group);
+                Log.error('failed to save members', group);
             }
         } else {
-            console.warn('member not in group', group);
+            Log.warning('member not in group', group);
         }
 
         //
@@ -423,7 +426,7 @@
         var content = GroupCommand.quit(group);
         var rMsg = packer.packMessage(content, me);
         if (!rMsg) {
-            console.error('failed to pack group message', group);
+            Log.error('failed to pack group message', group);
             return false;
         }
         var forward = ForwardContent.create(rMsg);
@@ -450,14 +453,14 @@
         } else if (receiver instanceof Array && receiver.length > 0) {
             members = receiver;
         } else {
-            console.error('failed to send command', receiver);
+            Log.error('failed to send command', receiver);
             return false;
         }
         // 1. get sender
         var facebook = this.getFacebook();
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
             return false;
         }
         var me = user.getIdentifier();
@@ -466,7 +469,7 @@
         for (var i = 0; i < members.length; ++i) {
             receiver = members[i];
             if (me.equals(receiver)) {
-                console.info('skip cycled message', receiver);
+                Log.info('skip cycled message', receiver);
                 continue;
             }
             transceiver.sendContent(content, me, receiver, 1);

@@ -30,8 +30,10 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface        = sdk.type.Interface;
-    var Arrays           = sdk.type.Arrays;
+    var Interface = sdk.type.Interface;
+    var Arrays    = sdk.type.Arrays;
+    var Log       = sdk.lnc.Log;
+
     var EntityType       = sdk.protocol.EntityType;
     var ReceiptCommand   = sdk.protocol.ReceiptCommand;
     var HandshakeCommand = sdk.protocol.HandshakeCommand;
@@ -250,10 +252,10 @@
         saveReceipt: function (iMsg) {
             var content = iMsg.getContent();
             if (!Interface.conforms(content, ReceiptCommand)) {
-                console.error('receipt error', content, iMsg);
+                Log.error('receipt error', content, iMsg);
                 return false;
             }
-            console.info('saving receipt', content, iMsg);
+            Log.info('saving receipt', content, iMsg);
             // TODO:
             return true;
         },

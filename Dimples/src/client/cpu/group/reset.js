@@ -35,8 +35,11 @@
 (function (ns) {
     'use strict';
 
-    var Class                 = ns.type.Class;
-    var ID                    = ns.protocol.ID;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
+    var ID    = ns.protocol.ID;
+
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     ///  Reset Group Command Processor
@@ -130,11 +133,11 @@
             if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to save the 'reset' command to local storage as group history
                 // it should not failed unless the command is expired
-                console.error('failed to save "reset" command for group', group);
+                Log.error('failed to save "reset" command for group', group);
             } else if (addList.length === 0 && removeList.length === 0) {
                 // nothing changed
             } else if (this.saveMembers(newMembers, group)) {
-                console.info('new members saved in group', group);
+                Log.info('new members saved in group', group);
                 if (addList.length > 0) {
                     content.setValue('added', ID.revert(addList));
                 }
@@ -143,7 +146,7 @@
                 }
             } else {
                 // DB error?
-                console.error('failed to save members in group', group);
+                Log.error('failed to save members in group', group);
             }
 
             // no need to response this group command

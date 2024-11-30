@@ -35,8 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Interface        = ns.type.Interface;
-    var Class            = ns.type.Class
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class
+    var Log       = ns.lnc.Log;
+
     var EntityType       = ns.protocol.EntityType;
     var ID               = ns.protocol.ID;
     var Envelope         = ns.protocol.Envelope;
@@ -48,6 +50,7 @@
     var ReceiptCommand   = ns.protocol.ReceiptCommand;
     var LoginCommand     = ns.protocol.LoginCommand;
     var ReportCommand    = ns.protocol.ReportCommand;
+
     var Station          = ns.mkm.Station;
     var MessageHelper    = ns.msg.MessageHelper;
     var CommonMessenger  = ns.CommonMessenger;
@@ -82,7 +85,7 @@
             var facebook = this.getFacebook();
             var user = !facebook ? null : facebook.getCurrentUser();
             if (!user) {
-                console.error('failed to get current user');
+                Log.error('failed to get current user');
                 return null;
             }
             var text = 'Message received.';
@@ -91,12 +94,12 @@
             var iMsg = InstantMessage.create(env, res);
             var sMsg = this.encryptMessage(iMsg);
             if (!sMsg) {
-                console.error('failed to encrypt message', user, originalEnvelope.getSender());
+                Log.error('failed to encrypt message', user, originalEnvelope.getSender());
                 return null;
             }
             var rMsg = this.signMessage(sMsg);
             if (!rMsg) {
-                console.error('failed to sign message', user, originalEnvelope.getSender());
+                Log.error('failed to sign message', user, originalEnvelope.getSender());
             }
             return rMsg;
         },
@@ -138,14 +141,14 @@
                 // not login yet
                 var content = iMsg.getContent();
                 if (!Interface.conforms(content, Command)) {
-                    console.warn('not handshake yet, suspend message', content, iMsg);
+                    Log.warning('not handshake yet, suspend message', content, iMsg);
                     // TODO: suspend instant message
                     return null;
                 } else if (content.getCmd() === Command.HANDSHAKE) {
                     // NOTICE: only handshake message can go out
                     iMsg.setValue('pass', 'handshaking');
                 } else {
-                    console.warn('not handshake yet, drop command', content, iMsg);
+                    Log.warning('not handshake yet, drop command', content, iMsg);
                     // TODO: suspend instant message
                     return null;
                 }
@@ -162,7 +165,7 @@
             } else if (passport === 'handshaking') {
                 // not login yet, let the handshake message go out only
             } else {
-                console.error('not handshake yet, suspemd message', rMsg);
+                Log.error('not handshake yet, suspend message', rMsg);
                 // TODO: suspend reliable message
                 return false;
             }
@@ -209,7 +212,7 @@
          */
         handshakeSuccess: function () {
             // change the flag of current session
-            console.info('handshake success, change session accepted');
+            Log.info('handshake success, change session accepted');
             var session = this.getSession();
             session.setAccepted(true);
             // broadcast current documents after handshake success
@@ -224,7 +227,7 @@
             var user = !facebook ? null : facebook.getCurrentUser();
             var visa = !user ? null : user.getVisa();
             if (!visa) {
-                console.error('visa not found', user);
+                Log.error('visa not found', user);
                 return;
             }
             var me = user.getIdentifier();
@@ -254,16 +257,16 @@
         sendVisa: function (visa, receiver, updated) {
             var me = visa.getIdentifier();
             if (me.equals(receiver)) {
-                console.warn('skip cycled message', receiver, visa);
+                Log.warning('skip cycled message', receiver, visa);
                 return false;
             }
             var archivist = this.getArchivist();
             if (!archivist.isDocumentResponseExpired(receiver, updated)) {
                 // response not expired yet
-                console.info('visa response not expired yet', receiver);
+                Log.info('visa response not expired yet', receiver);
                 return false;
             }
-            console.info('push visa document', me, receiver);
+            Log.info('push visa document', me, receiver);
             var content = DocumentCommand.response(me, null, visa);
             var pair = this.sendContent(content, me, receiver, 1);
             return pair && pair[1];

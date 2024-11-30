@@ -35,11 +35,14 @@
 (function (ns) {
     'use strict';
 
-    var Interface       = ns.type.Interface;
-    var Class           = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var ID              = ns.protocol.ID;
     var ForwardContent  = ns.protocol.ForwardContent;
     var GroupCommand    = ns.protocol.GroupCommand;
+
     var TripletsHelper  = ns.TripletsHelper;
 
     /**
@@ -96,13 +99,13 @@
         var facebook = this.getFacebook();
         var doc = !facebook ? null : facebook.getBulletin(group);
         if (!doc) {
-            console.warn('failed to get bulletin document', group);
+            Log.warning('failed to get bulletin document', group);
             return false;
         }
         // attach group document time
         var lastDocumentTime = doc.getTime();
         if (!lastDocumentTime) {
-            console.warn('document error', doc);
+            Log.warning('document error', doc);
         } else {
             iMsg.setDateTime('GDT', lastDocumentTime);
         }
@@ -110,7 +113,7 @@
         var archivist = this.getArchivist();
         var lastHistoryTime = archivist.getLastGroupHistoryTime(group);
         if (!lastHistoryTime) {
-            console.warn('failed to get history time', group);
+            Log.warning('failed to get history time', group);
         } else {
             iMsg.setDateTime('GHT', lastHistoryTime);
         }
@@ -127,7 +130,7 @@
         var content = iMsg.getContent();
         var group = content.getGroup();
         if (!group) {
-            console.warn('not a group message', iMsg);
+            Log.warning('not a group message', iMsg);
             return null;
         } else {
             // attach group's document & history times
@@ -155,7 +158,7 @@
         //
         var members = delegate.getMembers(group);
         if (!members || members.length === 0) {
-            console.warn('failed to get members', group);
+            Log.warning('failed to get members', group);
             return null;
         }
         // no 'assistants' found in group's bulletin document?
@@ -164,10 +167,10 @@
             // it is a tiny group, split this message before encrypting and signing,
             // then send this group message to all members one by one
             var success = splitAndSendMessage.call(this, iMsg, members, group, priority);
-            console.info('split message(s) for group', success, group);
+            Log.info('split message(s) for group', success, group);
             return null;
         } else {
-            console.info('splitting message for members', members.length, group);
+            Log.info('splitting message for members', members.length, group);
             // encrypt and sign this message first,
             // then split and send to all members one by one
             return disperseMessage.call(this, iMsg, members, group, priority);
@@ -208,7 +211,7 @@
         //
         var rMsg = packer.encryptAndSignMessage(iMsg);
         if (rMsg == null) {
-            console.error('failed to encrypt & sign message', iMsg.getSender(), group);
+            Log.error('failed to encrypt & sign message', iMsg.getSender(), group);
             return null;
         }
 
@@ -218,7 +221,7 @@
         var content = ForwardContent.create(rMsg);
         var pair = transceiver.sendContent(content, null, bot, priority);
         if (!pair || !pair[1]) {
-            console.warn('failed to forward message to group bot', group, bot);
+            Log.warning('failed to forward message to group bot', group, bot);
         }
 
         // OK, return the forwarding message
@@ -258,7 +261,7 @@
         //
         var rMsg = packer.encryptAndSignMessage(iMsg);
         if (!rMsg) {
-            console.error('failed to encrypt & sign message', sender, group);
+            Log.error('failed to encrypt & sign message', sender, group);
             return null;
         }
 
@@ -273,7 +276,7 @@
             r_msg = messages[i];
             receiver = r_msg.receiver;
             if (sender.equals(receiver)) {
-                console.info('cycled message', sender, receiver, group);
+                Log.info('cycled message', sender, receiver, group);
                 continue;
             }
             //
@@ -281,7 +284,7 @@
             //
             ok = transceiver.sendReliableMessage(r_msg, priority);
             if (!ok) {
-                console.error('failed to send message', sender, receiver, group);
+                Log.error('failed to send message', sender, receiver, group);
             }
         }
 
@@ -326,7 +329,7 @@
             i_msg = messages[i];
             receiver = i_msg.receiver;
             if (sender.equals(receiver)) {
-                console.info('cycled message', sender, receiver, group);
+                Log.info('cycled message', sender, receiver, group);
                 continue;
             }
             //
@@ -334,7 +337,7 @@
             //
             rMsg = transceiver.sendInstantMessage(i_msg, priority);
             if (rMsg) {
-                console.error('failed to send message', sender, receiver, group);
+                Log.error('failed to send message', sender, receiver, group);
                 continue;
             }
             success += 1;

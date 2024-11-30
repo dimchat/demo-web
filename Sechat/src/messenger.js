@@ -30,8 +30,10 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Interface        = sdk.type.Interface;
-    var Class            = sdk.type.Class;
+    var Interface = sdk.type.Interface;
+    var Class     = sdk.type.Class;
+    var Log       = sdk.lnc.Log;
+
     var ID               = sdk.protocol.ID;
     var Document         = sdk.protocol.Document;
     var Visa             = sdk.protocol.Visa;
@@ -50,7 +52,7 @@
             try {
                 return ClientMessenger.prototype.encryptKey.call(this, keyData, receiver, iMsg);
             } catch (e) {
-                console.error('failed to encrypt key for receiver', receiver, e);
+                Log.error('failed to encrypt key for receiver', receiver, e);
                 return null;
             }
         },
@@ -62,7 +64,7 @@
                 // get client IP from handshake response
                 if (Interface.conforms(content, HandshakeCommand)) {
                     var remote = content.getValue('remote_address');
-                    console.warn('socket address', remote);
+                    Log.warning('socket address', remote);
                 }
             }
             return content;
@@ -86,7 +88,7 @@
             try {
                 rMsg = ClientMessenger.prototype.sendInstantMessage.call(this, iMsg, priority);
             } catch (e) {
-                console.error('failed to send message', iMsg, e);
+                Log.error('failed to send message', iMsg, e);
             }
             if (rMsg) {
                 // keep signature for checking traces
@@ -100,10 +102,10 @@
         handshake: function (sessionKey) {
             if (!sessionKey || sessionKey.length === 0) {
                 // first handshake, update visa document first
-                console.info('update visa for first handshake');
+                Log.info('update visa for first handshake');
                 this.updateVisa();
             } else if (this.getSession().getSessionKey() === sessionKey) {
-                console.warn('duplicated session key', sessionKey);
+                Log.warning('duplicated session key', sessionKey);
             }
             return ClientMessenger.prototype.handshake.call(this, sessionKey);
         },
@@ -112,20 +114,20 @@
             var facebook = this.getFacebook();
             var user = facebook.getCurrentUser();
             if (!user) {
-                console.error('current user not found');
+                Log.error('current user not found');
                 return false;
             }
             // 1. get sign key for current user
             var sKey = facebook.getPrivateKeyForVisaSignature(user.getIdentifier());
             if (!sKey) {
-                console.error('private key not found', user);
+                Log.error('private key not found', user);
                 return false;
             }
             // 2. get visa document for current user
             var visa = user.getVisa();
             if (!visa) {
                 // FIXME: query from station or create a new one?
-                console.error('user error', user);
+                Log.error('user error', user);
                 return false;
             } else {
                 // clone for modifying
@@ -133,7 +135,7 @@
                 if (Interface.conforms(doc, Visa)) {
                     visa = doc;
                 } else {
-                    console.error('visa error: $visa', visa);
+                    Log.error('visa error: $visa', visa);
                     return false;
                 }
             }
@@ -143,15 +145,15 @@
             // 4. sign it
             var sig = visa.sign(sKey);
             if (!sig) {
-                console.error('failed to sign visa', visa, sKey);
+                Log.error('failed to sign visa', visa, sKey);
                 return false;
             }
             // 5. save it
             var ok = facebook.saveDocument(visa);
             if (ok) {
-                console.info('visa updated', visa);
+                Log.info('visa updated', visa);
             } else {
-                console.error('failed to save visa', visa);
+                Log.error('failed to save visa', visa);
             }
             return ok;
         },
@@ -193,12 +195,12 @@
             try {
                 ClientMessenger.prototype.handshakeSuccess.call(this);
             } catch (e) {
-                console.error('failed to broadcast document', e);
+                Log.error('failed to broadcast document', e);
             }
             var facebook = this.getFacebook();
             var user = facebook.getCurrentUser();
             if (!user) {
-                console.error('failed to get current user');
+                Log.error('failed to get current user');
                 return;
             }
             // 2. broadcast login command with current station info
@@ -206,7 +208,7 @@
                 var userAgent = 'Web Browser';  // TODO:
                 this.broadcastLogin(user.getIdentifier(), userAgent);
             } catch (e) {
-                console.error('failed to broadcast login command')
+                Log.error('failed to broadcast login command')
             }
             // 3. broadcast block/mute list
             // 4. report station speeds to master after tested speeds

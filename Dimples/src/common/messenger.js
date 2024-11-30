@@ -38,12 +38,15 @@
 (function (ns) {
     'use strict';
 
-    var Interface      = ns.type.Interface;
-    var Class          = ns.type.Class;
-    var Converter      = ns.type.Converter;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Converter = ns.type.Converter;
+    var Log       = ns.lnc.Log;
+
     var Command        = ns.protocol.Command;
     var Envelope       = ns.protocol.Envelope;
     var InstantMessage = ns.protocol.InstantMessage;
+
     var Compatible     = ns.Compatible;
     var Messenger      = ns.Messenger;
 
@@ -63,7 +66,7 @@
                 return Messenger.prototype.encryptKey.call(this, keyData, receiver, iMsg);
             } catch (e) {
                 // FIXME:
-                console.error('failed to encrypt key for receiver', receiver, e);
+                Log.error('failed to encrypt key for receiver', receiver, e);
             }
         },
 
@@ -135,10 +138,10 @@
             //  0. check cycled message
             //
             if (sender.equals(receiver)) {
-                console.warn('drop cycled message', iMsg.getContent(), sender, receiver, iMsg.getGroup());
+                Log.warning('drop cycled message', iMsg.getContent(), sender, receiver, iMsg.getGroup());
                 return null;
             } else {
-                console.debug('send instant message, type:' + iMsg.getContent().getType(), sender, receiver, iMsg.getGroup());
+                Log.debug('send instant message, type:' + iMsg.getContent().getType(), sender, receiver, iMsg.getGroup());
                 // attach sender's document times
                 // for the receiver to check whether user info synchronized
                 attachVisaTime.call(this, sender, iMsg);
@@ -177,13 +180,13 @@
             //  0. check cycled message
             //
             if (sender.equals(receiver)) {
-                console.warn('drop cycled message', sender, receiver, rMsg.getGroup());
+                Log.warning('drop cycled message', sender, receiver, rMsg.getGroup());
                 return false;
             }
             // 1. serialize message
             var data = this.serializeMessage(rMsg);
             if (!data || data.length === 0) {
-                console.error('failed to serialize message', rMsg);
+                Log.error('failed to serialize message', rMsg);
                 return false;
             }
             // 2. call gate keeper to send the message data package
@@ -202,7 +205,7 @@
         var facebook = this.getFacebook();
         var doc = facebook.getVisa(sender);
         if (!doc) {
-            console.warn('failed to get visa document for sender', sender);
+            Log.warning('failed to get visa document for sender', sender);
             return false;
         }
         // attach sender document time

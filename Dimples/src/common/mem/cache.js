@@ -36,6 +36,7 @@
     'use strict';
 
     var Thread = ns.fsm.threading.Thread;
+    var Log    = ns.lnc.Log;
 
     var CacheHolder = function (value, lifeSpan, now) {
         this.__value = value;
@@ -192,7 +193,7 @@
                 try {
                     this.purge(now);
                 } catch (e) {
-                    console.error('CacheManager::run()', e);
+                    Log.error('CacheManager::run()', e);
                 }
             }
             return true;

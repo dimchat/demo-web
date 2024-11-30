@@ -35,8 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Interface       = ns.type.Interface;
-    var Class           = ns.type.Class;
+    var Interface = ns.type.Interface;
+    var Class     = ns.type.Class;
+    var Log       = ns.lnc.Log;
+
     var ReliableMessage = ns.protocol.ReliableMessage;
     var MessageHelper   = ns.msg.MessageHelper;
     var MessagePacker   = ns.MessagePacker;
@@ -124,7 +126,7 @@
             if (this.checkReceiver(iMsg)) {
                 // receiver is ready
             } else {
-                console.warn('receiver not ready', iMsg.getReceiver());
+                Log.warning('receiver not ready', iMsg.getReceiver());
                 return null;
             }
             return MessagePacker.prototype.encryptMessage.call(this, iMsg);
@@ -137,7 +139,7 @@
             if (this.checkSender(rMsg)) {
                 // sender is ready
             } else {
-                console.warn('sender not ready', rMsg.getSender());
+                Log.warning('sender not ready', rMsg.getSender());
                 return null;
             }
             return MessagePacker.prototype.verifyMessage.call(this, rMsg);

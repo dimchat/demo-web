@@ -35,8 +35,9 @@
 (function (ns) {
     'use strict';
 
-    var Class        = ns.type.Class;
-    var UTF8         = ns.format.UTF8;
+    var Class = ns.type.Class;
+    var UTF8  = ns.format.UTF8;
+
     // var CommonGate   = ns.startrek.BaseGate;
     // var CommonGate   = ns.startrek.AutoGate;
     var CommonGate   = ns.startrek.WSClientGate;
@@ -76,7 +77,7 @@
                         var signature = UTF8.decode(sig);
                         var timestamp = UTF8.decode(sec);
                         var text = 'ACK:{"time":' + timestamp + ',"signature":"' + signature + '"}';
-                        console.log('sending respond', text);
+                        // console.log('sending respond', text);
                         var priority = 1
                         this.send(bytes(text), priority);
                     }
@@ -167,35 +168,32 @@
         return stripLeft(data, removing);
     };
     var stripLeft = function (data, leading) {
-        if (leading.length === 0) {
+        var c = leading.length;
+        if (c === 0) {
             return data;
         }
-        var i;  // int
-        while (true) {
-            if (data.length < leading.length) {
-                return data;
-            }
-            for (i = 0; i < leading.length; ++i) {
+        var i;  // uint
+        while (c <= data.length) {
+            for (i = 0; i < c; ++i) {
                 if (data[i] !== leading[i]) {
                     // not match
                     return data;
                 }
             }
             // matched, remove the leading bytes
-            data = data.subarray(leading.length);
+            data = data.subarray(c);
         }
+        return data;
     };
     var stripRight = function (data, trailing) {
-        if (trailing.length === 0) {
+        var c = trailing.length;
+        if (c === 0) {
             return data;
         }
-        var i, m;  // int
-        while (true) {
-            m = data.length - trailing.length;
-            if (m < 0) {
-                return data;
-            }
-            for (i = 0; i < trailing.length; ++i) {
+        var i;  // uint
+        var m = data.length - c;
+        while (m >= 0) {
+            for (i = 0; i < c; ++i) {
                 if (data[m + i] !== trailing[i]) {
                     // not match
                     return data;
@@ -203,9 +201,11 @@
             }
             // matched, remove the tailing bytes
             data = data.subarray(0, m);
+            m -= c;
         }
+        return data;
     };
-    
+
     var DataUtils = {
 
         bytes: bytes,

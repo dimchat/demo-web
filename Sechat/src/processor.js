@@ -30,7 +30,9 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Class                  = sdk.type.Class;
+    var Class = sdk.type.Class;
+    var Log   = sdk.lnc.Log;
+
     var ClientMessageProcessor = sdk.ClientMessageProcessor;
 
     var SharedProcessor = function (facebook, messenger) {
@@ -50,7 +52,7 @@
             try {
                 return ClientMessageProcessor.prototype.processSecureMessage.call(this, sMsg, rMsg);
             } catch (e) {
-                console.error('failed to process message', rMsg, e);
+                Log.error('failed to process message', rMsg, e);
                 return [];
             }
         },
@@ -61,7 +63,7 @@
             // save instant message
             var clerk = ns.Amanuensis;
             if (!clerk.saveInstantMessage(iMsg)) {
-                console.error('failed to save instant message', iMsg);
+                Log.error('failed to save instant message', iMsg);
                 return [];
             }
             return responses;

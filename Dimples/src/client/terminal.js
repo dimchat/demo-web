@@ -36,15 +36,19 @@
 (function (ns) {
     'use strict';
 
-    var Class             = ns.type.Class;
+    var Class  = ns.type.Class;
+    var Log    = ns.lnc.Log;
+
+    var Runner = ns.fsm.skywalker.Runner;
+    var Thread = ns.fsm.threading.Thread;
+
     var EntityType        = ns.protocol.EntityType;
     var Station           = ns.mkm.Station;
-    var Runner            = ns.fsm.skywalker.Runner;
-    var Thread            = ns.fsm.threading.Thread;
+
     var ClientSession     = ns.network.ClientSession;
     var SessionState      = ns.network.SessionState;
     var SessionStateOrder = ns.network.SessionStateOrder;
-    // var ClientMessagePacker = ns.ClientMessagePacker;
+    // var ClientMessagePacker    = ns.ClientMessagePacker;
     // var ClientMessageProcessor = ns.ClientMessageProcessor;
 
     /**
@@ -99,7 +103,7 @@
                 }
             }
         }
-        console.info('connecting to ' + host + ':' + port + ' ...');
+        Log.info('connecting to ' + host + ':' + port + ' ...');
         // create new messenger with session
         station = this.createStation(host, port);
         session = this.createSession(station);
@@ -194,7 +198,7 @@
         try {
             this.keepOnline();
         } catch (e) {
-            console.error('Terminal::process()', e);
+            Log.error('Terminal::process()', e);
         }
         return false;
     };
@@ -215,7 +219,7 @@
         var facebook = this.__facebook;
         var user = facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
+            Log.error('failed to get current user');
         } else if (EntityType.STATION.equals(user.getType())) {
             // a station won't login to another station, if here is a station,
             // it must be a station bridge for roaming messages, we just send
@@ -253,21 +257,21 @@
             // check current user
             var user = ctx.getSessionID();
             if (!user) {
-                console.warn('current user not set', current);
+                Log.warning('current user not set', current);
                 return;
             }
-            console.info('connect for user: ' + user.toString());
+            Log.info('connect for user: ' + user.toString());
             var remote = !session ? null : session.getRemoteAddress();
             if (!remote) {
-                console.warn('failed to get remote address', session);
+                Log.warning('failed to get remote address', session);
                 return;
             }
             var gate = !session ? null : session.getGate();
             var docker = !gate ? null : gate.fetchPorter(remote, null);
             if (docker) {
-                console.info('connected to: ' + remote.toString());
+                Log.info('connected to: ' + remote.toString());
             } else {
-                console.error('failed to connect: ' + remote.toString());
+                Log.error('failed to connect: ' + remote.toString());
             }
         } else if (SessionStateOrder.HANDSHAKING.equals(index)) {
             // start handshake

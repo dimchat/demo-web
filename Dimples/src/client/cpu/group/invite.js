@@ -35,8 +35,11 @@
 (function (ns) {
     'use strict';
 
-    var Class                 = ns.type.Class;
-    var ID                    = ns.protocol.ID;
+    var Class = ns.type.Class;
+    var Log   = ns.lnc.Log;
+
+    var ID    = ns.protocol.ID;
+
     var GroupCommandProcessor = ns.cpu.GroupCommandProcessor;
 
     ///  Invite Group Command Processor
@@ -114,13 +117,13 @@
                     // to update the sender's memory.
                     var ok = this.sendGroupHistories(group, sender);
                     if (!ok) {
-                        console.error('failed to send history for group', group, sender);
+                        Log.error('failed to send history for group', group, sender);
                     }
                 }
             } else if (!this.saveGroupHistory(content, rMsg, group)) {
                 // here try to append the 'invite' command to local storage as group history
                 // it should not failed unless the command is expired
-                console.error('failed to save "invite" command', group);
+                Log.error('failed to save "invite" command', group);
             } else if (!canReset) {
                 // the sender cannot reset the group, means it's invited by ordinary member,
                 // and the 'invite' command was saved, now waiting for review.
@@ -130,11 +133,11 @@
                 //        usually it should send a 'reset' command instead;
                 //        if we received the 'invite' command here, maybe it was confused,
                 //        anyway, we just append the new members directly.
-                console.warn('invited by administrator', sender, group);
+                Log.warning('invited by administrator', sender, group);
                 content.setValue('added', ID.revert(addedList));
             } else {
                 // DB error?
-                console.error('failed to save members for group', group);
+                Log.error('failed to save members for group', group);
             }
 
             // no need to response this group command

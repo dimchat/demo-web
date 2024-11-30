@@ -35,11 +35,14 @@
 (function (ns) {
     'use strict';
 
-    var Class               = ns.type.Class;
-    var Thread              = ns.fsm.threading.Thread;
-    var PorterStatus        = ns.startrek.port.PorterStatus;
-    var BaseConnection      = ns.startrek.socket.BaseConnection;
-    var StarPorter          = ns.startrek.StarPorter;
+    var Class  = ns.type.Class;
+    var Log    = ns.lnc.Log;
+    var Thread = ns.fsm.threading.Thread;
+
+    var PorterStatus   = ns.startrek.port.PorterStatus;
+    var BaseConnection = ns.startrek.socket.BaseConnection;
+    var StarPorter     = ns.startrek.StarPorter;
+
     var BaseSession         = ns.network.BaseSession;
     var SessionStateMachine = ns.network.SessionStateMachine;
 
@@ -214,7 +217,7 @@
                         all_responses.push(res);
                     }
                 } catch (e) {
-                    console.error('ClientSession::onPorterReceived()', e, pack);
+                    Log.error('ClientSession::onPorterReceived()', e, pack);
                 }
             }
             var gate = this.getGate();

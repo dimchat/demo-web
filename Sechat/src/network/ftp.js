@@ -35,9 +35,11 @@
 (function (ns, sdk) {
     'use strict';
 
-    var Hex     = sdk.format.Hex;
-    var UTF8    = sdk.format.UTF8;
-    var MD5     = sdk.digest.MD5;
+    var Hex  = sdk.format.Hex;
+    var UTF8 = sdk.format.UTF8;
+    var MD5  = sdk.digest.MD5;
+    var Log  = sdk.lnc.Log;
+
     var Storage = ns.dos.SessionStorage;
 
     var get_configuration = function () {
@@ -265,7 +267,7 @@
         var filename = content.getFilename();
         var pwd = content.getPassword();
         if (!pwd || !filename) {
-            console.error('cannot decrypt file data', content);
+            Log.error('cannot decrypt file data', content);
             return null;
         }
         var data = pwd.decrypt(encrypted);
