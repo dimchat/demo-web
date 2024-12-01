@@ -35,10 +35,10 @@
 (function (ns) {
     'use strict';
 
-    var Class           = ns.type.Class;
-    var Arrays          = ns.type.Arrays;
-    var ID              = ns.protocol.ID;
-    var Group           = ns.mkm.Group;
+    var Class  = ns.type.Class;
+    var Arrays = ns.type.Arrays;
+    var ID     = ns.protocol.ID;
+    var Group  = ns.mkm.Group;
 
     var SharedGroupManager = function () {
         Object.call(this);
@@ -240,7 +240,6 @@
         var facebook = this.getFacebook();
         var user = !facebook ? null : facebook.getCurrentUser();
         if (!user) {
-            console.error('failed to get current user');
             return false;
         }
         var delegate = this.getGroupDelegate();

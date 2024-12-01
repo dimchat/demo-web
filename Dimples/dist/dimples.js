@@ -4857,7 +4857,7 @@ if (typeof DIMP !== "object") {
         }, getFingerprint: function () {
             var ted = this.__fingerprint;
             if (!ted && MetaType.hasSeed(this.getType())) {
-                var base64 = this.getString('fingerprint', null);
+                var base64 = this.getValue('fingerprint');
                 ted = TransportableData.parse(base64);
                 this.__fingerprint = ted
             }
@@ -4891,13 +4891,14 @@ if (typeof DIMP !== "object") {
     var Document = ns.protocol.Document;
     var BaseDocument = function () {
         var map, status;
-        var identifier, data;
+        var identifier, data, signature;
         var properties;
         if (arguments.length === 1) {
             map = arguments[0];
             status = 0;
             identifier = null;
             data = null;
+            signature = null;
             properties = null
         } else if (arguments.length === 2) {
             identifier = arguments[0];
@@ -4905,17 +4906,14 @@ if (typeof DIMP !== "object") {
             map = {'ID': identifier.toString()};
             status = 0;
             data = null;
-            if (type && type.length > 1) {
-                var now = new Date();
-                properties = {'type': type, 'created_time': (now.getTime() / 1000.0)}
-            } else {
-                properties = null
-            }
+            signature = null;
+            var now = new Date();
+            properties = {'type': type, 'created_time': (now.getTime() / 1000.0)}
         } else if (arguments.length === 3) {
             identifier = arguments[0];
             data = arguments[1];
-            var signature = arguments[2];
-            map = {'ID': identifier.toString(), 'data': data, 'signature': signature}
+            signature = arguments[2];
+            map = {'ID': identifier.toString(), 'data': data, 'signature': signature.toObject()}
             status = 1;
             properties = null
         } else {
@@ -4924,7 +4922,7 @@ if (typeof DIMP !== "object") {
         Dictionary.call(this, map);
         this.__identifier = identifier;
         this.__json = data;
-        this.__sig = null;
+        this.__sig = signature;
         this.__properties = properties;
         this.__status = status
     };
@@ -4956,7 +4954,7 @@ if (typeof DIMP !== "object") {
         }, getSignature: function () {
             var ted = this.__sig;
             if (!ted) {
-                var base64 = this.getString('signature', null);
+                var base64 = this.getValue('signature');
                 ted = TransportableData.parse(base64);
                 this.__sig = ted
             }
@@ -15427,6 +15425,7 @@ if (typeof StarGate !== 'object') {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var TransportableData = ns.format.TransportableData;
     var ID = ns.protocol.ID;
     var Document = ns.protocol.Document;
     var Storage = ns.dos.LocalStorage;
@@ -15482,7 +15481,8 @@ if (typeof StarGate !== 'object') {
         if (!data || !signature) {
             throw new ReferenceError('document error: ' + dict);
         }
-        return Document.create(type, identifier, data, signature)
+        var ted = TransportableData.parse(signature);
+        return Document.create(type, identifier, data, ted)
     };
     var convert_documents = function (array) {
         var documents = [];

@@ -35,7 +35,9 @@
 (function (ns) {
     'use strict';
 
-    var Class       = ns.type.Class;
+    var Class             = ns.type.Class;
+    var TransportableData = ns.format.TransportableData;
+
     var ID          = ns.protocol.ID;
     var Document    = ns.protocol.Document;
     var Storage     = ns.dos.LocalStorage;
@@ -112,7 +114,8 @@
         if (!data || !signature) {
             throw new ReferenceError('document error: ' + dict);
         }
-        return Document.create(type, identifier, data, signature);
+        var ted = TransportableData.parse(signature);
+        return Document.create(type, identifier, data, ted);
     };
 
     var convert_documents = function (array) {
