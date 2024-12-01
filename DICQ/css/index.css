@@ -1,6 +1,9 @@
 
 body {
-    background-color: #387E83;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to right bottom, #33C0F3, white) no-repeat fixed center center;
+    background-size: cover;
 }
 
 button {

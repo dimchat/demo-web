@@ -218,8 +218,7 @@
     'use strict';
 
     var Main = function () {
-        var facebook = app.GlobalVariable.getFacebook();
-        var user = facebook.getCurrentUser();
+        var user = current_user();
         if (user) {
             // login
             // connect('127.0.0.1', 9394);
@@ -233,6 +232,16 @@
         }
     };
 
+    var current_user = function () {
+        try {
+            var facebook = app.GlobalVariable.getFacebook();
+            return facebook.getCurrentUser();
+        } catch (e) {
+            console.error('failed to get current user');
+            return null;
+        }
+    };
+
     var connect = function (host, port) {
         var client = app.GlobalVariable.getTerminal();
         client.connect(host, port);
@@ -240,7 +249,16 @@
     }
 
     // ns.logoImageURL = 'https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/2e/d9/b5/2ed9b53a-8cc0-d865-3756-bb51bb2e80b3/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/460x0w.webp';
-    ns.logoImageURL = 'images/icon-512.png';
+    ns.defaultImageURL = 'images/icon-512.png';
+
+    ns.defaultContacts = [
+        // Customer Services
+        "0x952718A18C6b21abb593D84203282fe1c21773D6",
+        "0x9527983A58D48C2CA9016D84043D557981C2AC5a",
+        // Service Bots
+        'ChatGPT@2yiWdbVHhUhN3uTScP9p3qi2V2zvGWbSxK',
+        'Gemini@2iqbZy3zcETL19V3Sonaeqxfk4S49zpakG'
+    ];
 
     ns.Main = Main;
 

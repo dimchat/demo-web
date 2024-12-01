@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1.0" />-->
     <meta name="description" content="DIMP Client" />
     <meta name="author" content="Albert Moky" />
     <meta name="referrer" content="no-referrer" />
@@ -18,9 +18,74 @@
             bottom: 24px;
             background-color: white;
         }
+        pre {
+            color: #1d1d1f;
+            line-height: 24px;
+            font-style: italic;
+            /*white-space: pre-wrap;       !* css-3 *!*/
+            /*white-space: -moz-pre-wrap;  !* Mozilla, since1999 *!*/
+            /*white-space: -pre-wrap;      !* Opera 4-6 *!*/
+            /*white-space: -o-pre-wrap;    !*Opera 7 *!*/
+            /*word-wrap:break-word;        !* Internet Explorer 5.5+ *!*/
+        }
+        a {
+            color: darkblue;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .logo {
+            border-radius: 16px;
+            border-color: whitesmoke;
+            border-style: solid;
+        }
     </style>
 </head>
 <body>
+    <div style="margin: 32px;">
+        <h1 style="text-align: center; ">Tarsier - Secure Chat</h1>
+        <pre>
+Imagine a world where you can message anyone without being forced to install the same app,
+Imagine a world where you can host your own communication and still be part of a huge network.
+This will be brought to you by Tarsier Secure Chat, which is powered by DIM.
+
+DIM - an open source project that provides the protocol and system architecture.
+which is designed for the next generation Internet that is coming.
+DIM network could serve as a social network, in which users can send messages or digital assets freely.
+Besides that, DIM can serve the Internet of Things as well. Allowing software to communicate autonomously.
+
+Although other platforms are owned and operated by a single corporation, who has full control over everything,
+DIM network is decentralized, and there is no one server, company, or person running it.
+Anyone can join and run their own services on DIM network.
+
+But, how does this work?
+
+When someone joins DIM network with their servers, they are called Service Providers.
+Since DIM network is open, a Service Provider can have its own set of services, while complying with DIM Protocol.
+User identification is generated and verified using a cryptographically algorithm,
+and no longer authenticated by a single corporation.
+Because of this, Service Providers cannot monetize the user’s privacy or data,
+they must compete by providing better services, and a better ecosystem.
+
+This means that all the Service Providers share the same potential user base.
+And users could choose the Service Provider that fits their needs at anytime.
+
+Nowadays, the internet users place greater emphasis on protecting their privacy,
+many people are concerned that their private information may be illegally used.
+I hope this app can build a more safety social network to allow who don 't want to provide too much information
+to the man-in-the-middle, can still keep in touch with their friends freely.
+
+Hope this application can bring you more convenience. Enjoy it!
+        </pre>
+        <div style="text-align: center; ">
+            <a href="https://apps.apple.com/app/tarsier-secure-chat/id6449430440?platform=iphone" target="_blank">
+                <img alt="Tarsier - Secure Chat" width="72" height="72" class="logo" src="https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/2e/d9/b5/2ed9b53a-8cc0-d865-3756-bb51bb2e80b3/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/460x0w.webp" />
+                <br/>
+                Download from AppStore
+            </a>
+        </div>
+    </div>
 <script>
     !function () {
         var data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAzNJREFUeF7tm+FywyAMg5P3f+jucpdk1EHiM6W7rmE/W0pAyLJssnVZlsfS+fd4/P50XdenWY7v4ufloPL3aglq3nK8e0Zra9uqJwAbSuQ0DjQPxGsMUCf/TrbU1tM8+Z2xJwMmAHs8k5h1DDiQj0wgAJfPVuN72FfTnWOeCwMmAEHNHXqZuP56BiiBJOHiBCsC97EhMAHYEVApqaYtxCwpdmRS8J+IoPMI23f/BoCWgSg3Q04hI35uPreujzZC/wYAcvJxTIYBNZMTTy4zxqXgzF6GF0PKAWY2V9YmCqRhADwIRwGkpGyN02R+0xPnYNnLOgGYDCjaOiJfkwpPFVE1fIlZIlpCTJLyIKdviSEwqhqMoNVaWMrnExHsqR9qv0HlcKs2r1lNIkDE3GTmyfQgUv2ArwbgCAFStjqEnalxBkqdcKvLTHxArdi6hN0EYIeE9NaJaGVi1lWQPSbJCa961mmEbgsAuRhxJ9/Kxa4PEE+FpDYyX8tyP6XkCQC4GrsFA4hlJamuxzMQWmc0igioNELOsn4lANEH9KSxmhV2p9AyOWUtoAStt394me/2AMQskOnz1cJFmRES5xn2kflIF+nSE7w9ABkz0huHr4jpcJYQIxRp7SpH0mGbAOxX8LVylRQ0lAVIJwgDMp0WWXWB9w6cqNJNZ8ehi5FbAIC6J+JdwIx7zKTObSxKZYJdaE9HCKDBdwAgc0JIZJKx77pEKr5b9wzW20QGTACAjLqTJzFLCpxMV0ct2aXZk2mOAS3KuSqQGKIM3Uk/IK4XATD6dpg8FJBMvrtMGJYpxYdfj08AwDvHH8UAYoVbIuM2RASz5v9bMd9btl/EdQKwt8VHqbY6Odd1dhVgZr6YVUhlOewfJtTDM5sjIKFNAcsufYCLvcz1uMvxJJVlPAgRVTmfK4ZaxoK0xF7tHo1whFakRwOgKJotnEb2IJy+oXeE4qbcqU4ABN9q4eKoqS5ke+4wy+dcGrLvCgGlH9vnLZOzjZkAPL+/aVtjqs2O2PJKOUzytmu1uXRILlCp3nR3hFq5+KsA6DETBIBMoUOEEtHaXLxctGV0MUS8+6gxym26q7cIwA89v23vnYEmHQAAAABJRU5ErkJggg==';

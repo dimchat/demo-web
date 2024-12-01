@@ -82,7 +82,7 @@
             // TODO: build group logo
         }
         if (!image) {
-            image = ns.logoImageURL;
+            image = ns.defaultImageURL;
         }
         if (image) {
             this.avatarImage.setSrc(image);
@@ -163,7 +163,7 @@
 
     var remove_zombie = function () {
         if (is_zombie(this.__ie)) {
-            console.warn('remove zombie', this, this.__ie);
+            console.warn('remove zombie cell', this, this.__ie);
             this.onExit();
             // this.remove();
         }

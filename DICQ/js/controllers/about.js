@@ -22,7 +22,7 @@
         // banner
         var banner = new Image();
         banner.setClassName('banner');
-        banner.setSrc(ns.logoImageURL);
+        banner.setSrc(ns.defaultImageURL);
         this.appendChild(banner);
         // link
         var link = new Link();

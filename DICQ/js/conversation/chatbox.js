@@ -45,7 +45,7 @@
         // avatar
         var avatar = new Image();
         avatar.setClassName('avatar');
-        avatar.setSrc(ns.logoImageURL);
+        avatar.setSrc(ns.defaultImageURL);
         this.appendChild(avatar);
         this.avatarImage = avatar;
 

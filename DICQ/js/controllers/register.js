@@ -40,7 +40,7 @@
         // nickname
         var nicknameLabel = new Label();
         nicknameLabel.setClassName('nicknameLabel');
-        nicknameLabel.setText('Please input your nickname');
+        nicknameLabel.setText('Please input your name');
         basic.appendChild(nicknameLabel);
         // value
         var nickname = new Input();
