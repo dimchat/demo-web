@@ -2623,6 +2623,7 @@
     var Class = ns.type.Class;
     var Log = ns.lnc.Log;
     var ID = ns.protocol.ID;
+    var Document = ns.protocol.Document;
     var DocumentCommand = ns.protocol.DocumentCommand;
     var Station = ns.mkm.Station;
     var TripletsHelper = ns.TripletsHelper;
@@ -2644,23 +2645,31 @@
         if (!isOwner) {
             return false
         }
-        var doc = delegate.getBulletin(group);
-        if (!doc) {
+        var bulletin = delegate.getBulletin(group);
+        if (!bulletin) {
             Log.error('failed to get group document', group);
             return false
+        } else {
+            var clone = Document.parse(bulletin.copyMap(false));
+            if (clone) {
+                bulletin = clone
+            } else {
+                Log.error('bulletin error', bulletin, group);
+                return false
+            }
         }
-        doc.setProperty('administrators', ID.revert(newAdmins));
-        var signature = !sKey ? null : doc.sign(sKey);
+        bulletin.setProperty('administrators', ID.revert(newAdmins));
+        var signature = !sKey ? null : bulletin.sign(sKey);
         if (!signature) {
             Log.error('failed to sign document for group', group, me);
             return false
-        } else if (!delegate.saveDocument(doc)) {
+        } else if (!delegate.saveDocument(bulletin)) {
             Log.error('failed to save document for group', group);
             return false
         } else {
             Log.info('group document updated', group)
         }
-        return this.broadcastGroupDocument(doc)
+        return this.broadcastGroupDocument(bulletin)
     };
     AdminManager.prototype.broadcastGroupDocument = function (doc) {
         var delegate = this.getDelegate();

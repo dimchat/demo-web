@@ -113,7 +113,10 @@
         }
         // update visa
         var visa = user.getVisa();
-        if (!visa) {
+        if (visa) {
+            // clone for modifying
+            visa = Document.parse(visa.copyMap(false));
+        } else {
             visa = Document.create(Document.VISA, user.getIdentifier());
         }
         visa.setName(nickname);
