@@ -63,7 +63,7 @@
                 throw new URIError('host error: ' + host);
             }
         }
-        Host.call(this, ipv.ip, ipv.port, ipv.data);
+        Host.call(this, host, ipv.ip, ipv.port, ipv.data);
         this.ipv = ipv;
     };
     Class(Host58, Host, null, null);

@@ -184,7 +184,7 @@
                     'sys': info
                 };
             }
-            info['os'] = 'WebBrowser';
+            info['os'] = 'Browser';
             // ...
             return info;
         },

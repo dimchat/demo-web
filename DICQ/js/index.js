@@ -285,6 +285,11 @@ if (typeof dicq !== 'object') {
             tarsier_ui = [];
         }
     }
+    if (typeof SECHAT === 'object') {
+        if (typeof SECHAT.GlobalVariable === 'object') {
+            dimsdk = [];
+        }
+    }
     if (typeof ns.Application === 'object') {
         stylesheets = [];
         scripts = [];

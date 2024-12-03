@@ -3,34 +3,48 @@
 //! require <dimsdk.js>
 //! require 'bubble.js'
 
-!function (ns, dimp) {
+!function (ns, sdk) {
     'use strict';
 
-    var ID = dimp.ID;
+    var Class = sdk.type.Class;
 
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
+    var ID       = sdk.protocol.ID;
+    var Document = sdk.protocol.Document;
 
-    var StationDelegate = dimp.network.StationDelegate;
-    var Terminal = dimp.network.Terminal;
+    var NotificationCenter   = sdk.lnc.NotificationCenter;
+    var NotificationObserver = sdk.lnc.Observer;
+    var NotificationNames    = sdk.NotificationNames;
 
-    var Register = dimp.extensions.Register;
+    var SessionStateOrder = sdk.network.SessionStateOrder;
+    var Terminal          = sdk.network.Terminal;
 
-    var NotificationCenter = dimp.stargate.NotificationCenter;
+    var Anonymous = sdk.Anonymous;
+    var Register  = sdk.Register;
+
+    var get_database = function () {
+        return sdk.GlobalVariable.getDatabase();
+    };
+    var get_facebook = function () {
+        return sdk.GlobalVariable.getFacebook();
+    };
+    var get_messenger = function () {
+        return sdk.GlobalVariable.getMessenger();
+    };
 
     var Application = function () {
         Terminal.call(this);
         this.bubble = new Bubble();
         // notifications
         var nc = NotificationCenter.getInstance();
-        nc.addObserver(this, nc.kNotificationStationConnecting);
-        nc.addObserver(this, nc.kNotificationStationConnected);
-        nc.addObserver(this, nc.kNotificationStationError);
-        nc.addObserver(this, nc.kNotificationMetaAccepted);
-        nc.addObserver(this, nc.kNotificationProfileUpdated);
-        nc.addObserver(this, nc.kNotificationMessageReceived);
+        nc.addObserver(this, NotificationNames.SessionStateChanged);
+        // nc.addObserver(this, NotificationNames.StationConnecting);
+        // nc.addObserver(this, NotificationNames.StationConnected);
+        // nc.addObserver(this, NotificationNames.StationError);
+        nc.addObserver(this, NotificationNames.MetaAccepted);
+        nc.addObserver(this, NotificationNames.DocumentUpdated);
+        nc.addObserver(this, NotificationNames.MessageUpdated);
     };
-    dimp.Class(Application, Terminal, [StationDelegate]);
+    Class(Application, Terminal, [NotificationObserver], null);
 
     var s_application = null;
     Application.getInstance = function () {
@@ -53,79 +67,102 @@
     };
 
     var auto_login = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
-        if (!user) {
-            this.write('Creating new user ...');
-            // create new user
-            var reg = new Register();
-            user = reg.createUser('Anonymous');
-            if (user) {
-                facebook.setCurrentUser(user);
-            }
-        }
         if (user) {
-            return this.doLogin(user.identifier);
-        } else {
-            return 'Failed to get current user';
+            user = user.getIdentifier();
+            return this.doLogin(user);
         }
+        var db = get_database();
+        // create new user
+        var reg = new Register(db);
+        var uid = reg.createUser('Anonymous');
+        user = !uid ? null : facebook.getUser(uid);
+        if (user) {
+            db.saveLocalUsers([uid]);
+            facebook.setCurrentUser(user);
+        } else {
+            return 'Failed to create user.';
+        }
+        this.write('New User ID: ' + uid.toString());
+        return this.doLogin(uid);
     };
 
     Application.prototype.onReceiveNotification = function (notification) {
-        var facebook = Facebook.getInstance();
-        var messenger = Messenger.getInstance();
+        var facebook = get_facebook();
         var identifier;
-        var profile;
-        var name = notification.name;
-        var userInfo = notification.userInfo;
+        var doc;
+        var name = notification.getName();
+        var userInfo = notification.getUserInfo();
         var res;
-        var nc = NotificationCenter.getInstance();
-        if (name === nc.kNotificationStationConnecting) {
-            res = 'Connecting to ' + userInfo['host'] + ':' + userInfo['port'] + ' ...';
-        } else if (name === nc.kNotificationStationConnected) {
+        if (name === NotificationNames.SessionStateChanged) {
+            var state = userInfo['current'];
+            var index = !state ? -1 : state.getIndex();
+            if (!state) {
+                this.write('Station state unknown: ' + state);
+            }
+            if (SessionStateOrder.CONNECTING.equals(index)) {
+                name = NotificationNames.StationConnecting;
+            } else if (SessionStateOrder.CONNECTED.equals(index)) {
+                name = NotificationNames.StationConnected;
+            } else if (SessionStateOrder.ERROR.equals(index)) {
+                name = NotificationNames.StationError;
+            } else if (SessionStateOrder.DEFAULT.equals(index)) {
+                // auto login after connected
+                res = auto_login.call(this);
+                this.write(res);
+                return;
+            } else {
+                this.write('Station state: ' + state.toString());
+                return;
+            }
+        }
+        if (name === NotificationNames.StationConnecting) {
+            this.write('Connecting ....');
+        } else if (name === NotificationNames.StationConnected) {
             this.write('Station connected.');
-            // auto login after connected
-            res = auto_login.call(this);
-        } else if (name === nc.kNotificationStationError) {
+        } else if (name === NotificationNames.StationError) {
             this.write('Connection error.');
-        } else if (name === nc.kNotificationMetaAccepted) {
-            identifier = notification.userInfo['ID'];
+        } else if (name === NotificationNames.MetaAccepted) {
+            identifier = userInfo['ID'];
             this.tips('[Meta saved] ID: ' + identifier);
-        } else if (name === nc.kNotificationProfileUpdated) {
-            profile = notification.userInfo;
-            this.tips('[Profile updated] ID: ' + profile.getIdentifier()
-                + ' -> ' + profile.getValue('data'));
-            // chatroom
-            identifier = facebook.getIdentifier('chatroom');
-            if (identifier && identifier.equals(profile.getIdentifier())) {
-                // send current user's profile to chatroom
-                profile = facebook.getCurrentUser().getProfile();
-                if (profile) {
-                    messenger.sendProfile(profile, identifier);
-                }
-                res = this.doCall('chatroom');
-                if (res.indexOf('You are talking') === 0) {
-                    res = this.doShow('users')
-                }
-            }
-        } else if (name === nc.kNotificationMessageReceived) {
-            var msg = notification.userInfo;
-            var sender = msg.envelope.sender;
+        } else if (name === NotificationNames.DocumentUpdated) {
+            doc = Document.parse(userInfo);
+            this.tips('[Document updated] ID: ' + doc.getIdentifier()
+                + ' -> ' + doc.getValue('data'));
+            // // chatroom
+            // identifier = facebook.getIdentifier('chatroom');
+            // if (identifier && identifier.equals(doc.getIdentifier())) {
+            //     // send current user's document to chatroom
+            //     doc = facebook.getCurrentUser().getVisa();
+            //     if (doc) {
+            //         var messenger = get_messenger();
+            //         messenger.sendVisa(doc, identifier, false);
+            //     }
+            //     res = this.doCall('chatroom');
+            //     if (res.indexOf('You are talking') === 0) {
+            //         res = this.doShow('users')
+            //     }
+            // }
+        } else if (name === NotificationNames.MessageUpdated) {
+            var msg = userInfo['msg'];
+            var content = msg.getContent();
+            var sender = msg.getSender();
             sender = facebook.getIdentifier(sender);
-            var username = facebook.getNickname(sender);
+            var username = facebook.getName(sender);
             if (!username) {
-                username = sender.name;
+                username = sender.getName();
             }
-            var number = facebook.getNumberString(sender);
-            var text = msg.content.getValue('text');
-            var group = msg.content.getGroup();
+            var number = Anonymous.getNumberString(sender);
+            var text = content.getValue('text');
+            var group = content.getGroup();
             if (group && !ID.EVERYONE.equals(group)) {
                 group = facebook.getIdentifier(group);
-                name = facebook.getNickname(group);
+                name = facebook.getName(group);
                 if (name) {
                     group = name;
                 } else {
-                    group = group.name;
+                    group = group.getName();
                 }
                 res = '[' + group + '] (' + number + ') ' + username + ': ' + text;
             } else {
@@ -156,15 +193,15 @@
         Terminal.prototype.onHandshakeAccepted.call(this, session, server);
         this.write('Handshake accepted!');
         var res;
-        var messenger = Messenger.getInstance();
-        var facebook = Facebook.getInstance();
+        var messenger = get_messenger();
+        var facebook = get_facebook();
         var identifier = facebook.getIdentifier('chatroom');
         if (identifier) {
-            var profile = facebook.getProfile(identifier);
-            if (profile) {
+            var doc = facebook.getVisa(identifier);
+            if (doc) {
                 var user = facebook.getCurrentUser();
-                if (user && user.getProfile()) {
-                    messenger.sendProfile(user.getProfile(), identifier);
+                if (user && user.getVisa()) {
+                    messenger.sendVisa(user.getVisa(), identifier, false);
                 }
                 res = this.doCall(identifier);
                 if (res.indexOf('You are talking') === 0) {
@@ -185,12 +222,21 @@
 
 }(dterm, DIMP);
 
-!function (ns, dimp) {
+!function (ns, sdk) {
     'use strict';
 
-    var Facebook = dimp.Facebook;
-
+    var Anonymous   = sdk.Anonymous;
     var Application = ns.Application;
+
+    // var get_database = function () {
+    //     return sdk.GlobalVariable.getDatabase();
+    // };
+    var get_facebook = function () {
+        return sdk.GlobalVariable.getFacebook();
+    };
+    // var get_messenger = function () {
+    //     return sdk.GlobalVariable.getMessenger();
+    // };
 
     var getCommand = function (cmd) {
         if (cmd) {
@@ -212,7 +258,7 @@
         if (typeof this[fn] === 'function') {
             args = cmd.replace(command, '').trim();
         } else {
-            //return dimp.format.JSON.encode(cmd) + ' command error';
+            //return sdk.format.JSON.encode(cmd) + ' command error';
             fn = 'doForward';
             args = cmd;
         }
@@ -220,7 +266,7 @@
             return this[fn](args);
         } catch (e) {
             return 'failed to execute command: '
-                + dimp.format.JSON.encode(cmd) + '<br/>\n' + e;
+                + sdk.format.JSON.encode(cmd) + '<br/>\n' + e;
         }
     };
 
@@ -247,83 +293,109 @@
     };
 
     Application.prototype.doWhoami = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
-        var name = facebook.getUsername(user.identifier);
-        var number = facebook.getNumberString(user.identifier);
-        return name + ' ' + number + ' : ' + user.identifier;
+        if (!user) {
+            return 'Current user not found';
+        }
+        var identifier = user.getIdentifier();
+        var name = facebook.getName(identifier);
+        var number = Anonymous.getNumberString(identifier);
+        return name + ' ' + number + ' : ' + identifier;
     };
 
     Application.prototype.doWho = function (ami) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
+        if (!user) {
+            return 'Current user not found';
+        }
         if (ami) {
             return Bubble.convertToString(user);
         }
-        if (this.receiver) {
-            var res = 'You (' + user.getName() + ') are talking';
-            if (this.receiver.isGroup()) {
-                var group = facebook.getGroup(this.receiver);
+        var my_name = facebook.getName(user.getIdentifier());
+        var receiver = this.receiver;
+        if (receiver) {
+            var res = 'You (' + my_name + ') are talking';
+            if (receiver.isGroup()) {
+                var group = facebook.getGroup(receiver);
                 if (group) {
-                    res += ' in group: "' + group.name + '" ' + this.receiver;
+                    res += ' in group: "' + group.getName() + '" ' + receiver;
                 } else {
-                    res += ' in group: ' + this.receiver;
+                    res += ' in group: ' + receiver;
                 }
             } else {
-                var contact = facebook.getUser(this.receiver);
+                var contact = facebook.getUser(receiver);
                 if (contact) {
-                    res += ' with user: "' + contact.getName() + '" ('
-                        + facebook.getNumberString(this.receiver) + ') ' + this.receiver;
+                    res += ' with user: "' + facebook.getName(receiver) + '" ('
+                        + Anonymous.getNumberString(receiver) + ') ' + receiver;
                 } else {
-                    res += ' with user: ' + this.receiver;
+                    res += ' with user: ' + receiver;
                 }
             }
             return res;
         } else {
-            return facebook.getUsername(user.identifier);
+            return my_name;
         }
     };
 
 }(dterm, DIMP);
 
-!function (ns, dimp) {
+!function (ns, sdk) {
     'use strict';
 
-    var NetworkType = dimp.protocol.NetworkType;
-    var ID = dimp.ID;
-    var Profile = dimp.Profile;
-    var Envelope = dimp.Envelope;
-    var InstantMessage = dimp.InstantMessage;
-    var TextContent = dimp.protocol.TextContent;
-    var ForwardContent = dimp.protocol.ForwardContent;
+    var NetworkType = sdk.protocol.NetworkID;
+    var ID          = sdk.protocol.ID;
+    var Document    = sdk.protocol.Document;
 
-    var StarStatus = dimp.stargate.StarStatus;
+    var Envelope       = sdk.protocol.Envelope;
+    var InstantMessage = sdk.protocol.InstantMessage;
+    var TextContent    = sdk.protocol.TextContent;
+    var ForwardContent = sdk.protocol.ForwardContent;
 
-    var Facebook = dimp.Facebook;
-    var Messenger = dimp.Messenger;
+    var SessionStateOrder = sdk.network.SessionStateOrder;
+    var Host58            = sdk.network.Host58;
 
-    var Host58 = dimp.network.Host58;
-
+    var Anonymous   = sdk.Anonymous;
     var Application = ns.Application;
 
+    // var get_database = function () {
+    //     return sdk.GlobalVariable.getDatabase();
+    // };
+    var get_facebook = function () {
+        return sdk.GlobalVariable.getFacebook();
+    };
+    var get_messenger = function () {
+        return sdk.GlobalVariable.getMessenger();
+    };
+    var get_terminal = function () {
+        return sdk.GlobalVariable.getTerminal();
+    };
+
     var check_connection = function () {
-        var server = Messenger.getInstance().server;
-        var status = server.getStatus();
-        if (status.equals(StarStatus.Connected)) {
-            // connected
+        var messenger = get_messenger();
+        var session = messenger.getSession();
+        var status = session.getState();
+        if (status) {
+            status = status.getIndex();
+        }
+        if (SessionStateOrder.RUNNING.equals(status)) {
+            // normal
             return null;
-        } else if (status.equals(StarStatus.Error)) {
+        } else if (SessionStateOrder.CONNECTING.equals(status)) {
             return 'Connecting ...';
-        } else if (status.equals(StarStatus.Error)) {
+        } else if (SessionStateOrder.HANDSHAKING.equals(status)) {
+            return 'Handshaking ...';
+        } else if (SessionStateOrder.ERROR.equals(status)) {
             return 'Connection error!';
         }
         return 'Connect to a DIM station first.';
     };
 
     Application.prototype.doTelnet = function (address) {
-        var server = Messenger.getInstance().server;
-        var host = server.host;
-        var port = server.port;
+        var host = '106.52.25.169';
+        // var host = '129.226.12.4';
+        var port = 9394;
         if (address) {
             try {
                 // try Host58
@@ -344,7 +416,10 @@
         if (!port) {
             port = 9394;
         }
-        server.connect(host, port);
+        // connect
+        var client = get_terminal();
+        client.connect(host, port);
+        return 'Relay Station: (' + host + ':' + port + ')';
     };
 
     Application.prototype.doLogin = function (name) {
@@ -352,19 +427,20 @@
         if (res) {
             return res;
         }
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
             return 'User error: ' + name;
         }
-        var nickname = facebook.getNickname(identifier);
-        var number = facebook.getNumberString(identifier);
+        var nickname = facebook.getName(identifier);
+        var number = Anonymous.getNumberString(identifier);
         this.write('Current user: ' + nickname + ' (' + number + ')');
 
         var user = facebook.getUser(identifier);
         if (user) {
             facebook.setCurrentUser(user);
-            Messenger.getInstance().login(user);
+            // var messenger = get_messenger();
+            // messenger.login(user);
             return 'Trying to login: ' + identifier + ' ...';
         } else {
             return 'Failed to get user: ' + identifier + ' ...';
@@ -372,7 +448,7 @@
     };
 
     Application.prototype.doCall = function (name) {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var identifier = facebook.getIdentifier(name);
         if (!identifier) {
             return 'User error: ' + name;
@@ -382,7 +458,7 @@
             return 'Meta not found: ' + identifier;
         }
         this.receiver = identifier;
-        var nickname = facebook.getUsername(identifier);
+        var nickname = facebook.getName(identifier);
         return 'You are talking with ' + nickname + ' now!';
     };
 
@@ -391,16 +467,15 @@
         if (res) {
             return res;
         }
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
-        var user = server.currentUser;
+        var facebook = get_facebook();
+        var messenger = get_messenger();
+        var user = facebook.getCurrentUser();
         if (!user) {
             return 'Login first';
         }
         if (!receiver) {
             return 'Please set a recipient';
         } else if (receiver.isGroup()) {
-            var facebook = Facebook.getInstance();
             var members = facebook.getMembers(receiver);
             if (!members || members.length === 0) {
                 var ass = facebook.getAssistants(receiver);
@@ -412,7 +487,7 @@
             }
             content.setGroup(receiver);
         }
-        if (messenger.sendContent(content, receiver, null, false)) {
+        if (messenger.sendContent(content, user.getIdentifier(), receiver, 0)) {
             // return 'Sending message ...';
             return null;
         } else {
@@ -421,20 +496,19 @@
     };
 
     Application.prototype.doSend = function (text) {
-        var content = new TextContent(text);
+        var content = TextContent.create(text);
         return send_content.call(this, content, this.receiver);
     };
 
     Application.prototype.doForward = function (text) {
-        var messenger = Messenger.getInstance();
-        var server = messenger.server;
-        var user = server.currentUser;
-        var content = new TextContent(text);
+        var facebook = get_facebook();
+        var messenger = get_messenger();
+        var user = facebook.getCurrentUser();
+        var content = TextContent.create(text);
         // get recipient
         var receiver = this.receiver;
-        if (NetworkType.Robot.equals(receiver.getType())) {
+        if (NetworkType.BOT.equals(receiver.getType())) {
             // check admin
-            var facebook = Facebook.getInstance();
             var admin = facebook.getIdentifier('chatroom');
             if (receiver.equals(admin)) {
                 // message sent to chatroom will be broadcast,
@@ -446,40 +520,42 @@
             // group message
             content.setGroup(receiver);
         }
-        if (receiver.equals(ID.EVERYONE)) {
+        if (user && receiver.equals(ID.EVERYONE)) {
             // forward to chatroom admin
-            var env = Envelope.newEnvelope(user.identifier, receiver, 0);
-            var msg = InstantMessage.newMessage(content, env);
+            var env = Envelope.create(user.getIdentifier(), receiver, 0);
+            var msg = InstantMessage.create(env, content);
             msg = messenger.signMessage(messenger.encryptMessage(msg));
-            content = new ForwardContent(msg);
+            content = ForwardContent.create(msg);
         }
         return send_content.call(this, content, this.receiver);
     };
 
     Application.prototype.doName = function (nickname) {
-        var messenger = Messenger.getInstance();
-        var facebook = Facebook.getInstance();
+        var messenger = get_messenger();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         if (!user) {
             return 'Current user not found';
         }
-        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        var privateKey = facebook.getPrivateKeyForSignature(user.getIdentifier());
         if (!privateKey) {
             return 'Failed to get private key for current user: ' + user;
         }
-        var profile = user.getProfile();
-        if (!profile) {
-            profile = new Profile(user.identifier);
+        var visa = user.getVisa();
+        if (visa) {
+            visa = Document.parse(visa.copyMap(false));
+        } else {
+            visa = Document.create(user.getIdentifier());
         }
-        profile.setName(nickname);
-        profile.sign(privateKey);
-        facebook.saveProfile(profile);
-        messenger.postProfile(profile);
+        visa.setName(nickname);
+        visa.sign(privateKey);
+        facebook.saveDocument(visa);
+        messenger.broadcastDocuments(true);
         var admin = facebook.getIdentifier('chatroom');
         if (admin) {
-            messenger.sendProfile(profile, admin);
+            messenger.sendVisa(visa, admin, false);
         }
-        return 'Nickname updated, profile: ' + profile.getValue('data');
+        return 'Nickname updated, visa: ' + visa.getValue('data');
     };
 
     Application.prototype.doShow = function (what) {
@@ -499,16 +575,19 @@
         return 'Command error: show ' + what;
     };
     Application.prototype.doSearch = function (number) {
-        Messenger.getInstance().searchUsers(number);
+        var messenger = get_messenger();
+        messenger.search(number);
         return 'Searching users: ' + number;
     };
 
     Application.prototype.doProfile = function (identifier) {
-        identifier = Facebook.getInstance().getIdentifier(identifier);
+        var facebook = get_facebook();
+        identifier = facebook.getIdentifier(identifier);
         if (!identifier) {
             return 'User error: ' + name;
         }
-        Messenger.getInstance().queryProfile(identifier);
+        var messenger = get_messenger();
+        messenger.queryDocument(identifier);
         if (identifier.isGroup()) {
             return 'Querying profile for group: ' + identifier;
         } else {
@@ -517,14 +596,14 @@
     };
 
     Application.prototype.doDecrypt = function (json) {
-        var messenger = Messenger.getInstance();
+        var messenger = get_messenger();
         var rMsg = messenger.deserializeMessage(json);
         var sMsg = messenger.verifyMessage(rMsg);
         if (sMsg) {
             console.log('failed to verify message: ' + json);
         }
         var iMsg = messenger.decryptMessage(rMsg);
-        var text = dimp.format.JSON.encode(iMsg);
+        var text = sdk.format.JSON.encode(iMsg);
         console.log('decrypted message: ' + text);
         return text;
     };
@@ -549,14 +628,15 @@
     };
 
     Application.prototype.doExport = function () {
-        var facebook = Facebook.getInstance();
+        var facebook = get_facebook();
         var user = facebook.getCurrentUser();
         if (!user) {
             return 'Current user not found';
         }
-        var privateKey = facebook.getPrivateKeyForSignature(user.identifier);
+        var me = user.getIdentifier();
+        var privateKey = facebook.getPrivateKeyForSignature(me);
         if (!privateKey) {
-            return 'Failed to get private key for current user: ' + user;
+            return 'Failed to get private key for current user: ' + me.toString();
         }
         var pem = privateKey.getValue('data');
         window.clipboardData.setData('text', pem);
@@ -565,19 +645,23 @@
 
 }(dterm, DIMP);
 
-!function (ns, dimp) {
+!function (ns, sdk) {
     'use strict';
 
     var Application = ns.Application;
 
-    Application.prototype.doOpen = function (dicq) {
-        if (dicq === 'dicq' || dicq === 'DICQ') {
+    Application.prototype.doOpen = function (target) {
+        if (target === 'dicq' || target === 'DICQ') {
             if (typeof dicq === 'object') {
                 // open DICQ
                 dicq.Main();
             } else {
                 // load DICQ
-                ns.loader.importJS('../DICQ/js/index.js');
+                var b = 'http://tarsier.dim.chat/web/';
+                ns.loader.importJS(b + 'js/index.js', function () {
+                    var l = b + 'connect.js';
+                    ns.loader.importJS(l);
+                });
             }
         }
     };

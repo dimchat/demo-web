@@ -147,13 +147,13 @@
     };
 
     GlobalVariable.setSession = function (session) {
+        shared.session = session;
         var facebook = this.getFacebook();
         // set current user
         var user = facebook.getCurrentUser();
         if (user) {
             session.setIdentifier(user.getIdentifier());
         }
-        shared.session = session;
     };
 
     // GlobalVariable.connect = function (host, port) {

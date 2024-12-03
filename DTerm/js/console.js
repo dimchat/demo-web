@@ -1,6 +1,9 @@
 ;
 
 $(function() {
+    if (typeof _ === 'undefined') {
+        _ = exports._;
+    }
     var template_output = _.template('<div class="output-view"><span class="prompt"><%= separate %></span>&nbsp;<span class="output<%= error %>"><%= value %></span></div>');
     var cmd_cache = [];
     var cmd_pos = 0;

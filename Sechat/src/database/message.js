@@ -176,7 +176,7 @@
      */
     MessageStorage.prototype.messageAtIndex = function (index, entity) {
         var messages = this.__instant_messages[entity.toString()];
-        console.assert(messages !== null, 'failed to get messages for conversation: ' + entity);
+        // console.assert(messages !== null, 'failed to get messages for conversation: ' + entity);
         return messages[index];
     };
 

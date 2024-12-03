@@ -1850,7 +1850,7 @@ if (typeof SECHAT !== 'object') {
             } else if (typeof info === 'string') {
                 info = {'sys': info}
             }
-            info['os'] = 'WebBrowser';
+            info['os'] = 'Browser';
             return info
         }, handshakeSuccess: function () {
             try {
@@ -2106,12 +2106,12 @@ if (typeof SECHAT !== 'object') {
         return facebook
     };
     GlobalVariable.setSession = function (session) {
+        shared.session = session;
         var facebook = this.getFacebook();
         var user = facebook.getCurrentUser();
         if (user) {
             session.setIdentifier(user.getIdentifier())
         }
-        shared.session = session
     };
     ns.GlobalVariable = GlobalVariable
 })(SECHAT, DIMP);

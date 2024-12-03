@@ -10,13 +10,19 @@
     <title>DICQ 2020 - DIM demo</title>
     <style>
         .qrCode {
-            position: absolute;
+            position: fixed;
             padding: 4px;
             /*width: 64px;*/
             /*height: 64px;*/
             right: 24px;
             bottom: 24px;
             background-color: white;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right bottom, #33C0F3, white) no-repeat fixed center center;
+            background-size: cover;
         }
         pre {
             color: #1d1d1f;

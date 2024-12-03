@@ -162,52 +162,52 @@ if (typeof dterm !== 'object') {
 !function (ns) {
     'use strict';
 
-    var Loader = ns.Loader;
-
     var release = true;
     if (ns['DEBUG']) {
         release = false;
     }
-    if (window.location.href.indexOf('?debug') > 0) {
+    if (window.location.href.indexOf('debug') > 0) {
         release = false;
     }
 
-    var dimsdk = [
-        /* third party cryptography libs */
-        '../Client/sdk/3rd/crypto.js',
-        '../Client/sdk/3rd/jsencrypt.js',
-
-        /* DIM SDK */
-        '../Client/sdk/dimsdk.js',
-
-        '../Client/sdk/host58.js',
-        '../Client/sdk/bubble.js',
-        '../Client/sdk/clipboard.js',
-
-        /* DIM Client */
-        '../Client/dist/client.js',
-        null
-    ];
+    var dimsdk;
     if (release) {
         dimsdk = [
             /* third party cryptography libs */
-            '../Client/sdk/3rd/crypto.min.js',
-            '../Client/sdk/3rd/jsencrypt.min.js',
+            'sdk/3rd/crypto.min.js',
+            'sdk/3rd/jsencrypt.min.js',
+            'sdk/3rd/sha3.min.js',
+            'sdk/3rd/ecc/bn.js',
+            'sdk/3rd/ecc/secp256k1.js',
+
+            'sdk/bubble.js',
+            'sdk/clipboard.js',
 
             /* DIM SDK */
-            '../Client/sdk/dimsdk.min.js',
-
-            '../Client/sdk/host58.js',
-            '../Client/sdk/bubble.js',
-            '../Client/sdk/clipboard.js',
-
-            /* DIM Client */
-            '../Client/dist/client.min.js',
+            'libs/dimples.min.js',
+            'libs/sechat.min.js',
             null
-        ]
+        ];
+    } else {
+        dimsdk = [
+            /* third party cryptography libs */
+            'sdk/3rd/crypto.js',
+            'sdk/3rd/jsencrypt.js',
+            'sdk/3rd/sha3.js',
+            'sdk/3rd/ecc/bn.js',
+            'sdk/3rd/ecc/secp256k1.js',
+
+            'sdk/bubble.js',
+            'sdk/clipboard.js',
+
+            /* DIM SDK */
+            'libs/dimples.js',
+            'libs/sechat.js',
+            null
+        ];
     }
 
-    var ui = [
+    var console_ui = [
         /* UI: Console */
         'js/3rd/jquery-3.4.1.slim.min.js',
         'js/3rd/underscore-1.8.2.min.js',
@@ -219,19 +219,28 @@ if (typeof dterm !== 'object') {
         null
     ];
     var scripts = [
+        'sdk/host58.js',
+
         'js/console.js',
         'js/app.js',
         null
     ];
 
     // check duplicate
-    if (typeof DIMP === 'object') {
-        dimsdk = [];
+    if (typeof SECHAT === 'object') {
+        if (typeof SECHAT.GlobalVariable === 'object') {
+            dimsdk = [];
+        }
+    }
+    if (typeof ns.Application === 'object') {
+        stylesheets = [];
+        scripts = [];
     }
 
-    scripts = [].concat(dimsdk, ui, scripts);
+    scripts = [].concat(dimsdk, console_ui, scripts);
 
-    var loader = new Loader(tarsier, 'js/index.js');
+    var loader = new ns.Loader(tarsier, 'js/index.js');
+
     for (var i = 0; i < stylesheets.length; ++i) {
         loader.importCSS(stylesheets[i]);
     }
@@ -239,12 +248,15 @@ if (typeof dterm !== 'object') {
     for (var j = 0; j < scripts.length; ++j) {
         loader.importJS(scripts[j]);
     }
+
     loader.importJS('js/config.js', function () {
         // start after last script loaded
         $(function () {
             ns.Application.prototype.write = window.shell_output;
-            var server = DIMP.Messenger.getInstance().server;
-            server.start();
+            // var messenger = DIMP.GlobalVariable.getMessenger();
+            // var session = messenger.getSession();
+            // var server = session.getStation();
+            // server.start();
         });
     });
 
