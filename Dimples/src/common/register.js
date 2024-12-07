@@ -38,7 +38,6 @@
     var PrivateKey   = ns.crypto.PrivateKey;
     var ID           = ns.protocol.ID;
     var EntityType   = ns.protocol.EntityType;
-    var MetaType     = ns.protocol.MetaType;
     var Meta         = ns.protocol.Meta;
     var BaseVisa     = ns.mkm.BaseVisa;
     var BaseBulletin = ns.mkm.BaseBulletin;
@@ -65,7 +64,7 @@
         //
         //  Step 2. generate meta with private key (and meta seed)
         //
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, 'web-demo');
+        var meta = Meta.generate(Meta.MKM, privateKey, 'web-demo');
         //
         //  Step 3. generate ID with meta (and network type)
         //
@@ -102,7 +101,7 @@
         //
         //  Step 2. generate meta with private key (and meta seed)
         //
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, seed);
+        var meta = Meta.generate(Meta.MKM, privateKey, seed);
         //
         //  Step 3. generate ID with meta (and network type)
         //

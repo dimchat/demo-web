@@ -30,184 +30,66 @@
 // =============================================================================
 //
 
-//! require <dimp.js>
-
-//! require 'compatible.js'
-//! require 'btc.js'
+//! require 'base.js'
 
 (function (ns) {
     'use strict';
 
-    var Class             = ns.type.Class;
-    var Enum              = ns.type.Enum;
-    var TransportableData = ns.format.TransportableData;
-
-    var Meta                 = ns.protocol.Meta;
-    var MetaType             = ns.protocol.MetaType;
-    var BaseMeta             = ns.mkm.BaseMeta;
-    var ETHMeta              = ns.mkm.ETHMeta;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-
-    /**
-     *  Default Meta to build ID with 'name@address'
-     *
-     *  version:
-     *      0x01 - MKM
-     *
-     *  algorithm:
-     *      CT      = fingerprint; // or key.data for BTC address
-     *      hash    = ripemd160(sha256(CT));
-     *      code    = sha256(sha256(network + hash)).prefix(4);
-     *      address = base58_encode(network + hash + code);
-     *      number  = uint(code);
-     */
-    var DefaultMeta = function () {
-        if (arguments.length === 1) {
-            // new DefaultMeta(map);
-            BaseMeta.call(this, arguments[0]);
-        } else if (arguments.length === 4) {
-            // new DefaultMeta(type, key, seed, fingerprint);
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3]);
-        } else {
-            throw new SyntaxError('Default meta arguments error: ' + arguments);
-        }
-        // memory cache
-        this.__addresses = {};  // uint -> Address
-    };
-    Class(DefaultMeta, BaseMeta, null, {
-
-        // Override
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            // check cache
-            var address = this.__addresses[network];
-            if (!address) {
-                // generate and cache it
-                address = CompatibleBTCAddress.generate(this.getFingerprint(), network);
-                this.__addresses[network] = address;
-            }
-            return address;
-        }
-    });
-
-    /**
-     *  Meta to build BTC address for ID
-     *
-     *  version:
-     *      0x02 - BTC
-     *      0x03 - ExBTC
-     *
-     *  algorithm:
-     *      CT      = key.data;
-     *      hash    = ripemd160(sha256(CT));
-     *      code    = sha256(sha256(network + hash)).prefix(4);
-     *      address = base58_encode(network + hash + code);
-     */
-    var BTCMeta = function () {
-        if (arguments.length === 1) {
-            // new BTCMeta(map);
-            BaseMeta.call(this, arguments[0]);
-        } else if (arguments.length === 2) {
-            // new BTCMeta(type, key);
-            BaseMeta.call(this, arguments[0], arguments[1]);
-        } else if (arguments.length === 4) {
-            // new BTCMeta(type, key, seed, fingerprint);
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3]);
-        } else {
-            throw new SyntaxError('BTC meta arguments error: ' + arguments);
-        }
-        // memory cache
-        this.__address = null;  // cached address
-    };
-    Class(BTCMeta, BaseMeta, null, {
-
-        // Override
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            // check cache
-            var address = this.__address;
-            if (!address || address.getType() !== network) {
-                // TODO: compress public key?
-                var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                // generate and cache it
-                address = CompatibleBTCAddress.generate(fingerprint, network);
-                this.__address = address;
-            }
-            return address;
-        }
-    });
+    var Class           = ns.type.Class;
+    var Meta            = ns.protocol.Meta;
+    var DefaultMeta     = ns.mkm.DefaultMeta;
+    var BTCMeta         = ns.mkm.BTCMeta;
+    var ETHMeta         = ns.mkm.ETHMeta;
+    var BaseMetaFactory = ns.mkm.GeneralMetaFactory;
 
     /**
      *  Compatible Meta factory
      *  ~~~~~~~~~~~~~~~~~~~~~~~
      */
-    var CompatibleMetaFactory = function (version) {
-        Object.call(this);
-        this.__type = version;
+    var CompatibleMetaFactory = function (type) {
+        BaseMetaFactory.call(this, type);
     };
-    Class(CompatibleMetaFactory, Object, [Meta.Factory], null);
+    Class(CompatibleMetaFactory, BaseMetaFactory, null, {
 
-    // Override
-    CompatibleMetaFactory.prototype.createMeta = function(key, seed, fingerprint) {
-        if (MetaType.MKM.equals(this.__type)) {
-            // MKM
-            return new DefaultMeta(this.__type, key, seed, fingerprint);
-        } else if (MetaType.BTC.equals(this.__type)) {
-            // BTC
-            return new BTCMeta(this.__type, key);
-        } else if (MetaType.ExBTC.equals(this.__type)) {
-            // ExBTC
-            return new BTCMeta(this.__type, key, seed, fingerprint);
-        } else if (MetaType.ETH.equals(this.__type)) {
-            // ETH
-            return new ETHMeta(this.__type, key);
-        } else if (MetaType.ExETH.equals(this.__type)) {
-            // ExETH
-            return new ETHMeta(this.__type, key, seed, fingerprint);
-        } else {
-            // unknown type
-            return null;
-        }
-    };
+        // Override
+        createMeta: function(key, seed, fingerprint) {
+            var type = this.getAlgorithm();
+            if (type === '1' || type === Meta.MKM) {
+                // MKM
+                return new DefaultMeta('1', key, seed, fingerprint);
+            } else if (type === '2' || type === Meta.BTC) {
+                // BTC
+                return new BTCMeta('2', key);
+            } else if (type === '4' || type === Meta.ETH) {
+                // ETH
+                return new ETHMeta('4', key);
+            } else {
+                // unknown type
+                return null;
+            }
+        },
 
-    // Override
-    CompatibleMetaFactory.prototype.generateMeta = function(sKey, seed) {
-        var fingerprint = null;
-        if (seed && seed.length > 0) {
-            var sig = sKey.sign(ns.format.UTF8.encode(seed));
-            fingerprint = TransportableData.create(sig);
+        // Override
+        parseMeta: function(meta) {
+            var out;
+            var gf = general_factory();
+            var type = gf.getMetaType(meta, '');
+            if (type === '1' || type === Meta.MKM) {
+                // MKM
+                out = new DefaultMeta(meta);
+            } else if (type === '2' || type === Meta.BTC) {
+                // BTC
+                out = new BTCMeta(meta);
+            } else if (type === '4' || type === Meta.ETH) {
+                // ETH
+                out = new ETHMeta(meta);
+            } else {
+                // unknown type
+                throw new TypeError('unknown meta type: ' + type);
+            }
+            return out.isValid() ? out : null;
         }
-        var pKey = sKey.getPublicKey();
-        return this.createMeta(pKey, seed, fingerprint);
-    };
-
-    // Override
-    CompatibleMetaFactory.prototype.parseMeta = function(meta) {
-        var out;
-        var gf = general_factory();
-        var type = gf.getMetaType(meta, 0);
-        if (MetaType.MKM.equals(type)) {
-            // MKM
-            out = new DefaultMeta(meta);
-        } else if (MetaType.BTC.equals(type)) {
-            // BTC
-            out = new BTCMeta(meta);
-        } else if (MetaType.ExBTC.equals(type)) {
-            // ExBTC
-            out = new BTCMeta(meta);
-        } else if (MetaType.ETH.equals(type)) {
-            // ETH
-            out = new ETHMeta(meta);
-        } else if (MetaType.ExETH.equals(type)) {
-            // ExETH
-            out = new ETHMeta(meta);
-        } else {
-            // unknown type
-            throw new TypeError('unknown meta type: ' + type);
-        }
-        return out.isValid() ? out : null;
-    };
+    });
 
     var general_factory = function () {
         var man = ns.mkm.AccountFactoryManager;
@@ -220,9 +102,13 @@
          *  Register Compatible Meta Factory
          *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          */
-        Meta.setFactory(MetaType.MKM, new CompatibleMetaFactory(MetaType.MKM));
-        Meta.setFactory(MetaType.BTC, new CompatibleMetaFactory(MetaType.BTC));
-        Meta.setFactory(MetaType.ExBTC, new CompatibleMetaFactory(MetaType.ExBTC));
+        Meta.setFactory('1', new CompatibleMetaFactory('1'));
+        Meta.setFactory('2', new CompatibleMetaFactory('2'));
+        Meta.setFactory('4', new CompatibleMetaFactory('4'));
+
+        Meta.setFactory(Meta.MKM, new CompatibleMetaFactory(Meta.MKM));
+        Meta.setFactory(Meta.BTC, new CompatibleMetaFactory(Meta.BTC));
+        Meta.setFactory(Meta.ETH, new CompatibleMetaFactory(Meta.ETH));
     };
 
 })(DIMP);

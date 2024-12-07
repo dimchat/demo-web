@@ -25,15 +25,17 @@
 // =============================================================================
 //
 
-//! require <dimp.js>
+//! require 'algorithm.js'
 
 (function (ns) {
     'use strict';
 
     var Interface      = ns.type.Interface;
+    var IObject        = ns.type.Object;
     var Command        = ns.protocol.Command;
     var MetaCommand    = ns.protocol.MetaCommand;
     var ReceiptCommand = ns.protocol.ReceiptCommand;
+    var MetaType       = ns.protocol.MetaType;
 
     var fixMetaAttachment = function (rMsg) {
         var meta = rMsg.getValue('meta');
@@ -43,11 +45,19 @@
     };
 
     var fixMetaVersion = function (meta) {
-        var version = meta['version'];
-        if (!version) {
-            meta['version'] = meta['type'];
-        } else if (!meta['type']) {
+        var type = meta['type'];
+        if (!type) {
+            type = meta['version'];
+        } else if (IObject.isString(type) && !meta['algorithm']) {
+            // TODO: check number
+            if (type.length > 2) {
+                meta['algorithm'] = type;
+            }
+        }
+        var version = MetaType.parseInt(type, 0);
+        if (version > 0) {
             meta['type'] = version;
+            meta['version'] = version;
         }
     };
 

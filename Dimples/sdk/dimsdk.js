@@ -1746,35 +1746,13 @@ if (typeof MingKeMing !== 'object') {
 })(MingKeMing);
 (function (ns) {
     'use strict';
-    var MetaType = ns.type.Enum('MetaType', {
-        DEFAULT: (0x01),
-        MKM: (0x01),
-        BTC: (0x02),
-        ExBTC: (0x03),
-        ETH: (0x04),
-        ExETH: (0x05)
-    });
-    MetaType.hasSeed = function (version) {
-        var mkm = MetaType.MKM.getValue();
-        return (version & mkm) === mkm
-    };
-    ns.protocol.MetaType = MetaType
-})(MingKeMing);
-(function (ns) {
-    'use strict';
     var Interface = ns.type.Interface;
     var Stringer = ns.type.Stringer;
     var Address = Interface(null, [Stringer]);
-    Address.ANYWHERE = null;
-    Address.EVERYWHERE = null;
     Address.prototype.getType = function () {
     };
-    Address.prototype.isBroadcast = function () {
-    };
-    Address.prototype.isUser = function () {
-    };
-    Address.prototype.isGroup = function () {
-    };
+    Address.ANYWHERE = null;
+    Address.EVERYWHERE = null;
     var general_factory = function () {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
@@ -1814,9 +1792,6 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Stringer = ns.type.Stringer;
     var ID = Interface(null, [Stringer]);
-    ID.ANYONE = null;
-    ID.EVERYONE = null;
-    ID.FOUNDER = null;
     ID.prototype.getName = function () {
     };
     ID.prototype.getAddress = function () {
@@ -1831,6 +1806,9 @@ if (typeof MingKeMing !== 'object') {
     };
     ID.prototype.isGroup = function () {
     };
+    ID.ANYONE = null;
+    ID.EVERYONE = null;
+    ID.FOUNDER = null;
     ID.convert = function (list) {
         var gf = general_factory();
         return gf.convertIdentifiers(list)
@@ -1878,6 +1856,9 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Mapper = ns.type.Mapper;
     var Meta = Interface(null, [Mapper]);
+    Meta.MKM = 'mkm';
+    Meta.BTC = 'btc';
+    Meta.ETH = 'eth';
     Meta.prototype.getType = function () {
     };
     Meta.prototype.getPublicKey = function () {
@@ -1898,25 +1879,25 @@ if (typeof MingKeMing !== 'object') {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
     };
-    Meta.create = function (version, key, seed, fingerprint) {
+    Meta.create = function (type, key, seed, fingerprint) {
         var gf = general_factory();
-        return gf.createMeta(version, key, seed, fingerprint)
+        return gf.createMeta(type, key, seed, fingerprint)
     };
-    Meta.generate = function (version, sKey, seed) {
+    Meta.generate = function (type, sKey, seed) {
         var gf = general_factory();
-        return gf.generateMeta(version, sKey, seed)
+        return gf.generateMeta(type, sKey, seed)
     };
     Meta.parse = function (meta) {
         var gf = general_factory();
         return gf.parseMeta(meta)
     };
-    Meta.setFactory = function (version, factory) {
+    Meta.setFactory = function (type, factory) {
         var gf = general_factory();
-        gf.setMetaFactory(version, factory)
+        gf.setMetaFactory(type, factory)
     };
-    Meta.getFactory = function (version) {
+    Meta.getFactory = function (type) {
         var gf = general_factory();
-        return gf.getMetaFactory(version)
+        return gf.getMetaFactory(type)
     };
     var MetaFactory = Interface(null, null);
     MetaFactory.prototype.createMeta = function (pKey, seed, fingerprint) {
@@ -2008,17 +1989,6 @@ if (typeof MingKeMing !== 'object') {
     BroadcastAddress.prototype.getType = function () {
         return this.__network
     };
-    BroadcastAddress.prototype.isBroadcast = function () {
-        return true
-    };
-    BroadcastAddress.prototype.isUser = function () {
-        var any = EntityType.ANY.getValue();
-        return this.__network === any
-    };
-    BroadcastAddress.prototype.isGroup = function () {
-        var every = EntityType.EVERY.getValue();
-        return this.__network === every
-    };
     Address.ANYWHERE = new BroadcastAddress('anywhere', EntityType.ANY);
     Address.EVERYWHERE = new BroadcastAddress('everywhere', EntityType.EVERY);
     ns.mkm.BroadcastAddress = BroadcastAddress
@@ -2027,8 +1997,9 @@ if (typeof MingKeMing !== 'object') {
     'use strict';
     var Class = ns.type.Class;
     var ConstantString = ns.type.ConstantString;
-    var ID = ns.protocol.ID;
+    var EntityType = ns.protocol.EntityType;
     var Address = ns.protocol.Address;
+    var ID = ns.protocol.ID;
     var Identifier = function (identifier, name, address, terminal) {
         ConstantString.call(this, identifier);
         this.__name = name;
@@ -2046,27 +2017,44 @@ if (typeof MingKeMing !== 'object') {
         return this.__terminal
     };
     Identifier.prototype.getType = function () {
-        return this.getAddress().getType()
+        return this.__address.getType()
     };
     Identifier.prototype.isBroadcast = function () {
-        return this.getAddress().isBroadcast()
+        var network = this.getType();
+        return EntityType.isBroadcast(network)
     };
     Identifier.prototype.isUser = function () {
-        return this.getAddress().isUser()
+        var network = this.getType();
+        return EntityType.isUser(network)
     };
     Identifier.prototype.isGroup = function () {
-        return this.getAddress().isGroup()
+        var network = this.getType();
+        return EntityType.isGroup(network)
     };
-    ID.ANYONE = new Identifier("anyone@anywhere", "anyone", Address.ANYWHERE, null);
-    ID.EVERYONE = new Identifier("everyone@everywhere", "everyone", Address.EVERYWHERE, null);
-    ID.FOUNDER = new Identifier("moky@anywhere", "moky", Address.ANYWHERE, null);
+    Identifier.create = function (name, address, terminal) {
+        var string = Identifier.concat(name, address, terminal);
+        return new Identifier(string, name, address, terminal)
+    };
+    Identifier.concat = function (name, address, terminal) {
+        var string = address.toString();
+        if (name && name.length > 0) {
+            string = name + '@' + string
+        }
+        if (terminal && terminal.length > 0) {
+            string = string + '/' + terminal
+        }
+        return string
+    };
+    ID.ANYONE = Identifier.create("anyone", Address.ANYWHERE, null);
+    ID.EVERYONE = Identifier.create("everyone", Address.EVERYWHERE, null);
+    ID.FOUNDER = Identifier.create("moky", Address.ANYWHERE, null);
     ns.mkm.Identifier = Identifier
 })(MingKeMing);
 (function (ns) {
     'use strict';
     var Interface = ns.type.Interface;
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
+    var IObject = ns.type.Object;
     var Stringer = ns.type.Stringer;
     var Wrapper = ns.type.Wrapper;
     var Converter = ns.type.Converter;
@@ -2147,30 +2135,28 @@ if (typeof MingKeMing !== 'object') {
             id = members[i];
             if (Interface.conforms(id, Stringer)) {
                 array.push(id.toString())
-            } else if (typeof id === 'string') {
+            } else if (IObject.isString(id)) {
                 array.push(id)
             }
         }
         return array
     };
-    GeneralFactory.prototype.setMetaFactory = function (version, factory) {
-        version = Enum.getInt(version);
-        this.__metaFactories[version] = factory
+    GeneralFactory.prototype.setMetaFactory = function (type, factory) {
+        this.__metaFactories[type] = factory
     };
-    GeneralFactory.prototype.getMetaFactory = function (version) {
-        version = Enum.getInt(version);
-        return this.__metaFactories[version]
+    GeneralFactory.prototype.getMetaFactory = function (type) {
+        return this.__metaFactories[type]
     };
     GeneralFactory.prototype.getMetaType = function (meta, defaultVersion) {
-        var version = meta['type'];
-        return Converter.getInt(version, defaultVersion)
+        var type = meta['type'];
+        return Converter.getString(type, defaultVersion)
     };
-    GeneralFactory.prototype.createMeta = function (version, key, seed, fingerprint) {
-        var factory = this.getMetaFactory(version);
+    GeneralFactory.prototype.createMeta = function (type, key, seed, fingerprint) {
+        var factory = this.getMetaFactory(type);
         return factory.createMeta(key, seed, fingerprint)
     };
-    GeneralFactory.prototype.generateMeta = function (version, sKey, seed) {
-        var factory = this.getMetaFactory(version);
+    GeneralFactory.prototype.generateMeta = function (type, sKey, seed) {
+        var factory = this.getMetaFactory(type);
         return factory.generateMeta(sKey, seed)
     };
     GeneralFactory.prototype.parseMeta = function (meta) {
@@ -2183,10 +2169,10 @@ if (typeof MingKeMing !== 'object') {
         if (!info) {
             return null
         }
-        var type = this.getMetaType(info, 0);
+        var type = this.getMetaType(info, '*');
         var factory = this.getMetaFactory(type);
         if (!factory) {
-            factory = this.getMetaFactory(0)
+            factory = this.getMetaFactory('*')
         }
         return factory.parseMeta(info)
     };
@@ -2197,7 +2183,8 @@ if (typeof MingKeMing !== 'object') {
         return this.__documentFactories[type]
     };
     GeneralFactory.prototype.getDocumentType = function (doc, defaultType) {
-        return Converter.getString(doc['type'], defaultType)
+        var type = doc['type'];
+        return Converter.getString(type, defaultType)
     };
     GeneralFactory.prototype.createDocument = function (type, identifier, data, signature) {
         var factory = this.getDocumentFactory(type);
@@ -2254,6 +2241,7 @@ if (typeof DaoKeDao !== 'object') {
 (function (ns) {
     'use strict';
     var ContentType = ns.type.Enum('ContentType', {
+        ANY: (0x00),
         TEXT: (0x01),
         FILE: (0x10),
         IMAGE: (0x12),
@@ -2385,8 +2373,6 @@ if (typeof DaoKeDao !== 'object') {
     var Message = ns.protocol.Message;
     var InstantMessage = Interface(null, [Message]);
     InstantMessage.prototype.getContent = function () {
-    };
-    InstantMessage.prototype.setContent = function (body) {
     };
     var general_factory = function () {
         var man = ns.dkd.MessageFactoryManager;
@@ -2554,7 +2540,8 @@ if (typeof DaoKeDao !== 'object') {
         return this.__contentFactories[type]
     };
     GeneralFactory.prototype.getContentType = function (content, defaultType) {
-        return Converter.getInt(content['type'], defaultType)
+        var type = content['type'];
+        return Converter.getInt(type, defaultType)
     };
     GeneralFactory.prototype.parseContent = function (content) {
         if (!content) {
@@ -3536,6 +3523,7 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var IObject = ns.type.Object;
     var Enum = ns.type.Enum;
     var Dictionary = ns.type.Dictionary;
     var ID = ns.protocol.ID;
@@ -3546,7 +3534,7 @@ if (typeof DIMP !== "object") {
             info = info.getValue()
         }
         var content, type, sn, time;
-        if (typeof info === 'number') {
+        if (IObject.isNumber(info)) {
             type = info;
             time = new Date();
             sn = InstantMessage.generateSerialNumber(type, time);
@@ -3604,7 +3592,7 @@ if (typeof DIMP !== "object") {
     var NameCard = ns.protocol.NameCard;
     var BaseContent = ns.dkd.BaseContent;
     var BaseTextContent = function (info) {
-        if (typeof info === 'string') {
+        if (IObject.isString(info)) {
             BaseContent.call(this, ContentType.TEXT);
             this.setText(info)
         } else {
@@ -4622,25 +4610,22 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Interface = ns.type.Interface;
-    var IObject = ns.type.Object;
     var UTF8 = ns.format.UTF8;
     var Address = ns.protocol.Address;
     var ID = ns.protocol.ID;
-    var MetaType = ns.protocol.MetaType;
     var Visa = ns.protocol.Visa;
     var Bulletin = ns.protocol.Bulletin;
     var getGroupSeed = function (group_id) {
         var name = group_id.getName();
-        if (IObject.isString(name)) {
+        if (name) {
             var len = name.length;
             if (len === 0) {
                 return null
             } else if (name === 8 && name.toLowerCase() === 'everyone') {
                 return null
             }
-            return name
         }
-        return null
+        return name
     };
     var getBroadcastFounder = function (group_id) {
         var name = getGroupSeed(group_id);
@@ -4670,13 +4655,14 @@ if (typeof DIMP !== "object") {
     };
     var checkMeta = function (meta) {
         var pKey = meta.getPublicKey();
+        if (!pKey) {
+            return false
+        }
         var seed = meta.getSeed();
         var fingerprint = meta.getFingerprint();
-        var noSeed = !seed || seed.length === 0;
-        var noSig = !fingerprint || fingerprint.length === 0;
-        if (!MetaType.hasSeed(meta.getType())) {
-            return noSeed && noSig
-        } else if (noSeed || noSig) {
+        if (!seed || seed.length === 0) {
+            return !fingerprint || fingerprint.length === 0
+        } else if (!fingerprint || fingerprint.length === 0) {
             return false
         }
         var data = UTF8.encode(seed);
@@ -4696,10 +4682,10 @@ if (typeof DIMP !== "object") {
         if (meta.getPublicKey().equals(pKey)) {
             return true
         }
-        if (MetaType.hasSeed(meta.getType())) {
-            var seed = meta.getSeed();
-            var fingerprint = meta.getFingerprint();
+        var seed = meta.getSeed();
+        if (seed && seed.length > 0) {
             var data = UTF8.encode(seed);
+            var fingerprint = meta.getFingerprint();
             return pKey.verify(data, fingerprint)
         } else {
             return false
@@ -4717,7 +4703,9 @@ if (typeof DIMP !== "object") {
         return isBefore(oldTime, thisTime)
     };
     var lastDocument = function (documents, type) {
-        if (!type || type === '*') {
+        if (!documents || documents.length === 0) {
+            return null
+        } else if (!type || type === '*') {
             type = ''
         }
         var checkType = type.length > 0;
@@ -4740,6 +4728,9 @@ if (typeof DIMP !== "object") {
         return last
     };
     var lastVisa = function (documents) {
+        if (!documents || documents.length === 0) {
+            return null
+        }
         var last = null
         var doc, matched;
         for (var i = 0; i < documents.length; ++i) {
@@ -4756,6 +4747,9 @@ if (typeof DIMP !== "object") {
         return last
     };
     var lastBulletin = function (documents) {
+        if (!documents || documents.length === 0) {
+            return null
+        }
         var last = null
         var doc, matched;
         for (var i = 0; i < documents.length; ++i) {
@@ -4789,32 +4783,31 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
     var Dictionary = ns.type.Dictionary;
     var TransportableData = ns.format.TransportableData;
     var PublicKey = ns.crypto.PublicKey;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var MetaHelper = ns.mkm.MetaHelper;
     var BaseMeta = function () {
         var type, key, seed, fingerprint;
-        var status = 0;
+        var status;
         var meta;
         if (arguments.length === 1) {
             meta = arguments[0];
-            type = 0;
+            type = null;
             key = null;
             seed = null;
-            fingerprint = null
+            fingerprint = null;
+            status = 0
         } else if (arguments.length === 2) {
-            type = Enum.getInt(arguments[0]);
+            type = arguments[0];
             key = arguments[1];
             seed = null;
             fingerprint = null;
             status = 1;
             meta = {'type': type, 'key': key.toMap()}
         } else if (arguments.length === 4) {
-            type = Enum.getInt(arguments[0]);
+            type = arguments[0];
             key = arguments[1];
             seed = arguments[2];
             fingerprint = arguments[3];
@@ -4833,30 +4826,32 @@ if (typeof DIMP !== "object") {
     Class(BaseMeta, Dictionary, [Meta], {
         getType: function () {
             var type = this.__type;
-            if (!type) {
+            if (type === null) {
                 var man = ns.mkm.AccountFactoryManager;
-                var gf = man.generalFactory;
-                type = gf.getMetaType(this.toMap(), 0);
+                type = man.generalFactory.getMetaType(this.toMap(), '');
                 this.__type = type
             }
             return type
         }, getPublicKey: function () {
             var key = this.__key;
             if (!key) {
-                key = PublicKey.parse(this.getValue('key'));
+                var info = this.getValue('key');
+                key = PublicKey.parse(info);
                 this.__key = key
             }
             return key
+        }, hasSeed: function () {
+            return this.__seed || this.getValue('seed')
         }, getSeed: function () {
             var seed = this.__seed;
-            if (!seed && MetaType.hasSeed(this.getType())) {
+            if (seed === null && this.hasSeed()) {
                 seed = this.getString('seed', null);
                 this.__seed = seed
             }
             return seed
         }, getFingerprint: function () {
             var ted = this.__fingerprint;
-            if (!ted && MetaType.hasSeed(this.getType())) {
+            if (!ted && this.hasSeed()) {
                 var base64 = this.getValue('fingerprint');
                 ted = TransportableData.parse(base64);
                 this.__fingerprint = ted
@@ -6845,11 +6840,13 @@ if (typeof DIMP !== "object") {
             var ivWordArray = bytes2words(iv);
             var key = this.getData();
             var keyWordArray = bytes2words(key);
-            var cipher = CryptoJS.AES.encrypt(message, keyWordArray, {iv: ivWordArray});
-            if (cipher.hasOwnProperty('ciphertext')) {
-                return words2bytes(cipher.ciphertext)
-            } else {
-                throw new TypeError('failed to encrypt message with key: ' + this);
+            try {
+                var cipher = CryptoJS.AES.encrypt(message, keyWordArray, {iv: ivWordArray});
+                if (cipher.hasOwnProperty('ciphertext')) {
+                    return words2bytes(cipher.ciphertext)
+                }
+            } catch (e) {
+                return null
             }
         }, decrypt: function (ciphertext, params) {
             var message = bytes2words(ciphertext);
@@ -6858,8 +6855,12 @@ if (typeof DIMP !== "object") {
             var key = this.getData();
             var keyWordArray = bytes2words(key);
             var cipher = {ciphertext: message};
-            var plaintext = CryptoJS.AES.decrypt(cipher, keyWordArray, {iv: ivWordArray});
-            return words2bytes(plaintext)
+            try {
+                var plaintext = CryptoJS.AES.decrypt(cipher, keyWordArray, {iv: ivWordArray});
+                return words2bytes(plaintext)
+            } catch (e) {
+                return null
+            }
         }
     });
     ns.crypto.AESKey = AESKey
@@ -7025,7 +7026,6 @@ if (typeof DIMP !== "object") {
     var Base58 = ns.format.Base58;
     var SHA256 = ns.digest.SHA256;
     var RIPEMD160 = ns.digest.RIPEMD160;
-    var EntityType = ns.protocol.EntityType;
     var Address = ns.protocol.Address;
     var BTCAddress = function (string, network) {
         ConstantString.call(this, string);
@@ -7034,15 +7034,6 @@ if (typeof DIMP !== "object") {
     Class(BTCAddress, ConstantString, [Address], null);
     BTCAddress.prototype.getType = function () {
         return this.__network
-    };
-    BTCAddress.prototype.isBroadcast = function () {
-        return false
-    };
-    BTCAddress.prototype.isUser = function () {
-        return EntityType.isUser(this.__network)
-    };
-    BTCAddress.prototype.isGroup = function () {
-        return EntityType.isGroup(this.__network)
     };
     BTCAddress.generate = function (fingerprint, network) {
         network = Enum.getInt(network);
@@ -7098,15 +7089,6 @@ if (typeof DIMP !== "object") {
     Class(ETHAddress, ConstantString, [Address], null);
     ETHAddress.prototype.getType = function () {
         return EntityType.USER.getValue()
-    };
-    ETHAddress.prototype.isBroadcast = function () {
-        return false
-    };
-    ETHAddress.prototype.isUser = function () {
-        return true
-    };
-    ETHAddress.prototype.isGroup = function () {
-        return false
     };
     ETHAddress.getValidateAddress = function (address) {
         if (!is_eth(address)) {
@@ -7226,7 +7208,7 @@ if (typeof DIMP !== "object") {
     Class(GeneralAddressFactory, BaseAddressFactory, null, null);
     GeneralAddressFactory.prototype.createAddress = function (address) {
         if (!address) {
-            throw new ReferenceError('address empty');
+            return null
         }
         var len = address.length;
         if (len === 8) {
@@ -7237,12 +7219,16 @@ if (typeof DIMP !== "object") {
             if (address.toLowerCase() === 'everywhere') {
                 return Address.EVERYWHERE
             }
-        } else if (len === 42) {
-            return ETHAddress.parse(address)
-        } else if (26 <= len && len <= 35) {
-            return BTCAddress.parse(address)
         }
-        throw new TypeError('invalid address: ' + address);
+        var res;
+        if (26 <= len && len <= 35) {
+            res = BTCAddress.parse(address)
+        } else if (len === 42) {
+            res = ETHAddress.parse(address)
+        } else {
+            res = null
+        }
+        return res
     };
     ns.mkm.GeneralAddressFactory = GeneralAddressFactory
 })(DIMP);
@@ -7267,7 +7253,7 @@ if (typeof DIMP !== "object") {
         return ID.create(meta.getSeed(), address, terminal)
     };
     IdentifierFactory.prototype.createIdentifier = function (name, address, terminal) {
-        var string = concat(name, address, terminal);
+        var string = Identifier.concat(name, address, terminal);
         var id = this.__identifiers[string];
         if (!id) {
             id = this.newID(string, name, address, terminal);
@@ -7309,16 +7295,6 @@ if (typeof DIMP !== "object") {
         }
         return this.newID(string, name, address, terminal)
     };
-    var concat = function (name, address, terminal) {
-        var string = address.toString();
-        if (name && name.length > 0) {
-            string = name + '@' + string
-        }
-        if (terminal && terminal.length > 0) {
-            string = string + '/' + terminal
-        }
-        return string
-    };
     var thanos = ns.mkm.thanos;
     ns.mkm.GeneralIdentifierFactory = IdentifierFactory
 })(DIMP);
@@ -7339,14 +7315,17 @@ if (typeof DIMP !== "object") {
         this.__addresses = {}
     };
     Class(DefaultMeta, BaseMeta, null, {
-        generateAddress: function (network) {
+        hasSeed: function () {
+            return true
+        }, generateAddress: function (network) {
             network = Enum.getInt(network);
-            var address = this.__addresses[network];
-            if (!address) {
-                address = BTCAddress.generate(this.getFingerprint(), network);
-                this.__addresses[network] = address
+            var cached = this.__addresses[network];
+            if (!cached) {
+                var data = this.getFingerprint();
+                cached = BTCAddress.generate(data, network);
+                this.__addresses[network] = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.DefaultMeta = DefaultMeta
@@ -7367,19 +7346,21 @@ if (typeof DIMP !== "object") {
         } else {
             throw new SyntaxError('BTC meta arguments error: ' + arguments);
         }
-        this.__address = null
+        this.__addresses = {}
     };
     Class(BTCMeta, BaseMeta, null, {
-        generateAddress: function (network) {
+        hasSeed: function () {
+            return false
+        }, generateAddress: function (network) {
             network = Enum.getInt(network);
-            var address = this.__address;
-            if (!address || address.getType() !== network) {
+            var cached = this.__addresses[network];
+            if (!cached) {
                 var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = BTCAddress.generate(fingerprint, network);
-                this.__address = address
+                var data = key.getData();
+                cached = BTCAddress.generate(data, network);
+                this.__addresses[network] = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.BTCMeta = BTCMeta
@@ -7402,15 +7383,17 @@ if (typeof DIMP !== "object") {
         this.__address = null
     };
     Class(ETHMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            var address = this.__address;
-            if (!address) {
+        hasSeed: function () {
+            return false
+        }, generateAddress: function (network) {
+            var cached = this.__address;
+            if (!cached) {
                 var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = ETHAddress.generate(fingerprint);
-                this.__address = address
+                var data = key.getData();
+                cached = ETHAddress.generate(data);
+                this.__address = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.ETHMeta = ETHMeta
@@ -7419,30 +7402,17 @@ if (typeof DIMP !== "object") {
     'use strict';
     var Class = ns.type.Class;
     var TransportableData = ns.format.TransportableData;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var DefaultMeta = ns.mkm.DefaultMeta;
     var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var GeneralMetaFactory = function (version) {
+    var GeneralMetaFactory = function (type) {
         Object.call(this);
-        this.__type = version
+        this.__algorithm = type
     };
     Class(GeneralMetaFactory, Object, [Meta.Factory], null);
-    GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        if (MetaType.MKM.equals(this.__type)) {
-            return new DefaultMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.BTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key)
-        } else if (MetaType.ExBTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.ETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key)
-        } else if (MetaType.ExETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key, seed, fingerprint)
-        } else {
-            return null
-        }
+    GeneralMetaFactory.prototype.getAlgorithm = function () {
+        return this.__algorithm
     };
     GeneralMetaFactory.prototype.generateMeta = function (sKey, seed) {
         var fingerprint = null;
@@ -7453,19 +7423,27 @@ if (typeof DIMP !== "object") {
         var pKey = sKey.getPublicKey();
         return this.createMeta(pKey, seed, fingerprint)
     };
+    GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
+        var type = this.getAlgorithm();
+        if (type === Meta.MKM) {
+            return new DefaultMeta(type, key, seed, fingerprint)
+        } else if (type === Meta.BTC) {
+            return new BTCMeta(type, key)
+        } else if (type === Meta.ETH) {
+            return new ETHMeta(type, key)
+        } else {
+            return null
+        }
+    };
     GeneralMetaFactory.prototype.parseMeta = function (meta) {
         var out;
         var gf = general_factory();
-        var type = gf.getMetaType(meta, 0);
-        if (MetaType.MKM.equals(type)) {
+        var type = gf.getMetaType(meta, '');
+        if (type === Meta.MKM) {
             out = new DefaultMeta(meta)
-        } else if (MetaType.BTC.equals(type)) {
+        } else if (type === Meta.BTC) {
             out = new BTCMeta(meta)
-        } else if (MetaType.ExBTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else if (MetaType.ExETH.equals(type)) {
+        } else if (type === Meta.ETH) {
             out = new ETHMeta(meta)
         } else {
             throw new TypeError('unknown meta type: ' + type);
@@ -7518,7 +7496,7 @@ if (typeof DIMP !== "object") {
             } else if (type === Document.BULLETIN) {
                 return new BaseBulletin(identifier)
             } else {
-                return new BaseDocument(identifier)
+                return new BaseDocument(identifier, type)
             }
         }
     };
@@ -7548,7 +7526,6 @@ if (typeof DIMP !== "object") {
 })(DIMP);
 (function (ns) {
     'use strict';
-    var MetaType = ns.protocol.MetaType;
     var Address = ns.protocol.Address;
     var ID = ns.protocol.ID;
     var Meta = ns.protocol.Meta;
@@ -7564,16 +7541,14 @@ if (typeof DIMP !== "object") {
         ID.setFactory(new GeneralIdentifierFactory())
     };
     var registerMetaFactories = function () {
-        Meta.setFactory(MetaType.MKM, new GeneralMetaFactory(MetaType.MKM));
-        Meta.setFactory(MetaType.BTC, new GeneralMetaFactory(MetaType.BTC));
-        Meta.setFactory(MetaType.ExBTC, new GeneralMetaFactory(MetaType.ExBTC));
-        Meta.setFactory(MetaType.ETH, new GeneralMetaFactory(MetaType.ETH));
-        Meta.setFactory(MetaType.ExETH, new GeneralMetaFactory(MetaType.ExETH))
+        Meta.setFactory(Meta.MKM, new GeneralMetaFactory(Meta.MKM));
+        Meta.setFactory(Meta.BTC, new GeneralMetaFactory(Meta.BTC));
+        Meta.setFactory(Meta.ETH, new GeneralMetaFactory(Meta.ETH))
     };
     var registerDocumentFactories = function () {
         Document.setFactory('*', new GeneralDocumentFactory('*'));
-        Document.setFactory(Document.PROFILE, new GeneralDocumentFactory(Document.PROFILE));
         Document.setFactory(Document.VISA, new GeneralDocumentFactory(Document.VISA));
+        Document.setFactory(Document.PROFILE, new GeneralDocumentFactory(Document.PROFILE));
         Document.setFactory(Document.BULLETIN, new GeneralDocumentFactory(Document.BULLETIN))
     };
     ns.registerAddressFactory = registerAddressFactory;
@@ -7791,6 +7766,7 @@ if (typeof DIMP !== "object") {
     var Converter = ns.type.Converter;
     var ID = ns.protocol.ID;
     var Address = ns.protocol.Address;
+    var Identifier = ns.mkm.Identifier;
     var User = ns.mkm.User;
     var BaseUser = ns.mkm.BaseUser;
     var DocumentHelper = ns.mkm.DocumentHelper;
@@ -7908,8 +7884,8 @@ if (typeof DIMP !== "object") {
         var network = id.getAddress().getType();
         return '<' + clazz + ' id="' + id.toString() + '" network="' + network + '" host="' + this.getHost() + '" port=' + this.getPort() + ' />'
     };
-    Station.ANY = new ns.mkm.Identifier('station@anywhere', 'station', Address.ANYWHERE, null);
-    Station.EVERY = new ns.mkm.Identifier('stations@everywhere', 'stations', Address.EVERYWHERE, null);
+    Station.ANY = Identifier.create('station', Address.ANYWHERE, null);
+    Station.EVERY = Identifier.create('stations', Address.EVERYWHERE, null);
     ns.mkm.Station = Station
 })(DIMP);
 (function (ns) {
@@ -8030,7 +8006,6 @@ if (typeof DIMP !== "object") {
     var Class = ns.type.Class;
     var TransportableData = ns.format.TransportableData;
     var InstantMessage = ns.protocol.InstantMessage;
-    var SecureMessage = ns.protocol.SecureMessage;
     var ReliableMessage = ns.protocol.ReliableMessage;
     var SecureMessagePacker = function (messenger) {
         this.__transceiver = messenger
@@ -12691,7 +12666,6 @@ if (typeof StarGate !== 'object') {
 (function (ns, sys) {
     "use strict";
     var Class = sys.type.Class;
-    var SocketAddress = ns.type.SocketAddress;
     var connect = function (url, proxy) {
         var ws = new WebSocket(url);
         ws.onopen = function (ev) {

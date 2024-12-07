@@ -1746,35 +1746,13 @@ if (typeof MingKeMing !== 'object') {
 })(MingKeMing);
 (function (ns) {
     'use strict';
-    var MetaType = ns.type.Enum('MetaType', {
-        DEFAULT: (0x01),
-        MKM: (0x01),
-        BTC: (0x02),
-        ExBTC: (0x03),
-        ETH: (0x04),
-        ExETH: (0x05)
-    });
-    MetaType.hasSeed = function (version) {
-        var mkm = MetaType.MKM.getValue();
-        return (version & mkm) === mkm
-    };
-    ns.protocol.MetaType = MetaType
-})(MingKeMing);
-(function (ns) {
-    'use strict';
     var Interface = ns.type.Interface;
     var Stringer = ns.type.Stringer;
     var Address = Interface(null, [Stringer]);
-    Address.ANYWHERE = null;
-    Address.EVERYWHERE = null;
     Address.prototype.getType = function () {
     };
-    Address.prototype.isBroadcast = function () {
-    };
-    Address.prototype.isUser = function () {
-    };
-    Address.prototype.isGroup = function () {
-    };
+    Address.ANYWHERE = null;
+    Address.EVERYWHERE = null;
     var general_factory = function () {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
@@ -1814,9 +1792,6 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Stringer = ns.type.Stringer;
     var ID = Interface(null, [Stringer]);
-    ID.ANYONE = null;
-    ID.EVERYONE = null;
-    ID.FOUNDER = null;
     ID.prototype.getName = function () {
     };
     ID.prototype.getAddress = function () {
@@ -1831,6 +1806,9 @@ if (typeof MingKeMing !== 'object') {
     };
     ID.prototype.isGroup = function () {
     };
+    ID.ANYONE = null;
+    ID.EVERYONE = null;
+    ID.FOUNDER = null;
     ID.convert = function (list) {
         var gf = general_factory();
         return gf.convertIdentifiers(list)
@@ -1878,6 +1856,9 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Mapper = ns.type.Mapper;
     var Meta = Interface(null, [Mapper]);
+    Meta.MKM = 'mkm';
+    Meta.BTC = 'btc';
+    Meta.ETH = 'eth';
     Meta.prototype.getType = function () {
     };
     Meta.prototype.getPublicKey = function () {
@@ -1898,25 +1879,25 @@ if (typeof MingKeMing !== 'object') {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
     };
-    Meta.create = function (version, key, seed, fingerprint) {
+    Meta.create = function (type, key, seed, fingerprint) {
         var gf = general_factory();
-        return gf.createMeta(version, key, seed, fingerprint)
+        return gf.createMeta(type, key, seed, fingerprint)
     };
-    Meta.generate = function (version, sKey, seed) {
+    Meta.generate = function (type, sKey, seed) {
         var gf = general_factory();
-        return gf.generateMeta(version, sKey, seed)
+        return gf.generateMeta(type, sKey, seed)
     };
     Meta.parse = function (meta) {
         var gf = general_factory();
         return gf.parseMeta(meta)
     };
-    Meta.setFactory = function (version, factory) {
+    Meta.setFactory = function (type, factory) {
         var gf = general_factory();
-        gf.setMetaFactory(version, factory)
+        gf.setMetaFactory(type, factory)
     };
-    Meta.getFactory = function (version) {
+    Meta.getFactory = function (type) {
         var gf = general_factory();
-        return gf.getMetaFactory(version)
+        return gf.getMetaFactory(type)
     };
     var MetaFactory = Interface(null, null);
     MetaFactory.prototype.createMeta = function (pKey, seed, fingerprint) {
@@ -2008,17 +1989,6 @@ if (typeof MingKeMing !== 'object') {
     BroadcastAddress.prototype.getType = function () {
         return this.__network
     };
-    BroadcastAddress.prototype.isBroadcast = function () {
-        return true
-    };
-    BroadcastAddress.prototype.isUser = function () {
-        var any = EntityType.ANY.getValue();
-        return this.__network === any
-    };
-    BroadcastAddress.prototype.isGroup = function () {
-        var every = EntityType.EVERY.getValue();
-        return this.__network === every
-    };
     Address.ANYWHERE = new BroadcastAddress('anywhere', EntityType.ANY);
     Address.EVERYWHERE = new BroadcastAddress('everywhere', EntityType.EVERY);
     ns.mkm.BroadcastAddress = BroadcastAddress
@@ -2027,8 +1997,9 @@ if (typeof MingKeMing !== 'object') {
     'use strict';
     var Class = ns.type.Class;
     var ConstantString = ns.type.ConstantString;
-    var ID = ns.protocol.ID;
+    var EntityType = ns.protocol.EntityType;
     var Address = ns.protocol.Address;
+    var ID = ns.protocol.ID;
     var Identifier = function (identifier, name, address, terminal) {
         ConstantString.call(this, identifier);
         this.__name = name;
@@ -2046,27 +2017,44 @@ if (typeof MingKeMing !== 'object') {
         return this.__terminal
     };
     Identifier.prototype.getType = function () {
-        return this.getAddress().getType()
+        return this.__address.getType()
     };
     Identifier.prototype.isBroadcast = function () {
-        return this.getAddress().isBroadcast()
+        var network = this.getType();
+        return EntityType.isBroadcast(network)
     };
     Identifier.prototype.isUser = function () {
-        return this.getAddress().isUser()
+        var network = this.getType();
+        return EntityType.isUser(network)
     };
     Identifier.prototype.isGroup = function () {
-        return this.getAddress().isGroup()
+        var network = this.getType();
+        return EntityType.isGroup(network)
     };
-    ID.ANYONE = new Identifier("anyone@anywhere", "anyone", Address.ANYWHERE, null);
-    ID.EVERYONE = new Identifier("everyone@everywhere", "everyone", Address.EVERYWHERE, null);
-    ID.FOUNDER = new Identifier("moky@anywhere", "moky", Address.ANYWHERE, null);
+    Identifier.create = function (name, address, terminal) {
+        var string = Identifier.concat(name, address, terminal);
+        return new Identifier(string, name, address, terminal)
+    };
+    Identifier.concat = function (name, address, terminal) {
+        var string = address.toString();
+        if (name && name.length > 0) {
+            string = name + '@' + string
+        }
+        if (terminal && terminal.length > 0) {
+            string = string + '/' + terminal
+        }
+        return string
+    };
+    ID.ANYONE = Identifier.create("anyone", Address.ANYWHERE, null);
+    ID.EVERYONE = Identifier.create("everyone", Address.EVERYWHERE, null);
+    ID.FOUNDER = Identifier.create("moky", Address.ANYWHERE, null);
     ns.mkm.Identifier = Identifier
 })(MingKeMing);
 (function (ns) {
     'use strict';
     var Interface = ns.type.Interface;
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
+    var IObject = ns.type.Object;
     var Stringer = ns.type.Stringer;
     var Wrapper = ns.type.Wrapper;
     var Converter = ns.type.Converter;
@@ -2147,30 +2135,28 @@ if (typeof MingKeMing !== 'object') {
             id = members[i];
             if (Interface.conforms(id, Stringer)) {
                 array.push(id.toString())
-            } else if (typeof id === 'string') {
+            } else if (IObject.isString(id)) {
                 array.push(id)
             }
         }
         return array
     };
-    GeneralFactory.prototype.setMetaFactory = function (version, factory) {
-        version = Enum.getInt(version);
-        this.__metaFactories[version] = factory
+    GeneralFactory.prototype.setMetaFactory = function (type, factory) {
+        this.__metaFactories[type] = factory
     };
-    GeneralFactory.prototype.getMetaFactory = function (version) {
-        version = Enum.getInt(version);
-        return this.__metaFactories[version]
+    GeneralFactory.prototype.getMetaFactory = function (type) {
+        return this.__metaFactories[type]
     };
     GeneralFactory.prototype.getMetaType = function (meta, defaultVersion) {
-        var version = meta['type'];
-        return Converter.getInt(version, defaultVersion)
+        var type = meta['type'];
+        return Converter.getString(type, defaultVersion)
     };
-    GeneralFactory.prototype.createMeta = function (version, key, seed, fingerprint) {
-        var factory = this.getMetaFactory(version);
+    GeneralFactory.prototype.createMeta = function (type, key, seed, fingerprint) {
+        var factory = this.getMetaFactory(type);
         return factory.createMeta(key, seed, fingerprint)
     };
-    GeneralFactory.prototype.generateMeta = function (version, sKey, seed) {
-        var factory = this.getMetaFactory(version);
+    GeneralFactory.prototype.generateMeta = function (type, sKey, seed) {
+        var factory = this.getMetaFactory(type);
         return factory.generateMeta(sKey, seed)
     };
     GeneralFactory.prototype.parseMeta = function (meta) {
@@ -2183,10 +2169,10 @@ if (typeof MingKeMing !== 'object') {
         if (!info) {
             return null
         }
-        var type = this.getMetaType(info, 0);
+        var type = this.getMetaType(info, '*');
         var factory = this.getMetaFactory(type);
         if (!factory) {
-            factory = this.getMetaFactory(0)
+            factory = this.getMetaFactory('*')
         }
         return factory.parseMeta(info)
     };
@@ -2197,7 +2183,8 @@ if (typeof MingKeMing !== 'object') {
         return this.__documentFactories[type]
     };
     GeneralFactory.prototype.getDocumentType = function (doc, defaultType) {
-        return Converter.getString(doc['type'], defaultType)
+        var type = doc['type'];
+        return Converter.getString(type, defaultType)
     };
     GeneralFactory.prototype.createDocument = function (type, identifier, data, signature) {
         var factory = this.getDocumentFactory(type);
@@ -2254,6 +2241,7 @@ if (typeof DaoKeDao !== 'object') {
 (function (ns) {
     'use strict';
     var ContentType = ns.type.Enum('ContentType', {
+        ANY: (0x00),
         TEXT: (0x01),
         FILE: (0x10),
         IMAGE: (0x12),
@@ -2385,8 +2373,6 @@ if (typeof DaoKeDao !== 'object') {
     var Message = ns.protocol.Message;
     var InstantMessage = Interface(null, [Message]);
     InstantMessage.prototype.getContent = function () {
-    };
-    InstantMessage.prototype.setContent = function (body) {
     };
     var general_factory = function () {
         var man = ns.dkd.MessageFactoryManager;
@@ -2554,7 +2540,8 @@ if (typeof DaoKeDao !== 'object') {
         return this.__contentFactories[type]
     };
     GeneralFactory.prototype.getContentType = function (content, defaultType) {
-        return Converter.getInt(content['type'], defaultType)
+        var type = content['type'];
+        return Converter.getInt(type, defaultType)
     };
     GeneralFactory.prototype.parseContent = function (content) {
         if (!content) {
@@ -3536,6 +3523,7 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var IObject = ns.type.Object;
     var Enum = ns.type.Enum;
     var Dictionary = ns.type.Dictionary;
     var ID = ns.protocol.ID;
@@ -3546,7 +3534,7 @@ if (typeof DIMP !== "object") {
             info = info.getValue()
         }
         var content, type, sn, time;
-        if (typeof info === 'number') {
+        if (IObject.isNumber(info)) {
             type = info;
             time = new Date();
             sn = InstantMessage.generateSerialNumber(type, time);
@@ -3604,7 +3592,7 @@ if (typeof DIMP !== "object") {
     var NameCard = ns.protocol.NameCard;
     var BaseContent = ns.dkd.BaseContent;
     var BaseTextContent = function (info) {
-        if (typeof info === 'string') {
+        if (IObject.isString(info)) {
             BaseContent.call(this, ContentType.TEXT);
             this.setText(info)
         } else {
@@ -4622,25 +4610,22 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Interface = ns.type.Interface;
-    var IObject = ns.type.Object;
     var UTF8 = ns.format.UTF8;
     var Address = ns.protocol.Address;
     var ID = ns.protocol.ID;
-    var MetaType = ns.protocol.MetaType;
     var Visa = ns.protocol.Visa;
     var Bulletin = ns.protocol.Bulletin;
     var getGroupSeed = function (group_id) {
         var name = group_id.getName();
-        if (IObject.isString(name)) {
+        if (name) {
             var len = name.length;
             if (len === 0) {
                 return null
             } else if (name === 8 && name.toLowerCase() === 'everyone') {
                 return null
             }
-            return name
         }
-        return null
+        return name
     };
     var getBroadcastFounder = function (group_id) {
         var name = getGroupSeed(group_id);
@@ -4670,13 +4655,14 @@ if (typeof DIMP !== "object") {
     };
     var checkMeta = function (meta) {
         var pKey = meta.getPublicKey();
+        if (!pKey) {
+            return false
+        }
         var seed = meta.getSeed();
         var fingerprint = meta.getFingerprint();
-        var noSeed = !seed || seed.length === 0;
-        var noSig = !fingerprint || fingerprint.length === 0;
-        if (!MetaType.hasSeed(meta.getType())) {
-            return noSeed && noSig
-        } else if (noSeed || noSig) {
+        if (!seed || seed.length === 0) {
+            return !fingerprint || fingerprint.length === 0
+        } else if (!fingerprint || fingerprint.length === 0) {
             return false
         }
         var data = UTF8.encode(seed);
@@ -4696,10 +4682,10 @@ if (typeof DIMP !== "object") {
         if (meta.getPublicKey().equals(pKey)) {
             return true
         }
-        if (MetaType.hasSeed(meta.getType())) {
-            var seed = meta.getSeed();
-            var fingerprint = meta.getFingerprint();
+        var seed = meta.getSeed();
+        if (seed && seed.length > 0) {
             var data = UTF8.encode(seed);
+            var fingerprint = meta.getFingerprint();
             return pKey.verify(data, fingerprint)
         } else {
             return false
@@ -4717,7 +4703,9 @@ if (typeof DIMP !== "object") {
         return isBefore(oldTime, thisTime)
     };
     var lastDocument = function (documents, type) {
-        if (!type || type === '*') {
+        if (!documents || documents.length === 0) {
+            return null
+        } else if (!type || type === '*') {
             type = ''
         }
         var checkType = type.length > 0;
@@ -4740,6 +4728,9 @@ if (typeof DIMP !== "object") {
         return last
     };
     var lastVisa = function (documents) {
+        if (!documents || documents.length === 0) {
+            return null
+        }
         var last = null
         var doc, matched;
         for (var i = 0; i < documents.length; ++i) {
@@ -4756,6 +4747,9 @@ if (typeof DIMP !== "object") {
         return last
     };
     var lastBulletin = function (documents) {
+        if (!documents || documents.length === 0) {
+            return null
+        }
         var last = null
         var doc, matched;
         for (var i = 0; i < documents.length; ++i) {
@@ -4789,32 +4783,31 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
     var Dictionary = ns.type.Dictionary;
     var TransportableData = ns.format.TransportableData;
     var PublicKey = ns.crypto.PublicKey;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var MetaHelper = ns.mkm.MetaHelper;
     var BaseMeta = function () {
         var type, key, seed, fingerprint;
-        var status = 0;
+        var status;
         var meta;
         if (arguments.length === 1) {
             meta = arguments[0];
-            type = 0;
+            type = null;
             key = null;
             seed = null;
-            fingerprint = null
+            fingerprint = null;
+            status = 0
         } else if (arguments.length === 2) {
-            type = Enum.getInt(arguments[0]);
+            type = arguments[0];
             key = arguments[1];
             seed = null;
             fingerprint = null;
             status = 1;
             meta = {'type': type, 'key': key.toMap()}
         } else if (arguments.length === 4) {
-            type = Enum.getInt(arguments[0]);
+            type = arguments[0];
             key = arguments[1];
             seed = arguments[2];
             fingerprint = arguments[3];
@@ -4833,30 +4826,32 @@ if (typeof DIMP !== "object") {
     Class(BaseMeta, Dictionary, [Meta], {
         getType: function () {
             var type = this.__type;
-            if (!type) {
+            if (type === null) {
                 var man = ns.mkm.AccountFactoryManager;
-                var gf = man.generalFactory;
-                type = gf.getMetaType(this.toMap(), 0);
+                type = man.generalFactory.getMetaType(this.toMap(), '');
                 this.__type = type
             }
             return type
         }, getPublicKey: function () {
             var key = this.__key;
             if (!key) {
-                key = PublicKey.parse(this.getValue('key'));
+                var info = this.getValue('key');
+                key = PublicKey.parse(info);
                 this.__key = key
             }
             return key
+        }, hasSeed: function () {
+            return this.__seed || this.getValue('seed')
         }, getSeed: function () {
             var seed = this.__seed;
-            if (!seed && MetaType.hasSeed(this.getType())) {
+            if (seed === null && this.hasSeed()) {
                 seed = this.getString('seed', null);
                 this.__seed = seed
             }
             return seed
         }, getFingerprint: function () {
             var ted = this.__fingerprint;
-            if (!ted && MetaType.hasSeed(this.getType())) {
+            if (!ted && this.hasSeed()) {
                 var base64 = this.getValue('fingerprint');
                 ted = TransportableData.parse(base64);
                 this.__fingerprint = ted
@@ -6845,11 +6840,13 @@ if (typeof DIMP !== "object") {
             var ivWordArray = bytes2words(iv);
             var key = this.getData();
             var keyWordArray = bytes2words(key);
-            var cipher = CryptoJS.AES.encrypt(message, keyWordArray, {iv: ivWordArray});
-            if (cipher.hasOwnProperty('ciphertext')) {
-                return words2bytes(cipher.ciphertext)
-            } else {
-                throw new TypeError('failed to encrypt message with key: ' + this);
+            try {
+                var cipher = CryptoJS.AES.encrypt(message, keyWordArray, {iv: ivWordArray});
+                if (cipher.hasOwnProperty('ciphertext')) {
+                    return words2bytes(cipher.ciphertext)
+                }
+            } catch (e) {
+                return null
             }
         }, decrypt: function (ciphertext, params) {
             var message = bytes2words(ciphertext);
@@ -6858,8 +6855,12 @@ if (typeof DIMP !== "object") {
             var key = this.getData();
             var keyWordArray = bytes2words(key);
             var cipher = {ciphertext: message};
-            var plaintext = CryptoJS.AES.decrypt(cipher, keyWordArray, {iv: ivWordArray});
-            return words2bytes(plaintext)
+            try {
+                var plaintext = CryptoJS.AES.decrypt(cipher, keyWordArray, {iv: ivWordArray});
+                return words2bytes(plaintext)
+            } catch (e) {
+                return null
+            }
         }
     });
     ns.crypto.AESKey = AESKey
@@ -7025,7 +7026,6 @@ if (typeof DIMP !== "object") {
     var Base58 = ns.format.Base58;
     var SHA256 = ns.digest.SHA256;
     var RIPEMD160 = ns.digest.RIPEMD160;
-    var EntityType = ns.protocol.EntityType;
     var Address = ns.protocol.Address;
     var BTCAddress = function (string, network) {
         ConstantString.call(this, string);
@@ -7034,15 +7034,6 @@ if (typeof DIMP !== "object") {
     Class(BTCAddress, ConstantString, [Address], null);
     BTCAddress.prototype.getType = function () {
         return this.__network
-    };
-    BTCAddress.prototype.isBroadcast = function () {
-        return false
-    };
-    BTCAddress.prototype.isUser = function () {
-        return EntityType.isUser(this.__network)
-    };
-    BTCAddress.prototype.isGroup = function () {
-        return EntityType.isGroup(this.__network)
     };
     BTCAddress.generate = function (fingerprint, network) {
         network = Enum.getInt(network);
@@ -7098,15 +7089,6 @@ if (typeof DIMP !== "object") {
     Class(ETHAddress, ConstantString, [Address], null);
     ETHAddress.prototype.getType = function () {
         return EntityType.USER.getValue()
-    };
-    ETHAddress.prototype.isBroadcast = function () {
-        return false
-    };
-    ETHAddress.prototype.isUser = function () {
-        return true
-    };
-    ETHAddress.prototype.isGroup = function () {
-        return false
     };
     ETHAddress.getValidateAddress = function (address) {
         if (!is_eth(address)) {
@@ -7226,7 +7208,7 @@ if (typeof DIMP !== "object") {
     Class(GeneralAddressFactory, BaseAddressFactory, null, null);
     GeneralAddressFactory.prototype.createAddress = function (address) {
         if (!address) {
-            throw new ReferenceError('address empty');
+            return null
         }
         var len = address.length;
         if (len === 8) {
@@ -7237,12 +7219,16 @@ if (typeof DIMP !== "object") {
             if (address.toLowerCase() === 'everywhere') {
                 return Address.EVERYWHERE
             }
-        } else if (len === 42) {
-            return ETHAddress.parse(address)
-        } else if (26 <= len && len <= 35) {
-            return BTCAddress.parse(address)
         }
-        throw new TypeError('invalid address: ' + address);
+        var res;
+        if (26 <= len && len <= 35) {
+            res = BTCAddress.parse(address)
+        } else if (len === 42) {
+            res = ETHAddress.parse(address)
+        } else {
+            res = null
+        }
+        return res
     };
     ns.mkm.GeneralAddressFactory = GeneralAddressFactory
 })(DIMP);
@@ -7267,7 +7253,7 @@ if (typeof DIMP !== "object") {
         return ID.create(meta.getSeed(), address, terminal)
     };
     IdentifierFactory.prototype.createIdentifier = function (name, address, terminal) {
-        var string = concat(name, address, terminal);
+        var string = Identifier.concat(name, address, terminal);
         var id = this.__identifiers[string];
         if (!id) {
             id = this.newID(string, name, address, terminal);
@@ -7309,16 +7295,6 @@ if (typeof DIMP !== "object") {
         }
         return this.newID(string, name, address, terminal)
     };
-    var concat = function (name, address, terminal) {
-        var string = address.toString();
-        if (name && name.length > 0) {
-            string = name + '@' + string
-        }
-        if (terminal && terminal.length > 0) {
-            string = string + '/' + terminal
-        }
-        return string
-    };
     var thanos = ns.mkm.thanos;
     ns.mkm.GeneralIdentifierFactory = IdentifierFactory
 })(DIMP);
@@ -7339,14 +7315,17 @@ if (typeof DIMP !== "object") {
         this.__addresses = {}
     };
     Class(DefaultMeta, BaseMeta, null, {
-        generateAddress: function (network) {
+        hasSeed: function () {
+            return true
+        }, generateAddress: function (network) {
             network = Enum.getInt(network);
-            var address = this.__addresses[network];
-            if (!address) {
-                address = BTCAddress.generate(this.getFingerprint(), network);
-                this.__addresses[network] = address
+            var cached = this.__addresses[network];
+            if (!cached) {
+                var data = this.getFingerprint();
+                cached = BTCAddress.generate(data, network);
+                this.__addresses[network] = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.DefaultMeta = DefaultMeta
@@ -7367,19 +7346,21 @@ if (typeof DIMP !== "object") {
         } else {
             throw new SyntaxError('BTC meta arguments error: ' + arguments);
         }
-        this.__address = null
+        this.__addresses = {}
     };
     Class(BTCMeta, BaseMeta, null, {
-        generateAddress: function (network) {
+        hasSeed: function () {
+            return false
+        }, generateAddress: function (network) {
             network = Enum.getInt(network);
-            var address = this.__address;
-            if (!address || address.getType() !== network) {
+            var cached = this.__addresses[network];
+            if (!cached) {
                 var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = BTCAddress.generate(fingerprint, network);
-                this.__address = address
+                var data = key.getData();
+                cached = BTCAddress.generate(data, network);
+                this.__addresses[network] = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.BTCMeta = BTCMeta
@@ -7402,15 +7383,17 @@ if (typeof DIMP !== "object") {
         this.__address = null
     };
     Class(ETHMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            var address = this.__address;
-            if (!address) {
+        hasSeed: function () {
+            return false
+        }, generateAddress: function (network) {
+            var cached = this.__address;
+            if (!cached) {
                 var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = ETHAddress.generate(fingerprint);
-                this.__address = address
+                var data = key.getData();
+                cached = ETHAddress.generate(data);
+                this.__address = cached
             }
-            return address
+            return cached
         }
     });
     ns.mkm.ETHMeta = ETHMeta
@@ -7419,30 +7402,17 @@ if (typeof DIMP !== "object") {
     'use strict';
     var Class = ns.type.Class;
     var TransportableData = ns.format.TransportableData;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var DefaultMeta = ns.mkm.DefaultMeta;
     var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var GeneralMetaFactory = function (version) {
+    var GeneralMetaFactory = function (type) {
         Object.call(this);
-        this.__type = version
+        this.__algorithm = type
     };
     Class(GeneralMetaFactory, Object, [Meta.Factory], null);
-    GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        if (MetaType.MKM.equals(this.__type)) {
-            return new DefaultMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.BTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key)
-        } else if (MetaType.ExBTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.ETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key)
-        } else if (MetaType.ExETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key, seed, fingerprint)
-        } else {
-            return null
-        }
+    GeneralMetaFactory.prototype.getAlgorithm = function () {
+        return this.__algorithm
     };
     GeneralMetaFactory.prototype.generateMeta = function (sKey, seed) {
         var fingerprint = null;
@@ -7453,19 +7423,27 @@ if (typeof DIMP !== "object") {
         var pKey = sKey.getPublicKey();
         return this.createMeta(pKey, seed, fingerprint)
     };
+    GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
+        var type = this.getAlgorithm();
+        if (type === Meta.MKM) {
+            return new DefaultMeta(type, key, seed, fingerprint)
+        } else if (type === Meta.BTC) {
+            return new BTCMeta(type, key)
+        } else if (type === Meta.ETH) {
+            return new ETHMeta(type, key)
+        } else {
+            return null
+        }
+    };
     GeneralMetaFactory.prototype.parseMeta = function (meta) {
         var out;
         var gf = general_factory();
-        var type = gf.getMetaType(meta, 0);
-        if (MetaType.MKM.equals(type)) {
+        var type = gf.getMetaType(meta, '');
+        if (type === Meta.MKM) {
             out = new DefaultMeta(meta)
-        } else if (MetaType.BTC.equals(type)) {
+        } else if (type === Meta.BTC) {
             out = new BTCMeta(meta)
-        } else if (MetaType.ExBTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else if (MetaType.ExETH.equals(type)) {
+        } else if (type === Meta.ETH) {
             out = new ETHMeta(meta)
         } else {
             throw new TypeError('unknown meta type: ' + type);
@@ -7518,7 +7496,7 @@ if (typeof DIMP !== "object") {
             } else if (type === Document.BULLETIN) {
                 return new BaseBulletin(identifier)
             } else {
-                return new BaseDocument(identifier)
+                return new BaseDocument(identifier, type)
             }
         }
     };
@@ -7548,7 +7526,6 @@ if (typeof DIMP !== "object") {
 })(DIMP);
 (function (ns) {
     'use strict';
-    var MetaType = ns.protocol.MetaType;
     var Address = ns.protocol.Address;
     var ID = ns.protocol.ID;
     var Meta = ns.protocol.Meta;
@@ -7564,16 +7541,14 @@ if (typeof DIMP !== "object") {
         ID.setFactory(new GeneralIdentifierFactory())
     };
     var registerMetaFactories = function () {
-        Meta.setFactory(MetaType.MKM, new GeneralMetaFactory(MetaType.MKM));
-        Meta.setFactory(MetaType.BTC, new GeneralMetaFactory(MetaType.BTC));
-        Meta.setFactory(MetaType.ExBTC, new GeneralMetaFactory(MetaType.ExBTC));
-        Meta.setFactory(MetaType.ETH, new GeneralMetaFactory(MetaType.ETH));
-        Meta.setFactory(MetaType.ExETH, new GeneralMetaFactory(MetaType.ExETH))
+        Meta.setFactory(Meta.MKM, new GeneralMetaFactory(Meta.MKM));
+        Meta.setFactory(Meta.BTC, new GeneralMetaFactory(Meta.BTC));
+        Meta.setFactory(Meta.ETH, new GeneralMetaFactory(Meta.ETH))
     };
     var registerDocumentFactories = function () {
         Document.setFactory('*', new GeneralDocumentFactory('*'));
-        Document.setFactory(Document.PROFILE, new GeneralDocumentFactory(Document.PROFILE));
         Document.setFactory(Document.VISA, new GeneralDocumentFactory(Document.VISA));
+        Document.setFactory(Document.PROFILE, new GeneralDocumentFactory(Document.PROFILE));
         Document.setFactory(Document.BULLETIN, new GeneralDocumentFactory(Document.BULLETIN))
     };
     ns.registerAddressFactory = registerAddressFactory;
@@ -7791,6 +7766,7 @@ if (typeof DIMP !== "object") {
     var Converter = ns.type.Converter;
     var ID = ns.protocol.ID;
     var Address = ns.protocol.Address;
+    var Identifier = ns.mkm.Identifier;
     var User = ns.mkm.User;
     var BaseUser = ns.mkm.BaseUser;
     var DocumentHelper = ns.mkm.DocumentHelper;
@@ -7908,8 +7884,8 @@ if (typeof DIMP !== "object") {
         var network = id.getAddress().getType();
         return '<' + clazz + ' id="' + id.toString() + '" network="' + network + '" host="' + this.getHost() + '" port=' + this.getPort() + ' />'
     };
-    Station.ANY = new ns.mkm.Identifier('station@anywhere', 'station', Address.ANYWHERE, null);
-    Station.EVERY = new ns.mkm.Identifier('stations@everywhere', 'stations', Address.EVERYWHERE, null);
+    Station.ANY = Identifier.create('station', Address.ANYWHERE, null);
+    Station.EVERY = Identifier.create('stations', Address.EVERYWHERE, null);
     ns.mkm.Station = Station
 })(DIMP);
 (function (ns) {
@@ -8030,7 +8006,6 @@ if (typeof DIMP !== "object") {
     var Class = ns.type.Class;
     var TransportableData = ns.format.TransportableData;
     var InstantMessage = ns.protocol.InstantMessage;
-    var SecureMessage = ns.protocol.SecureMessage;
     var ReliableMessage = ns.protocol.ReliableMessage;
     var SecureMessagePacker = function (messenger) {
         this.__transceiver = messenger
@@ -12691,7 +12666,6 @@ if (typeof StarGate !== 'object') {
 (function (ns, sys) {
     "use strict";
     var Class = sys.type.Class;
-    var SocketAddress = ns.type.SocketAddress;
     var connect = function (url, proxy) {
         var ws = new WebSocket(url);
         ws.onopen = function (ev) {
@@ -13236,10 +13210,63 @@ if (typeof StarGate !== 'object') {
 })(DIMP, StarGate);
 (function (ns) {
     'use strict';
+    var IObject = ns.type.Object;
+    var Enum = ns.type.Enum;
+    var Meta = ns.protocol.Meta;
+    var MetaType = Enum('MetaType', {
+        DEFAULT: (0x01),
+        MKM: (0x01),
+        BTC: (0x02),
+        ExBTC: (0x03),
+        ETH: (0x04),
+        ExETH: (0x05)
+    });
+    var toString = function (type) {
+        type = Enum.getInt(type);
+        return type.toString()
+    };
+    var hasSeed = function (type) {
+        type = parseNumber(type, 0);
+        var mkm = MetaType.MKM.getValue();
+        return type > 0 && (type & mkm) === mkm
+    };
+    var parseNumber = function (type, defaultValue) {
+        if (type === null) {
+            return defaultValue
+        } else if (IObject.isNumber(type)) {
+            return type
+        } else if (IObject.isString(type)) {
+            if (type === Meta.MKM) {
+                return 1
+            } else if (type === Meta.BTC) {
+                return 2
+            } else if (type === Meta.ETH) {
+                return 4
+            }
+        } else if (Enum.isEnum(type)) {
+            return type.getValue()
+        } else {
+            return -1
+        }
+        try {
+            return parseInt(type)
+        } catch (e) {
+            return -1
+        }
+    };
+    MetaType.toString = toString;
+    MetaType.hasSeed = hasSeed;
+    MetaType.parseInt = parseNumber;
+    ns.protocol.MetaType = MetaType
+})(DIMP);
+(function (ns) {
+    'use strict';
     var Interface = ns.type.Interface;
+    var IObject = ns.type.Object;
     var Command = ns.protocol.Command;
     var MetaCommand = ns.protocol.MetaCommand;
     var ReceiptCommand = ns.protocol.ReceiptCommand;
+    var MetaType = ns.protocol.MetaType;
     var fixMetaAttachment = function (rMsg) {
         var meta = rMsg.getValue('meta');
         if (meta) {
@@ -13247,11 +13274,18 @@ if (typeof StarGate !== 'object') {
         }
     };
     var fixMetaVersion = function (meta) {
-        var version = meta['version'];
-        if (!version) {
-            meta['version'] = meta['type']
-        } else if (!meta['type']) {
-            meta['type'] = version
+        var type = meta['type'];
+        if (!type) {
+            type = meta['version']
+        } else if (IObject.isString(type) && !meta['algorithm']) {
+            if (type.length > 2) {
+                meta['algorithm'] = type
+            }
+        }
+        var version = MetaType.parseInt(type, 0);
+        if (version > 0) {
+            meta['type'] = version;
+            meta['version'] = version
         }
     };
     var fixCommand = function (content) {
@@ -13322,87 +13356,79 @@ if (typeof StarGate !== 'object') {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
-    var Base58 = ns.format.Base58;
-    var SHA256 = ns.digest.SHA256;
-    var RIPEMD160 = ns.digest.RIPEMD160;
-    var EntityType = ns.protocol.EntityType;
-    var NetworkID = ns.protocol.NetworkID;
+    var ConstantString = ns.type.ConstantString;
+    var Address = ns.protocol.Address;
+    var BaseAddressFactory = ns.mkm.BaseAddressFactory;
     var BTCAddress = ns.mkm.BTCAddress;
-    var CompatibleBTCAddress = function (string, network) {
-        BTCAddress.call(this, string, network)
+    var ETHAddress = ns.mkm.ETHAddress;
+    var UnknownAddress = function (string) {
+        ConstantString.call(this, string)
     };
-    Class(CompatibleBTCAddress, BTCAddress, null, {
-        isUser: function () {
-            var type = NetworkID.getEntityType(this.getType());
-            return EntityType.isUser(type)
-        }, isGroup: function () {
-            var type = NetworkID.getEntityType(this.getType());
-            return EntityType.isGroup(type)
+    Class(UnknownAddress, ConstantString, [Address], {
+        getType: function () {
+            return 0
         }
     });
-    CompatibleBTCAddress.generate = function (fingerprint, network) {
-        network = Enum.getInt(network);
-        var digest = RIPEMD160.digest(SHA256.digest(fingerprint));
-        var head = [];
-        head.push(network);
-        for (var i = 0; i < digest.length; ++i) {
-            head.push(digest[i])
-        }
-        var cc = check_code(Uint8Array.from(head));
-        var data = [];
-        for (var j = 0; j < head.length; ++j) {
-            data.push(head[j])
-        }
-        for (var k = 0; k < cc.length; ++k) {
-            data.push(cc[k])
-        }
-        return new CompatibleBTCAddress(Base58.encode(Uint8Array.from(data)), network)
+    var CompatibleAddressFactory = function () {
+        BaseAddressFactory.call(this)
     };
-    CompatibleBTCAddress.parse = function (string) {
-        var len = string.length;
-        if (len < 26 || len > 35) {
+    Class(CompatibleAddressFactory, BaseAddressFactory, null, null);
+    CompatibleAddressFactory.prototype.createAddress = function (address) {
+        if (!address) {
             return null
         }
-        var data = Base58.decode(string);
-        if (!data || data.length !== 25) {
-            return null
+        var len = address.length;
+        if (len === 8) {
+            if (address.toLowerCase() === 'anywhere') {
+                return Address.ANYWHERE
+            }
+        } else if (len === 10) {
+            if (address.toLowerCase() === 'everywhere') {
+                return Address.EVERYWHERE
+            }
         }
-        var prefix = data.subarray(0, 21);
-        var suffix = data.subarray(21, 25);
-        var cc = check_code(prefix);
-        if (ns.type.Arrays.equals(cc, suffix)) {
-            return new CompatibleBTCAddress(string, data[0])
+        var res;
+        if (26 <= len && len <= 35) {
+            res = BTCAddress.parse(address)
+        } else if (len === 42) {
+            res = ETHAddress.parse(address)
         } else {
-            return null
+            res = null
         }
+        if (!res && 4 <= len && len <= 64) {
+            res = new UnknownAddress(address)
+        }
+        return res
     };
-    var check_code = function (data) {
-        var sha256d = SHA256.digest(SHA256.digest(data));
-        return sha256d.subarray(0, 4)
-    };
-    ns.mkm.CompatibleBTCAddress = CompatibleBTCAddress
+    ns.registerCompatibleAddressFactory = function () {
+        Address.setFactory(new CompatibleAddressFactory())
+    }
 })(DIMP);
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var EntityType = ns.protocol.EntityType;
     var NetworkID = ns.protocol.NetworkID;
     var ID = ns.protocol.ID;
     var Identifier = ns.mkm.Identifier;
-    var IDFactory = ns.mkm.GeneralIdentifierFactory;
+    var IdentifierFactory = ns.mkm.GeneralIdentifierFactory;
     var EntityID = function (identifier, name, address, terminal) {
         Identifier.call(this, identifier, name, address, terminal)
     };
     Class(EntityID, Identifier, null, {
         getType: function () {
+            var name = this.getName();
+            if (!name || name.length === 0) {
+                return EntityType.USER.getValue()
+            }
             var network = this.getAddress().getType();
             return NetworkID.getEntityType(network)
         }
     });
     var EntityIDFactory = function () {
-        IDFactory.call(this)
+        IdentifierFactory.call(this)
     };
-    Class(EntityIDFactory, IDFactory, null, {
+    Class(EntityIDFactory, IdentifierFactory, null, {
         newID: function (string, name, address, terminal) {
             return new EntityID(string, name, address, terminal)
         }, parse: function (identifier) {
@@ -13410,14 +13436,20 @@ if (typeof StarGate !== 'object') {
                 throw new ReferenceError('ID empty');
             }
             var len = identifier.length;
-            if (len === 15 && identifier.toLowerCase() === 'anyone@anywhere') {
-                return ID.ANYONE
-            } else if (len === 19 && identifier.toLowerCase() === 'everyone@everywhere') {
-                return ID.EVERYONE
-            } else if (len === 13 && identifier.toLowerCase() === 'moky@anywhere') {
-                return ID.FOUNDER
+            if (len === 15) {
+                if (identifier.toLowerCase() === 'anyone@anywhere') {
+                    return ID.ANYONE
+                }
+            } else if (len === 19) {
+                if (identifier.toLowerCase() === 'everyone@everywhere') {
+                    return ID.EVERYONE
+                }
+            } else if (len === 13) {
+                if (identifier.toLowerCase() === 'moky@anywhere') {
+                    return ID.FOUNDER
+                }
             }
-            return IDFactory.prototype.parse.call(this, identifier)
+            return IdentifierFactory.prototype.parse.call(this, identifier)
         }
     });
     ns.registerEntityIDFactory = function () {
@@ -13427,152 +13459,53 @@ if (typeof StarGate !== 'object') {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Address = ns.protocol.Address;
-    var BaseAddressFactory = ns.mkm.BaseAddressFactory;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-    var ETHAddress = ns.mkm.ETHAddress;
-    var CompatibleAddressFactory = function () {
-        BaseAddressFactory.call(this)
-    };
-    Class(CompatibleAddressFactory, BaseAddressFactory, null, {
-        createAddress: function (address) {
-            if (!address) {
-                throw new ReferenceError('address empty');
-            }
-            var len = address.length;
-            if (len === 8) {
-                if (address.toLowerCase() === 'anywhere') {
-                    return Address.ANYWHERE
-                }
-            } else if (len === 10) {
-                if (address.toLowerCase() === 'everywhere') {
-                    return Address.EVERYWHERE
-                }
-            }
-            if (len === 42) {
-                return ETHAddress.parse(address)
-            } else if (26 <= len && len <= 35) {
-                return CompatibleBTCAddress.parse(address)
-            }
-            throw new TypeError('invalid address: ' + address);
-        }
-    });
-    ns.registerCompatibleAddressFactory = function () {
-        Address.setFactory(new CompatibleAddressFactory())
-    }
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
-    var TransportableData = ns.format.TransportableData;
     var Meta = ns.protocol.Meta;
-    var MetaType = ns.protocol.MetaType;
-    var BaseMeta = ns.mkm.BaseMeta;
+    var DefaultMeta = ns.mkm.DefaultMeta;
+    var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-    var DefaultMeta = function () {
-        if (arguments.length === 1) {
-            BaseMeta.call(this, arguments[0])
-        } else if (arguments.length === 4) {
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3])
-        } else {
-            throw new SyntaxError('Default meta arguments error: ' + arguments);
-        }
-        this.__addresses = {}
+    var BaseMetaFactory = ns.mkm.GeneralMetaFactory;
+    var CompatibleMetaFactory = function (type) {
+        BaseMetaFactory.call(this, type)
     };
-    Class(DefaultMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            var address = this.__addresses[network];
-            if (!address) {
-                address = CompatibleBTCAddress.generate(this.getFingerprint(), network);
-                this.__addresses[network] = address
+    Class(CompatibleMetaFactory, BaseMetaFactory, null, {
+        createMeta: function (key, seed, fingerprint) {
+            var type = this.getAlgorithm();
+            if (type === '1' || type === Meta.MKM) {
+                return new DefaultMeta('1', key, seed, fingerprint)
+            } else if (type === '2' || type === Meta.BTC) {
+                return new BTCMeta('2', key)
+            } else if (type === '4' || type === Meta.ETH) {
+                return new ETHMeta('4', key)
+            } else {
+                return null
             }
-            return address
+        }, parseMeta: function (meta) {
+            var out;
+            var gf = general_factory();
+            var type = gf.getMetaType(meta, '');
+            if (type === '1' || type === Meta.MKM) {
+                out = new DefaultMeta(meta)
+            } else if (type === '2' || type === Meta.BTC) {
+                out = new BTCMeta(meta)
+            } else if (type === '4' || type === Meta.ETH) {
+                out = new ETHMeta(meta)
+            } else {
+                throw new TypeError('unknown meta type: ' + type);
+            }
+            return out.isValid() ? out : null
         }
     });
-    var BTCMeta = function () {
-        if (arguments.length === 1) {
-            BaseMeta.call(this, arguments[0])
-        } else if (arguments.length === 2) {
-            BaseMeta.call(this, arguments[0], arguments[1])
-        } else if (arguments.length === 4) {
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3])
-        } else {
-            throw new SyntaxError('BTC meta arguments error: ' + arguments);
-        }
-        this.__address = null
-    };
-    Class(BTCMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            var address = this.__address;
-            if (!address || address.getType() !== network) {
-                var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = CompatibleBTCAddress.generate(fingerprint, network);
-                this.__address = address
-            }
-            return address
-        }
-    });
-    var CompatibleMetaFactory = function (version) {
-        Object.call(this);
-        this.__type = version
-    };
-    Class(CompatibleMetaFactory, Object, [Meta.Factory], null);
-    CompatibleMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        if (MetaType.MKM.equals(this.__type)) {
-            return new DefaultMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.BTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key)
-        } else if (MetaType.ExBTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.ETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key)
-        } else if (MetaType.ExETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key, seed, fingerprint)
-        } else {
-            return null
-        }
-    };
-    CompatibleMetaFactory.prototype.generateMeta = function (sKey, seed) {
-        var fingerprint = null;
-        if (seed && seed.length > 0) {
-            var sig = sKey.sign(ns.format.UTF8.encode(seed));
-            fingerprint = TransportableData.create(sig)
-        }
-        var pKey = sKey.getPublicKey();
-        return this.createMeta(pKey, seed, fingerprint)
-    };
-    CompatibleMetaFactory.prototype.parseMeta = function (meta) {
-        var out;
-        var gf = general_factory();
-        var type = gf.getMetaType(meta, 0);
-        if (MetaType.MKM.equals(type)) {
-            out = new DefaultMeta(meta)
-        } else if (MetaType.BTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ExBTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else if (MetaType.ExETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else {
-            throw new TypeError('unknown meta type: ' + type);
-        }
-        return out.isValid() ? out : null
-    };
     var general_factory = function () {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
     };
     ns.registerCompatibleMetaFactory = function () {
-        Meta.setFactory(MetaType.MKM, new CompatibleMetaFactory(MetaType.MKM));
-        Meta.setFactory(MetaType.BTC, new CompatibleMetaFactory(MetaType.BTC));
-        Meta.setFactory(MetaType.ExBTC, new CompatibleMetaFactory(MetaType.ExBTC))
+        Meta.setFactory('1', new CompatibleMetaFactory('1'));
+        Meta.setFactory('2', new CompatibleMetaFactory('2'));
+        Meta.setFactory('4', new CompatibleMetaFactory('4'));
+        Meta.setFactory(Meta.MKM, new CompatibleMetaFactory(Meta.MKM));
+        Meta.setFactory(Meta.BTC, new CompatibleMetaFactory(Meta.BTC));
+        Meta.setFactory(Meta.ETH, new CompatibleMetaFactory(Meta.ETH))
     }
 })(DIMP);
 (function (ns) {
@@ -14674,16 +14607,13 @@ if (typeof StarGate !== 'object') {
             if (Interface.conforms(address, ID)) {
                 address = address.getAddress()
             }
-            if (address.isBroadcast()) {
-                return 0
-            }
             if (address instanceof BTCAddress) {
                 return btc_number(address.toString())
             }
             if (address instanceof ETHAddress) {
                 return eth_number(address.toString())
             }
-            throw new TypeError('address error: ' + address.toString());
+            return 0
         }
     };
     var get_name = function (type) {
@@ -15241,7 +15171,6 @@ if (typeof StarGate !== 'object') {
     var PrivateKey = ns.crypto.PrivateKey;
     var ID = ns.protocol.ID;
     var EntityType = ns.protocol.EntityType;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var BaseVisa = ns.mkm.BaseVisa;
     var BaseBulletin = ns.mkm.BaseBulletin;
@@ -15250,7 +15179,7 @@ if (typeof StarGate !== 'object') {
     };
     Register.prototype.createUser = function (nickname, avatar) {
         var privateKey = PrivateKey.generate(PrivateKey.RSA);
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, 'web-demo');
+        var meta = Meta.generate(Meta.MKM, privateKey, 'web-demo');
         var uid = ID.generate(meta, EntityType.USER, null);
         var pKey = privateKey.getPublicKey();
         var doc = createVisa(uid, nickname, avatar, pKey, privateKey);
@@ -15263,7 +15192,7 @@ if (typeof StarGate !== 'object') {
         var r = Math.ceil(Math.random() * 999990000) + 10000;
         var seed = 'Group-' + r;
         var privateKey = this.__db.getPrivateKeyForVisaSignature(founder);
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, seed);
+        var meta = Meta.generate(Meta.MKM, privateKey, seed);
         var gid = ID.generate(meta, EntityType.GROUP, null);
         var doc = createBulletin(gid, title, founder, privateKey);
         this.__db.saveMeta(meta, gid);
@@ -15516,6 +15445,499 @@ if (typeof StarGate !== 'object') {
     ns.database.DocumentStorage = DocumentStorage
 })(DIMP);
 (function (ns) {
+    'use strict';
+    var Class = ns.type.Class;
+    var Departure = ns.startrek.port.Departure;
+    var MessageWrapper = function (rMsg, departure) {
+        this.__msg = rMsg;
+        this.__ship = departure
+    };
+    Class(MessageWrapper, null, [Departure], null);
+    MessageWrapper.prototype.getMessage = function () {
+        return this.__msg
+    };
+    MessageWrapper.prototype.getSN = function () {
+        return this.__ship.getSN()
+    };
+    MessageWrapper.prototype.getPriority = function () {
+        return this.__ship.getPriority()
+    };
+    MessageWrapper.prototype.getFragments = function () {
+        return this.__ship.getFragments()
+    };
+    MessageWrapper.prototype.checkResponse = function (arrival) {
+        return this.__ship.checkResponse(arrival)
+    };
+    MessageWrapper.prototype.isImportant = function () {
+        return this.__ship.isImportant()
+    };
+    MessageWrapper.prototype.touch = function (now) {
+        return this.__ship.touch(now)
+    };
+    MessageWrapper.prototype.getStatus = function (now) {
+        return this.__ship.getStatus(now)
+    };
+    ns.network.MessageWrapper = MessageWrapper
+})(DIMP);
+(function (ns) {
+    'use strict';
+    var Class = ns.type.Class;
+    var Arrays = ns.type.Arrays;
+    var Log = ns.lnc.Log;
+    var MessageWrapper = ns.network.MessageWrapper;
+    var MessageQueue = function () {
+        this.__priorities = [];
+        this.__fleets = {}
+    };
+    Class(MessageQueue, null, null, null);
+    MessageQueue.prototype.append = function (rMsg, departure) {
+        var ok = true;
+        var priority = departure.getPriority();
+        var array = this.__fleets[priority];
+        if (!array || array.length === 0) {
+            array = [];
+            this.__fleets[priority] = array;
+            insert_priority(priority, this.__priorities)
+        } else {
+            var signature = rMsg.getValue('signature');
+            var item;
+            for (var i = array.length - 1; i >= 0; --i) {
+                item = array[i].getMessage();
+                if (item && is_duplicated(item, rMsg)) {
+                    Log.warning('[QUEUE] duplicated message', signature);
+                    ok = false;
+                    break
+                }
+            }
+        }
+        if (ok) {
+            array.push(new MessageWrapper(rMsg, departure))
+        }
+        return ok
+    };
+    var is_duplicated = function (msg1, msg2) {
+        var sig1 = msg1.getValue('signature');
+        var sig2 = msg2.getValue('signature');
+        if (!sig1 || !sig2) {
+            return false
+        } else if (sig1 !== sig2) {
+            return false
+        }
+        var to1 = msg1.getReceiver();
+        var to2 = msg2.getReceiver();
+        return to1.equals(to2)
+    };
+    var insert_priority = function (prior, priorities) {
+        var total = priorities.length;
+        var value;
+        var index = 0;
+        for (; index < total; ++index) {
+            value = priorities[index];
+            if (value === prior) {
+                return
+            } else if (value > prior) {
+                break
+            }
+        }
+        Arrays.insert(priorities, index, prior)
+    };
+    MessageQueue.prototype.next = function () {
+        var priority;
+        var array;
+        for (var i = 0; i < this.__priorities.length; ++i) {
+            priority = this.__priorities[i];
+            array = this.__fleets[priority];
+            if (array && array.length > 0) {
+                return array.shift()
+            }
+        }
+        return null
+    };
+    MessageQueue.prototype.purge = function () {
+        var priority;
+        var array;
+        for (var i = this.__priorities.length - 1; i >= 0; --i) {
+            priority = this.__priorities[i];
+            array = this.__fleets[priority];
+            if (!array) {
+                this.__priorities.splice(i, 1)
+            } else if (array.length === 0) {
+                delete this.__fleets[priority];
+                this.__priorities.splice(i, 1)
+            }
+        }
+        return null
+    };
+    ns.network.MessageQueue = MessageQueue
+})(DIMP);
+(function (ns) {
+    'use strict';
+    var Class = ns.type.Class;
+    var UTF8 = ns.format.UTF8;
+    var CommonGate = ns.startrek.WSClientGate;
+    var PlainPorter = ns.startrek.PlainPorter;
+    var PlainArrival = ns.startrek.PlainArrival;
+    var AckEnableGate = function (keeper) {
+        CommonGate.call(this, keeper)
+    };
+    Class(AckEnableGate, CommonGate, null, {
+        createPorter: function (remote, local) {
+            var docker = new AckEnablePorter(remote, local);
+            docker.setDelegate(this.getDelegate());
+            return docker
+        }
+    });
+    var AckEnablePorter = function (remote, local) {
+        PlainPorter.call(this, remote, local)
+    };
+    Class(AckEnablePorter, PlainPorter, null, {
+        checkArrival: function (income) {
+            if (income instanceof PlainArrival) {
+                var payload = income.getPayload();
+                if (!payload || payload.length === 0) {
+                } else if (payload[0] === jsonBegin) {
+                    var sig = fetchValue(payload, bytes('signature'));
+                    var sec = fetchValue(payload, bytes('time'));
+                    if (sig && sec) {
+                        var signature = UTF8.decode(sig);
+                        var timestamp = UTF8.decode(sec);
+                        var text = 'ACK:{"time":' + timestamp + ',"signature":"' + signature + '"}';
+                        var priority = 1
+                        this.send(bytes(text), priority)
+                    }
+                }
+            }
+            return PlainPorter.prototype.checkArrival(income)
+        }
+    });
+    var jsonBegin = '{'.charCodeAt(0);
+    var fetchValue = function (data, tag) {
+        if (tag.length === 0) {
+            return null
+        }
+        var pos = find(data, tag, 0);
+        if (pos < 0) {
+            return null
+        } else {
+            pos += tag.length
+        }
+        pos = find(data, bytes(':'), pos);
+        if (pos < 0) {
+            return null
+        } else {
+            pos += 1
+        }
+        var end = find(data, bytes(','), pos);
+        if (end < 0) {
+            end = find(data, bytes('}'), pos);
+            if (end < 0) {
+                return null
+            }
+        }
+        var value = data.subarray(pos, end);
+        value = strip(value, bytes(' '));
+        value = strip(value, bytes('"'));
+        value = strip(value, bytes("'"));
+        return value
+    };
+    var bytes = function (text) {
+        return UTF8.encode(text)
+    };
+    var find = function (data, sub, start) {
+        if (!start) {
+            start = 0
+        }
+        var end = data.length - sub.length;
+        var i, j;
+        var match;
+        for (i = start; i <= end; ++i) {
+            match = true;
+            for (j = 0; j < sub.length; ++j) {
+                if (data[i + j] === sub[j]) {
+                    continue
+                }
+                match = false;
+                break
+            }
+            if (match) {
+                return i
+            }
+        }
+        return -1
+    };
+    var strip = function (data, removing) {
+        data = stripRight(data, removing);
+        return stripLeft(data, removing)
+    };
+    var stripLeft = function (data, leading) {
+        var c = leading.length;
+        if (c === 0) {
+            return data
+        }
+        var i;
+        while (c <= data.length) {
+            for (i = 0; i < c; ++i) {
+                if (data[i] !== leading[i]) {
+                    return data
+                }
+            }
+            data = data.subarray(c)
+        }
+        return data
+    };
+    var stripRight = function (data, trailing) {
+        var c = trailing.length;
+        if (c === 0) {
+            return data
+        }
+        var i;
+        var m = data.length - c;
+        while (m >= 0) {
+            for (i = 0; i < c; ++i) {
+                if (data[m + i] !== trailing[i]) {
+                    return data
+                }
+            }
+            data = data.subarray(0, m);
+            m -= c
+        }
+        return data
+    };
+    var DataUtils = {bytes: bytes, find: find, strip: strip, stripLeft: stripLeft, stripRight: stripRight};
+    ns.network.AckEnableGate = AckEnableGate;
+    ns.network.AckEnablePorter = AckEnablePorter;
+    ns.utils.DataUtils = DataUtils
+})(DIMP);
+(function (ns) {
+    'use strict';
+    var Class = ns.type.Class;
+    var Log = ns.lnc.Log;
+    var Runner = ns.fsm.skywalker.Runner;
+    var InetSocketAddress = ns.startrek.type.InetSocketAddress;
+    var PorterDelegate = ns.startrek.port.PorterDelegate;
+    var ClientHub = ns.ws.ClientHub;
+    var AckEnableGate = ns.network.AckEnableGate;
+    var MessageQueue = ns.network.MessageQueue;
+    var GateKeeper = function (host, port) {
+        Runner.call(this);
+        this.__remote = new InetSocketAddress(host, port);
+        this.__gate = this.createGate(this.__remote);
+        this.__queue = new MessageQueue();
+        this.__active = false;
+        this.__last_active = 0;
+        this.__reconnect_time = 0
+    };
+    Class(GateKeeper, Runner, [PorterDelegate], null);
+    GateKeeper.prototype.createGate = function (remote) {
+        var gate = new AckEnableGate(this);
+        var hub = this.createHub(gate, remote);
+        gate.setHub(hub);
+        return gate
+    };
+    GateKeeper.prototype.createHub = function (delegate, remote) {
+        var hub = new ClientHub(delegate);
+        hub.connect(remote, null);
+        return hub
+    };
+    GateKeeper.prototype.getRemoteAddress = function () {
+        return this.__remote
+    };
+    GateKeeper.prototype.getGate = function () {
+        return this.__gate
+    };
+    GateKeeper.prototype.isActive = function () {
+        return this.__active
+    };
+    GateKeeper.prototype.setActive = function (active, when) {
+        if (this.__active === active) {
+            return false
+        }
+        if (!when || when === 0) {
+            when = (new Date()).getTime()
+        } else if (when instanceof Date) {
+            when = when.getTime()
+        }
+        if (when <= this.__last_active) {
+            return false
+        }
+        this.__active = active;
+        this.__last_active = when;
+        return true
+    };
+    GateKeeper.prototype.isRunning = function () {
+        if (Runner.prototype.isRunning.call(this)) {
+            return this.__gate.isRunning()
+        } else {
+            return false
+        }
+    };
+    GateKeeper.prototype.stop = function () {
+        Runner.prototype.stop.call(this)
+        this.__gate.stop()
+    };
+    GateKeeper.prototype.setup = function () {
+        var again = Runner.prototype.setup.call(this)
+        this.__gate.start();
+        return again
+    };
+    GateKeeper.prototype.finish = function () {
+        this.__gate.stop();
+        return Runner.prototype.finish.call(this)
+    };
+    GateKeeper.prototype.process = function () {
+        var gate = this.getGate();
+        var remote = this.getRemoteAddress();
+        var docker = gate.getPorter(remote, null);
+        if (!docker) {
+            var now = (new Date()).getTime();
+            if (now < this.__reconnect_time) {
+                return false
+            }
+            docker = gate.fetchPorter(remote, null);
+            if (!docker) {
+                Log.error('gate error', remote);
+                this.__reconnect_time = now + 8000;
+                return false
+            }
+        }
+        var hub = gate.getHub();
+        try {
+            var incoming = hub.process();
+            var outgoing = gate.process();
+            if (incoming || outgoing) {
+                return true
+            }
+        } catch (e) {
+            Log.error('GateKeeper::process()', e);
+            return false
+        }
+        var queue = this.__queue;
+        if (!this.isActive()) {
+            queue.purge();
+            return false
+        }
+        var wrapper = queue.next();
+        if (!wrapper) {
+            queue.purge();
+            return false
+        }
+        var msg = wrapper.getMessage();
+        if (!msg) {
+            return true
+        }
+        var ok = gate.sendShip(wrapper, remote, null);
+        if (!ok) {
+            Log.error('gate error, failed to send data', wrapper, remote)
+        }
+        return true
+    };
+    GateKeeper.prototype.queueAppend = function (rMsg, departure) {
+        var queue = this.__queue;
+        return queue.append(rMsg, departure)
+    };
+    GateKeeper.prototype.onPorterStatusChanged = function (previous, current, docker) {
+        Log.info('GateKeeper::onPorterStatusChanged()', previous, current, docker)
+    };
+    GateKeeper.prototype.onPorterReceived = function (arrival, docker) {
+        Log.info('GateKeeper::onPorterReceived()', arrival, docker)
+    };
+    GateKeeper.prototype.onPorterSent = function (departure, docker) {
+    };
+    GateKeeper.prototype.onPorterFailed = function (error, departure, docker) {
+        Log.info('GateKeeper::onPorterFailed()', error, departure, docker)
+    };
+    GateKeeper.prototype.onPorterError = function (error, departure, docker) {
+        Log.info('GateKeeper::onPorterError()', error, departure, docker)
+    };
+    ns.network.GateKeeper = GateKeeper
+})(DIMP);
+(function (ns) {
+    'use strict';
+    var Interface = ns.type.Interface;
+    var Transmitter = Interface(null, null);
+    Transmitter.prototype.sendContent = function (content, sender, receiver, priority) {
+    };
+    Transmitter.prototype.sendInstantMessage = function (iMsg, priority) {
+    };
+    Transmitter.prototype.sendReliableMessage = function (rMsg, priority) {
+    };
+    var Session = Interface(null, [Transmitter]);
+    Session.prototype.getDatabase = function () {
+    };
+    Session.prototype.getRemoteAddress = function () {
+    };
+    Session.prototype.getSessionKey = function () {
+    };
+    Session.prototype.setIdentifier = function (user) {
+    };
+    Session.prototype.getIdentifier = function () {
+    };
+    Session.prototype.setActive = function (flag, when) {
+    };
+    Session.prototype.isActive = function () {
+    };
+    Session.prototype.queueMessagePackage = function (rMsg, data, priority) {
+    };
+    ns.network.Transmitter = Transmitter;
+    ns.network.Session = Session
+})(DIMP);
+(function (ns) {
+    'use strict';
+    var Class = ns.type.Class;
+    var PlainDeparture = ns.startrek.PlainDeparture;
+    var Session = ns.network.Session;
+    var GateKeeper = ns.network.GateKeeper;
+    var BaseSession = function (db, host, port) {
+        GateKeeper.call(this, host, port);
+        this.__db = db;
+        this.__id = null;
+        this.__messenger = null
+    };
+    Class(BaseSession, GateKeeper, [Session], {
+        queueMessagePackage: function (rMsg, data, priority) {
+            var ship = new PlainDeparture(data, priority);
+            return this.queueAppend(rMsg, ship)
+        }
+    });
+    BaseSession.prototype.getDatabase = function () {
+        return this.__db
+    };
+    BaseSession.prototype.getIdentifier = function () {
+        return this.__id
+    };
+    BaseSession.prototype.setIdentifier = function (user) {
+        var identifier = this.__id;
+        if (!identifier) {
+            if (!user) {
+                return false
+            }
+        } else if (identifier.equals(user)) {
+            return false
+        }
+        this.__id = user;
+        return true
+    };
+    BaseSession.prototype.getMessenger = function () {
+        return this.__messenger
+    };
+    BaseSession.prototype.setMessenger = function (messenger) {
+        this.__messenger = messenger
+    };
+    BaseSession.prototype.sendContent = function (content, sender, receiver, priority) {
+        var messenger = this.getMessenger();
+        return messenger.sendContent(content, sender, receiver, priority)
+    };
+    BaseSession.prototype.sendInstantMessage = function (iMsg, priority) {
+        var messenger = this.getMessenger();
+        return messenger.sendInstantMessage(iMsg, priority)
+    };
+    BaseSession.prototype.sendReliableMessage = function (rMsg, priority) {
+        var messenger = this.getMessenger();
+        return messenger.sendReliableMessage(rMsg, priority)
+    };
+    ns.network.BaseSession = BaseSession
+})(DIMP);
+;(function (ns) {
     'use strict';
     var Class = ns.type.Class;
     var Log = ns.lnc.Log;
@@ -16825,499 +17247,6 @@ if (typeof StarGate !== 'object') {
     ns.group.SharedGroupManager = new SharedGroupManager()
 })(DIMP);
 (function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Departure = ns.startrek.port.Departure;
-    var MessageWrapper = function (rMsg, departure) {
-        this.__msg = rMsg;
-        this.__ship = departure
-    };
-    Class(MessageWrapper, null, [Departure], null);
-    MessageWrapper.prototype.getMessage = function () {
-        return this.__msg
-    };
-    MessageWrapper.prototype.getSN = function () {
-        return this.__ship.getSN()
-    };
-    MessageWrapper.prototype.getPriority = function () {
-        return this.__ship.getPriority()
-    };
-    MessageWrapper.prototype.getFragments = function () {
-        return this.__ship.getFragments()
-    };
-    MessageWrapper.prototype.checkResponse = function (arrival) {
-        return this.__ship.checkResponse(arrival)
-    };
-    MessageWrapper.prototype.isImportant = function () {
-        return this.__ship.isImportant()
-    };
-    MessageWrapper.prototype.touch = function (now) {
-        return this.__ship.touch(now)
-    };
-    MessageWrapper.prototype.getStatus = function (now) {
-        return this.__ship.getStatus(now)
-    };
-    ns.network.MessageWrapper = MessageWrapper
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Arrays = ns.type.Arrays;
-    var Log = ns.lnc.Log;
-    var MessageWrapper = ns.network.MessageWrapper;
-    var MessageQueue = function () {
-        this.__priorities = [];
-        this.__fleets = {}
-    };
-    Class(MessageQueue, null, null, null);
-    MessageQueue.prototype.append = function (rMsg, departure) {
-        var ok = true;
-        var priority = departure.getPriority();
-        var array = this.__fleets[priority];
-        if (!array || array.length === 0) {
-            array = [];
-            this.__fleets[priority] = array;
-            insert_priority(priority, this.__priorities)
-        } else {
-            var signature = rMsg.getValue('signature');
-            var item;
-            for (var i = array.length - 1; i >= 0; --i) {
-                item = array[i].getMessage();
-                if (item && is_duplicated(item, rMsg)) {
-                    Log.warning('[QUEUE] duplicated message', signature);
-                    ok = false;
-                    break
-                }
-            }
-        }
-        if (ok) {
-            array.push(new MessageWrapper(rMsg, departure))
-        }
-        return ok
-    };
-    var is_duplicated = function (msg1, msg2) {
-        var sig1 = msg1.getValue('signature');
-        var sig2 = msg2.getValue('signature');
-        if (!sig1 || !sig2) {
-            return false
-        } else if (sig1 !== sig2) {
-            return false
-        }
-        var to1 = msg1.getReceiver();
-        var to2 = msg2.getReceiver();
-        return to1.equals(to2)
-    };
-    var insert_priority = function (prior, priorities) {
-        var total = priorities.length;
-        var value;
-        var index = 0;
-        for (; index < total; ++index) {
-            value = priorities[index];
-            if (value === prior) {
-                return
-            } else if (value > prior) {
-                break
-            }
-        }
-        Arrays.insert(priorities, index, prior)
-    };
-    MessageQueue.prototype.next = function () {
-        var priority;
-        var array;
-        for (var i = 0; i < this.__priorities.length; ++i) {
-            priority = this.__priorities[i];
-            array = this.__fleets[priority];
-            if (array && array.length > 0) {
-                return array.shift()
-            }
-        }
-        return null
-    };
-    MessageQueue.prototype.purge = function () {
-        var priority;
-        var array;
-        for (var i = this.__priorities.length - 1; i >= 0; --i) {
-            priority = this.__priorities[i];
-            array = this.__fleets[priority];
-            if (!array) {
-                this.__priorities.splice(i, 1)
-            } else if (array.length === 0) {
-                delete this.__fleets[priority];
-                this.__priorities.splice(i, 1)
-            }
-        }
-        return null
-    };
-    ns.network.MessageQueue = MessageQueue
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var UTF8 = ns.format.UTF8;
-    var CommonGate = ns.startrek.WSClientGate;
-    var PlainPorter = ns.startrek.PlainPorter;
-    var PlainArrival = ns.startrek.PlainArrival;
-    var AckEnableGate = function (keeper) {
-        CommonGate.call(this, keeper)
-    };
-    Class(AckEnableGate, CommonGate, null, {
-        createPorter: function (remote, local) {
-            var docker = new AckEnablePorter(remote, local);
-            docker.setDelegate(this.getDelegate());
-            return docker
-        }
-    });
-    var AckEnablePorter = function (remote, local) {
-        PlainPorter.call(this, remote, local)
-    };
-    Class(AckEnablePorter, PlainPorter, null, {
-        checkArrival: function (income) {
-            if (income instanceof PlainArrival) {
-                var payload = income.getPayload();
-                if (!payload || payload.length === 0) {
-                } else if (payload[0] === jsonBegin) {
-                    var sig = fetchValue(payload, bytes('signature'));
-                    var sec = fetchValue(payload, bytes('time'));
-                    if (sig && sec) {
-                        var signature = UTF8.decode(sig);
-                        var timestamp = UTF8.decode(sec);
-                        var text = 'ACK:{"time":' + timestamp + ',"signature":"' + signature + '"}';
-                        var priority = 1
-                        this.send(bytes(text), priority)
-                    }
-                }
-            }
-            return PlainPorter.prototype.checkArrival(income)
-        }
-    });
-    var jsonBegin = '{'.charCodeAt(0);
-    var fetchValue = function (data, tag) {
-        if (tag.length === 0) {
-            return null
-        }
-        var pos = find(data, tag, 0);
-        if (pos < 0) {
-            return null
-        } else {
-            pos += tag.length
-        }
-        pos = find(data, bytes(':'), pos);
-        if (pos < 0) {
-            return null
-        } else {
-            pos += 1
-        }
-        var end = find(data, bytes(','), pos);
-        if (end < 0) {
-            end = find(data, bytes('}'), pos);
-            if (end < 0) {
-                return null
-            }
-        }
-        var value = data.subarray(pos, end);
-        value = strip(value, bytes(' '));
-        value = strip(value, bytes('"'));
-        value = strip(value, bytes("'"));
-        return value
-    };
-    var bytes = function (text) {
-        return UTF8.encode(text)
-    };
-    var find = function (data, sub, start) {
-        if (!start) {
-            start = 0
-        }
-        var end = data.length - sub.length;
-        var i, j;
-        var match;
-        for (i = start; i <= end; ++i) {
-            match = true;
-            for (j = 0; j < sub.length; ++j) {
-                if (data[i + j] === sub[j]) {
-                    continue
-                }
-                match = false;
-                break
-            }
-            if (match) {
-                return i
-            }
-        }
-        return -1
-    };
-    var strip = function (data, removing) {
-        data = stripRight(data, removing);
-        return stripLeft(data, removing)
-    };
-    var stripLeft = function (data, leading) {
-        var c = leading.length;
-        if (c === 0) {
-            return data
-        }
-        var i;
-        while (c <= data.length) {
-            for (i = 0; i < c; ++i) {
-                if (data[i] !== leading[i]) {
-                    return data
-                }
-            }
-            data = data.subarray(c)
-        }
-        return data
-    };
-    var stripRight = function (data, trailing) {
-        var c = trailing.length;
-        if (c === 0) {
-            return data
-        }
-        var i;
-        var m = data.length - c;
-        while (m >= 0) {
-            for (i = 0; i < c; ++i) {
-                if (data[m + i] !== trailing[i]) {
-                    return data
-                }
-            }
-            data = data.subarray(0, m);
-            m -= c
-        }
-        return data
-    };
-    var DataUtils = {bytes: bytes, find: find, strip: strip, stripLeft: stripLeft, stripRight: stripRight};
-    ns.network.AckEnableGate = AckEnableGate;
-    ns.network.AckEnablePorter = AckEnablePorter;
-    ns.utils.DataUtils = DataUtils
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var Runner = ns.fsm.skywalker.Runner;
-    var InetSocketAddress = ns.startrek.type.InetSocketAddress;
-    var PorterDelegate = ns.startrek.port.PorterDelegate;
-    var ClientHub = ns.ws.ClientHub;
-    var AckEnableGate = ns.network.AckEnableGate;
-    var MessageQueue = ns.network.MessageQueue;
-    var GateKeeper = function (host, port) {
-        Runner.call(this);
-        this.__remote = new InetSocketAddress(host, port);
-        this.__gate = this.createGate(this.__remote);
-        this.__queue = new MessageQueue();
-        this.__active = false;
-        this.__last_active = 0;
-        this.__reconnect_time = 0
-    };
-    Class(GateKeeper, Runner, [PorterDelegate], null);
-    GateKeeper.prototype.createGate = function (remote) {
-        var gate = new AckEnableGate(this);
-        var hub = this.createHub(gate, remote);
-        gate.setHub(hub);
-        return gate
-    };
-    GateKeeper.prototype.createHub = function (delegate, remote) {
-        var hub = new ClientHub(delegate);
-        hub.connect(remote, null);
-        return hub
-    };
-    GateKeeper.prototype.getRemoteAddress = function () {
-        return this.__remote
-    };
-    GateKeeper.prototype.getGate = function () {
-        return this.__gate
-    };
-    GateKeeper.prototype.isActive = function () {
-        return this.__active
-    };
-    GateKeeper.prototype.setActive = function (active, when) {
-        if (this.__active === active) {
-            return false
-        }
-        if (!when || when === 0) {
-            when = (new Date()).getTime()
-        } else if (when instanceof Date) {
-            when = when.getTime()
-        }
-        if (when <= this.__last_active) {
-            return false
-        }
-        this.__active = active;
-        this.__last_active = when;
-        return true
-    };
-    GateKeeper.prototype.isRunning = function () {
-        if (Runner.prototype.isRunning.call(this)) {
-            return this.__gate.isRunning()
-        } else {
-            return false
-        }
-    };
-    GateKeeper.prototype.stop = function () {
-        Runner.prototype.stop.call(this)
-        this.__gate.stop()
-    };
-    GateKeeper.prototype.setup = function () {
-        var again = Runner.prototype.setup.call(this)
-        this.__gate.start();
-        return again
-    };
-    GateKeeper.prototype.finish = function () {
-        this.__gate.stop();
-        return Runner.prototype.finish.call(this)
-    };
-    GateKeeper.prototype.process = function () {
-        var gate = this.getGate();
-        var remote = this.getRemoteAddress();
-        var docker = gate.getPorter(remote, null);
-        if (!docker) {
-            var now = (new Date()).getTime();
-            if (now < this.__reconnect_time) {
-                return false
-            }
-            docker = gate.fetchPorter(remote, null);
-            if (!docker) {
-                Log.error('gate error', remote);
-                this.__reconnect_time = now + 8000;
-                return false
-            }
-        }
-        var hub = gate.getHub();
-        try {
-            var incoming = hub.process();
-            var outgoing = gate.process();
-            if (incoming || outgoing) {
-                return true
-            }
-        } catch (e) {
-            Log.error('GateKeeper::process()', e);
-            return false
-        }
-        var queue = this.__queue;
-        if (!this.isActive()) {
-            queue.purge();
-            return false
-        }
-        var wrapper = queue.next();
-        if (!wrapper) {
-            queue.purge();
-            return false
-        }
-        var msg = wrapper.getMessage();
-        if (!msg) {
-            return true
-        }
-        var ok = gate.sendShip(wrapper, remote, null);
-        if (!ok) {
-            Log.error('gate error, failed to send data', wrapper, remote)
-        }
-        return true
-    };
-    GateKeeper.prototype.queueAppend = function (rMsg, departure) {
-        var queue = this.__queue;
-        return queue.append(rMsg, departure)
-    };
-    GateKeeper.prototype.onPorterStatusChanged = function (previous, current, docker) {
-        Log.info('GateKeeper::onPorterStatusChanged()', previous, current, docker)
-    };
-    GateKeeper.prototype.onPorterReceived = function (arrival, docker) {
-        Log.info('GateKeeper::onPorterReceived()', arrival, docker)
-    };
-    GateKeeper.prototype.onPorterSent = function (departure, docker) {
-    };
-    GateKeeper.prototype.onPorterFailed = function (error, departure, docker) {
-        Log.info('GateKeeper::onPorterFailed()', error, departure, docker)
-    };
-    GateKeeper.prototype.onPorterError = function (error, departure, docker) {
-        Log.info('GateKeeper::onPorterError()', error, departure, docker)
-    };
-    ns.network.GateKeeper = GateKeeper
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Interface = ns.type.Interface;
-    var Transmitter = Interface(null, null);
-    Transmitter.prototype.sendContent = function (content, sender, receiver, priority) {
-    };
-    Transmitter.prototype.sendInstantMessage = function (iMsg, priority) {
-    };
-    Transmitter.prototype.sendReliableMessage = function (rMsg, priority) {
-    };
-    var Session = Interface(null, [Transmitter]);
-    Session.prototype.getDatabase = function () {
-    };
-    Session.prototype.getRemoteAddress = function () {
-    };
-    Session.prototype.getSessionKey = function () {
-    };
-    Session.prototype.setIdentifier = function (user) {
-    };
-    Session.prototype.getIdentifier = function () {
-    };
-    Session.prototype.setActive = function (flag, when) {
-    };
-    Session.prototype.isActive = function () {
-    };
-    Session.prototype.queueMessagePackage = function (rMsg, data, priority) {
-    };
-    ns.network.Transmitter = Transmitter;
-    ns.network.Session = Session
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var PlainDeparture = ns.startrek.PlainDeparture;
-    var Session = ns.network.Session;
-    var GateKeeper = ns.network.GateKeeper;
-    var BaseSession = function (db, host, port) {
-        GateKeeper.call(this, host, port);
-        this.__db = db;
-        this.__id = null;
-        this.__messenger = null
-    };
-    Class(BaseSession, GateKeeper, [Session], {
-        queueMessagePackage: function (rMsg, data, priority) {
-            var ship = new PlainDeparture(data, priority);
-            return this.queueAppend(rMsg, ship)
-        }
-    });
-    BaseSession.prototype.getDatabase = function () {
-        return this.__db
-    };
-    BaseSession.prototype.getIdentifier = function () {
-        return this.__id
-    };
-    BaseSession.prototype.setIdentifier = function (user) {
-        var identifier = this.__id;
-        if (!identifier) {
-            if (!user) {
-                return false
-            }
-        } else if (identifier.equals(user)) {
-            return false
-        }
-        this.__id = user;
-        return true
-    };
-    BaseSession.prototype.getMessenger = function () {
-        return this.__messenger
-    };
-    BaseSession.prototype.setMessenger = function (messenger) {
-        this.__messenger = messenger
-    };
-    BaseSession.prototype.sendContent = function (content, sender, receiver, priority) {
-        var messenger = this.getMessenger();
-        return messenger.sendContent(content, sender, receiver, priority)
-    };
-    BaseSession.prototype.sendInstantMessage = function (iMsg, priority) {
-        var messenger = this.getMessenger();
-        return messenger.sendInstantMessage(iMsg, priority)
-    };
-    BaseSession.prototype.sendReliableMessage = function (rMsg, priority) {
-        var messenger = this.getMessenger();
-        return messenger.sendReliableMessage(rMsg, priority)
-    };
-    ns.network.BaseSession = BaseSession
-})(DIMP);
-;(function (ns) {
     'use strict';
     var Class = ns.type.Class;
     var AutoMachine = ns.fsm.AutoMachine;

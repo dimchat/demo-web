@@ -3,9 +3,10 @@ var dim_common = [
     /* DIM Common */
 
     'src/common/compat/base.js',
+    'src/common/compat/algorithm.js',
     'src/common/compat/compatible.js',
     'src/common/compat/network.js',
-    'src/common/compat/btc.js',
+    'src/common/compat/address.js',
     'src/common/compat/entity.js',
     'src/common/compat/meta.js',
 
@@ -43,19 +44,6 @@ var dim_common = [
     'src/database/document.js',
 
     //
-    //  Group
-    //
-
-    'src/group/delegate.js',
-    'src/group/admin.js',     // -> delegate
-    'src/group/helper.js',    // -> delegate
-    'src/group/packer.js',    // -> delegate
-    'src/group/builder.js',   // -> delegate, helper
-    'src/group/emitter.js',   // -> delegate, packer
-    'src/group/manager.js',   // -> delegate, helper, builder, packer
-    'src/group/shared.js',    // -> delegate, admin, emitter, manager
-
-    //
     //  Network
     //
 
@@ -71,6 +59,15 @@ var dim_common = [
 
 var dim_client = [
     /* DIM Client */
+
+    'src/group/delegate.js',
+    'src/group/admin.js',     // -> delegate
+    'src/group/helper.js',    // -> delegate
+    'src/group/packer.js',    // -> delegate
+    'src/group/builder.js',   // -> delegate, helper
+    'src/group/emitter.js',   // -> delegate, packer
+    'src/group/manager.js',   // -> delegate, helper, builder, packer
+    'src/group/shared.js',    // -> delegate, admin, emitter, manager
 
     'src/client/network/fsm_machine.js',
     'src/client/network/fsm_state.js',

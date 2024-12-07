@@ -30,20 +30,18 @@
 // =============================================================================
 //
 
-//! require <dimp.js>
-
-//! require 'compatible.js'
+//! require 'base.js'
 //! require 'network.js'
-//! require 'btc.js'
 
 (function (ns) {
     'use strict';
 
-    var Class      = ns.type.Class;
-    var NetworkID  = ns.protocol.NetworkID;
-    var ID         = ns.protocol.ID;
-    var Identifier = ns.mkm.Identifier;
-    var IDFactory  = ns.mkm.GeneralIdentifierFactory;
+    var Class             = ns.type.Class;
+    var EntityType        = ns.protocol.EntityType;
+    var NetworkID         = ns.protocol.NetworkID;
+    var ID                = ns.protocol.ID;
+    var Identifier        = ns.mkm.Identifier;
+    var IdentifierFactory = ns.mkm.GeneralIdentifierFactory;
 
     /**
      *  ID for entity (User/Group)
@@ -62,20 +60,33 @@
 
         // Override
         getType: function () {
+            var name = this.getName();
+            if (!name || name.length === 0) {
+                // all ID without 'name' field must be a user
+                // e.g.: BTC address
+                return EntityType.USER.getValue();
+            }
             var network = this.getAddress().getType();
             // compatible with MKM 0.9.*
             return NetworkID.getEntityType(network);
         }
     });
 
+    /*/
+    EntityID.create = function (name, address, terminal) {
+        var string = Identifier.concat(name, address, terminal);
+        return new EntityID(string, name, address, terminal)
+    };
+    /*/
+
     /**
      *  EntityID Factory
      *  ~~~~~~~~~~~~~~~~
      */
     var EntityIDFactory = function () {
-        IDFactory.call(this);
+        IdentifierFactory.call(this);
     };
-    Class(EntityIDFactory, IDFactory, null, {
+    Class(EntityIDFactory, IdentifierFactory, null, {
 
         // Override
         newID: function (string, name, address, terminal) {
@@ -88,14 +99,23 @@
                 throw new ReferenceError('ID empty');
             }
             var len = identifier.length;
-            if (len === 15 && identifier.toLowerCase() === 'anyone@anywhere') {
-                return ID.ANYONE;
-            } else if (len === 19 && identifier.toLowerCase() === 'everyone@everywhere') {
-                return ID.EVERYONE;
-            } else if (len === 13 && identifier.toLowerCase() === 'moky@anywhere') {
-                return ID.FOUNDER;
+            if (len === 15) {
+                // "anyone@anywhere"
+                if (identifier.toLowerCase() === 'anyone@anywhere') {
+                    return ID.ANYONE;
+                }
+            } else if (len === 19) {
+                // "everyone@everywhere"
+                if (identifier.toLowerCase() === 'everyone@everywhere') {
+                    return ID.EVERYONE;
+                }
+            } else if (len === 13) {
+                // "moky@anywhere"
+                if (identifier.toLowerCase() === 'moky@anywhere') {
+                    return ID.FOUNDER;
+                }
             }
-            return IDFactory.prototype.parse.call(this, identifier);
+            return IdentifierFactory.prototype.parse.call(this, identifier);
         }
     });
 
@@ -106,59 +126,6 @@
          *  ~~~~~~~~~~~~~~~~~~~~~~~~~
          */
         ID.setFactory(new EntityIDFactory());
-    };
-
-})(DIMP);
-
-(function (ns) {
-    'use strict';
-
-    var Class                = ns.type.Class;
-    var Address              = ns.protocol.Address;
-    var BaseAddressFactory   = ns.mkm.BaseAddressFactory;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-    var ETHAddress           = ns.mkm.ETHAddress;
-
-    /**
-     *  Compatible Address Factory
-     *  ~~~~~~~~~~~~~~~~~~~~~~~~~~
-     */
-    var CompatibleAddressFactory = function () {
-        BaseAddressFactory.call(this);
-    };
-    Class(CompatibleAddressFactory, BaseAddressFactory, null, {
-
-        // Override
-        createAddress: function(address) {
-            if (!address) {
-                throw new ReferenceError('address empty');
-            }
-            var len = address.length;
-            if (len === 8) {
-                if (address.toLowerCase() === 'anywhere') {
-                    return Address.ANYWHERE;
-                }
-            } else if (len === 10) {
-                if (address.toLowerCase() === 'everywhere') {
-                    return Address.EVERYWHERE;
-                }
-            }
-            if (len === 42) {
-                return ETHAddress.parse(address);
-            } else if (26 <= len && len <= 35) {
-                return CompatibleBTCAddress.parse(address);
-            }
-            throw new TypeError('invalid address: ' + address);
-        }
-    });
-
-    //-------- namespace --------
-    ns.registerCompatibleAddressFactory = function () {
-        /**
-         *  Register CompatibleAddress Factory
-         *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         */
-        Address.setFactory(new CompatibleAddressFactory());
     };
 
 })(DIMP);

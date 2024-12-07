@@ -45,10 +45,63 @@
 })(DIMP, StarGate);
 (function (ns) {
     'use strict';
+    var IObject = ns.type.Object;
+    var Enum = ns.type.Enum;
+    var Meta = ns.protocol.Meta;
+    var MetaType = Enum('MetaType', {
+        DEFAULT: (0x01),
+        MKM: (0x01),
+        BTC: (0x02),
+        ExBTC: (0x03),
+        ETH: (0x04),
+        ExETH: (0x05)
+    });
+    var toString = function (type) {
+        type = Enum.getInt(type);
+        return type.toString()
+    };
+    var hasSeed = function (type) {
+        type = parseNumber(type, 0);
+        var mkm = MetaType.MKM.getValue();
+        return type > 0 && (type & mkm) === mkm
+    };
+    var parseNumber = function (type, defaultValue) {
+        if (type === null) {
+            return defaultValue
+        } else if (IObject.isNumber(type)) {
+            return type
+        } else if (IObject.isString(type)) {
+            if (type === Meta.MKM) {
+                return 1
+            } else if (type === Meta.BTC) {
+                return 2
+            } else if (type === Meta.ETH) {
+                return 4
+            }
+        } else if (Enum.isEnum(type)) {
+            return type.getValue()
+        } else {
+            return -1
+        }
+        try {
+            return parseInt(type)
+        } catch (e) {
+            return -1
+        }
+    };
+    MetaType.toString = toString;
+    MetaType.hasSeed = hasSeed;
+    MetaType.parseInt = parseNumber;
+    ns.protocol.MetaType = MetaType
+})(DIMP);
+(function (ns) {
+    'use strict';
     var Interface = ns.type.Interface;
+    var IObject = ns.type.Object;
     var Command = ns.protocol.Command;
     var MetaCommand = ns.protocol.MetaCommand;
     var ReceiptCommand = ns.protocol.ReceiptCommand;
+    var MetaType = ns.protocol.MetaType;
     var fixMetaAttachment = function (rMsg) {
         var meta = rMsg.getValue('meta');
         if (meta) {
@@ -56,11 +109,18 @@
         }
     };
     var fixMetaVersion = function (meta) {
-        var version = meta['version'];
-        if (!version) {
-            meta['version'] = meta['type']
-        } else if (!meta['type']) {
-            meta['type'] = version
+        var type = meta['type'];
+        if (!type) {
+            type = meta['version']
+        } else if (IObject.isString(type) && !meta['algorithm']) {
+            if (type.length > 2) {
+                meta['algorithm'] = type
+            }
+        }
+        var version = MetaType.parseInt(type, 0);
+        if (version > 0) {
+            meta['type'] = version;
+            meta['version'] = version
         }
     };
     var fixCommand = function (content) {
@@ -131,87 +191,79 @@
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
-    var Base58 = ns.format.Base58;
-    var SHA256 = ns.digest.SHA256;
-    var RIPEMD160 = ns.digest.RIPEMD160;
-    var EntityType = ns.protocol.EntityType;
-    var NetworkID = ns.protocol.NetworkID;
+    var ConstantString = ns.type.ConstantString;
+    var Address = ns.protocol.Address;
+    var BaseAddressFactory = ns.mkm.BaseAddressFactory;
     var BTCAddress = ns.mkm.BTCAddress;
-    var CompatibleBTCAddress = function (string, network) {
-        BTCAddress.call(this, string, network)
+    var ETHAddress = ns.mkm.ETHAddress;
+    var UnknownAddress = function (string) {
+        ConstantString.call(this, string)
     };
-    Class(CompatibleBTCAddress, BTCAddress, null, {
-        isUser: function () {
-            var type = NetworkID.getEntityType(this.getType());
-            return EntityType.isUser(type)
-        }, isGroup: function () {
-            var type = NetworkID.getEntityType(this.getType());
-            return EntityType.isGroup(type)
+    Class(UnknownAddress, ConstantString, [Address], {
+        getType: function () {
+            return 0
         }
     });
-    CompatibleBTCAddress.generate = function (fingerprint, network) {
-        network = Enum.getInt(network);
-        var digest = RIPEMD160.digest(SHA256.digest(fingerprint));
-        var head = [];
-        head.push(network);
-        for (var i = 0; i < digest.length; ++i) {
-            head.push(digest[i])
-        }
-        var cc = check_code(Uint8Array.from(head));
-        var data = [];
-        for (var j = 0; j < head.length; ++j) {
-            data.push(head[j])
-        }
-        for (var k = 0; k < cc.length; ++k) {
-            data.push(cc[k])
-        }
-        return new CompatibleBTCAddress(Base58.encode(Uint8Array.from(data)), network)
+    var CompatibleAddressFactory = function () {
+        BaseAddressFactory.call(this)
     };
-    CompatibleBTCAddress.parse = function (string) {
-        var len = string.length;
-        if (len < 26 || len > 35) {
+    Class(CompatibleAddressFactory, BaseAddressFactory, null, null);
+    CompatibleAddressFactory.prototype.createAddress = function (address) {
+        if (!address) {
             return null
         }
-        var data = Base58.decode(string);
-        if (!data || data.length !== 25) {
-            return null
+        var len = address.length;
+        if (len === 8) {
+            if (address.toLowerCase() === 'anywhere') {
+                return Address.ANYWHERE
+            }
+        } else if (len === 10) {
+            if (address.toLowerCase() === 'everywhere') {
+                return Address.EVERYWHERE
+            }
         }
-        var prefix = data.subarray(0, 21);
-        var suffix = data.subarray(21, 25);
-        var cc = check_code(prefix);
-        if (ns.type.Arrays.equals(cc, suffix)) {
-            return new CompatibleBTCAddress(string, data[0])
+        var res;
+        if (26 <= len && len <= 35) {
+            res = BTCAddress.parse(address)
+        } else if (len === 42) {
+            res = ETHAddress.parse(address)
         } else {
-            return null
+            res = null
         }
+        if (!res && 4 <= len && len <= 64) {
+            res = new UnknownAddress(address)
+        }
+        return res
     };
-    var check_code = function (data) {
-        var sha256d = SHA256.digest(SHA256.digest(data));
-        return sha256d.subarray(0, 4)
-    };
-    ns.mkm.CompatibleBTCAddress = CompatibleBTCAddress
+    ns.registerCompatibleAddressFactory = function () {
+        Address.setFactory(new CompatibleAddressFactory())
+    }
 })(DIMP);
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var EntityType = ns.protocol.EntityType;
     var NetworkID = ns.protocol.NetworkID;
     var ID = ns.protocol.ID;
     var Identifier = ns.mkm.Identifier;
-    var IDFactory = ns.mkm.GeneralIdentifierFactory;
+    var IdentifierFactory = ns.mkm.GeneralIdentifierFactory;
     var EntityID = function (identifier, name, address, terminal) {
         Identifier.call(this, identifier, name, address, terminal)
     };
     Class(EntityID, Identifier, null, {
         getType: function () {
+            var name = this.getName();
+            if (!name || name.length === 0) {
+                return EntityType.USER.getValue()
+            }
             var network = this.getAddress().getType();
             return NetworkID.getEntityType(network)
         }
     });
     var EntityIDFactory = function () {
-        IDFactory.call(this)
+        IdentifierFactory.call(this)
     };
-    Class(EntityIDFactory, IDFactory, null, {
+    Class(EntityIDFactory, IdentifierFactory, null, {
         newID: function (string, name, address, terminal) {
             return new EntityID(string, name, address, terminal)
         }, parse: function (identifier) {
@@ -219,14 +271,20 @@
                 throw new ReferenceError('ID empty');
             }
             var len = identifier.length;
-            if (len === 15 && identifier.toLowerCase() === 'anyone@anywhere') {
-                return ID.ANYONE
-            } else if (len === 19 && identifier.toLowerCase() === 'everyone@everywhere') {
-                return ID.EVERYONE
-            } else if (len === 13 && identifier.toLowerCase() === 'moky@anywhere') {
-                return ID.FOUNDER
+            if (len === 15) {
+                if (identifier.toLowerCase() === 'anyone@anywhere') {
+                    return ID.ANYONE
+                }
+            } else if (len === 19) {
+                if (identifier.toLowerCase() === 'everyone@everywhere') {
+                    return ID.EVERYONE
+                }
+            } else if (len === 13) {
+                if (identifier.toLowerCase() === 'moky@anywhere') {
+                    return ID.FOUNDER
+                }
             }
-            return IDFactory.prototype.parse.call(this, identifier)
+            return IdentifierFactory.prototype.parse.call(this, identifier)
         }
     });
     ns.registerEntityIDFactory = function () {
@@ -236,152 +294,53 @@
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
-    var Address = ns.protocol.Address;
-    var BaseAddressFactory = ns.mkm.BaseAddressFactory;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-    var ETHAddress = ns.mkm.ETHAddress;
-    var CompatibleAddressFactory = function () {
-        BaseAddressFactory.call(this)
-    };
-    Class(CompatibleAddressFactory, BaseAddressFactory, null, {
-        createAddress: function (address) {
-            if (!address) {
-                throw new ReferenceError('address empty');
-            }
-            var len = address.length;
-            if (len === 8) {
-                if (address.toLowerCase() === 'anywhere') {
-                    return Address.ANYWHERE
-                }
-            } else if (len === 10) {
-                if (address.toLowerCase() === 'everywhere') {
-                    return Address.EVERYWHERE
-                }
-            }
-            if (len === 42) {
-                return ETHAddress.parse(address)
-            } else if (26 <= len && len <= 35) {
-                return CompatibleBTCAddress.parse(address)
-            }
-            throw new TypeError('invalid address: ' + address);
-        }
-    });
-    ns.registerCompatibleAddressFactory = function () {
-        Address.setFactory(new CompatibleAddressFactory())
-    }
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Enum = ns.type.Enum;
-    var TransportableData = ns.format.TransportableData;
     var Meta = ns.protocol.Meta;
-    var MetaType = ns.protocol.MetaType;
-    var BaseMeta = ns.mkm.BaseMeta;
+    var DefaultMeta = ns.mkm.DefaultMeta;
+    var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var CompatibleBTCAddress = ns.mkm.CompatibleBTCAddress;
-    var DefaultMeta = function () {
-        if (arguments.length === 1) {
-            BaseMeta.call(this, arguments[0])
-        } else if (arguments.length === 4) {
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3])
-        } else {
-            throw new SyntaxError('Default meta arguments error: ' + arguments);
-        }
-        this.__addresses = {}
+    var BaseMetaFactory = ns.mkm.GeneralMetaFactory;
+    var CompatibleMetaFactory = function (type) {
+        BaseMetaFactory.call(this, type)
     };
-    Class(DefaultMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            var address = this.__addresses[network];
-            if (!address) {
-                address = CompatibleBTCAddress.generate(this.getFingerprint(), network);
-                this.__addresses[network] = address
+    Class(CompatibleMetaFactory, BaseMetaFactory, null, {
+        createMeta: function (key, seed, fingerprint) {
+            var type = this.getAlgorithm();
+            if (type === '1' || type === Meta.MKM) {
+                return new DefaultMeta('1', key, seed, fingerprint)
+            } else if (type === '2' || type === Meta.BTC) {
+                return new BTCMeta('2', key)
+            } else if (type === '4' || type === Meta.ETH) {
+                return new ETHMeta('4', key)
+            } else {
+                return null
             }
-            return address
+        }, parseMeta: function (meta) {
+            var out;
+            var gf = general_factory();
+            var type = gf.getMetaType(meta, '');
+            if (type === '1' || type === Meta.MKM) {
+                out = new DefaultMeta(meta)
+            } else if (type === '2' || type === Meta.BTC) {
+                out = new BTCMeta(meta)
+            } else if (type === '4' || type === Meta.ETH) {
+                out = new ETHMeta(meta)
+            } else {
+                throw new TypeError('unknown meta type: ' + type);
+            }
+            return out.isValid() ? out : null
         }
     });
-    var BTCMeta = function () {
-        if (arguments.length === 1) {
-            BaseMeta.call(this, arguments[0])
-        } else if (arguments.length === 2) {
-            BaseMeta.call(this, arguments[0], arguments[1])
-        } else if (arguments.length === 4) {
-            BaseMeta.call(this, arguments[0], arguments[1], arguments[2], arguments[3])
-        } else {
-            throw new SyntaxError('BTC meta arguments error: ' + arguments);
-        }
-        this.__address = null
-    };
-    Class(BTCMeta, BaseMeta, null, {
-        generateAddress: function (network) {
-            network = Enum.getInt(network);
-            var address = this.__address;
-            if (!address || address.getType() !== network) {
-                var key = this.getPublicKey();
-                var fingerprint = key.getData();
-                address = CompatibleBTCAddress.generate(fingerprint, network);
-                this.__address = address
-            }
-            return address
-        }
-    });
-    var CompatibleMetaFactory = function (version) {
-        Object.call(this);
-        this.__type = version
-    };
-    Class(CompatibleMetaFactory, Object, [Meta.Factory], null);
-    CompatibleMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        if (MetaType.MKM.equals(this.__type)) {
-            return new DefaultMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.BTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key)
-        } else if (MetaType.ExBTC.equals(this.__type)) {
-            return new BTCMeta(this.__type, key, seed, fingerprint)
-        } else if (MetaType.ETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key)
-        } else if (MetaType.ExETH.equals(this.__type)) {
-            return new ETHMeta(this.__type, key, seed, fingerprint)
-        } else {
-            return null
-        }
-    };
-    CompatibleMetaFactory.prototype.generateMeta = function (sKey, seed) {
-        var fingerprint = null;
-        if (seed && seed.length > 0) {
-            var sig = sKey.sign(ns.format.UTF8.encode(seed));
-            fingerprint = TransportableData.create(sig)
-        }
-        var pKey = sKey.getPublicKey();
-        return this.createMeta(pKey, seed, fingerprint)
-    };
-    CompatibleMetaFactory.prototype.parseMeta = function (meta) {
-        var out;
-        var gf = general_factory();
-        var type = gf.getMetaType(meta, 0);
-        if (MetaType.MKM.equals(type)) {
-            out = new DefaultMeta(meta)
-        } else if (MetaType.BTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ExBTC.equals(type)) {
-            out = new BTCMeta(meta)
-        } else if (MetaType.ETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else if (MetaType.ExETH.equals(type)) {
-            out = new ETHMeta(meta)
-        } else {
-            throw new TypeError('unknown meta type: ' + type);
-        }
-        return out.isValid() ? out : null
-    };
     var general_factory = function () {
         var man = ns.mkm.AccountFactoryManager;
         return man.generalFactory
     };
     ns.registerCompatibleMetaFactory = function () {
-        Meta.setFactory(MetaType.MKM, new CompatibleMetaFactory(MetaType.MKM));
-        Meta.setFactory(MetaType.BTC, new CompatibleMetaFactory(MetaType.BTC));
-        Meta.setFactory(MetaType.ExBTC, new CompatibleMetaFactory(MetaType.ExBTC))
+        Meta.setFactory('1', new CompatibleMetaFactory('1'));
+        Meta.setFactory('2', new CompatibleMetaFactory('2'));
+        Meta.setFactory('4', new CompatibleMetaFactory('4'));
+        Meta.setFactory(Meta.MKM, new CompatibleMetaFactory(Meta.MKM));
+        Meta.setFactory(Meta.BTC, new CompatibleMetaFactory(Meta.BTC));
+        Meta.setFactory(Meta.ETH, new CompatibleMetaFactory(Meta.ETH))
     }
 })(DIMP);
 (function (ns) {
@@ -1483,16 +1442,13 @@
             if (Interface.conforms(address, ID)) {
                 address = address.getAddress()
             }
-            if (address.isBroadcast()) {
-                return 0
-            }
             if (address instanceof BTCAddress) {
                 return btc_number(address.toString())
             }
             if (address instanceof ETHAddress) {
                 return eth_number(address.toString())
             }
-            throw new TypeError('address error: ' + address.toString());
+            return 0
         }
     };
     var get_name = function (type) {
@@ -2050,7 +2006,6 @@
     var PrivateKey = ns.crypto.PrivateKey;
     var ID = ns.protocol.ID;
     var EntityType = ns.protocol.EntityType;
-    var MetaType = ns.protocol.MetaType;
     var Meta = ns.protocol.Meta;
     var BaseVisa = ns.mkm.BaseVisa;
     var BaseBulletin = ns.mkm.BaseBulletin;
@@ -2059,7 +2014,7 @@
     };
     Register.prototype.createUser = function (nickname, avatar) {
         var privateKey = PrivateKey.generate(PrivateKey.RSA);
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, 'web-demo');
+        var meta = Meta.generate(Meta.MKM, privateKey, 'web-demo');
         var uid = ID.generate(meta, EntityType.USER, null);
         var pKey = privateKey.getPublicKey();
         var doc = createVisa(uid, nickname, avatar, pKey, privateKey);
@@ -2072,7 +2027,7 @@
         var r = Math.ceil(Math.random() * 999990000) + 10000;
         var seed = 'Group-' + r;
         var privateKey = this.__db.getPrivateKeyForVisaSignature(founder);
-        var meta = Meta.generate(MetaType.DEFAULT, privateKey, seed);
+        var meta = Meta.generate(Meta.MKM, privateKey, seed);
         var gid = ID.generate(meta, EntityType.GROUP, null);
         var doc = createBulletin(gid, title, founder, privateKey);
         this.__db.saveMeta(meta, gid);
@@ -2323,1315 +2278,6 @@
     };
     DocumentStorage.parse = parse_document;
     ns.database.DocumentStorage = DocumentStorage
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var Runner = ns.fsm.skywalker.Runner;
-    var Thread = ns.fsm.threading.Thread;
-    var EntityType = ns.protocol.EntityType;
-    var Group = ns.mkm.Group;
-    var TwinsHelper = ns.TwinsHelper;
-    var GroupDelegate = function (facebook, messenger) {
-        TwinsHelper.call(this, facebook, messenger);
-        botsManager.setMessenger(messenger)
-    };
-    Class(GroupDelegate, TwinsHelper, [Group.DataSource], {
-        buildGroupName: function (members) {
-            var barrack = this.getFacebook();
-            var text = barrack.getName(members[0]);
-            var nickname;
-            for (var i = 1; i < members.length; ++i) {
-                nickname = barrack.getName(members[i]);
-                if (!nickname || nickname.length === 0) {
-                    continue
-                }
-                text += ', ' + nickname;
-                if (text.length > 32) {
-                    return text.substring(0, 28) + ' ...'
-                }
-            }
-            return text
-        }, getMeta: function (identifier) {
-            var barrack = this.getFacebook();
-            return !barrack ? null : barrack.getMeta(identifier)
-        }, getDocuments: function (identifier) {
-            var barrack = this.getFacebook();
-            return !barrack ? [] : barrack.getDocuments(identifier)
-        }, getBulletin: function (identifier) {
-            var barrack = this.getFacebook();
-            return !barrack ? null : barrack.getBulletin(identifier)
-        }, saveDocument: function (doc) {
-            var barrack = this.getFacebook();
-            return !barrack ? false : barrack.saveDocument(doc)
-        }, getFounder: function (group) {
-            var barrack = this.getFacebook();
-            return !barrack ? null : barrack.getFounder(group)
-        }, getOwner: function (group) {
-            var barrack = this.getFacebook();
-            return !barrack ? null : barrack.getOwner(group)
-        }, getMembers: function (group) {
-            var barrack = this.getFacebook();
-            return !barrack ? [] : barrack.getMembers(group)
-        }, saveMembers: function (members, group) {
-            var barrack = this.getFacebook();
-            return !barrack ? false : barrack.saveMembers(members, group)
-        }, getAssistants: function (group) {
-            return botsManager.getAssistants(group)
-        }, getFastestAssistant: function (group) {
-            return botsManager.getFastestAssistant(group)
-        }, setCommonAssistants: function (bots) {
-            botsManager.setCommonAssistants(bots)
-        }, updateRespondTime: function (content, envelope) {
-            return botsManager.updateRespondTime(content, envelope)
-        }, getAdministrators: function (group) {
-            var barrack = this.getFacebook();
-            return !barrack ? [] : barrack.getAdministrators(group)
-        }, saveAdministrators: function (admins, group) {
-            var barrack = this.getFacebook();
-            return !barrack ? false : barrack.saveAdministrators(admins, group)
-        }, isFounder: function (user, group) {
-            var founder = this.getFounder(group);
-            if (founder) {
-                return founder.equals(user)
-            }
-            var gMeta = this.getMeta(group);
-            var mMeta = this.getMeta(user);
-            if (!gMeta || !mMeta) {
-                Log.error('failed to get meta for group', group, user);
-                return false
-            }
-            return gMeta.matchPublicKey(mMeta.getPublicKey())
-        }, isOwner: function (user, group) {
-            var owner = this.getOwner(group);
-            if (owner) {
-                return owner.equals(user)
-            }
-            if (EntityType.GROUP.equals(group.getType())) {
-                return this.isFounder(user, group)
-            }
-            Log.error('only polylogue so far', group);
-            return false
-        }, isMember: function (user, group) {
-            var members = this.getMembers(group);
-            if (!members || members.length === 0) {
-                Log.error('group members not ready', group);
-                return false
-            }
-            for (var i = 0; i < members.length; ++i) {
-                if (members[i].equals(user)) {
-                    return true
-                }
-            }
-            return false
-        }, isAdministrator: function (user, group) {
-            var admins = this.getAdministrators(group);
-            if (!admins || admins.length === 0) {
-                Log.info('group admins not found', group);
-                return false
-            }
-            for (var i = 0; i < admins.length; ++i) {
-                if (admins[i].equals(user)) {
-                    return true
-                }
-            }
-            return false
-        }, isAssistant: function (user, group) {
-            var bots = this.getAssistants(group);
-            if (!bots || bots.length === 0) {
-                Log.info('group bots not found', group);
-                return false
-            }
-            for (var i = 0; i < bots.length; ++i) {
-                if (bots[i].equals(user)) {
-                    return true
-                }
-            }
-            return false
-        }
-    });
-    var TripletsHelper = function (delegate) {
-        Object.call(this);
-        this.__delegate = delegate
-    };
-    Class(TripletsHelper, Object, null, null);
-    TripletsHelper.prototype.getDelegate = function () {
-        return this.__delegate
-    };
-    TripletsHelper.prototype.getFacebook = function () {
-        var delegate = this.getDelegate();
-        return delegate.getFacebook()
-    };
-    TripletsHelper.prototype.getMessenger = function () {
-        var delegate = this.getDelegate();
-        return delegate.getMessenger()
-    };
-    TripletsHelper.prototype.getArchivist = function () {
-        var facebook = this.getFacebook();
-        return !facebook ? null : facebook.getArchivist()
-    };
-    TripletsHelper.prototype.getDatabase = function () {
-        var archivist = this.getArchivist();
-        return !archivist ? null : archivist.getDatabase()
-    };
-    var GroupBotsManager = function () {
-        Runner.call(this);
-        this.__transceiver = null;
-        this.__commonAssistants = [];
-        this.__candidates = [];
-        this.__respondTimes = {}
-    };
-    Class(GroupBotsManager, Runner, null);
-    GroupBotsManager.prototype.setMessenger = function (messenger) {
-        this.__transceiver = messenger
-    };
-    GroupBotsManager.prototype.getMessenger = function () {
-        return this.__transceiver
-    };
-    GroupBotsManager.prototype.getFacebook = function () {
-        var messenger = this.getMessenger();
-        return !messenger ? null : messenger.getFacebook()
-    };
-    GroupBotsManager.prototype.updateRespondTime = function (content, envelope) {
-        var sender = envelope.getSender();
-        if (!EntityType.BOT.equals(sender.getType())) {
-            return false
-        }
-        var origin = content.getOriginalEnvelope();
-        var originalReceiver = !origin ? null : origin.getReceiver();
-        if (!sender.equals(originalReceiver)) {
-            return false
-        }
-        var time = !origin ? null : origin.getTime();
-        if (!time) {
-            return false
-        }
-        var duration = (new Date()).getTime() - time.getTime();
-        if (duration <= 0) {
-            return false
-        }
-        var cached = this.__respondTimes[sender];
-        if (cached && cached <= duration) {
-            return false
-        }
-        this.__respondTimes[sender] = duration;
-        return true
-    };
-    GroupBotsManager.prototype.setCommonAssistants = function (bots) {
-        addAll(this.__candidates, bots);
-        this.__commonAssistants = bots
-    };
-    var addAll = function (toSet, fromItems) {
-        var item;
-        for (var i = 0; i < fromItems.length; ++i) {
-            item = fromItems[i];
-            if (toSet.indexOf(item) <= 0) {
-                toSet.push(item)
-            }
-        }
-    };
-    GroupBotsManager.prototype.getAssistants = function (group) {
-        var facebook = this.getFacebook();
-        var bots = !facebook ? null : facebook.getAssistants(group);
-        if (!bots || bots.length === 0) {
-            return this.__commonAssistants
-        }
-        addAll(this.__candidates, bots);
-        return bots
-    };
-    GroupBotsManager.prototype.getFastestAssistant = function (group) {
-        var bots = this.getAssistants(group);
-        if (!bots || bots.length === 0) {
-            Log.warning('group bots not found: ' + group.toString());
-            return null
-        }
-        var prime = null;
-        var primeDuration;
-        var duration;
-        var ass;
-        for (var i = 0; i < bots.length; ++i) {
-            ass = bots[i];
-            duration = this.__respondTimes[ass];
-            if (!duration) {
-                Log.info('group bot not respond yet, ignore it', ass, group);
-                continue
-            } else if (!primeDuration) {
-            } else if (primeDuration < duration) {
-                Log.info('this bot is slower, skip it', ass, prime, group);
-                continue
-            }
-            prime = ass;
-            primeDuration = duration
-        }
-        if (!prime) {
-            prime = bots[0];
-            Log.info('no bot responded, take the first one', bots, group)
-        } else {
-            Log.info('got the fastest bot with respond time', primeDuration, prime, group)
-        }
-        return prime
-    };
-    GroupBotsManager.prototype.process = function () {
-        var messenger = this.getMessenger();
-        var facebook = this.getFacebook();
-        if (!facebook || !messenger) {
-            return false
-        }
-        var session = messenger.getSession();
-        if (session && session.getSessionKey() && session.isActive()) {
-        } else {
-            return false
-        }
-        var visa;
-        try {
-            var me = facebook.getCurrentUser();
-            visa = !me ? null : me.getVisa();
-            if (!visa) {
-                Log.error('failed to get visa', me);
-                return false
-            }
-        } catch (e) {
-            Log.error('failed to get current user', e);
-            return false
-        }
-        var bots = this.__candidates;
-        this.__candidates = {};
-        var item;
-        for (var i = 0; i < bots.length; ++i) {
-            item = bots[i];
-            if (this.__respondTimes[item]) {
-                Log.info('group bot already responded', item);
-                continue
-            }
-            try {
-                messenger.sendVisa(visa, item, false)
-            } catch (e) {
-                Log.error('failed to query assistant', item, e)
-            }
-        }
-        return false
-    };
-    var botsManager = new GroupBotsManager();
-    var thread = new Thread(botsManager);
-    thread.start();
-    ns.TripletsHelper = TripletsHelper;
-    ns.group.GroupDelegate = GroupDelegate
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var Document = ns.protocol.Document;
-    var DocumentCommand = ns.protocol.DocumentCommand;
-    var Station = ns.mkm.Station;
-    var TripletsHelper = ns.TripletsHelper;
-    var AdminManager = function (delegate) {
-        TripletsHelper.call(this, delegate)
-    };
-    Class(AdminManager, TripletsHelper, null, null);
-    AdminManager.prototype.updateAdministrators = function (newAdmins, group) {
-        var delegate = this.getDelegate();
-        var barrack = this.getFacebook();
-        var user = !barrack ? null : barrack.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return false
-        }
-        var me = user.getIdentifier();
-        var sKey = !barrack ? null : barrack.getPrivateKeyForVisaSignature(me);
-        var isOwner = delegate.isOwner(me, group);
-        if (!isOwner) {
-            return false
-        }
-        var bulletin = delegate.getBulletin(group);
-        if (!bulletin) {
-            Log.error('failed to get group document', group);
-            return false
-        } else {
-            var clone = Document.parse(bulletin.copyMap(false));
-            if (clone) {
-                bulletin = clone
-            } else {
-                Log.error('bulletin error', bulletin, group);
-                return false
-            }
-        }
-        bulletin.setProperty('administrators', ID.revert(newAdmins));
-        var signature = !sKey ? null : bulletin.sign(sKey);
-        if (!signature) {
-            Log.error('failed to sign document for group', group, me);
-            return false
-        } else if (!delegate.saveDocument(bulletin)) {
-            Log.error('failed to save document for group', group);
-            return false
-        } else {
-            Log.info('group document updated', group)
-        }
-        return this.broadcastGroupDocument(bulletin)
-    };
-    AdminManager.prototype.broadcastGroupDocument = function (doc) {
-        var delegate = this.getDelegate();
-        var barrack = this.getFacebook();
-        var transceiver = this.getMessenger();
-        var user = !barrack ? null : barrack.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return false
-        }
-        var me = user.getIdentifier();
-        var group = doc.getIdentifier();
-        var meta = !barrack ? null : barrack.getMeta(group);
-        var content = DocumentCommand.response(group, meta, doc);
-        transceiver.sendContent(content, me, Station.ANY, 1);
-        var item;
-        var bots = delegate.getAssistants(group);
-        if (bots && bots.length > 0) {
-            for (var i = 0; i < bots.length; ++i) {
-                item = bots[i];
-                if (item.equals(me)) {
-                    Log.error('should not be a bot here', me);
-                    continue
-                }
-                transceiver.sendContent(content, me, item, 1)
-            }
-            return true
-        }
-        var members = delegate.getMembers(group);
-        if (!members || members.length === 0) {
-            Log.error('failed to get group members', group);
-            return false
-        }
-        for (var j = 0; j < members.length; ++j) {
-            item = members[j];
-            if (item.equals(me)) {
-                Log.info('skip cycled message', item, group);
-                continue
-            }
-            transceiver.sendContent(content, me, item, 1)
-        }
-        return true
-    };
-    ns.group.AdminManager = AdminManager
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var ResetCommand = ns.protocol.group.ResetCommand;
-    var ResignCommand = ns.protocol.group.ResignCommand;
-    var DocumentHelper = ns.mkm.DocumentHelper;
-    var TripletsHelper = ns.TripletsHelper;
-    var GroupCommandHelper = function (delegate) {
-        TripletsHelper.call(this, delegate)
-    };
-    Class(GroupCommandHelper, TripletsHelper, null, null);
-    GroupCommandHelper.prototype.saveGroupHistory = function (content, rMsg, group) {
-        if (this.isCommandExpired(content)) {
-            Log.warning('drop expired command', content.getCmd(), rMsg.getSender(), group);
-            return false
-        }
-        var cmdTime = content.getTime();
-        if (!cmdTime) {
-            Log.error('group command error: ' + content.toString())
-        } else {
-            var current = (new Date()).getTime() + 65536;
-            if (cmdTime.getTime() > current) {
-                Log.error('group command time error', cmdTime, content);
-                return false
-            }
-        }
-        var db = this.getDatabase();
-        if (Interface.conforms(content, ResetCommand)) {
-            Log.warning('cleaning group history for "reset" command', rMsg.getSender(), group);
-            return db.clearGroupMemberHistories(group)
-        }
-        return db.saveGroupHistory(content, rMsg, group)
-    };
-    GroupCommandHelper.prototype.getGroupHistories = function (group) {
-        var db = this.getDatabase();
-        return db.getGroupHistories(group)
-    };
-    GroupCommandHelper.prototype.getResetCommandMessage = function (group) {
-        var db = this.getDatabase();
-        return db.getResetCommandMessage(group)
-    };
-    GroupCommandHelper.prototype.clearGroupMemberHistories = function (group) {
-        var db = this.getDatabase();
-        return db.clearGroupMemberHistories(group)
-    };
-    GroupCommandHelper.prototype.clearGroupAdminHistories = function (group) {
-        var db = this.getDatabase();
-        return db.clearGroupAdminHistories(group)
-    };
-    GroupCommandHelper.prototype.isCommandExpired = function (content) {
-        var group = content.getGroup();
-        if (!group) {
-            Log.error('group content error: ' + content.toString());
-            return true
-        }
-        if (Interface.conforms(content, ResignCommand)) {
-            var delegate = this.getDelegate();
-            var doc = delegate.getBulletin(group);
-            if (!doc) {
-                Log.error('group document not exists: ' + group.toString());
-                return true
-            }
-            return DocumentHelper.isBefore(doc.getTime(), content.getTime())
-        }
-        var pair = this.getResetCommandMessage(group);
-        var cmd = pair[0];
-        if (!cmd) {
-            return false
-        }
-        return DocumentHelper.isBefore(cmd.getTime(), content.getTime())
-    };
-    GroupCommandHelper.prototype.getMembersFromCommand = function (content) {
-        var members = content.getMembers();
-        if (!members) {
-            members = [];
-            var single = content.getMember();
-            if (single) {
-                members.push(single)
-            }
-        }
-        return members
-    };
-    ns.group.GroupCommandHelper = GroupCommandHelper
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var Envelope = ns.protocol.Envelope;
-    var InstantMessage = ns.protocol.InstantMessage;
-    var ReliableMessage = ns.protocol.ReliableMessage;
-    var TripletsHelper = ns.TripletsHelper;
-    var GroupPacker = function (delegate) {
-        TripletsHelper.call(this, delegate)
-    };
-    Class(GroupPacker, TripletsHelper, null, null);
-    GroupPacker.prototype.packMessage = function (content, sender) {
-        var envelope = Envelope.create(sender, ID.ANYONE, null);
-        var iMsg = InstantMessage.create(envelope, content);
-        iMsg.setString('group', content.getGroup());
-        return this.encryptAndSignMessage(iMsg)
-    };
-    GroupPacker.prototype.encryptAndSignMessage = function (iMsg) {
-        var transceiver = this.getMessenger();
-        var sMsg = !transceiver ? null : transceiver.encryptMessage(iMsg);
-        if (!sMsg) {
-            Log.error('failed to encrypt message', iMsg.getSender(), iMsg.getReceiver());
-            return null
-        }
-        var rMsg = !transceiver ? null : transceiver.signMessage(sMsg);
-        if (!rMsg) {
-            Log.error('failed to sign message', iMsg.getSender(), iMsg.getReceiver());
-            return null
-        }
-        return rMsg
-    };
-    GroupPacker.prototype.splitInstantMessage = function (iMsg, allMembers) {
-        var messages = [];
-        var sender = iMsg.getSender();
-        var info;
-        var item;
-        var receiver;
-        for (var i = 0; i < allMembers.length; ++i) {
-            receiver = allMembers[i];
-            if (receiver.equals(sender)) {
-                continue
-            }
-            Log.info('split group message for member', receiver);
-            info = iMsg.copyMap(false);
-            info['receiver'] = receiver.toString();
-            item = InstantMessage.parse(info);
-            if (!item) {
-                Log.error('failed to repack message', receiver);
-                continue
-            }
-            messages.push(item)
-        }
-        return messages
-    };
-    GroupPacker.prototype.splitReliableMessage = function (rMsg, allMembers) {
-        var messages = [];
-        var sender = rMsg.getSender();
-        var keys = rMsg.getEncryptedKeys();
-        if (!keys) {
-            keys = {}
-        }
-        var keyData;
-        var info;
-        var item;
-        var receiver;
-        for (var i = 0; i < allMembers.length; ++i) {
-            receiver = allMembers[i];
-            if (sender.equals(receiver)) {
-                Log.info('skip cycled message', receiver);
-                continue
-            }
-            Log.info('split group message for member', receiver);
-            info = rMsg.copyMap(false);
-            info['receiver'] = receiver.toString();
-            delete info['keys'];
-            keyData = keys[receiver.toString()];
-            if (keyData) {
-                info['key'] = keyData
-            }
-            item = ReliableMessage.parse(info);
-            if (!item) {
-                Log.error('failed to repack message', receiver);
-                continue
-            }
-            messages.push(item)
-        }
-        return messages
-    };
-    ns.group.GroupPacker = GroupPacker
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var DocumentCommand = ns.protocol.DocumentCommand;
-    var GroupCommand = ns.protocol.GroupCommand;
-    var ResetCommand = ns.protocol.group.ResetCommand
-    var ResignCommand = ns.protocol.group.ResignCommand
-    var Envelope = ns.protocol.Envelope;
-    var InstantMessage = ns.protocol.InstantMessage;
-    var DocumentHelper = ns.mkm.DocumentHelper;
-    var TripletsHelper = ns.TripletsHelper;
-    var GroupHistoryBuilder = function (delegate) {
-        TripletsHelper.call(this, delegate);
-        this.__helper = this.createHelper()
-    };
-    Class(GroupHistoryBuilder, TripletsHelper, null, null);
-    GroupHistoryBuilder.prototype.getHelper = function () {
-        return this.__helper
-    };
-    GroupHistoryBuilder.prototype.createHelper = function () {
-        var delegate = this.getDelegate();
-        return new ns.group.GroupCommandHelper(delegate)
-    };
-    GroupHistoryBuilder.prototype.buildGroupHistories = function (group) {
-        var messages = [];
-        var doc;
-        var reset;
-        var rMsg;
-        var docPair = this.buildDocumentCommand(group);
-        doc = docPair[0];
-        rMsg = docPair[1];
-        if (!doc || !rMsg) {
-            Log.warning('failed to build "document" command for group', group);
-            return messages
-        } else {
-            messages.push(rMsg)
-        }
-        var helper = this.getHelper();
-        var resPair = helper.getResetCommandMessage(group);
-        reset = resPair[0];
-        rMsg = resPair[1];
-        if (!reset || !rMsg) {
-            Log.warning('failed to get "reset" command for group', group);
-            return messages
-        } else {
-            messages.push(rMsg)
-        }
-        var histories = helper.getGroupHistories(group);
-        var hisPair;
-        var first;
-        var second;
-        for (var i = 0; i < histories.length; ++i) {
-            hisPair = histories[i];
-            first = hisPair[0];
-            second = hisPair[1];
-            if (Interface.conforms(first, ResetCommand)) {
-                Log.info('skip "reset" command for group', group);
-                continue
-            } else if (Interface.conforms(first, ResignCommand)) {
-                if (DocumentHelper.isBefore(doc.getTime(), first.getTime())) {
-                    Log.warning('expired command in group', group);
-                    continue
-                }
-            } else {
-                if (DocumentHelper.isBefore(reset.getTime(), first.getTime())) {
-                    Log.warning('expired command in group', group);
-                    continue
-                }
-            }
-            messages.push(second)
-        }
-        return messages
-    };
-    GroupHistoryBuilder.prototype.buildDocumentCommand = function (group) {
-        var delegate = this.getDelegate();
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        var doc = !delegate ? null : delegate.getBulletin(group);
-        if (!user || !doc) {
-            Log.error('document not found for group', group);
-            return [null, null]
-        }
-        var me = user.getIdentifier();
-        var meta = !delegate ? null : delegate.getMeta(group);
-        var command = DocumentCommand.response(group, meta, doc);
-        var rMsg = this.packBroadcastMessage(me, command);
-        return [doc, rMsg]
-    };
-    GroupHistoryBuilder.prototype.buildResetCommand = function (group, members) {
-        var delegate = this.getDelegate();
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        var owner = !delegate ? null : delegate.getOwner(group);
-        if (!user || !owner) {
-            Log.error('owner not found for group', group);
-            return [null, null]
-        }
-        var me = user.getIdentifier();
-        if (!owner.equals(me)) {
-            var admins = delegate.getAdministrators(group);
-            if (!admins || admins.indexOf(me) < 0) {
-                Log.warning('not permit to build "reset" command for group"', group, me);
-                return [null, null]
-            }
-        }
-        if (!members) {
-            members = delegate.getMembers(group)
-        }
-        var command = GroupCommand.reset(group, members);
-        var rMsg = this.packBroadcastMessage(me, command);
-        return [command, rMsg]
-    };
-    GroupHistoryBuilder.prototype.packBroadcastMessage = function (sender, content) {
-        var messenger = this.getMessenger();
-        var envelope = Envelope.create(sender, ID.ANYONE, null);
-        var iMsg = InstantMessage.create(envelope, content);
-        var sMsg = !messenger ? null : messenger.encryptMessage(iMsg);
-        if (!sMsg) {
-            Log.error('failed to encrypt message', envelope);
-            return null
-        }
-        var rMsg = !messenger ? null : messenger.signMessage(sMsg);
-        if (!rMsg) {
-            Log.error('failed to sign message', envelope)
-        }
-        return rMsg
-    };
-    ns.group.GroupHistoryBuilder = GroupHistoryBuilder
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var ForwardContent = ns.protocol.ForwardContent;
-    var GroupCommand = ns.protocol.GroupCommand;
-    var TripletsHelper = ns.TripletsHelper;
-    var GroupEmitter = function (delegate) {
-        TripletsHelper.call(this, delegate);
-        this.__packer = this.createPacker()
-    };
-    Class(GroupEmitter, TripletsHelper, null, null);
-    GroupEmitter.POLYLOGUE_LIMIT = 32;
-    GroupEmitter.SECRET_GROUP_LIMIT = 16;
-    GroupEmitter.prototype.getPacker = function () {
-        return this.__packer
-    };
-    GroupEmitter.prototype.createPacker = function () {
-        var delegate = this.getDelegate();
-        return new ns.group.GroupPacker(delegate)
-    };
-    var attachGroupTimes = function (group, iMsg) {
-        if (Interface.conforms(iMsg.getContent(), GroupCommand)) {
-            return false
-        }
-        var facebook = this.getFacebook();
-        var doc = !facebook ? null : facebook.getBulletin(group);
-        if (!doc) {
-            Log.warning('failed to get bulletin document', group);
-            return false
-        }
-        var lastDocumentTime = doc.getTime();
-        if (!lastDocumentTime) {
-            Log.warning('document error', doc)
-        } else {
-            iMsg.setDateTime('GDT', lastDocumentTime)
-        }
-        var archivist = this.getArchivist();
-        var lastHistoryTime = archivist.getLastGroupHistoryTime(group);
-        if (!lastHistoryTime) {
-            Log.warning('failed to get history time', group)
-        } else {
-            iMsg.setDateTime('GHT', lastHistoryTime)
-        }
-        return true
-    };
-    GroupEmitter.prototype.sendInstantMessage = function (iMsg, priority) {
-        if (!priority) {
-            priority = 0
-        }
-        var content = iMsg.getContent();
-        var group = content.getGroup();
-        if (!group) {
-            Log.warning('not a group message', iMsg);
-            return null
-        } else {
-            attachGroupTimes.call(this, group, iMsg)
-        }
-        var delegate = this.getDelegate();
-        var prime = delegate.getFastestAssistant(group);
-        if (prime != null) {
-            return forwardMessage.call(this, iMsg, prime, group, priority)
-        }
-        var members = delegate.getMembers(group);
-        if (!members || members.length === 0) {
-            Log.warning('failed to get members', group);
-            return null
-        }
-        if (members.length < GroupEmitter.SECRET_GROUP_LIMIT) {
-            var success = splitAndSendMessage.call(this, iMsg, members, group, priority);
-            Log.info('split message(s) for group', success, group);
-            return null
-        } else {
-            Log.info('splitting message for members', members.length, group);
-            return disperseMessage.call(this, iMsg, members, group, priority)
-        }
-    };
-    var forwardMessage = function (iMsg, bot, group, priority) {
-        if (!priority) {
-            priority = 0
-        }
-        var transceiver = this.getMessenger();
-        var packer = this.getPacker();
-        iMsg.setString('group', group);
-        var rMsg = packer.encryptAndSignMessage(iMsg);
-        if (rMsg == null) {
-            Log.error('failed to encrypt & sign message', iMsg.getSender(), group);
-            return null
-        }
-        var content = ForwardContent.create(rMsg);
-        var pair = transceiver.sendContent(content, null, bot, priority);
-        if (!pair || !pair[1]) {
-            Log.warning('failed to forward message to group bot', group, bot)
-        }
-        return rMsg
-    };
-    var disperseMessage = function (iMsg, members, group, priority) {
-        if (!priority) {
-            priority = 0
-        }
-        var transceiver = this.getMessenger();
-        var packer = this.getPacker();
-        iMsg.setString('group', group);
-        var sender = iMsg.getSender();
-        var rMsg = packer.encryptAndSignMessage(iMsg);
-        if (!rMsg) {
-            Log.error('failed to encrypt & sign message', sender, group);
-            return null
-        }
-        var messages = packer.splitReliableMessage(rMsg, members);
-        var receiver;
-        var ok;
-        var r_msg;
-        for (var i = 0; i < messages.length; ++i) {
-            r_msg = messages[i];
-            receiver = r_msg.receiver;
-            if (sender.equals(receiver)) {
-                Log.info('cycled message', sender, receiver, group);
-                continue
-            }
-            ok = transceiver.sendReliableMessage(r_msg, priority);
-            if (!ok) {
-                Log.error('failed to send message', sender, receiver, group)
-            }
-        }
-        return rMsg
-    };
-    var splitAndSendMessage = function (iMsg, members, group, priority) {
-        if (!priority) {
-            priority = 0
-        }
-        var transceiver = this.getMessenger();
-        var packer = this.getPacker();
-        var sender = iMsg.getSender();
-        var success = 0;
-        var messages = packer.splitInstantMessage(iMsg, members);
-        var receiver;
-        var rMsg;
-        var i_msg;
-        for (var i = 0; i < messages.length; ++i) {
-            i_msg = messages[i];
-            receiver = i_msg.receiver;
-            if (sender.equals(receiver)) {
-                Log.info('cycled message', sender, receiver, group);
-                continue
-            }
-            rMsg = transceiver.sendInstantMessage(i_msg, priority);
-            if (rMsg) {
-                Log.error('failed to send message', sender, receiver, group);
-                continue
-            }
-            success += 1
-        }
-        return success
-    };
-    ns.group.GroupEmitter = GroupEmitter
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Interface = ns.type.Interface;
-    var Class = ns.type.Class;
-    var Arrays = ns.type.Arrays;
-    var Log = ns.lnc.Log;
-    var ID = ns.protocol.ID;
-    var MetaCommand = ns.protocol.MetaCommand
-    var DocumentCommand = ns.protocol.DocumentCommand;
-    var ForwardContent = ns.protocol.ForwardContent;
-    var GroupCommand = ns.protocol.GroupCommand;
-    var Station = ns.mkm.Station;
-    var TripletsHelper = ns.TripletsHelper;
-    var GroupManager = function (delegate) {
-        TripletsHelper.call(this, delegate);
-        this.__packer = this.createPacker();
-        this.__helper = this.createHelper();
-        this.__builder = this.createBuilder()
-    };
-    Class(GroupManager, TripletsHelper, null, null);
-    GroupManager.prototype.getPacker = function () {
-        return this.__packer
-    };
-    GroupManager.prototype.getHelper = function () {
-        return this.__helper
-    };
-    GroupManager.prototype.getBuilder = function () {
-        return this.__builder
-    };
-    GroupManager.prototype.createPacker = function () {
-        var delegate = this.getDelegate();
-        return new ns.group.GroupPacker(delegate)
-    };
-    GroupManager.prototype.createHelper = function () {
-        var delegate = this.getDelegate();
-        return new ns.group.GroupCommandHelper(delegate)
-    };
-    GroupManager.prototype.createBuilder = function () {
-        var delegate = this.getDelegate();
-        return new ns.group.GroupHistoryBuilder(delegate)
-    };
-    GroupManager.prototype.createGroup = function (members) {
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return null
-        }
-        var founder = user.getIdentifier();
-        var pos = members.indexOf(founder);
-        if (pos < 0) {
-            members.unshift(founder)
-        } else if (pos > 0) {
-            members.splice(pos, 1);
-            members.unshift(founder)
-        }
-        var delegate = this.getDelegate();
-        var database = this.getDatabase();
-        var groupName = delegate.buildGroupName(members);
-        var register = new ns.Register(database);
-        var group = register.createGroup(founder, groupName);
-        Log.info('new group with founder', group, founder);
-        var meta = delegate.getMeta(group);
-        var doc = delegate.getBulletin(group);
-        var content;
-        if (doc) {
-            content = DocumentCommand.response(group, meta, doc)
-        } else if (meta) {
-            content = MetaCommand.response(group, meta)
-        } else {
-            Log.error('failed to get group info', groupName);
-            return null
-        }
-        var ok = sendCommand.call(this, content, Station.ANY);
-        if (!ok) {
-            Log.error('failed to upload meta/document to neighbor station')
-        }
-        if (this.resetMembers(group, members)) {
-            Log.info('created group with members', group, members.length)
-        } else {
-            Log.error('failed to create group with members', group, members.length)
-        }
-        return group
-    };
-    GroupManager.prototype.resetMembers = function (group, newMembers) {
-        var delegate = this.getDelegate();
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return false
-        }
-        var me = user.getIdentifier();
-        var first = newMembers[0];
-        var ok = delegate.isOwner(first, group);
-        if (!ok) {
-            Log.error('group owner must be the first member', first, group);
-            return false
-        }
-        var oldMembers = delegate.getMembers(group);
-        var expelList = [];
-        var item;
-        for (var i = 0; i < oldMembers.length; ++i) {
-            item = oldMembers[i];
-            if (newMembers.indexOf(item) < 0) {
-                expelList.push(item)
-            }
-        }
-        var isOwner = me.equals(first);
-        var isAdmin = delegate.isAdministrator(me, group);
-        var canReset = isOwner || isAdmin;
-        if (!canReset) {
-            Log.error('cannot reset members', group);
-            return false
-        }
-        var builder = this.getBuilder();
-        var pair = builder.buildResetCommand(group, newMembers);
-        var reset = pair[0];
-        var rMsg = pair[1];
-        if (!reset || !rMsg) {
-            Log.error('failed to build "reset" command', group);
-            return false
-        }
-        var helper = this.getHelper();
-        if (!helper.saveGroupHistory(reset, rMsg, group)) {
-            Log.error('failed to save "reset" command', group);
-            return false
-        } else if (!delegate.saveMembers(newMembers, group)) {
-            Log.error('failed to update members', group);
-            return false
-        } else {
-            Log.info('group members updated', group, newMembers.length)
-        }
-        var messages = builder.buildGroupHistories(group);
-        var forward = ForwardContent.create(messages);
-        var bots = delegate.getAssistants(group);
-        if (bots && bots.length > 0) {
-            return sendCommand.call(this, forward, bots)
-        } else {
-            sendCommand.call(this, forward, newMembers);
-            sendCommand.call(this, forward, expelList)
-        }
-        return true
-    };
-    GroupManager.prototype.inviteMembers = function (group, newMembers) {
-        var facebook = this.getFacebook();
-        var delegate = this.getDelegate();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            return false
-        }
-        var me = user.getIdentifier();
-        var oldMembers = delegate.getMembers(group);
-        var isOwner = delegate.isOwner(me, group);
-        var isAdmin = delegate.isAdministrator(me, group);
-        var isMember = delegate.isMember(me, group);
-        var canReset = isOwner || isAdmin;
-        if (canReset) {
-            var members = oldMembers.slice();
-            var item;
-            for (var i = 0; i < newMembers.length; ++i) {
-                item = newMembers[i];
-                if (members.indexOf(item) < 0) {
-                    members.push(item)
-                }
-            }
-            return this.resetMembers(group, members)
-        } else if (!isMember) {
-            Log.error('cannot invite member', group);
-            return false
-        }
-        var packer = this.getPacker();
-        var helper = this.getHelper();
-        var builder = this.getBuilder();
-        var invite = GroupCommand.invite(group, newMembers);
-        var rMsg = packer.packMessage(invite, me);
-        if (!rMsg) {
-            Log.error('failed to build "invite" command', group);
-            return false
-        } else if (!helper.saveGroupHistory(invite, rMsg, group)) {
-            Log.error('failed to save "invite" command', group);
-            return false
-        }
-        var forward = ForwardContent.create(rMsg);
-        var bots = delegate.getAssistants(group);
-        if (bots && bots.length > 0) {
-            return sendCommand.call(this, forward, bots)
-        }
-        sendCommand.call(this, forward, oldMembers);
-        var messages = builder.buildGroupHistories(group);
-        forward = ForwardContent.create(messages);
-        sendCommand.call(this, forward, newMembers);
-        return true
-    };
-    GroupManager.prototype.quitGroup = function (group) {
-        var delegate = this.getDelegate();
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return false
-        }
-        var me = user.getIdentifier();
-        var members = delegate.getMembers(group);
-        var isOwner = delegate.isOwner(me, group);
-        var isAdmin = delegate.isAdministrator(me, group);
-        var isMember = members.indexOf(me) >= 0;
-        if (isOwner) {
-            Log.error('owner cannot quit from group', group);
-            return false
-        } else if (isAdmin) {
-            Log.error('administrator cannot quit from group', group);
-            return false
-        }
-        if (isMember) {
-            Log.warning('quitting group', group);
-            members = members.slice();
-            Arrays.remove(members, me);
-            var ok = delegate.saveMembers(members, group);
-            if (!ok) {
-                Log.error('failed to save members', group)
-            }
-        } else {
-            Log.warning('member not in group', group)
-        }
-        var packer = this.getPacker();
-        var content = GroupCommand.quit(group);
-        var rMsg = packer.packMessage(content, me);
-        if (!rMsg) {
-            Log.error('failed to pack group message', group);
-            return false
-        }
-        var forward = ForwardContent.create(rMsg);
-        var bots = delegate.getAssistants(group);
-        if (bots && bots.length > 0) {
-            return sendCommand.call(this, forward, bots)
-        } else {
-            return sendCommand.call(this, forward, members)
-        }
-    };
-    var sendCommand = function (content, receiver) {
-        var members;
-        if (Interface.conforms(receiver, ID)) {
-            members = [receiver]
-        } else if (receiver instanceof Array && receiver.length > 0) {
-            members = receiver
-        } else {
-            Log.error('failed to send command', receiver);
-            return false
-        }
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            Log.error('failed to get current user');
-            return false
-        }
-        var me = user.getIdentifier();
-        var transceiver = this.getMessenger();
-        for (var i = 0; i < members.length; ++i) {
-            receiver = members[i];
-            if (me.equals(receiver)) {
-                Log.info('skip cycled message', receiver);
-                continue
-            }
-            transceiver.sendContent(content, me, receiver, 1)
-        }
-        return true
-    };
-    ns.group.GroupManager = GroupManager
-})(DIMP);
-(function (ns) {
-    'use strict';
-    var Class = ns.type.Class;
-    var Arrays = ns.type.Arrays;
-    var ID = ns.protocol.ID;
-    var Group = ns.mkm.Group;
-    var SharedGroupManager = function () {
-        Object.call(this);
-        this.__barrack = null;
-        this.__transceiver = null;
-        this.__delegate = null;
-        this.__manager = null;
-        this.__admin_man = null;
-        this.__emitter = null
-    };
-    Class(SharedGroupManager, Object, [Group.DataSource], null);
-    SharedGroupManager.prototype.getFacebook = function () {
-        return this.__barrack
-    };
-    SharedGroupManager.prototype.getMessenger = function () {
-        return this.__transceiver
-    };
-    SharedGroupManager.prototype.setFacebook = function (facebook) {
-        this.__barrack = facebook;
-        clearDelegates.call(this)
-    };
-    SharedGroupManager.prototype.setMessenger = function (messenger) {
-        this.__transceiver = messenger;
-        clearDelegates.call(this)
-    };
-    var clearDelegates = function () {
-        this.__delegate = null;
-        this.__manager = null;
-        this.__admin_man = null;
-        this.__emitter = null
-    };
-    SharedGroupManager.prototype.getGroupDelegate = function () {
-        var delegate = this.__delegate;
-        if (!delegate) {
-            var facebook = this.getFacebook();
-            var messenger = this.getMessenger();
-            if (facebook && messenger) {
-                delegate = new ns.group.GroupDelegate(facebook, messenger)
-                this.__delegate = delegate
-            }
-        }
-        return delegate
-    };
-    SharedGroupManager.prototype.getGroupManager = function () {
-        var man = this.__manager;
-        if (!man) {
-            var delegate = this.getGroupDelegate();
-            if (delegate) {
-                man = new ns.group.GroupManager(delegate);
-                this.__manager = man
-            }
-        }
-        return man
-    };
-    SharedGroupManager.prototype.getAdminManager = function () {
-        var man = this.__admin_man;
-        if (!man) {
-            var delegate = this.getGroupDelegate();
-            if (delegate) {
-                man = new ns.group.AdminManager(delegate);
-                this.__admin_man = man
-            }
-        }
-        return man
-    };
-    SharedGroupManager.prototype.getGroupEmitter = function () {
-        var emitter = this.__emitter;
-        if (!emitter) {
-            var delegate = this.getGroupDelegate();
-            if (delegate) {
-                emitter = new ns.group.GroupEmitter(delegate);
-                this.__emitter = emitter
-            }
-        }
-        return emitter
-    };
-    SharedGroupManager.prototype.buildGroupName = function (members) {
-        var delegate = this.getGroupDelegate();
-        return delegate.buildGroupName(members)
-    };
-    SharedGroupManager.prototype.getMeta = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getMeta(group)
-    };
-    SharedGroupManager.prototype.getDocuments = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getDocuments(group)
-    };
-    SharedGroupManager.prototype.getBulletin = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getBulletin(group)
-    };
-    SharedGroupManager.prototype.getFounder = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getFounder(group)
-    };
-    SharedGroupManager.prototype.getOwner = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getOwner(group)
-    };
-    SharedGroupManager.prototype.getAssistants = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getAssistants(group)
-    };
-    SharedGroupManager.prototype.getMembers = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getMembers(group)
-    };
-    SharedGroupManager.prototype.getAdministrators = function (group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.getAdministrators(group)
-    };
-    SharedGroupManager.prototype.isOwner = function (user, group) {
-        var delegate = this.getGroupDelegate();
-        return delegate.isOwner(user, group)
-    };
-    SharedGroupManager.prototype.broadcastGroupDocument = function (doc) {
-        var delegate = this.getGroupDelegate();
-        return delegate.broadcastGroupDocument(doc)
-    };
-    SharedGroupManager.prototype.createGroup = function (members) {
-        var delegate = this.getGroupManager();
-        return delegate.createGroup(members)
-    };
-    SharedGroupManager.prototype.updateAdministrators = function (newAdmins, group) {
-        var delegate = this.getAdminManager();
-        return delegate.updateAdministrators(newAdmins, group)
-    };
-    SharedGroupManager.prototype.resetGroupMembers = function (newMembers, group) {
-        var delegate = this.getGroupManager();
-        return delegate.resetMembers(group, newMembers)
-    };
-    SharedGroupManager.prototype.expelGroupMembers = function (expelMembers, group) {
-        var facebook = this.getFacebook();
-        var user = !facebook ? null : facebook.getCurrentUser();
-        if (!user) {
-            return false
-        }
-        var delegate = this.getGroupDelegate();
-        var me = user.getIdentifier();
-        var oldMembers = delegate.getMembers(group);
-        var isOwner = delegate.isOwner(me, group);
-        var isAdmin = delegate.isAdministrator(me, group);
-        var canReset = isOwner || isAdmin;
-        if (canReset) {
-            var members = oldMembers.slice();
-            var item;
-            for (var i = 0; i < expelMembers.length; ++i) {
-                item = expelMembers[i];
-                Arrays.remove(members, item)
-            }
-            return this.resetGroupMembers(members, group)
-        }
-        throw new Error('Cannot expel members from group: ' + group.toString());
-    };
-    SharedGroupManager.prototype.inviteGroupMembers = function (newMembers, group) {
-        var delegate = this.getGroupManager();
-        return delegate.inviteMembers(group, newMembers)
-    };
-    SharedGroupManager.prototype.quitGroup = function (group) {
-        var delegate = this.getGroupManager();
-        return delegate.quitGroup(group)
-    };
-    SharedGroupManager.prototype.sendInstantMessage = function (iMsg, priority) {
-        if (!priority) {
-            priority = 0
-        }
-        iMsg.setValue('GF', true);
-        var delegate = this.getGroupEmitter();
-        return delegate.sendInstantMessage(iMsg, priority)
-    };
-    ns.group.SharedGroupManager = new SharedGroupManager()
 })(DIMP);
 (function (ns) {
     'use strict';
