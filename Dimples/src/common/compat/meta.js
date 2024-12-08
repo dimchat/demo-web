@@ -53,20 +53,22 @@
 
         // Override
         createMeta: function(key, seed, fingerprint) {
-            var type = this.getAlgorithm();
-            if (type === '1' || type === Meta.MKM) {
+            var out;
+            var type = this.getType();
+            if (type === Meta.MKM) {
                 // MKM
-                return new DefaultMeta('1', key, seed, fingerprint);
-            } else if (type === '2' || type === Meta.BTC) {
+                out = new DefaultMeta('1', key, seed, fingerprint);
+            } else if (type === Meta.BTC) {
                 // BTC
-                return new BTCMeta('2', key);
-            } else if (type === '4' || type === Meta.ETH) {
+                out = new BTCMeta('2', key);
+            } else if (type === Meta.ETH) {
                 // ETH
-                return new ETHMeta('4', key);
+                out = new ETHMeta('4', key);
             } else {
                 // unknown type
-                return null;
+                throw new TypeError('unknown meta type: ' + type);
             }
+            return out;
         },
 
         // Override
@@ -74,13 +76,13 @@
             var out;
             var gf = general_factory();
             var type = gf.getMetaType(meta, '');
-            if (type === '1' || type === Meta.MKM) {
+            if (type === '1' || type === 'mkm' || type === 'MKM') {
                 // MKM
                 out = new DefaultMeta(meta);
-            } else if (type === '2' || type === Meta.BTC) {
+            } else if (type === '2' || type === 'btc' || type === 'BTC') {
                 // BTC
                 out = new BTCMeta(meta);
-            } else if (type === '4' || type === Meta.ETH) {
+            } else if (type === '4' || type === 'eth' || type === 'ETH') {
                 // ETH
                 out = new ETHMeta(meta);
             } else {
@@ -102,13 +104,21 @@
          *  Register Compatible Meta Factory
          *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          */
-        Meta.setFactory('1', new CompatibleMetaFactory('1'));
-        Meta.setFactory('2', new CompatibleMetaFactory('2'));
-        Meta.setFactory('4', new CompatibleMetaFactory('4'));
+        var mkm = new CompatibleMetaFactory(Meta.MKM);
+        var btc = new CompatibleMetaFactory(Meta.BTC);
+        var eth = new CompatibleMetaFactory(Meta.ETH);
 
-        Meta.setFactory(Meta.MKM, new CompatibleMetaFactory(Meta.MKM));
-        Meta.setFactory(Meta.BTC, new CompatibleMetaFactory(Meta.BTC));
-        Meta.setFactory(Meta.ETH, new CompatibleMetaFactory(Meta.ETH));
+        Meta.setFactory("1", mkm);
+        Meta.setFactory("2", btc);
+        Meta.setFactory("4", eth);
+
+        Meta.setFactory("mkm", mkm);
+        Meta.setFactory("btc", btc);
+        Meta.setFactory("eth", eth);
+
+        Meta.setFactory("MKM", mkm);
+        Meta.setFactory("BTC", btc);
+        Meta.setFactory("ETH", eth);
     };
 
 })(DIMP);

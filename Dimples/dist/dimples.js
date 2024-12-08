@@ -1856,9 +1856,9 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Mapper = ns.type.Mapper;
     var Meta = Interface(null, [Mapper]);
-    Meta.MKM = 'mkm';
-    Meta.BTC = 'btc';
-    Meta.ETH = 'eth';
+    Meta.MKM = 'MKM';
+    Meta.BTC = 'BTC';
+    Meta.ETH = 'ETH';
     Meta.prototype.getType = function () {
     };
     Meta.prototype.getPublicKey = function () {
@@ -7401,39 +7401,42 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var UTF8 = ns.format.UTF8;
     var TransportableData = ns.format.TransportableData;
     var Meta = ns.protocol.Meta;
     var DefaultMeta = ns.mkm.DefaultMeta;
     var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var GeneralMetaFactory = function (type) {
+    var GeneralMetaFactory = function (algorithm) {
         Object.call(this);
-        this.__algorithm = type
+        this.__type = algorithm
     };
     Class(GeneralMetaFactory, Object, [Meta.Factory], null);
-    GeneralMetaFactory.prototype.getAlgorithm = function () {
-        return this.__algorithm
+    GeneralMetaFactory.prototype.getType = function () {
+        return this.__type
     };
     GeneralMetaFactory.prototype.generateMeta = function (sKey, seed) {
         var fingerprint = null;
         if (seed && seed.length > 0) {
-            var sig = sKey.sign(ns.format.UTF8.encode(seed));
+            var sig = sKey.sign(UTF8.encode(seed));
             fingerprint = TransportableData.create(sig)
         }
         var pKey = sKey.getPublicKey();
         return this.createMeta(pKey, seed, fingerprint)
     };
     GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        var type = this.getAlgorithm();
+        var out;
+        var type = this.getType();
         if (type === Meta.MKM) {
-            return new DefaultMeta(type, key, seed, fingerprint)
+            out = new DefaultMeta(type, key, seed, fingerprint)
         } else if (type === Meta.BTC) {
-            return new BTCMeta(type, key)
+            out = new BTCMeta(type, key)
         } else if (type === Meta.ETH) {
-            return new ETHMeta(type, key)
+            out = new ETHMeta(type, key)
         } else {
-            return null
+            throw new TypeError('unknown meta type: ' + type);
         }
+        return out
     };
     GeneralMetaFactory.prototype.parseMeta = function (meta) {
         var out;
@@ -13212,7 +13215,6 @@ if (typeof StarGate !== 'object') {
     'use strict';
     var IObject = ns.type.Object;
     var Enum = ns.type.Enum;
-    var Meta = ns.protocol.Meta;
     var MetaType = Enum('MetaType', {
         DEFAULT: (0x01),
         MKM: (0x01),
@@ -13236,11 +13238,11 @@ if (typeof StarGate !== 'object') {
         } else if (IObject.isNumber(type)) {
             return type
         } else if (IObject.isString(type)) {
-            if (type === Meta.MKM) {
+            if (type === 'MKM' || type === 'mkm') {
                 return 1
-            } else if (type === Meta.BTC) {
+            } else if (type === 'BTC' || type === 'btc') {
                 return 2
-            } else if (type === Meta.ETH) {
+            } else if (type === 'ETH' || type === 'eth') {
                 return 4
             }
         } else if (Enum.isEnum(type)) {
@@ -13469,25 +13471,27 @@ if (typeof StarGate !== 'object') {
     };
     Class(CompatibleMetaFactory, BaseMetaFactory, null, {
         createMeta: function (key, seed, fingerprint) {
-            var type = this.getAlgorithm();
-            if (type === '1' || type === Meta.MKM) {
-                return new DefaultMeta('1', key, seed, fingerprint)
-            } else if (type === '2' || type === Meta.BTC) {
-                return new BTCMeta('2', key)
-            } else if (type === '4' || type === Meta.ETH) {
-                return new ETHMeta('4', key)
+            var out;
+            var type = this.getType();
+            if (type === Meta.MKM) {
+                out = new DefaultMeta('1', key, seed, fingerprint)
+            } else if (type === Meta.BTC) {
+                out = new BTCMeta('2', key)
+            } else if (type === Meta.ETH) {
+                out = new ETHMeta('4', key)
             } else {
-                return null
+                throw new TypeError('unknown meta type: ' + type);
             }
+            return out
         }, parseMeta: function (meta) {
             var out;
             var gf = general_factory();
             var type = gf.getMetaType(meta, '');
-            if (type === '1' || type === Meta.MKM) {
+            if (type === '1' || type === 'mkm' || type === 'MKM') {
                 out = new DefaultMeta(meta)
-            } else if (type === '2' || type === Meta.BTC) {
+            } else if (type === '2' || type === 'btc' || type === 'BTC') {
                 out = new BTCMeta(meta)
-            } else if (type === '4' || type === Meta.ETH) {
+            } else if (type === '4' || type === 'eth' || type === 'ETH') {
                 out = new ETHMeta(meta)
             } else {
                 throw new TypeError('unknown meta type: ' + type);
@@ -13500,12 +13504,18 @@ if (typeof StarGate !== 'object') {
         return man.generalFactory
     };
     ns.registerCompatibleMetaFactory = function () {
-        Meta.setFactory('1', new CompatibleMetaFactory('1'));
-        Meta.setFactory('2', new CompatibleMetaFactory('2'));
-        Meta.setFactory('4', new CompatibleMetaFactory('4'));
-        Meta.setFactory(Meta.MKM, new CompatibleMetaFactory(Meta.MKM));
-        Meta.setFactory(Meta.BTC, new CompatibleMetaFactory(Meta.BTC));
-        Meta.setFactory(Meta.ETH, new CompatibleMetaFactory(Meta.ETH))
+        var mkm = new CompatibleMetaFactory(Meta.MKM);
+        var btc = new CompatibleMetaFactory(Meta.BTC);
+        var eth = new CompatibleMetaFactory(Meta.ETH);
+        Meta.setFactory("1", mkm);
+        Meta.setFactory("2", btc);
+        Meta.setFactory("4", eth);
+        Meta.setFactory("mkm", mkm);
+        Meta.setFactory("btc", btc);
+        Meta.setFactory("eth", eth);
+        Meta.setFactory("MKM", mkm);
+        Meta.setFactory("BTC", btc);
+        Meta.setFactory("ETH", eth)
     }
 })(DIMP);
 (function (ns) {

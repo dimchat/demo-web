@@ -182,6 +182,7 @@ if (typeof dterm !== 'object') {
 
             'sdk/bubble.js',
             'sdk/clipboard.js',
+            'sdk/useragent.js',
 
             /* DIM SDK */
             'libs/dimples.min.js',
@@ -199,6 +200,7 @@ if (typeof dterm !== 'object') {
 
             'sdk/bubble.js',
             'sdk/clipboard.js',
+            'sdk/useragent.js',
 
             /* DIM SDK */
             'libs/dimples.js',

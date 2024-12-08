@@ -30,14 +30,13 @@
 // =============================================================================
 //
 
-//! require 'base.js'
+//! require <dimp.js>
 
 (function (ns) {
     'use strict';
 
     var IObject = ns.type.Object;
     var Enum    = ns.type.Enum;
-    var Meta    = ns.protocol.Meta;
 
     /**
      *  @enum MetaType
@@ -99,11 +98,11 @@
             return type;
         } else if (IObject.isString(type)) {
             // fixed values
-            if (type === Meta.MKM) {
+            if (type === 'MKM' || type === 'mkm') {
                 return 1;
-            } else if (type === Meta.BTC) {
+            } else if (type === 'BTC' || type === 'btc') {
                 return 2;
-            } else if (type === Meta.ETH) {
+            } else if (type === 'ETH' || type === 'eth') {
                 return 4;
             }
             // TODO: other algorithms

@@ -1842,6 +1842,9 @@ if (typeof SECHAT !== 'object') {
             info['id'] = 'chat.dim.web';
             info['name'] = 'WebChat';
             info['version'] = '2.0.0';
+            info['build'] = 11123;
+            info['store'] = DevicePlatform.getBrowser();
+            info['language'] = navigator.language;
             return info
         }, getDeviceInfo: function (visa) {
             var info = visa.getProperty('sys');
@@ -1850,7 +1853,9 @@ if (typeof SECHAT !== 'object') {
             } else if (typeof info === 'string') {
                 info = {'sys': info}
             }
-            info['os'] = 'Browser';
+            info['locale'] = navigator.language;
+            info['model'] = navigator.platform;
+            info['os'] = DevicePlatform.getOS();
             return info
         }, handshakeSuccess: function () {
             try {

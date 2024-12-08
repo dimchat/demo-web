@@ -4,11 +4,11 @@ var dim_common = [
 
     'src/common/compat/base.js',
     'src/common/compat/algorithm.js',
-    'src/common/compat/compatible.js',
+    'src/common/compat/compatible.js',  // requires 'algorithm.js'
     'src/common/compat/network.js',
     'src/common/compat/address.js',
-    'src/common/compat/entity.js',
-    'src/common/compat/meta.js',
+    'src/common/compat/entity.js',      // requires 'network.js'
+    'src/common/compat/meta.js',        // requires 'algorithm.js'
 
     'src/common/mem/cache.js',
 

@@ -171,6 +171,9 @@
             info['id'] = 'chat.dim.web';
             info['name'] = 'WebChat';
             info['version'] = '2.0.0';
+            info['build'] = 11123;
+            info['store'] = DevicePlatform.getBrowser();
+            info['language'] = navigator.language;
             // ...
             return info;
         },
@@ -184,7 +187,9 @@
                     'sys': info
                 };
             }
-            info['os'] = 'Browser';
+            info['locale'] = navigator.language;
+            info['model'] = navigator.platform;
+            info['os'] = DevicePlatform.getOS();
             // ...
             return info;
         },

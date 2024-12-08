@@ -1856,9 +1856,9 @@ if (typeof MingKeMing !== 'object') {
     var Interface = ns.type.Interface;
     var Mapper = ns.type.Mapper;
     var Meta = Interface(null, [Mapper]);
-    Meta.MKM = 'mkm';
-    Meta.BTC = 'btc';
-    Meta.ETH = 'eth';
+    Meta.MKM = 'MKM';
+    Meta.BTC = 'BTC';
+    Meta.ETH = 'ETH';
     Meta.prototype.getType = function () {
     };
     Meta.prototype.getPublicKey = function () {
@@ -7401,39 +7401,42 @@ if (typeof DIMP !== "object") {
 (function (ns) {
     'use strict';
     var Class = ns.type.Class;
+    var UTF8 = ns.format.UTF8;
     var TransportableData = ns.format.TransportableData;
     var Meta = ns.protocol.Meta;
     var DefaultMeta = ns.mkm.DefaultMeta;
     var BTCMeta = ns.mkm.BTCMeta;
     var ETHMeta = ns.mkm.ETHMeta;
-    var GeneralMetaFactory = function (type) {
+    var GeneralMetaFactory = function (algorithm) {
         Object.call(this);
-        this.__algorithm = type
+        this.__type = algorithm
     };
     Class(GeneralMetaFactory, Object, [Meta.Factory], null);
-    GeneralMetaFactory.prototype.getAlgorithm = function () {
-        return this.__algorithm
+    GeneralMetaFactory.prototype.getType = function () {
+        return this.__type
     };
     GeneralMetaFactory.prototype.generateMeta = function (sKey, seed) {
         var fingerprint = null;
         if (seed && seed.length > 0) {
-            var sig = sKey.sign(ns.format.UTF8.encode(seed));
+            var sig = sKey.sign(UTF8.encode(seed));
             fingerprint = TransportableData.create(sig)
         }
         var pKey = sKey.getPublicKey();
         return this.createMeta(pKey, seed, fingerprint)
     };
     GeneralMetaFactory.prototype.createMeta = function (key, seed, fingerprint) {
-        var type = this.getAlgorithm();
+        var out;
+        var type = this.getType();
         if (type === Meta.MKM) {
-            return new DefaultMeta(type, key, seed, fingerprint)
+            out = new DefaultMeta(type, key, seed, fingerprint)
         } else if (type === Meta.BTC) {
-            return new BTCMeta(type, key)
+            out = new BTCMeta(type, key)
         } else if (type === Meta.ETH) {
-            return new ETHMeta(type, key)
+            out = new ETHMeta(type, key)
         } else {
-            return null
+            throw new TypeError('unknown meta type: ' + type);
         }
+        return out
     };
     GeneralMetaFactory.prototype.parseMeta = function (meta) {
         var out;

@@ -195,6 +195,7 @@ if (typeof dicq !== 'object') {
 
             'sdk/bubble.js',
             'sdk/clipboard.js',
+            'sdk/useragent.js',
 
             /* DIM SDK */
             'sdk/dimsdk.min.js',
@@ -215,6 +216,7 @@ if (typeof dicq !== 'object') {
 
             'sdk/bubble.js',
             'sdk/clipboard.js',
+            'sdk/useragent.js',
 
             /* DIM SDK */
             'sdk/dimsdk.js',
