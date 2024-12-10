@@ -5309,7 +5309,7 @@ if (typeof DIMP !== "object") {
             var barrack = this.getDataSource();
             var user = this.getIdentifier();
             var key = barrack.getPublicKeyForEncryption(user);
-            return key.encrypt(plaintext)
+            return key.encrypt(plaintext, null)
         }, sign: function (data) {
             var barrack = this.getDataSource();
             var user = this.getIdentifier();
@@ -5322,7 +5322,7 @@ if (typeof DIMP !== "object") {
             var plaintext;
             for (var i = 0; i < keys.length; ++i) {
                 try {
-                    plaintext = keys[i].decrypt(ciphertext);
+                    plaintext = keys[i].decrypt(ciphertext, null);
                     if (plaintext && plaintext.length > 0) {
                         return plaintext
                     }
@@ -14224,7 +14224,7 @@ if (typeof StarGate !== 'object') {
             }
             var data = this.getData();
             if (data) {
-                this.__plaintext = password.decrypt(data)
+                this.__plaintext = password.decrypt(data, this.toMap())
             }
         }
         return this.__plaintext
@@ -14234,7 +14234,7 @@ if (typeof StarGate !== 'object') {
         if (!data) {
             return
         }
-        var key = decryptKey.decrypt(data);
+        var key = decryptKey.decrypt(data, this.toMap());
         if (!key) {
             throw new Error('failed to decrypt key');
         }

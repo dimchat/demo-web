@@ -27,15 +27,15 @@
     var get_facebook = function () {
         return app.GlobalVariable.getFacebook();
     };
-    var get_messenger = function () {
-        return app.GlobalVariable.getMessenger();
-    };
+    // var get_messenger = function () {
+    //     return app.GlobalVariable.getMessenger();
+    // };
     var get_message_db = function () {
         return app.GlobalVariable.getDatabase();
     };
 
     var ChatWindow = function () {
-        var frame = new Rect(0, 0, 640, 480);
+        var frame = new Rect(0, 0, 640, 520);
         Window.call(this, frame);
         this.setClassName('chatWindow');
         this.setTitle('Chat');
@@ -207,14 +207,15 @@
             var facebook = get_facebook();
             var members = facebook.getMembers(receiver);
             if (!members || members.length === 0) {
-                var ass = facebook.getAssistants(receiver);
-                if (ass && ass.length > 0) {
-                    var messenger = get_messenger();
-                    messenger.queryGroupInfo(receiver, ass);
-                    alert('Querying group members.');
-                } else {
-                    alert('Group assistant not found.');
-                }
+                // var ass = facebook.getAssistants(receiver);
+                // if (ass && ass.length > 0) {
+                //     var messenger = get_messenger();
+                //     messenger.queryGroupInfo(receiver, ass);
+                //     alert('Querying group members.');
+                // } else {
+                //     alert('Group assistant not found.');
+                // }
+                console.error('group not ready, waiting for members', receiver);
                 return false;
             }
         }

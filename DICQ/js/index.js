@@ -256,6 +256,7 @@ if (typeof dicq !== 'object') {
         null
     ];
     var scripts = [
+        'js/views/png.js',
         'js/views/ads.js',
         'js/views/fixedtable.js',
         'js/views/maincell.js',
@@ -275,8 +276,8 @@ if (typeof dicq !== 'object') {
         'js/controllers/search.js',
         'js/controllers/user.js',
         'js/controllers/about.js',
+        'js/controllers/blink.js',
 
-        'js/blink.js',
         'js/app.js',
         null
     ];

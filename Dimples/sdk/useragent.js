@@ -110,12 +110,29 @@
         return '未知浏览器';
     };
 
+    var getHost = function () {
+        return window.location.host;
+    };
+
+    var getSource = function () {
+        var browser = getBrowser();
+        var host = getHost();
+        if (host && host.length > 0) {
+            // "http://..."
+            return browser + ': ' + host;
+        }
+        // "file:///..."
+        return browser;
+    };
+
     //-------- namespace --------
     ns.DevicePlatform = {
 
         getOS: getOS,
 
-        getBrowser: getBrowser
+        getBrowser: getBrowser,
+
+        getSource: getSource
 
     };
 

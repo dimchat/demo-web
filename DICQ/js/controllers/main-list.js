@@ -271,7 +271,7 @@
             }
         }
         // FIXME:
-        remove_zombie.call(this);
+        tui.removeZombie(this);
     };
 
     var check_dancing = function (dancing, section) {
@@ -311,25 +311,6 @@
     BlinkButton.prototype.stopDancing = function () {
         var btn = this.__ie;
         btn.style.color = 'darkblue';
-    };
-
-    var remove_zombie = function () {
-        if (is_zombie(this.__ie)) {
-            console.warn('remove zombie button', this, this.__ie);
-            this.onExit();
-            // this.remove();
-        }
-    };
-    var is_zombie = function (ie) {
-        var parent = ie.parentNode;
-        if (!parent) {
-            return true;
-        } else if (parent === document.body) {
-            return false;
-        } else if (parent === document) {
-            return false;
-        }
-        return is_zombie(parent);
     };
 
     ns.MainListView = MainListView;

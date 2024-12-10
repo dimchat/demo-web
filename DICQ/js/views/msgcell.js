@@ -6,7 +6,6 @@
     'use strict';
 
     var Label = tui.Label;
-    var Image = tui.Image;
     var TableViewCell = tui.TableViewCell;
 
     var Interface = sdk.type.Interface;
@@ -73,26 +72,9 @@
     };
 
     var image_content_view = function (content, sender) {
-        var base64 = null;
-        var ftp = app.network.FtpServer;
-        var data = ftp.getFileData(content);
-        if (data) {
-            // get image data from decrypted data
-            base64 = sdk.format.Base64.encode(data);
-        } else {
-            // get image data from thumbnail
-            var thumbnail = content.getValue("thumbnail");
-            if (thumbnail && thumbnail.length > 0) {
-                base64 = thumbnail;
-            }
-        }
-        if (base64) {
-            var image = new Image();
-            image.setSrc('data:image/png;base64,' + base64);
-            return image;
-        } else {
-            return null;
-        }
+        var image = new ns.PortableNetworkImage();
+        image.setFileContent(content);
+        return image;
     };
 
     var text_content_view = function (content, sender) {

@@ -5309,7 +5309,7 @@ if (typeof DIMP !== "object") {
             var barrack = this.getDataSource();
             var user = this.getIdentifier();
             var key = barrack.getPublicKeyForEncryption(user);
-            return key.encrypt(plaintext)
+            return key.encrypt(plaintext, null)
         }, sign: function (data) {
             var barrack = this.getDataSource();
             var user = this.getIdentifier();
@@ -5322,7 +5322,7 @@ if (typeof DIMP !== "object") {
             var plaintext;
             for (var i = 0; i < keys.length; ++i) {
                 try {
-                    plaintext = keys[i].decrypt(ciphertext);
+                    plaintext = keys[i].decrypt(ciphertext, null);
                     if (plaintext && plaintext.length > 0) {
                         return plaintext
                     }

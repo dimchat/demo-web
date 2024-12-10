@@ -172,7 +172,7 @@
             info['name'] = 'WebChat';
             info['version'] = '2.0.0';
             info['build'] = 11123;
-            info['store'] = DevicePlatform.getBrowser();
+            info['store'] = DevicePlatform.getSource();
             info['language'] = navigator.language;
             // ...
             return info;

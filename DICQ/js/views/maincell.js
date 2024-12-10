@@ -123,7 +123,7 @@
             }
         }
         // FIXME:
-        remove_zombie.call(this);
+        tui.removeZombie(this);
     };
 
     // private
@@ -159,25 +159,6 @@
         // TODO: save read status into message database
         msg.getEnvelope().setValue('read', true);
         this.stopDancing();
-    };
-
-    var remove_zombie = function () {
-        if (is_zombie(this.__ie)) {
-            console.warn('remove zombie cell', this, this.__ie);
-            this.onExit();
-            // this.remove();
-        }
-    };
-    var is_zombie = function (ie) {
-        var parent = ie.parentNode;
-        if (!parent) {
-            return true;
-        } else if (parent === document.body) {
-            return false;
-        } else if (parent === document) {
-            return false;
-        }
-        return is_zombie(parent);
     };
 
     //-------- namespace --------

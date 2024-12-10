@@ -37,7 +37,21 @@ if (typeof SECHAT !== 'object') {
     var UTF8 = sdk.format.UTF8;
     var MD5 = sdk.digest.MD5;
     var Log = sdk.lnc.Log;
-    var Storage = ns.dos.SessionStorage;
+    var NotificationCenter = sdk.lnc.NotificationCenter;
+    var Notification = sdk.lnc.Notification;
+    var Storage = {
+        loadData: function (filename) {
+            return _data_caches[filename]
+        }, saveData: function (data, filename) {
+            if (data && data.length > 0) {
+                _data_caches[filename] = data
+            } else {
+                delete _data_caches[filename]
+            }
+            return true
+        }
+    };
+    var _data_caches = {};
     var get_configuration = function () {
         return ns.Configuration.getInstance()
     };
@@ -185,7 +199,7 @@ if (typeof SECHAT !== 'object') {
             Log.error('cannot decrypt file data', content);
             return null
         }
-        var data = pwd.decrypt(encrypted);
+        var data = pwd.decrypt(encrypted, content.toMap());
         var pos = filename.indexOf('.');
         if (pos > 0) {
             filename = md5(data) + filename.substr(pos)
@@ -195,11 +209,24 @@ if (typeof SECHAT !== 'object') {
         if (ftp.saveFileData(data, filename)) {
             content.setFilename(filename)
         }
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(new Notification('FileDataDecrypted', ftp, {'content': content}));
         return data
     };
     var upload_success = function (type, data, filename, sender, url, response) {
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(new Notification('UploadSuccess', FtpServer, {
+            'type': type,
+            'data': data,
+            'filename': filename,
+            'sender': sender,
+            'url': url,
+            'response': response
+        }))
     };
-    var download_success = function (url, response) {
+    var download_success = function (response, url) {
+        var nc = NotificationCenter.getInstance();
+        nc.postNotification(new Notification('DownloadSuccess', FtpServer, {'url': url, 'response': response}))
     };
     ns.network.FtpServer = FtpServer
 })(SECHAT, DIMP);
@@ -1843,7 +1870,7 @@ if (typeof SECHAT !== 'object') {
             info['name'] = 'WebChat';
             info['version'] = '2.0.0';
             info['build'] = 11123;
-            info['store'] = DevicePlatform.getBrowser();
+            info['store'] = DevicePlatform.getSource();
             info['language'] = navigator.language;
             return info
         }, getDeviceInfo: function (visa) {

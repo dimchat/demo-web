@@ -230,6 +230,7 @@
         }
     });
 
+    // public byte[] decrypt(PrivateKey privateKey)
     var decrypt_password_by_private_key = function (privateKey) {
         if (this.__password === null) {
             if (Interface.conforms(privateKey, DecryptKey)) {
@@ -241,6 +242,7 @@
         return decrypt_data_by_symmetric_key.call(this, this.__password);
     };
 
+    // public byte[] decrypt(SymmetricKey key)
     var decrypt_data_by_symmetric_key = function (password) {
         if (this.__plaintext === null) {
             if (!password) {
@@ -248,18 +250,19 @@
             }
             var data = this.getData();
             if (data) {
-                this.__plaintext = password.decrypt(data);
+                this.__plaintext = password.decrypt(data, this.toMap());
             }
         }
         return this.__plaintext;
     };
 
+    // private SymmetricKey decryptKey(DecryptKey privateKey)
     var decrypt_symmetric_key = function (decryptKey) {
         var data = this.getKey();
         if (!data) {
             return;
         }
-        var key = decryptKey.decrypt(data);
+        var key = decryptKey.decrypt(data, this.toMap());
         if (!key) {
             throw new Error('failed to decrypt key');
         }

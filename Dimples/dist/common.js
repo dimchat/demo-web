@@ -1056,7 +1056,7 @@
             }
             var data = this.getData();
             if (data) {
-                this.__plaintext = password.decrypt(data)
+                this.__plaintext = password.decrypt(data, this.toMap())
             }
         }
         return this.__plaintext
@@ -1066,7 +1066,7 @@
         if (!data) {
             return
         }
-        var key = decryptKey.decrypt(data);
+        var key = decryptKey.decrypt(data, this.toMap());
         if (!key) {
             throw new Error('failed to decrypt key');
         }
